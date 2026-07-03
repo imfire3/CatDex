@@ -1,0 +1,77 @@
+import type { MissionDefinition } from "@/gameplay/types";
+
+export const DAILY_MISSIONS: MissionDefinition[] = [
+  {
+    id: "daily_discover_3",
+    period: "daily",
+    title: "Trois rencontres",
+    description: "Découvre 3 chats aujourd'hui",
+    emoji: "🐱",
+    target: 3,
+    xpReward: 150,
+    metric: "discoveries",
+  },
+  {
+    id: "daily_walk_2km",
+    period: "daily",
+    title: "Balade urbaine",
+    description: "Marche 2 km en explorant",
+    emoji: "🚶",
+    target: 2,
+    xpReward: 120,
+    metric: "distance_km",
+  },
+  {
+    id: "daily_photos_5",
+    period: "daily",
+    title: "Photo marathon",
+    description: "Prends 5 photos de chats",
+    emoji: "📸",
+    target: 5,
+    xpReward: 100,
+    metric: "photos",
+  },
+  {
+    id: "daily_new_zone",
+    period: "daily",
+    title: "Nouveau territoire",
+    description: "Trouve un nouveau quartier",
+    emoji: "📍",
+    target: 1,
+    xpReward: 200,
+    metric: "new_zones",
+  },
+];
+
+export const WEEKLY_MISSIONS: MissionDefinition[] = [
+  {
+    id: "weekly_discover_10",
+    period: "weekly",
+    title: "Chasseur actif",
+    description: "10 découvertes cette semaine",
+    emoji: "🎯",
+    target: 10,
+    xpReward: 400,
+    metric: "discoveries",
+  },
+  {
+    id: "weekly_observe_25",
+    period: "weekly",
+    title: "Observateur",
+    description: "25 observations cette semaine",
+    emoji: "👁️",
+    target: 25,
+    xpReward: 350,
+    metric: "observations",
+  },
+  {
+    id: "weekly_first_5",
+    period: "weekly",
+    title: "Pionnier",
+    description: "5 premières découvertes",
+    emoji: "⭐",
+    target: 5,
+    xpReward: 600,
+    metric: "first_discoveries",
+  },
+];

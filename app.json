@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "CatDex",
+    "slug": "catdex",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "catdex",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#41BCE2"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.catdex.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CatDex utilise la caméra pour capturer des chats et créer des cartes.",
+        "NSLocationWhenInUseUsageDescription": "CatDex utilise votre position pour afficher les chats à proximité par zone.",
+        "NSPhotoLibraryUsageDescription": "CatDex accède à vos photos pour importer une capture de chat."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#41BCE2"
+      },
+      "package": "com.catdex.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Autoriser CatDex à utiliser la caméra pour capturer des chats."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Autoriser CatDex à utiliser votre position pour trouver les chats à proximité."
+        }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMAPBOX_MAPS_DOWNLOAD_TOKEN": "MAPBOX_DOWNLOADS_TOKEN"
+        }
+      ],
+      "expo-asset",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ba00fda8-5917-4ef4-aa0c-b420e5108984"
+      }
+    },
+    "owner": "imfire"
+  }
+}
