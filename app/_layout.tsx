@@ -1,22 +1,17 @@
+import '../global.css';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -24,7 +19,6 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -35,22 +29,31 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
-
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  if (!loaded) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+    <>
+      <StatusBar style="auto" />
+      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+        <Stack.Screen name="index" options={{ animation: 'fade' }} />
+        <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
+        <Stack.Screen name="permissions" />
+        <Stack.Screen name="introduction" />
+        <Stack.Screen name="avatar" />
+        <Stack.Screen name="username" />
+        <Stack.Screen name="(main)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="camera" options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="ai-loading" options={{ animation: 'fade' }} />
+        <Stack.Screen name="cat-analysis" />
+        <Stack.Screen name="cat-confirmation" />
+        <Stack.Screen name="discovery-celebration" options={{ animation: 'fade' }} />
+        <Stack.Screen name="cat/[id]" />
+        <Stack.Screen name="badges" />
+        <Stack.Screen name="friends" />
+        <Stack.Screen name="leaderboard" />
+        <Stack.Screen name="menu" options={{ animation: 'slide_from_left' }} />
+        <Stack.Screen name="settings" />
       </Stack>
-    </ThemeProvider>
+    </>
   );
 }

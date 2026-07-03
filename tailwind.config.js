@@ -1,0 +1,76 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ['./app/**/*.{js,jsx,ts,tsx}', './components/**/*.{js,jsx,ts,tsx}'],
+  presets: [require('nativewind/preset')],
+  theme: {
+    extend: {
+      colors: {
+        coral: {
+          50: '#FFF5F2',
+          100: '#FFE8E0',
+          200: '#FFD0C2',
+          300: '#FFB09A',
+          400: '#FF8A6B',
+          500: '#FF6B4A',
+          600: '#E84E2E',
+          700: '#C43A1F',
+          800: '#9E2F1A',
+          900: '#7A2618',
+        },
+        gold: {
+          50: '#FFFBEB',
+          100: '#FFF3C4',
+          200: '#FFE588',
+          300: '#FFD166',
+          400: '#F5B942',
+          500: '#E5A020',
+          600: '#C47E10',
+          700: '#9A5F0A',
+          800: '#7A4C0C',
+          900: '#653F0E',
+        },
+        lavender: {
+          50: '#F5F3FF',
+          100: '#EDE9FE',
+          200: '#DDD6FE',
+          300: '#C4B5FD',
+          400: '#A78BFA',
+          500: '#8B5CF6',
+          600: '#7C3AED',
+          700: '#6D28D9',
+          800: '#5B21B6',
+          900: '#4C1D95',
+        },
+        mint: {
+          50: '#ECFDF5',
+          100: '#D1FAE5',
+          200: '#A7F3D0',
+          300: '#6EE7B7',
+          400: '#34D399',
+          500: '#10B981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065F46',
+          900: '#064E3B',
+        },
+        slate: {
+          850: '#1A1F2E',
+          950: '#0D1117',
+        },
+      },
+      fontFamily: {
+        sans: ['System'],
+      },
+      borderRadius: {
+        '4xl': '2rem',
+        '5xl': '2.5rem',
+      },
+      boxShadow: {
+        soft: '0 8px 32px rgba(0, 0, 0, 0.08)',
+        glow: '0 8px 32px rgba(255, 107, 74, 0.35)',
+        float: '0 12px 40px rgba(0, 0, 0, 0.15)',
+      },
+    },
+  },
+  plugins: [],
+};
