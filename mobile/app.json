@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "CatDex",
+    "slug": "catdex",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "catdex",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.catdex.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CatDex needs camera access to photograph cats.",
+        "NSLocationWhenInUseUsageDescription": "CatDex needs your location to map cat discoveries."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "com.catdex.app",
+      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow CatDex to access your camera to photograph cats."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow CatDex to use your location to map discoveries."
+        }
+      ]
+    ]
+  }
+}
