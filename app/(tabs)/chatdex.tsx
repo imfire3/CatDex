@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,8 +7,10 @@ import { ChevronRight } from "lucide-react-native";
 import { CatDexTile } from "@/components/game/CatDexTile";
 import { GlassCard } from "@/components/game/GlassCard";
 import { ChatDexToolbar } from "@/components/chatdex/ChatDexToolbar";
-import { EmptyState, LoadingView, SkeletonCard } from "@/components/feedback";
-import { GAME } from "@/constants/game";
+import { EmptyState, ErrorState, LoadingView, SkeletonCard } from "@/components/feedback";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { ScreenBackground } from "@/components/ui/ScreenBackground";
+import { GAME, TEXT } from "@/constants/game";
 import { useChatDex, useNearbyCats } from "@/hooks/useGameData";
 import { useLiveLocation } from "@/providers/LocationProvider";
 import { useAuth } from "@/providers/AuthProvider";
@@ -19,7 +20,7 @@ import { getCollectionNudge } from "@/gameplay/retention/collection-nudges";
 export default function ChatDexScreen() {
   const router = useRouter();
   const { session } = useAuth();
-  const { allCats, discoveredCats, isLoading, refetch } = useChatDex(session?.user.id);
+  const { allCats, discoveredCats, isLoading, isError, refetch } = useChatDex(session?.user.id);
   const { searchQuery, chatdexFilter } = useAppStore();
   const { location } = useLiveLocation();
   const { nearby } = useNearbyCats(location.latitude, location.longitude, session?.user.id);
@@ -49,7 +50,7 @@ export default function ChatDexScreen() {
 
   if (isLoading && allCats.length === 0) {
     return (
-      <LinearGradient colors={[GAME.navy, GAME.navyLight]} style={styles.screen}>
+      <ScreenBackground>
         <SafeAreaView style={styles.safe}>
           <LoadingView label="Chargement du ChatDex…" />
           <View style={styles.skeletonGrid}>
@@ -57,28 +58,33 @@ export default function ChatDexScreen() {
             <SkeletonCard />
           </View>
         </SafeAreaView>
-      </LinearGradient>
+      </ScreenBackground>
+    );
+  }
+
+  if (isError && allCats.length === 0) {
+    return (
+      <ScreenBackground>
+        <SafeAreaView style={styles.safe}>
+          <ErrorState
+            title="ChatDex indisponible"
+            message="Impossible de charger ta collection. Vérifie ta connexion."
+            onRetry={() => refetch()}
+          />
+        </SafeAreaView>
+      </ScreenBackground>
     );
   }
 
   return (
-    <LinearGradient colors={[GAME.navy, GAME.navyLight]} style={styles.screen}>
+    <ScreenBackground>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <Animated.View entering={FadeInDown.springify()} style={styles.header}>
           <Text style={styles.title}>ChatDex</Text>
-          <View style={styles.progressRow}>
-            <Text style={styles.subtitle}>
-              {discovered}/{total} · {completion}% complété
-            </Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <LinearGradient
-              colors={[GAME.gold, GAME.goldDark]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.progressFill, { width: `${completion}%` }]}
-            />
-          </View>
+          <Text style={styles.subtitle}>
+            {discovered}/{total} · {completion}% complété
+          </Text>
+          <ProgressBar progress={completion} variant="gold" style={styles.progress} />
         </Animated.View>
 
         <ChatDexToolbar />
@@ -143,12 +149,11 @@ export default function ChatDexScreen() {
           )}
         />
       </SafeAreaView>
-    </LinearGradient>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
   safe: { flex: 1 },
   header: {
     paddingHorizontal: GAME.space.lg,
@@ -156,32 +161,22 @@ const styles = StyleSheet.create({
     paddingBottom: GAME.space.sm,
     gap: GAME.space.xs,
   },
-  title: {
-    color: GAME.gold,
-    fontSize: GAME.type.hero,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  progressRow: { flexDirection: "row", alignItems: "center" },
-  subtitle: { color: GAME.textMuted, fontSize: GAME.type.body, fontWeight: "700" },
-  progressTrack: {
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    marginTop: GAME.space.xs,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-  progressFill: { height: "100%", borderRadius: 5 },
+  title: { ...TEXT.hero, color: GAME.gold, letterSpacing: 1 },
+  subtitle: { ...TEXT.caption },
+  progress: { marginTop: GAME.space.xs },
   nudgeWrap: { paddingHorizontal: GAME.space.lg, marginVertical: GAME.space.sm },
   nudge: { flexDirection: "row", alignItems: "center", gap: GAME.space.sm },
   nudgeHigh: { borderColor: "rgba(255,204,0,0.45)", borderWidth: 1 },
   nudgeEmoji: { fontSize: 24 },
   nudgeBody: { flex: 1 },
-  nudgeMessage: { color: GAME.text, fontWeight: "800", fontSize: GAME.type.caption },
-  nudgeSub: { color: GAME.textMuted, fontSize: 11, marginTop: 2 },
-  list: { paddingHorizontal: GAME.space.md, paddingBottom: 120, gap: GAME.space.md, flexGrow: 1 },
+  nudgeMessage: { ...TEXT.bodyStrong, fontSize: GAME.type.caption },
+  nudgeSub: { ...TEXT.micro, marginTop: 2 },
+  list: {
+    paddingHorizontal: GAME.space.md,
+    paddingBottom: GAME.layout.tabScrollPadding,
+    gap: GAME.space.md,
+    flexGrow: 1,
+  },
   row: { gap: GAME.space.md },
   skeletonGrid: { padding: GAME.space.lg, gap: GAME.space.md },
 });

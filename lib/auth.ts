@@ -1,12 +1,33 @@
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import { makeRedirectUri } from "expo-auth-session";
+import type { AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { normalizeEmail } from "@/lib/validation";
 
 WebBrowser.maybeCompleteAuthSession();
 
 const redirectTo = makeRedirectUri({ scheme: "catdex" });
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function signInAfterSignup(email: string, password: string) {
+  const maxAttempts = 3;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) await sleep(400);
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) return data;
+
+    const authError = error as AuthError;
+    if (authError.code !== "email_not_confirmed" || attempt === maxAttempts - 1) {
+      throw error;
+    }
+  }
+
+  throw new Error("Connexion impossible après inscription.");
+}
 
 export const ADMIN_EMAIL = "admin@catdex.local";
 export const ADMIN_USERNAME = "admin";
@@ -48,17 +69,9 @@ export async function signUpWithEmail(
     },
   });
   if (error) throw error;
+  if (data.session) return data;
 
-  if (!data.session) {
-    const login = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
-    if (login.error) throw login.error;
-    return login.data;
-  }
-
-  return data;
+  return signInAfterSignup(normalizedEmail, password);
 }
 
 async function signInWithOAuth(provider: "google" | "apple") {

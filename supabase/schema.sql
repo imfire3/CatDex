@@ -123,6 +123,13 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
+  -- Skip email confirmation friction: users can sign in right after signup.
+  update auth.users
+  set
+    email_confirmed_at = coalesce(email_confirmed_at, now()),
+    confirmed_at = coalesce(confirmed_at, now())
+  where id = new.id;
+
   insert into public.profiles (id, username, display_name)
   values (
     new.id,

@@ -1,6 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   Easing,
   FadeIn,
@@ -12,9 +11,13 @@ import Animated, {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Sparkles } from "lucide-react-native";
-import { GAME } from "@/constants/game";
+import { ErrorState } from "@/components/feedback";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { ScreenBackground } from "@/components/ui/ScreenBackground";
+import { GAME, TEXT } from "@/constants/game";
 import { gameplayService } from "@/services/gameplay.service";
 import { useCaptureStore } from "@/stores";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
 
 const STEPS = [
   "Analyse de l'image...",
@@ -25,14 +28,15 @@ const STEPS = [
 
 export default function LoadingScreen() {
   const router = useRouter();
+  const reduceMotion = useReduceMotion();
   const rotation = useSharedValue(0);
-  const progress = useSharedValue(0);
+  const [failed, setFailed] = useState(false);
   const { compressedUri, setAnalysis } = useCaptureStore();
 
   useEffect(() => {
+    if (reduceMotion) return;
     rotation.value = withRepeat(withTiming(360, { duration: 2000, easing: Easing.linear }), -1);
-    progress.value = withTiming(1, { duration: 2800 });
-  }, [rotation, progress]);
+  }, [rotation, reduceMotion]);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,9 +66,7 @@ export default function LoadingScreen() {
         });
         router.replace("/capture/analysis");
       } catch {
-        if (!cancelled) {
-          router.replace("/capture");
-        }
+        if (!cancelled) setFailed(true);
       }
     })();
 
@@ -77,16 +79,26 @@ export default function LoadingScreen() {
     transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
-  const progressStyle = useAnimatedStyle(() => ({
-    width: `${progress.value * 100}%`,
-  }));
+  if (failed) {
+    return (
+      <ScreenBackground variant="capture">
+        <SafeAreaView style={styles.safe}>
+          <ErrorState
+            title="Analyse impossible"
+            message="L'IA n'a pas pu analyser cette photo. Réessaie avec une image plus nette."
+            onRetry={() => router.replace("/capture")}
+          />
+        </SafeAreaView>
+      </ScreenBackground>
+    );
+  }
 
   return (
-    <LinearGradient colors={[GAME.navy, GAME.indigo]} style={styles.screen}>
+    <ScreenBackground variant="capture">
       <SafeAreaView style={styles.safe}>
         <Animated.View entering={FadeIn} style={styles.center}>
-          <Animated.View style={[styles.ring, spinStyle]}>
-            <LinearGradient colors={[GAME.sky, GAME.purple]} style={styles.ringGradient} />
+          <Animated.View style={[styles.ring, !reduceMotion && spinStyle]}>
+            <View style={styles.ringInner} />
           </Animated.View>
           <View style={styles.iconCenter}>
             <Sparkles color={GAME.gold} size={36} strokeWidth={2} />
@@ -94,9 +106,7 @@ export default function LoadingScreen() {
           <Text style={styles.title}>Analyse IA</Text>
           <Text style={styles.subtitle}>Identification du chat en cours</Text>
 
-          <View style={styles.progressTrack}>
-            <Animated.View style={[styles.progressFill, progressStyle]} />
-          </View>
+          <ProgressBar progress={85} variant="sky" style={styles.progress} />
 
           <View style={styles.steps}>
             {STEPS.map((step, i) => (
@@ -107,21 +117,27 @@ export default function LoadingScreen() {
           </View>
         </Animated.View>
       </SafeAreaView>
-    </LinearGradient>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
   safe: { flex: 1, justifyContent: "center" },
   center: { alignItems: "center", paddingHorizontal: GAME.space.xl },
-  ring: { width: 120, height: 120, borderRadius: 60, padding: 4 },
-  ringGradient: { flex: 1, borderRadius: 56, opacity: 0.8 },
+  ring: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: GAME.sky,
+    borderTopColor: GAME.purple,
+    padding: 4,
+  },
+  ringInner: { flex: 1, borderRadius: 56, backgroundColor: "transparent" },
   iconCenter: { position: "absolute", top: 42, alignSelf: "center" },
-  title: { color: GAME.text, fontSize: GAME.type.title, fontWeight: "900", marginTop: GAME.space.xl },
-  subtitle: { color: GAME.textMuted, fontSize: GAME.type.body, marginTop: GAME.space.sm, marginBottom: GAME.space.xl },
-  progressTrack: { width: "100%", height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.1)", overflow: "hidden", marginBottom: GAME.space.xl },
-  progressFill: { height: "100%", backgroundColor: GAME.sky, borderRadius: 3 },
+  title: { ...TEXT.title, marginTop: GAME.space.xl, textAlign: "center" },
+  subtitle: { ...TEXT.caption, marginTop: GAME.space.sm, marginBottom: GAME.space.xl, textAlign: "center" },
+  progress: { width: "100%", marginBottom: GAME.space.xl },
   steps: { gap: GAME.space.sm, alignSelf: "stretch" },
-  step: { color: GAME.textMuted, fontSize: GAME.type.caption, fontWeight: "600", textAlign: "center" },
+  step: { ...TEXT.caption, textAlign: "center" },
 });

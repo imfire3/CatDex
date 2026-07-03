@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ImageBackground, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { AUTH } from "@/constants/theme";
+import { GAME } from "@/constants/game";
 
 const LOGIN_BG = require("@/assets/login-bg.png");
 
@@ -10,7 +10,7 @@ export function AuthBackground({ children }: { children: ReactNode }) {
     <View style={styles.root}>
       <ImageBackground source={LOGIN_BG} style={styles.background} resizeMode="cover">
         <LinearGradient
-          colors={["rgba(6,10,22,0.55)", "rgba(6,10,22,0.78)", "rgba(6,10,22,0.94)"]}
+          colors={["rgba(13,27,42,0.55)", "rgba(13,27,42,0.82)", "rgba(13,27,42,0.96)"]}
           locations={[0, 0.42, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -23,28 +23,15 @@ export function AuthBackground({ children }: { children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: AUTH.bg,
-  },
-  background: {
-    flex: 1,
-  },
+  root: { flex: 1, backgroundColor: GAME.navy },
+  background: { flex: 1 },
   glow: {
     position: "absolute",
     width: 220,
     height: 220,
     borderRadius: 110,
-    opacity: 0.55,
+    opacity: 0.45,
   },
-  glowLeft: {
-    top: "18%",
-    left: -60,
-    backgroundColor: AUTH.glowCyan,
-  },
-  glowRight: {
-    top: "32%",
-    right: -80,
-    backgroundColor: AUTH.glowBlue,
-  },
+  glowLeft: { top: "18%", left: -60, backgroundColor: "rgba(90,200,250,0.35)" },
+  glowRight: { top: "32%", right: -80, backgroundColor: "rgba(0,122,255,0.28)" },
 });

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { AUTH, BORDER, POGO, RADIUS, SPACE, TYPE } from "@/constants/theme";
+import { GAME, GRADIENTS } from "@/constants/game";
 
 type GradientButtonProps = {
   label: string;
@@ -19,9 +19,11 @@ export function GradientButton({ label, onPress, disabled, loading }: GradientBu
         (disabled || loading) && styles.disabled,
         pressed && !disabled && styles.pressed,
       ]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
       <LinearGradient
-        colors={[AUTH.gradientStart, AUTH.gradientEnd]}
+        colors={[...GRADIENTS.primary]}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={styles.gradient}
@@ -35,28 +37,25 @@ export function GradientButton({ label, onPress, disabled, loading }: GradientBu
 const styles = StyleSheet.create({
   wrap: {
     width: "100%",
-    borderRadius: RADIUS.full,
+    borderRadius: GAME.radius.full,
     overflow: "hidden",
-    borderWidth: BORDER.default,
-    borderColor: POGO.skyDark,
+    borderWidth: GAME.border.default,
+    borderColor: GAME.skyDark,
+    minHeight: GAME.touch.button,
   },
   gradient: {
-    paddingVertical: SPACE.sm - 4,
-    paddingHorizontal: SPACE.sm,
+    flex: 1,
+    paddingVertical: GAME.space.sm,
+    paddingHorizontal: GAME.space.md,
     alignItems: "center",
     justifyContent: "center",
   },
   label: {
-    color: POGO.navy,
-    fontWeight: "900",
-    fontSize: TYPE.body,
+    color: GAME.navy,
+    fontWeight: GAME.weight.black,
+    fontSize: GAME.type.body,
     letterSpacing: 0.3,
   },
-  disabled: {
-    opacity: 0.5,
-  },
-  pressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
-  },
+  disabled: { opacity: 0.5 },
+  pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
 });

@@ -8,14 +8,15 @@ import {
   Text,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { ChevronLeft } from "lucide-react-native";
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import { AuthOrDivider, SocialAuthRow } from "@/components/auth/SocialAuthRow";
 import { GradientButton } from "@/components/auth/GradientButton";
-import { TextField } from "@/components/ui";
-import { AUTH, POGO, RADIUS, SPACE, TYPE } from "@/constants/theme";
+import { GameTextField } from "@/components/ui/GameTextField";
+import { IconButton } from "@/components/ui/IconButton";
+import { GAME } from "@/constants/game";
 import { signUpWithEmail } from "@/lib/auth";
 import { formatAuthError } from "@/lib/auth-errors";
 import { authModeStore } from "@/lib/auth-mode";
@@ -74,9 +75,12 @@ export default function SignupScreen() {
         >
           <View style={styles.layout}>
             <View style={styles.top}>
-              <Pressable style={styles.backButton} onPress={() => router.back()} hitSlop={SPACE.xs}>
-                <Ionicons name="chevron-back" size={22} color={POGO.white} />
-              </Pressable>
+              <IconButton
+                icon={ChevronLeft}
+                onPress={() => router.back()}
+                accessibilityLabel="Retour"
+                style={styles.backButton}
+              />
 
               <Text style={styles.title}>Créer un compte</Text>
               <Text style={styles.subtitle}>Rejoins la chasse aux chats de rue.</Text>
@@ -90,17 +94,15 @@ export default function SignupScreen() {
               <AuthOrDivider />
 
               <View style={styles.form}>
-                <TextField
+                <GameTextField
                   label="Pseudo"
-                  variant="glass"
                   value={username}
                   onChangeText={setUsername}
                   placeholder="ex: cat_hunter42"
                   autoCapitalize="none"
                 />
-                <TextField
+                <GameTextField
                   label="Email"
-                  variant="glass"
                   value={email}
                   onChangeText={setEmail}
                   placeholder="prenom.nom@gmail.com"
@@ -110,9 +112,8 @@ export default function SignupScreen() {
                   textContentType="emailAddress"
                   autoComplete="email"
                 />
-                <TextField
+                <GameTextField
                   label="Mot de passe"
-                  variant="glass"
                   value={password}
                   onChangeText={setPassword}
                   placeholder="Ton mot de passe"
@@ -121,9 +122,7 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            <View
-              style={[styles.stickyBottom, { paddingBottom: Math.max(insets.bottom, SPACE.sm) }]}
-            >
+            <View style={[styles.stickyBottom, { paddingBottom: Math.max(insets.bottom, GAME.space.sm) }]}>
               <View style={styles.stickyInner}>
                 <GradientButton
                   label={loading ? "Création..." : "Créer mon compte"}
@@ -133,7 +132,7 @@ export default function SignupScreen() {
                 />
 
                 <Link href="/(auth)/login" asChild>
-                  <Pressable style={styles.linkWrap} hitSlop={SPACE.xs}>
+                  <Pressable style={styles.linkWrap} hitSlop={GAME.space.xs}>
                     <Text style={styles.linkTertiary}>
                       Déjà un compte ?{"\n"}
                       <Text style={styles.linkTertiaryAction}>Se connecter</Text>
@@ -152,66 +151,49 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   flex: { flex: 1 },
-  layout: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
+  layout: { flex: 1, justifyContent: "space-between" },
   top: {
-    paddingHorizontal: SPACE.sm,
-    paddingTop: SPACE.xs,
-    gap: SPACE.sm,
+    paddingHorizontal: GAME.space.md,
+    paddingTop: GAME.space.xs,
+    gap: GAME.space.sm,
   },
-  backButton: {
-    width: SPACE.xxl,
-    height: SPACE.xxl,
-    borderRadius: RADIUS.full,
-    backgroundColor: AUTH.glass,
-    borderWidth: 1,
-    borderColor: AUTH.glassBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  backButton: { alignSelf: "flex-start" },
   title: {
-    color: AUTH.text,
-    fontSize: TYPE.display - 4,
-    fontWeight: "900",
+    color: GAME.text,
+    fontSize: GAME.type.display - 8,
+    fontWeight: GAME.weight.black,
     textAlign: "center",
   },
   subtitle: {
-    color: AUTH.textMuted,
-    fontSize: TYPE.body - 2,
+    color: GAME.textMuted,
+    fontSize: GAME.type.body,
     textAlign: "center",
-    marginBottom: SPACE.xs,
+    marginBottom: GAME.space.xs,
   },
-  form: {
-    gap: SPACE.sm,
-  },
+  form: { gap: GAME.space.sm },
   stickyBottom: {
-    backgroundColor: AUTH.overlayBottom,
-    borderTopWidth: 1,
-    borderTopColor: AUTH.glassBorder,
-    paddingTop: SPACE.sm,
+    backgroundColor: "rgba(13,27,42,0.92)",
+    borderTopWidth: GAME.border.hairline,
+    borderTopColor: GAME.glassBorder,
+    paddingTop: GAME.space.sm,
   },
-  stickyInner: {
-    paddingHorizontal: SPACE.sm,
-    gap: SPACE.sm,
-  },
+  stickyInner: { paddingHorizontal: GAME.space.md, gap: GAME.space.sm },
   linkWrap: {
     alignItems: "center",
-    minHeight: SPACE.xxl,
+    minHeight: GAME.touch.min,
     justifyContent: "center",
-    paddingVertical: SPACE.xs,
+    paddingVertical: GAME.space.xs,
   },
   linkTertiary: {
-    color: AUTH.textMuted,
-    fontSize: TYPE.caption + 1,
-    fontWeight: "600",
+    color: GAME.textMuted,
+    fontSize: GAME.type.caption,
+    fontWeight: GAME.weight.medium,
     textAlign: "center",
-    lineHeight: SPACE.md - 4,
+    lineHeight: 20,
   },
   linkTertiaryAction: {
-    color: AUTH.textMuted,
-    fontWeight: "700",
+    color: GAME.sky,
+    fontWeight: GAME.weight.bold,
     textDecorationLine: "underline",
   },
 });

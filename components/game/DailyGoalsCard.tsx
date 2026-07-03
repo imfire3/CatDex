@@ -48,7 +48,7 @@ export function DailyGoalsCard({
 
   return (
     <Animated.View entering={FadeInRight.springify()} style={animStyle}>
-      <GlassCard style={styles.card}>
+      <GlassCard variant="elevated" style={styles.card}>
         <View style={styles.header}>
           <Target color={GAME.sky} size={16} />
           <Text style={styles.headerText}>Objectifs du jour</Text>
@@ -91,10 +91,14 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: GAME.gold,
     paddingVertical: GAME.space.sm,
+    paddingHorizontal: GAME.space.sm,
     borderRadius: GAME.radius.full,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: "rgba(255,204,0,0.55)",
   },
   ctaSecondary: {
-    backgroundColor: "rgba(90,200,250,0.15)",
+    backgroundColor: GAME.glassStrong,
     borderWidth: 1,
     borderColor: GAME.sky,
   },

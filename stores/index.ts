@@ -80,16 +80,28 @@ export const useCaptureStore = create<CaptureDraft>()(
   )
 );
 
+type PendingMapFocus = {
+  catId: string;
+  latitude: number;
+  longitude: number;
+};
+
 type AppStore = {
   searchQuery: string;
   chatdexFilter: "all" | "discovered" | "favorites";
+  pendingMapFocus: PendingMapFocus | null;
   setSearchQuery: (q: string) => void;
   setChatdexFilter: (f: AppStore["chatdexFilter"]) => void;
+  setPendingMapFocus: (focus: PendingMapFocus) => void;
+  clearPendingMapFocus: () => void;
 };
 
 export const useAppStore = create<AppStore>((set) => ({
   searchQuery: "",
   chatdexFilter: "all",
+  pendingMapFocus: null,
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setChatdexFilter: (chatdexFilter) => set({ chatdexFilter }),
+  setPendingMapFocus: (pendingMapFocus) => set({ pendingMapFocus }),
+  clearPendingMapFocus: () => set({ pendingMapFocus: null }),
 }));

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Menu } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -12,7 +13,7 @@ import { MapBottomSheet } from "@/components/map/MapBottomSheet";
 import { StreakPill } from "@/components/game/StreakPill";
 import { DailyBonusModal } from "@/components/game/DailyBonusModal";
 import { DailyGoalsCard } from "@/components/game/DailyGoalsCard";
-import { GAME, GRADIENTS } from "@/constants/game";
+import { GAME, GRADIENTS, ELEVATION } from "@/constants/game";
 import { useNearbyCats, useCaptures, useProfileStats, useZones } from "@/hooks/useGameData";
 import { useLiveLocation } from "@/providers/LocationProvider";
 import { useRetention } from "@/hooks/useRetention";
@@ -23,6 +24,7 @@ import { queryKeys } from "@/constants/queryKeys";
 import { MAP_DISCOVERY_RADIUS_M } from "@/services/map.service";
 import { retentionStore } from "@/gameplay/retention/retention-store";
 import { distanceInMeters, findNearestZone } from "@/lib/zones";
+import { useAppStore } from "@/stores";
 import type { Zone } from "@/types/database";
 
 export default function MapScreen() {
@@ -34,6 +36,8 @@ export default function MapScreen() {
   const { data: profile } = useProfileStats(session?.user.id);
   const { data: captures = [] } = useCaptures(session?.user.id);
   const retention = useRetention();
+  const pendingMapFocus = useAppStore((s) => s.pendingMapFocus);
+  const clearPendingMapFocus = useAppStore((s) => s.clearPendingMapFocus);
   const [showBonus, setShowBonus] = useState(false);
   const [recenterToken, setRecenterToken] = useState(0);
 
@@ -74,9 +78,32 @@ export default function MapScreen() {
   const favoritesNearby = nearby.filter((c) => c.favorite).length;
 
   const mapCats = useMemo(() => {
-    if (!selectedZone) return nearby;
-    return nearby.filter((cat) => cat.zone === selectedZone.name);
-  }, [nearby, selectedZone]);
+    let filtered = selectedZone
+      ? nearby.filter((cat) => cat.zone === selectedZone.name)
+      : nearby;
+    const pinId = pendingMapFocus?.catId;
+    if (pinId && !filtered.some((cat) => cat.id === pinId)) {
+      const pinned = nearby.find((cat) => cat.id === pinId);
+      if (pinned) filtered = [pinned, ...filtered];
+    }
+    return filtered;
+  }, [nearby, selectedZone, pendingMapFocus?.catId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!pendingMapFocus) return;
+      userPickedZone.current = false;
+      const captureZone = findNearestZone(
+        zones,
+        pendingMapFocus.latitude,
+        pendingMapFocus.longitude
+      );
+      if (captureZone) setSelectedZone(captureZone);
+      setRecenterToken((token) => token + 1);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cats, refetchType: "all" });
+      clearPendingMapFocus();
+    }, [pendingMapFocus, clearPendingMapFocus, zones])
+  );
 
   useEffect(() => {
     if (retention.canClaimDailyBonus && profile && retention.shouldShowDailyBonusPrompt) {
@@ -93,7 +120,9 @@ export default function MapScreen() {
     queryClient.invalidateQueries({ queryKey: queryKeys.profile(session.user.id) });
   };
 
-  const mapRegion = useMemo(() => regionFromCoords(lat, lng), [lat, lng]);
+  const focusLat = pendingMapFocus?.latitude ?? lat;
+  const focusLng = pendingMapFocus?.longitude ?? lng;
+  const mapRegion = useMemo(() => regionFromCoords(focusLat, focusLng), [focusLat, focusLng]);
 
   const markers = useMemo(
     () =>
@@ -180,7 +209,7 @@ export default function MapScreen() {
       </Animated.View>
 
 
-      <View style={[styles.mapControls, { bottom: insets.bottom + 200 }]}>
+      <View style={[styles.mapControls, { bottom: insets.bottom + GAME.layout.sheetBottomOffset + 112 }]}>
         <MapControls onRecenter={handleRecenter} />
       </View>
 
@@ -251,7 +280,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: GAME.space.sm,
-    backgroundColor: GAME.glass,
+    backgroundColor: GAME.glassStrong,
     borderRadius: GAME.radius.full,
     paddingVertical: GAME.space.sm,
     paddingHorizontal: GAME.space.md,
@@ -259,6 +288,8 @@ const styles = StyleSheet.create({
     borderColor: GAME.glassBorder,
     flex: 1,
     marginRight: GAME.space.sm,
+    minHeight: 44,
+    ...ELEVATION.sm,
   },
   profileEmoji: { fontSize: 24 },
   profileName: { color: GAME.text, fontWeight: "800", fontSize: GAME.type.body },
@@ -267,11 +298,12 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: GAME.glass,
+    backgroundColor: GAME.glassStrong,
     borderWidth: 1,
     borderColor: GAME.glassBorder,
     alignItems: "center",
     justifyContent: "center",
+    ...ELEVATION.sm,
   },
   goalsCard: { position: "absolute", left: GAME.space.md, right: GAME.space.md },
   mapControls: { position: "absolute", right: 0 },

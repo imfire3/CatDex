@@ -1,6 +1,8 @@
 import * as Location from "expo-location";
 import { filterNearbyCats } from "@/lib/adapters";
+import { queryKeys } from "@/constants/queryKeys";
 import { cacheStorage, getJson, setJson } from "@/lib/storage/mmkv";
+import { queryClient } from "@/providers/QueryProvider";
 import { catsService } from "@/services/cats.service";
 import type { Cat, Zone } from "@/types/database";
 
@@ -55,5 +57,26 @@ export const mapService = {
 
   clearCache() {
     cacheStorage.remove(CACHE_KEY);
+  },
+
+  primeCapturedCat(cat: Cat, zone?: Zone | null) {
+    const enriched = zone ? { ...cat, zone } : cat;
+    queryClient.setQueryData<Cat[]>(queryKeys.cats, (old) => {
+      const list = old ?? [];
+      const index = list.findIndex((item) => item.id === cat.id);
+      if (index >= 0) {
+        const next = [...list];
+        next[index] = { ...next[index], ...enriched };
+        return next;
+      }
+      return [enriched, ...list];
+    });
+  },
+
+  async refreshCatsAfterCapture() {
+    this.clearCache();
+    const cats = await this.fetchCats(true);
+    queryClient.setQueryData(queryKeys.cats, cats);
+    return cats;
   },
 };

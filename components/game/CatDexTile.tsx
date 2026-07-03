@@ -57,22 +57,27 @@ function CatDexTileComponent({ cat, index, onPress }: CatDexTileProps) {
 
 export const CatDexTile = memo(CatDexTileComponent);
 
+const SPACE = { xs: 8, md: 16 } as const;
+
 const styles = StyleSheet.create({
   tile: {
-    flex: 1,
+    width: "100%",
     borderRadius: GAME.radius.md,
     overflow: "hidden",
   },
   pressed: { opacity: 0.92, transform: [{ scale: 0.98 }] },
   gradient: {
-    padding: GAME.space.sm,
-    minHeight: 196,
-    gap: 6,
+    padding: SPACE.md,
+    minHeight: 192,
+    gap: SPACE.xs,
+    alignItems: "center",
     borderWidth: 1,
     borderColor: GAME.glassBorder,
     borderRadius: GAME.radius.md,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   index: {
+    alignSelf: "flex-start",
     color: GAME.textDim,
     fontSize: GAME.type.micro,
     fontWeight: GAME.weight.black,
@@ -81,7 +86,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 96,
-    marginVertical: 4,
+    marginVertical: SPACE.xs,
   },
   avatarRing: {
     borderWidth: 2,
@@ -101,16 +106,17 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   unknown: {
+    width: "100%",
     height: 96,
     borderRadius: GAME.radius.sm,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 4,
+    marginVertical: SPACE.xs,
     borderWidth: 1,
     borderColor: GAME.glassBorder,
     borderStyle: "dashed",
-    gap: 4,
+    gap: SPACE.xs,
   },
   unknownIcon: {
     color: GAME.textDim,
@@ -126,18 +132,22 @@ const styles = StyleSheet.create({
     color: GAME.text,
     fontSize: GAME.type.body,
     fontWeight: GAME.weight.black,
+    textAlign: "center",
+    width: "100%",
   },
   zone: {
     color: GAME.textMuted,
     fontSize: GAME.type.caption,
     fontWeight: GAME.weight.semibold,
+    textAlign: "center",
+    width: "100%",
   },
   rarityPill: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    alignSelf: "center",
+    paddingHorizontal: SPACE.xs,
+    paddingVertical: SPACE.xs / 2,
     borderRadius: GAME.radius.full,
-    marginTop: 2,
+    marginTop: SPACE.xs / 2,
   },
   rarityText: {
     fontSize: GAME.type.micro,

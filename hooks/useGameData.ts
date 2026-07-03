@@ -74,6 +74,7 @@ export function useChatDex(userId?: string) {
     discoveredCats,
     captures: capturesQuery.data ?? [],
     isLoading: capturesQuery.isLoading || catsQuery.isLoading,
+    isError: capturesQuery.isError || catsQuery.isError,
     refetch: () => {
       capturesQuery.refetch();
       catsQuery.refetch();
@@ -193,7 +194,6 @@ export function useProfileStats(userId?: string) {
     enabled: Boolean(userId),
   });
 }
-
 export function useNotifications(userId?: string) {
   return useQuery({
     queryKey: queryKeys.notifications(userId ?? ""),

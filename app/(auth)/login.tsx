@@ -14,8 +14,8 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import { AuthOrDivider, SocialAuthRow } from "@/components/auth/SocialAuthRow";
 import { GradientButton } from "@/components/auth/GradientButton";
-import { TextField } from "@/components/ui";
-import { AUTH, BORDER, POGO, RADIUS, SPACE, TYPE } from "@/constants/theme";
+import { GameTextField } from "@/components/ui/GameTextField";
+import { GAME } from "@/constants/game";
 import {
   signInWithApple,
   signInWithCredentials,
@@ -96,9 +96,8 @@ export default function LoginScreen() {
                 <AuthOrDivider />
 
                 <View style={styles.form}>
-                  <TextField
+                  <GameTextField
                     label="Identifiant"
-                    variant="glass"
                     value={identifier}
                     onChangeText={setIdentifier}
                     placeholder="ex: admin"
@@ -106,9 +105,8 @@ export default function LoginScreen() {
                     autoCorrect={false}
                     returnKeyType="next"
                   />
-                  <TextField
+                  <GameTextField
                     label="Mot de passe"
-                    variant="glass"
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Ton mot de passe"
@@ -120,12 +118,7 @@ export default function LoginScreen() {
               </View>
             </ScrollView>
 
-            <View
-              style={[
-                styles.stickyBottom,
-                { paddingBottom: Math.max(insets.bottom, SPACE.sm) },
-              ]}
-            >
+            <View style={[styles.stickyBottom, { paddingBottom: Math.max(insets.bottom, GAME.space.sm) }]}>
               <View style={styles.stickyInner}>
                 <GradientButton
                   label={loading ? "Connexion..." : "Se connecter"}
@@ -136,7 +129,7 @@ export default function LoginScreen() {
 
                 <Pressable
                   style={styles.linkWrap}
-                  hitSlop={SPACE.xs}
+                  hitSlop={GAME.space.xs}
                   onPress={() => {
                     authModeStore.setGuest(true);
                     router.push("/(onboarding)/welcome");
@@ -149,7 +142,7 @@ export default function LoginScreen() {
                 </Pressable>
 
                 <Link href="/(auth)/signup" asChild>
-                  <Pressable style={styles.linkWrap} hitSlop={SPACE.xs}>
+                  <Pressable style={styles.linkWrap} hitSlop={GAME.space.xs}>
                     <Text style={styles.linkTertiary}>
                       Pas encore de compte ?{" "}
                       <Text style={styles.linkTertiaryAction}>Créer un profil</Text>
@@ -168,89 +161,66 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   flex: { flex: 1 },
-  layout: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  scroll: {
-    flex: 1,
-  },
+  layout: { flex: 1, justifyContent: "space-between" },
+  scroll: { flex: 1 },
   scrollContent: {
-    paddingHorizontal: SPACE.sm,
-    paddingTop: SPACE.lg,
-    paddingBottom: SPACE.sm,
-    gap: SPACE.sm,
+    paddingHorizontal: GAME.space.md,
+    paddingTop: GAME.space.lg,
+    paddingBottom: GAME.space.sm,
+    gap: GAME.space.sm,
   },
-  brandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACE.xs,
-  },
-  brandEmoji: {
-    fontSize: TYPE.title + 4,
-  },
+  brandRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: GAME.space.xs },
+  brandEmoji: { fontSize: GAME.type.title + 4 },
   brand: {
-    color: POGO.sky,
-    fontSize: TYPE.display,
-    fontWeight: "900",
+    color: GAME.sky,
+    fontSize: GAME.type.display - 8,
+    fontWeight: GAME.weight.black,
     letterSpacing: 0.5,
-    textShadowColor: "rgba(0,0,0,0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
   },
   title: {
-    color: AUTH.text,
-    fontSize: TYPE.display - 4,
-    fontWeight: "900",
+    color: GAME.text,
+    fontSize: GAME.type.display - 8,
+    fontWeight: GAME.weight.black,
     textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
   },
   subtitle: {
-    color: AUTH.textMuted,
-    fontSize: TYPE.body - 2,
+    color: GAME.textMuted,
+    fontSize: GAME.type.body,
     textAlign: "center",
-    marginBottom: SPACE.xs,
+    marginBottom: GAME.space.xs,
   },
   card: {
-    backgroundColor: AUTH.card,
-    borderRadius: RADIUS.lg,
-    borderWidth: BORDER.hairline,
-    borderColor: AUTH.glassBorder,
-    padding: SPACE.sm,
-    gap: SPACE.sm,
+    backgroundColor: GAME.surfaceOverlay,
+    borderRadius: GAME.radius.lg,
+    borderWidth: GAME.border.hairline,
+    borderColor: GAME.glassBorder,
+    padding: GAME.space.md,
+    gap: GAME.space.sm,
   },
-  form: {
-    gap: SPACE.sm,
-  },
+  form: { gap: GAME.space.sm },
   stickyBottom: {
-    backgroundColor: AUTH.overlayBottom,
-    borderTopWidth: BORDER.hairline,
-    borderTopColor: AUTH.glassBorder,
-    paddingTop: SPACE.md,
+    backgroundColor: "rgba(13,27,42,0.92)",
+    borderTopWidth: GAME.border.hairline,
+    borderTopColor: GAME.glassBorder,
+    paddingTop: GAME.space.md,
   },
-  stickyInner: {
-    paddingHorizontal: SPACE.sm,
-    gap: SPACE.sm,
-  },
+  stickyInner: { paddingHorizontal: GAME.space.md, gap: GAME.space.sm },
   linkWrap: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACE.xs,
-    minHeight: SPACE.lg,
+    paddingVertical: GAME.space.xs,
+    minHeight: GAME.touch.min,
   },
   linkTertiary: {
-    color: AUTH.textMuted,
-    fontSize: TYPE.caption + 1,
-    fontWeight: "600",
+    color: GAME.textMuted,
+    fontSize: GAME.type.caption,
+    fontWeight: GAME.weight.medium,
     textAlign: "center",
-    lineHeight: SPACE.md - 4,
+    lineHeight: 20,
   },
   linkTertiaryAction: {
-    color: POGO.sky,
-    fontWeight: "800",
+    color: GAME.sky,
+    fontWeight: GAME.weight.bold,
     textDecorationLine: "underline",
   },
 });

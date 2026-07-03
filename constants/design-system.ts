@@ -90,6 +90,19 @@ export const DS = {
     default: 2,
     thick: 3,
   },
+  layout: {
+    tabBarHeight: 92,
+    tabScrollPadding: 108,
+    sheetBottomOffset: 88,
+    maxContentWidth: 420,
+  },
+  surface: {
+    light: "#F7F9FC",
+    lightMuted: "#E8EDF5",
+    lightText: "#1A202C",
+    lightTextMuted: "#4A5568",
+    card: "#FFFFFF",
+  },
 } as const;
 
 export const MOTION = {
@@ -145,6 +158,8 @@ export const GRADIENTS = {
   celebration: ["#FFCC00", "#FF9500", "#FF2D55"] as const,
   profile: ["#5856D6", "#AF52DE", "#0D1B2A"] as const,
   map: ["transparent", "rgba(13,27,42,0.6)"] as const,
+  capture: ["#0D1B2A", "#0a1628"] as const,
+  screen: ["#0D1B2A", "#1B2838"] as const,
   primary: ["#5AC8FA", "#007AFF"] as const,
   gold: ["#FFCC00", "#FF9500"] as const,
 };
@@ -163,6 +178,10 @@ export const GAME = {
   type: DS.type,
   weight: DS.weight,
   letterSpacing: DS.letterSpacing,
+  layout: DS.layout,
+  surface: DS.surface,
+  border: DS.border,
+  touch: DS.touch,
 } as const;
 
 /** Styles texte réutilisables — une seule source typographique */

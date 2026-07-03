@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { Navigation } from "lucide-react-native";
-import { GAME, ELEVATION } from "@/constants/game";
+import { GAME, ELEVATION, DS } from "@/constants/game";
 
 type MapControlsProps = {
   onRecenter: () => void;
@@ -28,15 +28,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   btn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(13,27,42,0.88)",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: DS.colors.surface,
     borderWidth: 1,
     borderColor: GAME.glassBorder,
     alignItems: "center",
     justifyContent: "center",
-    ...ELEVATION.md,
+    ...ELEVATION.sm,
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.96 }] },
 });

@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     backgroundColor: "transparent",
     borderTopWidth: 0,
-    height: 92,
+    height: GAME.layout.tabBarHeight,
     paddingTop: 10,
     paddingBottom: 28,
     ...ELEVATION.lg,

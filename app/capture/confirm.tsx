@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TextInput, View, Alert } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Image, ScrollView, StyleSheet, Text, View, Alert } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/game/ScreenHeader";
 import { FloatingButton } from "@/components/game/FloatingButton";
 import { GlassCard } from "@/components/game/GlassCard";
-import { GAME } from "@/constants/game";
+import { ScreenBackground } from "@/components/ui/ScreenBackground";
+import { GameTextField } from "@/components/ui/GameTextField";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { GAME, TEXT } from "@/constants/game";
 import { fetchProfile } from "@/lib/auth";
 import { catsService } from "@/services/cats.service";
 import { gameplayService } from "@/services/gameplay.service";
@@ -141,64 +143,59 @@ export default function ConfirmScreen() {
     }
   };
 
+  if (!analysis || !compressedUri) {
+    return (
+      <ScreenBackground variant="capture">
+        <ScreenHeader title="Confirmation" />
+        <SafeAreaView style={styles.safe} edges={["bottom"]}>
+          <View style={styles.missing}>
+            <Text style={styles.missingText}>Données de capture manquantes.</Text>
+            <FloatingButton label="Reprendre la capture" onPress={() => router.replace("/capture")} />
+          </View>
+        </SafeAreaView>
+      </ScreenBackground>
+    );
+  }
+
   return (
-    <LinearGradient colors={[GAME.navy, "#0a1628"]} style={styles.screen}>
+    <ScreenBackground variant="capture">
       <ScreenHeader title="Confirmation" subtitle="Valide la fiche du chat" />
       <SafeAreaView style={styles.safe} edges={["bottom"]}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.springify()}>
-            {compressedUri ? <Image source={{ uri: compressedUri }} style={styles.photo} /> : null}
+            <Image source={{ uri: compressedUri }} style={styles.photo} accessibilityLabel="Photo capturée" />
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(150).springify()}>
             <GlassCard>
-              <Text style={styles.label}>Nom du chat</Text>
-              <TextInput
-                style={styles.input}
-                value={catName}
-                onChangeText={setCatName}
-                placeholderTextColor={GAME.textDim}
-                accessibilityLabel="Nom du chat"
-              />
-              <Text style={styles.label}>Note d'observation</Text>
-              <TextInput
-                style={[styles.input, styles.textarea]}
+              <GameTextField label="Nom du chat" value={catName} onChangeText={setCatName} />
+              <GameTextField
+                label="Note d'observation"
                 value={note}
                 onChangeText={setNote}
                 multiline
-                placeholderTextColor={GAME.textDim}
-                accessibilityLabel="Note d'observation"
+                placeholder="Comportement, contexte…"
               />
             </GlassCard>
           </Animated.View>
 
-          {analysis ? (
-            <Animated.View entering={FadeInDown.delay(300).springify()}>
-              <GlassCard>
-                <Text style={styles.summaryTitle}>Résumé IA</Text>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Race</Text>
-                  <Text style={styles.summaryValue}>{analysis.breed}</Text>
+          <Animated.View entering={FadeInDown.delay(300).springify()}>
+            <GlassCard>
+              <SectionLabel>Résumé IA</SectionLabel>
+              {[
+                { label: "Race", value: analysis.breed },
+                { label: "Couleur", value: analysis.color },
+                { label: "Âge", value: analysis.estimatedAge ?? "adulte" },
+                { label: "Fourrure", value: analysis.furLength ?? "court" },
+                { label: "Motif", value: analysis.pattern },
+              ].map((row) => (
+                <View key={row.label} style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>{row.label}</Text>
+                  <Text style={styles.summaryValue}>{row.value}</Text>
                 </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Couleur</Text>
-                  <Text style={styles.summaryValue}>{analysis.color}</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Âge</Text>
-                  <Text style={styles.summaryValue}>{analysis.estimatedAge ?? "adulte"}</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Fourrure</Text>
-                  <Text style={styles.summaryValue}>{analysis.furLength ?? "court"}</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Motif</Text>
-                  <Text style={styles.summaryValue}>{analysis.pattern}</Text>
-                </View>
-              </GlassCard>
-            </Animated.View>
-          ) : null}
+              ))}
+            </GlassCard>
+          </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(450).springify()}>
             <FloatingButton
@@ -210,36 +207,14 @@ export default function ConfirmScreen() {
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
   safe: { flex: 1 },
   scroll: { padding: GAME.space.lg, paddingBottom: GAME.space.xxl, gap: GAME.space.lg },
-  photo: { width: "100%", height: 200, borderRadius: GAME.radius.lg, marginBottom: GAME.space.md },
-  label: {
-    color: GAME.textMuted,
-    fontSize: GAME.type.caption,
-    fontWeight: "800",
-    marginBottom: GAME.space.xs,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  input: {
-    color: GAME.text,
-    fontSize: GAME.type.body,
-    fontWeight: "700",
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: GAME.radius.sm,
-    padding: GAME.space.md,
-    borderWidth: 1,
-    borderColor: GAME.glassBorder,
-    marginBottom: GAME.space.md,
-  },
-  textarea: { minHeight: 80, textAlignVertical: "top" },
-  summaryTitle: { color: GAME.text, fontSize: GAME.type.subtitle, fontWeight: "800", marginBottom: GAME.space.md },
+  photo: { width: "100%", height: 200, borderRadius: GAME.radius.lg },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -247,6 +222,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: GAME.glassBorder,
   },
-  summaryLabel: { color: GAME.textMuted, fontWeight: "600" },
-  summaryValue: { color: GAME.text, fontWeight: "800" },
+  summaryLabel: { ...TEXT.caption, color: GAME.textMuted },
+  summaryValue: { ...TEXT.bodyStrong },
+  missing: { flex: 1, justifyContent: "center", padding: GAME.space.lg, gap: GAME.space.lg },
+  missingText: { ...TEXT.body, textAlign: "center", color: GAME.textMuted },
 });

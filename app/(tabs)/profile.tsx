@@ -10,8 +10,9 @@ import { GlassCard } from "@/components/game/GlassCard";
 import { StreakWeek } from "@/components/game/StreakWeek";
 import { StreakPill } from "@/components/game/StreakPill";
 import { XpBar } from "@/components/game/StatBar";
-import { LoadingView } from "@/components/feedback";
-import { GAME, GRADIENTS } from "@/constants/game";
+import { LoadingView, ErrorState } from "@/components/feedback";
+import { ScreenBackground } from "@/components/ui/ScreenBackground";
+import { GAME, TEXT } from "@/constants/game";
 import { xpToNextLevel } from "@/gameplay/xp/xp-rules";
 import { useBadges, useCaptures, useFriends, useProfileStats } from "@/hooks/useGameData";
 import { useRetention } from "@/hooks/useRetention";
@@ -27,7 +28,7 @@ const STATS_KEYS = [
 export default function ProfileScreen() {
   const router = useRouter();
   const { session } = useAuth();
-  const { data: profile, isLoading } = useProfileStats(session?.user.id);
+  const { data: profile, isLoading, isError, refetch } = useProfileStats(session?.user.id);
   const { data: captures = [] } = useCaptures(session?.user.id);
   const { data: badges = [] } = useBadges(session?.user.id);
   const { data: friends = [] } = useFriends(session?.user.id);
@@ -46,14 +47,26 @@ export default function ProfileScreen() {
 
   if (isLoading && !profile) {
     return (
-      <LinearGradient colors={[...GRADIENTS.profile]} style={styles.screen}>
+      <ScreenBackground variant="profile">
         <LoadingView label="Chargement du profil…" fullScreen />
-      </LinearGradient>
+      </ScreenBackground>
+    );
+  }
+
+  if (isError && !profile) {
+    return (
+      <ScreenBackground variant="profile">
+        <ErrorState
+          title="Profil indisponible"
+          message="Impossible de charger ton profil. Réessaie dans un instant."
+          onRetry={() => refetch()}
+        />
+      </ScreenBackground>
     );
   }
 
   return (
-    <LinearGradient colors={[...GRADIENTS.profile]} style={styles.screen}>
+    <ScreenBackground variant="profile">
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.springify()} style={styles.hero}>
@@ -158,14 +171,13 @@ export default function ProfileScreen() {
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
   safe: { flex: 1 },
-  scroll: { padding: GAME.space.lg, paddingBottom: 120, gap: GAME.space.lg },
+  scroll: { padding: GAME.space.lg, paddingBottom: GAME.layout.tabScrollPadding, gap: GAME.space.lg },
   hero: { alignItems: "center", gap: GAME.space.sm },
   avatarRing: {
     width: 100,
@@ -177,7 +189,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.4)",
   },
   avatar: { fontSize: 48 },
-  username: { color: GAME.text, fontSize: GAME.type.title, fontWeight: "900" },
+  username: { ...TEXT.title, textAlign: "center" },
   levelRow: { flexDirection: "row", alignItems: "center", gap: GAME.space.sm },
   levelBadge: {
     backgroundColor: GAME.gold,
@@ -188,8 +200,8 @@ const styles = StyleSheet.create({
   levelText: { color: GAME.navy, fontWeight: GAME.weight.black, fontSize: GAME.type.caption },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: GAME.space.sm },
   statCell: { width: "47%", alignItems: "center", flexGrow: 1 },
-  statValue: { color: GAME.text, fontSize: GAME.type.title, fontWeight: "900" },
-  statLabel: { color: GAME.textMuted, fontSize: GAME.type.caption, fontWeight: "700", marginTop: 4 },
+  statValue: { ...TEXT.title, textAlign: "center" },
+  statLabel: { ...TEXT.caption, marginTop: 4, textAlign: "center" },
   section: { gap: GAME.space.sm },
   linkList: { gap: GAME.space.sm },
 });

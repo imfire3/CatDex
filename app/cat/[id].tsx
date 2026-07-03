@@ -7,20 +7,23 @@ import {
   Share,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Heart, MapPin, ChevronLeft, MessageCircle, Share2, ThumbsUp } from "lucide-react-native";
+import { ChevronLeft, Heart, MapPin, MessageCircle, Share2, ThumbsUp } from "lucide-react-native";
 import { CatAvatar3D } from "@/components/game/CatAvatar3D";
 import { GlassCard } from "@/components/game/GlassCard";
 import { StatBar } from "@/components/game/StatBar";
 import { FloatingButton } from "@/components/game/FloatingButton";
-import { GAME, RARITY_COLORS } from "@/constants/game";
-import { LoadingView } from "@/components/feedback";
+import { EmptyState, LoadingView } from "@/components/feedback";
+import { GameTextField } from "@/components/ui/GameTextField";
+import { IconButton } from "@/components/ui/IconButton";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { TagChip } from "@/components/ui/TagChip";
+import { GAME, RARITY_COLORS, TEXT } from "@/constants/game";
 import { useCatDetail, useToggleFavorite } from "@/hooks/useGameData";
 import { useAuth } from "@/providers/AuthProvider";
 import { gameplayService } from "@/services/gameplay.service";
@@ -63,7 +66,13 @@ export default function CatProfileScreen() {
   if (!cat) {
     return (
       <View style={styles.root}>
-        <LoadingView label="Chat introuvable" fullScreen />
+        <EmptyState
+          emoji="🐾"
+          title="Chat introuvable"
+          description="Cette fiche n'existe plus ou a été retirée."
+          actionLabel="Retour"
+          onAction={() => router.back()}
+        />
       </View>
     );
   }
@@ -78,17 +87,16 @@ export default function CatProfileScreen() {
         style={styles.heroOverlay}
       />
 
-      <Pressable
-        style={[styles.backBtn, { top: insets.top + 8 }]}
+      <IconButton
+        icon={ChevronLeft}
         onPress={() => router.back()}
-        accessibilityRole="button"
         accessibilityLabel="Retour"
-      >
-        <ChevronLeft color={GAME.text} size={28} />
-      </Pressable>
+        variant="dark"
+        style={[styles.backBtn, { top: insets.top + 8 }]}
+      />
 
-      <Pressable
-        style={[styles.favBtn, { top: insets.top + 8 }]}
+      <IconButton
+        icon={Heart}
         onPress={() => {
           const next = !favorite;
           setFavorite(next);
@@ -96,15 +104,11 @@ export default function CatProfileScreen() {
             toggleFavorite.mutate({ catId: cat.id, favorite: next });
           }
         }}
-        accessibilityRole="button"
         accessibilityLabel={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-      >
-        <Heart
-          color={favorite ? GAME.pink : GAME.text}
-          fill={favorite ? GAME.pink : "transparent"}
-          size={24}
-        />
-      </Pressable>
+        variant="dark"
+        color={favorite ? GAME.pink : GAME.text}
+        style={[styles.favBtn, { top: insets.top + 8 }]}
+      />
 
       <ScrollView
         style={styles.scroll}
@@ -142,9 +146,7 @@ export default function CatProfileScreen() {
             <Text style={styles.desc}>{cat.description}</Text>
             <View style={styles.tags}>
               {[cat.breed, cat.color, cat.pattern].map((t) => (
-                <View key={t} style={styles.tag}>
-                  <Text style={styles.tagText}>{t}</Text>
-                </View>
+                <TagChip key={t} label={t} />
               ))}
             </View>
           </GlassCard>
@@ -152,7 +154,7 @@ export default function CatProfileScreen() {
 
           <Animated.View entering={FadeInDown.delay(250).springify()}>
             <GlassCard variant="elevated">
-            <Text style={styles.sectionTitle}>Statistiques</Text>
+            <SectionLabel>Statistiques</SectionLabel>
             <View style={styles.stats}>
               <StatBar label="Charme" value={cat.stats.charme} color={GAME.pink} />
               <StatBar label="Agilité" value={cat.stats.agilité} color={GAME.sky} />
@@ -192,15 +194,14 @@ export default function CatProfileScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(280).springify()}>
-          <GlassCard>
-            <Text style={styles.sectionTitle}>Commentaires</Text>
+            <GlassCard>
+            <SectionLabel>Commentaires</SectionLabel>
             <View style={styles.commentInputRow}>
-              <TextInput
-                style={styles.commentInput}
-                placeholder="Ajouter un commentaire..."
-                placeholderTextColor={GAME.textDim}
+              <GameTextField
                 value={commentText}
                 onChangeText={setCommentText}
+                placeholder="Ajouter un commentaire..."
+                style={styles.commentField}
               />
               <Pressable
                 style={styles.commentSend}
@@ -226,7 +227,7 @@ export default function CatProfileScreen() {
 
         {cat.gallery.length > 0 ? (
           <Animated.View entering={FadeInDown.delay(350).springify()}>
-            <Text style={styles.sectionTitle}>Galerie</Text>
+            <SectionLabel>Galerie</SectionLabel>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -241,7 +242,7 @@ export default function CatProfileScreen() {
 
         {cat.observations.length > 0 ? (
           <Animated.View entering={FadeInDown.delay(450).springify()}>
-            <Text style={styles.sectionTitle}>Historique d'observations</Text>
+            <SectionLabel>Historique d'observations</SectionLabel>
             <View style={styles.obsList}>
               {cat.observations.map((obs) => (
                 <GlassCard key={obs.date} style={styles.obsCard}>
@@ -276,23 +277,11 @@ const styles = StyleSheet.create({
   backBtn: {
     position: "absolute",
     left: GAME.space.md,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    alignItems: "center",
-    justifyContent: "center",
     zIndex: 10,
   },
   favBtn: {
     position: "absolute",
     right: GAME.space.md,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    alignItems: "center",
-    justifyContent: "center",
     zIndex: 10,
   },
   scroll: { flex: 1, marginTop: 260 },
@@ -316,41 +305,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   rarityText: { fontWeight: "900", fontSize: GAME.type.caption, textTransform: "capitalize" },
-  name: { color: GAME.text, fontSize: GAME.type.hero, fontWeight: "900" },
+  name: { ...TEXT.hero, textAlign: "center" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   zone: { color: GAME.textMuted, fontWeight: "700", fontSize: GAME.type.body },
   dot: { color: GAME.textDim },
   mood: { color: GAME.sky, fontWeight: "700", fontSize: GAME.type.body, textTransform: "capitalize" },
-  desc: { color: GAME.text, fontSize: GAME.type.body, lineHeight: 24, fontWeight: "500" },
+  desc: { ...TEXT.body, lineHeight: 24 },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: GAME.space.sm, marginTop: GAME.space.md },
-  tag: {
-    backgroundColor: "rgba(90,200,250,0.12)",
-    paddingHorizontal: GAME.space.md,
-    paddingVertical: GAME.space.xs,
-    borderRadius: GAME.radius.full,
-  },
-  tagText: { color: GAME.sky, fontWeight: "700", fontSize: GAME.type.caption },
-  sectionTitle: {
-    color: GAME.text,
-    fontSize: GAME.type.subtitle,
-    fontWeight: "900",
-    marginBottom: GAME.space.sm,
-  },
-  stats: { gap: GAME.space.md },
+  stats: { gap: GAME.space.md, marginTop: GAME.space.sm },
   socialRow: { flexDirection: "row", justifyContent: "space-around", alignItems: "center" },
   socialBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   socialCount: { color: GAME.text, fontWeight: "800" },
   socialLabel: { color: GAME.textMuted, fontWeight: "700", fontSize: GAME.type.caption },
-  commentInputRow: { flexDirection: "row", gap: GAME.space.sm, marginBottom: GAME.space.md },
-  commentInput: {
-    flex: 1,
-    color: GAME.text,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: GAME.radius.sm,
-    padding: GAME.space.sm,
-    borderWidth: 1,
-    borderColor: GAME.glassBorder,
-  },
+  commentInputRow: { flexDirection: "row", gap: GAME.space.sm, marginTop: GAME.space.sm, marginBottom: GAME.space.md },
+  commentField: { flex: 1, marginBottom: 0 },
   commentSend: {
     backgroundColor: GAME.sky,
     borderRadius: GAME.radius.sm,

@@ -46,6 +46,7 @@ export function ChatDexToolbar() {
             label={f.label}
             selected={chatdexFilter === f.id}
             onPress={() => setChatdexFilter(f.id)}
+            style={chatdexFilter !== f.id ? styles.filterChip : undefined}
           />
         ))}
       </View>
@@ -53,17 +54,25 @@ export function ChatDexToolbar() {
   );
 }
 
+const SPACE = { xs: 8, md: 16 } as const;
+
 const styles = StyleSheet.create({
-  wrap: { gap: GAME.space.sm, paddingHorizontal: GAME.space.lg },
+  wrap: {
+    width: "100%",
+    gap: SPACE.xs,
+    paddingHorizontal: SPACE.md,
+    alignItems: "center",
+  },
   searchRow: {
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    gap: GAME.space.sm,
-    backgroundColor: GAME.glass,
+    gap: SPACE.xs,
+    backgroundColor: "rgba(255,255,255,0.24)",
     borderRadius: GAME.radius.full,
     borderWidth: 1,
     borderColor: GAME.glassBorder,
-    paddingHorizontal: GAME.space.md,
+    paddingHorizontal: SPACE.md,
     minHeight: 48,
   },
   input: {
@@ -71,7 +80,13 @@ const styles = StyleSheet.create({
     color: GAME.text,
     fontSize: GAME.type.body,
     fontWeight: GAME.weight.semibold,
-    paddingVertical: GAME.space.sm,
+    paddingVertical: SPACE.xs,
   },
-  filters: { flexDirection: "row", gap: GAME.space.sm },
+  filters: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: SPACE.xs,
+  },
+  filterChip: { backgroundColor: "rgba(255,255,255,0.12)" },
 });

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Flame } from "lucide-react-native";
-import { GAME } from "@/constants/game";
+import { GAME, ELEVATION } from "@/constants/game";
 import { nextStreakMilestone } from "@/gameplay/retention/daily-bonus";
 
 type StreakPillProps = {
@@ -15,7 +15,12 @@ export function StreakPill({ streak, onPress, compact }: StreakPillProps) {
 
   return (
     <Pressable
-      style={[styles.pill, active && styles.pillActive, compact && styles.pillCompact]}
+      style={[
+        styles.pill,
+        compact && styles.pillCompact,
+        active && styles.pillActive,
+        compact && active && styles.pillCompactActive,
+      ]}
       onPress={onPress}
       disabled={!onPress}
       accessibilityRole="button"
@@ -46,7 +51,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,204,0,0.15)",
     borderColor: "rgba(255,204,0,0.45)",
   },
-  pillCompact: { paddingHorizontal: 8, paddingVertical: 4 },
+  pillCompact: {
+    paddingHorizontal: GAME.space.sm,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: "center",
+    backgroundColor: GAME.glassStrong,
+    ...ELEVATION.sm,
+  },
+  pillCompactActive: {
+    backgroundColor: "rgba(255,204,0,0.28)",
+    borderColor: "rgba(255,204,0,0.55)",
+  },
   count: { color: GAME.textDim, fontWeight: "900", fontSize: 13 },
   countActive: { color: GAME.gold },
   hint: { color: GAME.textMuted, fontSize: 10, fontWeight: "600", maxWidth: 120 },

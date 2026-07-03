@@ -19,7 +19,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "CatDex utilise la caméra pour capturer des chats et créer des cartes.",
         "NSLocationWhenInUseUsageDescription": "CatDex utilise votre position pour afficher les chats à proximité par zone.",
-        "NSPhotoLibraryUsageDescription": "CatDex accède à vos photos pour importer une capture de chat."
+        "NSPhotoLibraryUsageDescription": "CatDex accède à vos photos pour importer une capture de chat.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

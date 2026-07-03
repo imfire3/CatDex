@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { AUTH, BORDER, POGO, RADIUS, SPACE, TOUCH, TYPE } from "@/constants/theme";
+import { GAME } from "@/constants/game";
 
 type SocialAuthRowProps = {
   onGoogle: () => void;
@@ -12,32 +12,28 @@ export function SocialAuthRow({ onGoogle, onApple, disabled }: SocialAuthRowProp
   return (
     <View style={styles.row} testID="social-auth-row">
       <Pressable
-        style={({ pressed }) => [
-          styles.btn,
-          pressed && styles.btnPressed,
-          disabled && styles.btnDisabled,
-        ]}
+        style={({ pressed }) => [styles.btn, pressed && styles.btnPressed, disabled && styles.btnDisabled]}
         onPress={onGoogle}
         disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel="Connexion avec Google"
         testID="google-auth-btn"
       >
         <View style={styles.btnInner}>
-          <Ionicons name="logo-google" size={20} color={POGO.white} />
+          <Ionicons name="logo-google" size={20} color={GAME.text} />
           <Text style={styles.btnText}>Google</Text>
         </View>
       </Pressable>
       <Pressable
-        style={({ pressed }) => [
-          styles.btn,
-          pressed && styles.btnPressed,
-          disabled && styles.btnDisabled,
-        ]}
+        style={({ pressed }) => [styles.btn, pressed && styles.btnPressed, disabled && styles.btnDisabled]}
         onPress={onApple}
         disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel="Connexion avec Apple"
         testID="apple-auth-btn"
       >
         <View style={styles.btnInner}>
-          <Ionicons name="logo-apple" size={22} color={POGO.white} />
+          <Ionicons name="logo-apple" size={22} color={GAME.text} />
           <Text style={styles.btnText}>Apple</Text>
         </View>
       </Pressable>
@@ -56,52 +52,28 @@ export function AuthOrDivider({ label = "Ou" }: { label?: string }) {
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    gap: SPACE.xs,
-  },
+  row: { flexDirection: "row", gap: GAME.space.xs },
   btn: {
     flex: 1,
-    minHeight: TOUCH.button,
-    backgroundColor: AUTH.glass,
-    borderRadius: RADIUS.md,
-    borderWidth: BORDER.default,
-    borderColor: AUTH.glassBorder,
+    minHeight: GAME.touch.button,
+    backgroundColor: GAME.glass,
+    borderRadius: GAME.radius.md,
+    borderWidth: GAME.border.default,
+    borderColor: GAME.glassBorder,
   },
   btnInner: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: SPACE.xs,
-    paddingVertical: SPACE.xs,
-    paddingHorizontal: SPACE.xs,
+    gap: GAME.space.xs,
+    paddingVertical: GAME.space.xs,
+    paddingHorizontal: GAME.space.xs,
   },
-  btnPressed: {
-    opacity: 0.88,
-  },
-  btnDisabled: {
-    opacity: 0.5,
-  },
-  btnText: {
-    color: AUTH.text,
-    fontWeight: "800",
-    fontSize: TYPE.body - 2,
-  },
-  dividerWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACE.sm,
-    paddingVertical: SPACE.xs / 2,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: AUTH.divider,
-  },
-  dividerText: {
-    color: AUTH.textMuted,
-    fontWeight: "700",
-    fontSize: TYPE.caption,
-  },
+  btnPressed: { opacity: 0.88 },
+  btnDisabled: { opacity: 0.5 },
+  btnText: { color: GAME.text, fontWeight: GAME.weight.bold, fontSize: GAME.type.body },
+  dividerWrap: { flexDirection: "row", alignItems: "center", gap: GAME.space.sm, paddingVertical: GAME.space.xs },
+  dividerLine: { flex: 1, height: 1, backgroundColor: GAME.glassBorder },
+  dividerText: { color: GAME.textMuted, fontWeight: GAME.weight.semibold, fontSize: GAME.type.caption },
 });

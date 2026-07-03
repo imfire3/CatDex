@@ -5,17 +5,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  Flashlight,
-  X,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react-native";
+import { Flashlight, Grid3X3, X, ZoomIn, ZoomOut } from "lucide-react-native";
 import { FloatingButton } from "@/components/game/FloatingButton";
-import { Camera } from "lucide-react-native";
+import { PokeballButton } from "@/components/game/PokeballButton";
 import { GAME } from "@/constants/game";
 import { cameraService } from "@/services/camera.service";
 import { catsService } from "@/services/cats.service";
+import { mapService } from "@/services/map.service";
 import { useCaptureStore } from "@/stores";
 import { gameplayService } from "@/services/gameplay.service";
 import { useLiveLocation } from "@/providers/LocationProvider";
@@ -36,7 +32,12 @@ export default function CameraScreen() {
     return (
       <View style={styles.permission}>
         <Text style={styles.permissionText}>Autorise la caméra pour capturer un chat.</Text>
-        <Pressable style={styles.permissionBtn} onPress={requestPermission} accessibilityRole="button" accessibilityLabel="Autoriser la caméra">
+        <Pressable
+          style={styles.permissionBtn}
+          onPress={requestPermission}
+          accessibilityRole="button"
+          accessibilityLabel="Autoriser la caméra"
+        >
           <Text style={styles.permissionBtnText}>Autoriser</Text>
         </Pressable>
       </View>
@@ -63,10 +64,14 @@ export default function CameraScreen() {
     setCompressed(previewUri);
 
     try {
-      const coords =
+      let coords =
         location.permission === "granted"
           ? { latitude: location.latitude, longitude: location.longitude }
           : null;
+      if (!coords) {
+        const current = await mapService.getCurrentLocation();
+        if (current) coords = current;
+      }
       if (coords) {
         const zones = await catsService.fetchZones();
         const zone = await catsService.resolveZoneForLocation(
@@ -110,27 +115,33 @@ export default function CameraScreen() {
         zoom={zoom}
       />
       <LinearGradient
-        colors={["rgba(0,0,0,0.5)", "transparent", "rgba(0,0,0,0.7)"]}
+        colors={["rgba(0,0,0,0.55)", "transparent", "rgba(0,0,0,0.75)"]}
         style={StyleSheet.absoluteFill}
       />
 
       <View style={[styles.topBar, { paddingTop: insets.top + GAME.space.sm }]}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Fermer la caméra">
+        <Pressable
+          style={styles.iconBtn}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Fermer la caméra"
+        >
           <X color={GAME.text} size={24} strokeWidth={2.5} />
         </Pressable>
-        <View style={styles.topRight}>
-          <Pressable
-            style={styles.iconBtn}
-            onPress={() => setFlash(!flash)}
-            accessibilityRole="button"
-            accessibilityLabel={flash ? "Désactiver le flash" : "Activer le flash"}
-          >
-            <Flashlight color={flash ? GAME.gold : GAME.text} size={22} />
-          </Pressable>
-        </View>
+
+        <Pressable
+          style={styles.chatDexBtn}
+          onPress={() => router.push("/(tabs)/chatdex")}
+          accessibilityRole="button"
+          accessibilityLabel="Ouvrir le ChatDex"
+        >
+          <Grid3X3 color={GAME.text} size={20} strokeWidth={2.5} />
+          <Text style={styles.chatDexLabel}>ChatDex</Text>
+        </Pressable>
       </View>
 
       <Animated.View entering={FadeIn.delay(300)} style={styles.viewfinder}>
+        <View style={styles.pogoRing} />
         <View style={styles.cornerTL} />
         <View style={styles.cornerTR} />
         <View style={styles.cornerBL} />
@@ -144,7 +155,15 @@ export default function CameraScreen() {
         </Animated.View>
       ) : null}
 
-      <View style={[styles.zoomRow, { top: insets.top + 70 }]}>
+      <View style={[styles.zoomRow, { top: insets.top + 76 }]}>
+        <Pressable
+          style={styles.zoomBtn}
+          onPress={() => setFlash(!flash)}
+          accessibilityRole="button"
+          accessibilityLabel={flash ? "Désactiver le flash" : "Activer le flash"}
+        >
+          <Flashlight color={flash ? GAME.gold : GAME.text} size={20} />
+        </Pressable>
         <Pressable
           style={styles.zoomBtn}
           onPress={() => setZoom(Math.max(0, zoom - 0.1))}
@@ -165,15 +184,7 @@ export default function CameraScreen() {
       </View>
 
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + GAME.space.lg }]}>
-        <View style={styles.gallerySpacer} />
-        <FloatingButton
-          variant="capture"
-          icon={Camera}
-          size="xl"
-          onPress={takePhoto}
-          accessibilityLabel="Prendre une photo"
-        />
-        <View style={styles.gallerySpacer} />
+        <PokeballButton onPress={takePhoto} disabled={capturing} size={84} />
       </View>
     </View>
   );
@@ -188,9 +199,21 @@ const corner = {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
-  permission: { flex: 1, backgroundColor: GAME.navy, alignItems: "center", justifyContent: "center", padding: GAME.space.lg, gap: GAME.space.md },
+  permission: {
+    flex: 1,
+    backgroundColor: GAME.navy,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: GAME.space.lg,
+    gap: GAME.space.md,
+  },
   permissionText: { color: GAME.text, textAlign: "center", fontWeight: "700" },
-  permissionBtn: { backgroundColor: GAME.sky, paddingHorizontal: GAME.space.lg, paddingVertical: GAME.space.md, borderRadius: GAME.radius.full },
+  permissionBtn: {
+    backgroundColor: GAME.sky,
+    paddingHorizontal: GAME.space.lg,
+    paddingVertical: GAME.space.md,
+    borderRadius: GAME.radius.full,
+  },
   permissionBtnText: { color: GAME.navy, fontWeight: "900" },
   topBar: {
     position: "absolute",
@@ -199,10 +222,10 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: GAME.space.md,
     zIndex: 10,
   },
-  topRight: { flexDirection: "row", gap: GAME.space.sm },
   iconBtn: {
     width: 44,
     height: 44,
@@ -213,25 +236,43 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.15)",
   },
+  chatDexBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: GAME.space.sm,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(13,27,42,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(90,200,250,0.45)",
+  },
+  chatDexLabel: { color: GAME.text, fontWeight: "800", fontSize: GAME.type.caption },
   viewfinder: {
     position: "absolute",
-    top: "22%",
-    left: "10%",
-    right: "10%",
-    height: "42%",
+    top: "20%",
+    left: "8%",
+    right: "8%",
+    height: "44%",
     alignItems: "center",
     justifyContent: "flex-end",
     paddingBottom: GAME.space.md,
   },
-  cornerTL: { ...corner, top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 },
-  cornerTR: { ...corner, top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 },
-  cornerBL: { ...corner, bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 },
-  cornerBR: { ...corner, bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
+  pogoRing: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: GAME.radius.lg,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.35)",
+  },
+  cornerTL: { ...corner, top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4 },
+  cornerTR: { ...corner, top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4 },
+  cornerBL: { ...corner, bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4 },
+  cornerBR: { ...corner, bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4 },
   hint: {
-    color: "rgba(255,255,255,0.85)",
-    fontWeight: "700",
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "800",
     fontSize: GAME.type.caption,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     paddingHorizontal: GAME.space.md,
     paddingVertical: GAME.space.xs,
     borderRadius: GAME.radius.full,
@@ -274,13 +315,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
-    paddingHorizontal: GAME.space.xl,
+    justifyContent: "center",
   },
-  gallerySpacer: { width: 64 },
   previewOverlay: { ...StyleSheet.absoluteFillObject, top: "55%" },
-  previewActions: { position: "absolute", bottom: 0, left: 0, right: 0, padding: GAME.space.lg, gap: GAME.space.md },
+  previewActions: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: GAME.space.lg,
+    gap: GAME.space.md,
+  },
   retryText: { color: GAME.text, fontWeight: "800", textAlign: "center" },
 });
