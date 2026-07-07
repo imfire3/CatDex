@@ -1,10 +1,11 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/game/ScreenHeader";
 import { GlassCard } from "@/components/game/GlassCard";
 import { EmptyState, ErrorState, LoadingView } from "@/components/feedback";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { ScreenBackground } from "@/components/ui/ScreenBackground";
 import { GAME } from "@/constants/game";
 import { useBadges } from "@/hooks/useGameData";
 import { useAuth } from "@/providers/AuthProvider";
@@ -15,7 +16,7 @@ export default function BadgesScreen() {
   const unlocked = badges.filter((b) => b.unlocked).length;
 
   return (
-    <LinearGradient colors={[GAME.navy, GAME.navyLight]} style={styles.screen}>
+    <ScreenBackground>
       <ScreenHeader
         title="Badges"
         subtitle={badges.length > 0 ? `${unlocked}/${badges.length} débloqués` : "Aucun badge"}
@@ -49,9 +50,7 @@ export default function BadgesScreen() {
                     </Text>
                     <Text style={styles.desc}>{badge.description}</Text>
                     {badge.progress !== undefined && !badge.unlocked ? (
-                      <View style={styles.progressTrack}>
-                        <View style={[styles.progressFill, { width: `${badge.progress}%` }]} />
-                      </View>
+                      <ProgressBar progress={badge.progress} height={8} variant="sky" style={styles.progress} />
                     ) : null}
                   </View>
                   {badge.unlocked ? (
@@ -65,12 +64,11 @@ export default function BadgesScreen() {
           </ScrollView>
         )}
       </SafeAreaView>
-    </LinearGradient>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
   safe: { flex: 1 },
   scroll: { padding: GAME.space.lg, gap: GAME.space.md, paddingBottom: GAME.space.xxl },
   card: { flexDirection: "row", alignItems: "center", gap: GAME.space.md },
@@ -81,14 +79,7 @@ const styles = StyleSheet.create({
   title: { color: GAME.text, fontSize: GAME.type.body, fontWeight: "900" },
   titleLocked: { color: GAME.textMuted },
   desc: { color: GAME.textMuted, fontSize: GAME.type.caption, lineHeight: 18 },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    marginTop: GAME.space.sm,
-    overflow: "hidden",
-  },
-  progressFill: { height: "100%", backgroundColor: GAME.sky, borderRadius: 2 },
+  progress: { marginTop: GAME.space.sm },
   unlockedBadge: {
     width: 28,
     height: 28,

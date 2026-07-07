@@ -20,10 +20,10 @@ import { useCaptureStore } from "@/stores";
 import { useReduceMotion } from "@/hooks/useReduceMotion";
 
 const STEPS = [
-  "Analyse de l'image...",
-  "Détection féline...",
-  "Identification de la race...",
-  "Analyse des traits...",
+  "Détection de la silhouette...",
+  "Lecture des couleurs et motifs...",
+  "Estimation de la rareté...",
+  "Préparation de la fiche ChatDex...",
 ];
 
 export default function LoadingScreen() {
@@ -31,6 +31,7 @@ export default function LoadingScreen() {
   const reduceMotion = useReduceMotion();
   const rotation = useSharedValue(0);
   const [failed, setFailed] = useState(false);
+  const [progress, setProgress] = useState(12);
   const { compressedUri, setAnalysis } = useCaptureStore();
 
   useEffect(() => {
@@ -40,6 +41,9 @@ export default function LoadingScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    const timer = setInterval(() => {
+      setProgress((value) => Math.min(value + (value < 72 ? 8 : 3), 92));
+    }, 420);
 
     (async () => {
       if (!compressedUri) {
@@ -50,6 +54,7 @@ export default function LoadingScreen() {
       try {
         const analysis = await gameplayService.analyzePhoto(compressedUri);
         if (cancelled) return;
+        setProgress(100);
 
         setAnalysis({
           color: analysis.color,
@@ -72,6 +77,7 @@ export default function LoadingScreen() {
 
     return () => {
       cancelled = true;
+      clearInterval(timer);
     };
   }, [compressedUri, router, setAnalysis]);
 
@@ -103,10 +109,10 @@ export default function LoadingScreen() {
           <View style={styles.iconCenter}>
             <Sparkles color={GAME.gold} size={36} strokeWidth={2} />
           </View>
-          <Text style={styles.title}>Analyse IA</Text>
-          <Text style={styles.subtitle}>Identification du chat en cours</Text>
+          <Text style={styles.title}>Scan félin</Text>
+          <Text style={styles.subtitle}>Le ChatDex compare silhouette, pelage et rareté.</Text>
 
-          <ProgressBar progress={85} variant="sky" style={styles.progress} />
+          <ProgressBar progress={progress} variant="sky" showPercent style={styles.progress} />
 
           <View style={styles.steps}>
             {STEPS.map((step, i) => (

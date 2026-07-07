@@ -35,9 +35,9 @@ export const DS = {
     info: "#5AC8FA",
   },
   space: {
-    xxs: 4,
+    xxs: 8,
     xs: 8,
-    sm: 12,
+    sm: 16,
     md: 16,
     lg: 24,
     xl: 32,
@@ -103,6 +103,17 @@ export const DS = {
     lightTextMuted: "#4A5568",
     card: "#FFFFFF",
   },
+  glass: {
+    subtle: "rgba(255,255,255,0.08)",
+    default: "rgba(255,255,255,0.12)",
+    strong: "rgba(255,255,255,0.18)",
+    premium: "rgba(13,27,42,0.78)",
+  },
+  icon: {
+    sm: 16,
+    md: 24,
+    lg: 32,
+  },
 } as const;
 
 export const MOTION = {
@@ -162,6 +173,9 @@ export const GRADIENTS = {
   screen: ["#0D1B2A", "#1B2838"] as const,
   primary: ["#5AC8FA", "#007AFF"] as const,
   gold: ["#FFCC00", "#FF9500"] as const,
+  captureAction: ["#FF3B30", "#FF6B5A"] as const,
+  rare: ["#5AC8FA", "#5856D6"] as const,
+  legendary: ["#FFCC00", "#FF9500", "#FF2D55"] as const,
 };
 
 export const RARITY_COLORS = {
@@ -182,6 +196,9 @@ export const GAME = {
   surface: DS.surface,
   border: DS.border,
   touch: DS.touch,
+  opacity: DS.opacity,
+  glassToken: DS.glass,
+  icon: DS.icon,
 } as const;
 
 /** Styles texte réutilisables — une seule source typographique */

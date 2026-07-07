@@ -54,25 +54,23 @@ export function ChatDexToolbar() {
   );
 }
 
-const SPACE = { xs: 8, md: 16 } as const;
-
 const styles = StyleSheet.create({
   wrap: {
     width: "100%",
-    gap: SPACE.xs,
-    paddingHorizontal: SPACE.md,
+    gap: GAME.space.xs,
+    paddingHorizontal: GAME.space.md,
     alignItems: "center",
   },
   searchRow: {
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACE.xs,
-    backgroundColor: "rgba(255,255,255,0.24)",
+    gap: GAME.space.xs,
+    backgroundColor: GAME.glassToken.strong,
     borderRadius: GAME.radius.full,
     borderWidth: 1,
     borderColor: GAME.glassBorder,
-    paddingHorizontal: SPACE.md,
+    paddingHorizontal: GAME.space.md,
     minHeight: 48,
   },
   input: {
@@ -80,13 +78,13 @@ const styles = StyleSheet.create({
     color: GAME.text,
     fontSize: GAME.type.body,
     fontWeight: GAME.weight.semibold,
-    paddingVertical: SPACE.xs,
+    paddingVertical: GAME.space.xs,
   },
   filters: {
     width: "100%",
     flexDirection: "row",
     justifyContent: "center",
-    gap: SPACE.xs,
+    gap: GAME.space.xs,
   },
   filterChip: { backgroundColor: "rgba(255,255,255,0.12)" },
 });

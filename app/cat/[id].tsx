@@ -22,11 +22,13 @@ import { EmptyState, LoadingView } from "@/components/feedback";
 import { GameTextField } from "@/components/ui/GameTextField";
 import { IconButton } from "@/components/ui/IconButton";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { ScreenBackground } from "@/components/ui/ScreenBackground";
 import { TagChip } from "@/components/ui/TagChip";
 import { GAME, RARITY_COLORS, TEXT } from "@/constants/game";
 import { useCatDetail, useToggleFavorite } from "@/hooks/useGameData";
 import { useAuth } from "@/providers/AuthProvider";
 import { gameplayService } from "@/services/gameplay.service";
+import { useAppStore } from "@/stores";
 
 const { width } = Dimensions.get("window");
 
@@ -36,6 +38,7 @@ export default function CatProfileScreen() {
   const insets = useSafeAreaInsets();
   const { session, profile } = useAuth();
   const { data: cat, isLoading } = useCatDetail(id ?? "", session?.user.id);
+  const setPendingMapFocus = useAppStore((s) => s.setPendingMapFocus);
   const toggleFavorite = useToggleFavorite(session?.user.id ?? "");
   const [favorite, setFavorite] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -57,15 +60,15 @@ export default function CatProfileScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.root}>
+      <ScreenBackground>
         <LoadingView label="Chargement de la fiche…" fullScreen />
-      </View>
+      </ScreenBackground>
     );
   }
 
   if (!cat) {
     return (
-      <View style={styles.root}>
+      <ScreenBackground>
         <EmptyState
           emoji="🐾"
           title="Chat introuvable"
@@ -73,11 +76,15 @@ export default function CatProfileScreen() {
           actionLabel="Retour"
           onAction={() => router.back()}
         />
-      </View>
+      </ScreenBackground>
     );
   }
 
   const rarityColor = RARITY_COLORS[cat.rarity];
+  const focusOnMap = () => {
+    setPendingMapFocus({ catId: cat.id, latitude: cat.latitude, longitude: cat.longitude });
+    router.push("/(tabs)/map");
+  };
 
   return (
     <View style={styles.root}>
@@ -190,6 +197,9 @@ export default function CatProfileScreen() {
                 <Text style={styles.socialCount}>{comments.length}</Text>
               </View>
             </View>
+            <Text style={styles.localSocialHint}>
+              Likes et commentaires sont privés sur cet appareil pendant la bêta sociale.
+            </Text>
           </GlassCard>
         </Animated.View>
 
@@ -260,11 +270,18 @@ export default function CatProfileScreen() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + GAME.space.md }]}>
         <FloatingButton
-          label="Voir sur la carte"
+          label={cat.discovered ? "Voir sur la carte" : "Suivre la piste"}
           variant="glass"
           icon={MapPin}
-          onPress={() => router.push("/(tabs)/map")}
+          onPress={focusOnMap}
         />
+        {!cat.discovered ? (
+          <FloatingButton
+            label="Capturer ce chat"
+            onPress={() => router.push("/capture")}
+            style={styles.footerCapture}
+          />
+        ) : null}
       </View>
     </View>
   );
@@ -317,6 +334,7 @@ const styles = StyleSheet.create({
   socialBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   socialCount: { color: GAME.text, fontWeight: "800" },
   socialLabel: { color: GAME.textMuted, fontWeight: "700", fontSize: GAME.type.caption },
+  localSocialHint: { ...TEXT.micro, textAlign: "center", marginTop: GAME.space.md, color: GAME.textMuted },
   commentInputRow: { flexDirection: "row", gap: GAME.space.sm, marginTop: GAME.space.sm, marginBottom: GAME.space.md },
   commentField: { flex: 1, marginBottom: 0 },
   commentSend: {
@@ -354,5 +372,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(13,27,42,0.95)",
     borderTopWidth: 1,
     borderTopColor: GAME.glassBorder,
+    gap: GAME.space.sm,
   },
+  footerCapture: { alignSelf: "center" },
 });
