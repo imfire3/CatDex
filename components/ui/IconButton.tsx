@@ -41,7 +41,7 @@ export function IconButton({
           opacity: pressed ? 0.88 : 1,
           transform: [{ scale: pressed ? 0.96 : 1 }],
         },
-        typeof style === "function" ? style({ pressed, hovered: false }) : style,
+        typeof style === "function" ? style({ pressed }) : style,
       ]}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}

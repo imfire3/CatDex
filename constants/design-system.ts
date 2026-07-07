@@ -196,6 +196,7 @@ export const GAME = {
   surface: DS.surface,
   border: DS.border,
   touch: DS.touch,
+  opacity: DS.opacity,
   glassToken: DS.glass,
   icon: DS.icon,
 } as const;

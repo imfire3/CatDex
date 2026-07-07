@@ -62,14 +62,14 @@ export function GameButton({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled: Boolean(disabled) }}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       style={[
         styles.buttonShell,
         animStyle,
         disabled && styles.disabled,
-        typeof style === "function" ? style({ pressed: false, hovered: false }) : style,
+        typeof style === "function" ? style({ pressed: false }) : style,
       ]}
       {...props}
     >
