@@ -8,6 +8,7 @@ import { CatDexTile } from "@/components/game/CatDexTile";
 import { GlassCard } from "@/components/game/GlassCard";
 import { ChatDexToolbar } from "@/components/chatdex/ChatDexToolbar";
 import { EmptyState, ErrorState, LoadingView, SkeletonCard } from "@/components/feedback";
+import { StatCard } from "@/components/ui/GamePrimitives";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ScreenBackground } from "@/components/ui/ScreenBackground";
 import { GAME, TEXT } from "@/constants/game";
@@ -47,6 +48,14 @@ export default function ChatDexScreen() {
   const completion = total ? Math.round((discovered / total) * 100) : 0;
   const undiscoveredNearby = nearby.filter((c) => !c.discovered);
   const nudge = getCollectionNudge(discovered, total, undiscoveredNearby);
+  const rarityStats = useMemo(
+    () => ({
+      rare: discoveredCats.filter((c) => c.rarity === "rare").length,
+      legendary: discoveredCats.filter((c) => c.rarity === "légendaire").length,
+    }),
+    [discoveredCats]
+  );
+  const nextMilestone = completion >= 100 ? 100 : Math.min(100, Math.ceil((completion + 1) / 25) * 25);
 
   if (isLoading && allCats.length === 0) {
     return (
@@ -82,9 +91,27 @@ export default function ChatDexScreen() {
         <Animated.View entering={FadeInDown.springify()} style={styles.header}>
           <Text style={styles.title}>ChatDex</Text>
           <Text style={styles.subtitle}>
-            {discovered}/{total} · {completion}% complété
+            {discovered}/{total} · {completion}% complété · prochain palier {nextMilestone}%
           </Text>
           <ProgressBar progress={completion} variant="gold" style={styles.progress} />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.statRail}>
+          <StatCard
+            label="Capturés"
+            value={discovered}
+            caption={`${Math.max(total - discovered, 0)} silhouettes restantes`}
+            icon={<Text style={styles.statEmoji}>🐾</Text>}
+            progress={completion}
+            accent={GAME.gold}
+          />
+          <StatCard
+            label="Raretés"
+            value={rarityStats.rare + rarityStats.legendary}
+            caption={`${rarityStats.legendary} légendaire${rarityStats.legendary > 1 ? "s" : ""}`}
+            icon={<Text style={styles.statEmoji}>✨</Text>}
+            accent={GAME.purple}
+          />
         </Animated.View>
 
         <ChatDexToolbar />
@@ -164,6 +191,13 @@ const styles = StyleSheet.create({
   title: { ...TEXT.hero, color: GAME.gold, letterSpacing: 1 },
   subtitle: { ...TEXT.caption },
   progress: { marginTop: GAME.space.xs },
+  statRail: {
+    flexDirection: "row",
+    gap: GAME.space.md,
+    paddingHorizontal: GAME.space.lg,
+    marginBottom: GAME.space.md,
+  },
+  statEmoji: { fontSize: GAME.icon.md },
   nudgeWrap: { paddingHorizontal: GAME.space.lg, marginVertical: GAME.space.sm },
   nudge: { flexDirection: "row", alignItems: "center", gap: GAME.space.sm },
   nudgeHigh: { borderColor: "rgba(255,204,0,0.45)", borderWidth: 1 },

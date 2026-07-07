@@ -57,8 +57,6 @@ function CatDexTileComponent({ cat, index, onPress }: CatDexTileProps) {
 
 export const CatDexTile = memo(CatDexTileComponent);
 
-const SPACE = { xs: 8, md: 16 } as const;
-
 const styles = StyleSheet.create({
   tile: {
     width: "100%",
@@ -67,9 +65,9 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.92, transform: [{ scale: 0.98 }] },
   gradient: {
-    padding: SPACE.md,
+    padding: GAME.space.md,
     minHeight: 192,
-    gap: SPACE.xs,
+    gap: GAME.space.xs,
     alignItems: "center",
     borderWidth: 1,
     borderColor: GAME.glassBorder,
@@ -86,20 +84,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 96,
-    marginVertical: SPACE.xs,
+    marginVertical: GAME.space.xs,
   },
   avatarRing: {
     borderWidth: 2,
     borderRadius: GAME.radius.md,
-    padding: 4,
+    padding: GAME.space.xs,
     backgroundColor: "rgba(0,0,0,0.2)",
   },
   photoThumb: {
     position: "absolute",
     bottom: 0,
     right: 0,
-    width: 34,
-    height: 34,
+    width: 40,
+    height: 40,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: GAME.glassBorder,
@@ -112,11 +110,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: SPACE.xs,
+    marginVertical: GAME.space.xs,
     borderWidth: 1,
     borderColor: GAME.glassBorder,
     borderStyle: "dashed",
-    gap: SPACE.xs,
+    gap: GAME.space.xs,
   },
   unknownIcon: {
     color: GAME.textDim,
@@ -144,10 +142,10 @@ const styles = StyleSheet.create({
   },
   rarityPill: {
     alignSelf: "center",
-    paddingHorizontal: SPACE.xs,
-    paddingVertical: SPACE.xs / 2,
+    paddingHorizontal: GAME.space.xs,
+    paddingVertical: GAME.space.xs,
     borderRadius: GAME.radius.full,
-    marginTop: SPACE.xs / 2,
+    marginTop: GAME.space.xs,
   },
   rarityText: {
     fontSize: GAME.type.micro,

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View, type PressableProps } from "react-native";
+import { Pressable, StyleSheet, Text, Vibration, View, type PressableProps } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useAnimatedStyle,
@@ -6,7 +6,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import type { LucideIcon } from "lucide-react-native";
-import { GAME } from "@/constants/game";
+import { GAME, GRADIENTS } from "@/constants/game";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -50,6 +50,7 @@ export function FloatingButton({
 
   const handlePressIn: PressableProps["onPressIn"] = (e) => {
     scale.value = withSpring(0.94, { damping: 15, stiffness: 400 });
+    if (!props.disabled) Vibration.vibrate(8);
     onPressIn?.(e);
   };
 
@@ -74,7 +75,7 @@ export function FloatingButton({
         {...props}
       >
         <LinearGradient
-          colors={[GAME.sky, GAME.skyDark]}
+          colors={[...GRADIENTS.primary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.btn, { borderRadius: s.height / 2 }]}
@@ -95,7 +96,7 @@ export function FloatingButton({
         {...props}
       >
         <LinearGradient
-          colors={[GAME.capture, "#FF6B5A"]}
+          colors={[...GRADIENTS.captureAction]}
           style={[styles.captureBtn, { width: s.height + 16, height: s.height + 16, borderRadius: (s.height + 16) / 2 }]}
         >
           {Icon ? <Icon color={GAME.text} size={s.icon + 8} strokeWidth={2} /> : null}

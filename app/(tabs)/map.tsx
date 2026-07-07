@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
@@ -40,6 +40,11 @@ export default function MapScreen() {
   const clearPendingMapFocus = useAppStore((s) => s.clearPendingMapFocus);
   const [showBonus, setShowBonus] = useState(false);
   const [recenterToken, setRecenterToken] = useState(0);
+  const [focusedTrail, setFocusedTrail] = useState<{
+    catId: string;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const lat = location.latitude;
   const lng = location.longitude;
@@ -81,18 +86,19 @@ export default function MapScreen() {
     let filtered = selectedZone
       ? nearby.filter((cat) => cat.zone === selectedZone.name)
       : nearby;
-    const pinId = pendingMapFocus?.catId;
+    const pinId = focusedTrail?.catId ?? pendingMapFocus?.catId;
     if (pinId && !filtered.some((cat) => cat.id === pinId)) {
       const pinned = nearby.find((cat) => cat.id === pinId);
       if (pinned) filtered = [pinned, ...filtered];
     }
     return filtered;
-  }, [nearby, selectedZone, pendingMapFocus?.catId]);
+  }, [nearby, selectedZone, focusedTrail?.catId, pendingMapFocus?.catId]);
 
   useFocusEffect(
     useCallback(() => {
       if (!pendingMapFocus) return;
       userPickedZone.current = false;
+      setFocusedTrail(pendingMapFocus);
       const captureZone = findNearestZone(
         zones,
         pendingMapFocus.latitude,
@@ -122,7 +128,10 @@ export default function MapScreen() {
 
   const focusLat = pendingMapFocus?.latitude ?? lat;
   const focusLng = pendingMapFocus?.longitude ?? lng;
-  const mapRegion = useMemo(() => regionFromCoords(focusLat, focusLng), [focusLat, focusLng]);
+  const mapRegion = useMemo(
+    () => regionFromCoords(focusedTrail?.latitude ?? focusLat, focusedTrail?.longitude ?? focusLng),
+    [focusedTrail?.latitude, focusedTrail?.longitude, focusLat, focusLng]
+  );
 
   const markers = useMemo(
     () =>
@@ -134,6 +143,7 @@ export default function MapScreen() {
   );
 
   const handleRecenter = useCallback(async () => {
+    setFocusedTrail(null);
     await recenter();
     setRecenterToken((t) => t + 1);
   }, [recenter]);
@@ -158,11 +168,16 @@ export default function MapScreen() {
       <LinearGradient colors={[...GRADIENTS.map]} style={styles.bottomFade} pointerEvents="none" />
 
       {location.permission === "denied" ? (
-        <View style={[styles.permissionBanner, { top: insets.top + 8 }]}>
+        <Pressable
+          style={[styles.permissionBanner, { top: insets.top + GAME.space.xs }]}
+          onPress={() => Linking.openSettings()}
+          accessibilityRole="button"
+          accessibilityLabel="Ouvrir les réglages de localisation"
+        >
           <Text style={styles.permissionText}>
-            Localisation désactivée — position approximative affichée
+            Localisation désactivée · toucher pour ouvrir les réglages
           </Text>
-        </View>
+        </Pressable>
       ) : null}
 
       <View style={[styles.topBar, { paddingTop: insets.top + GAME.space.sm }]}>
@@ -197,7 +212,7 @@ export default function MapScreen() {
 
       <Animated.View
         entering={FadeInDown.delay(200).springify()}
-        style={[styles.goalsCard, { top: insets.top + 76 }]}
+        style={[styles.goalsCard, { top: insets.top + 96 }]}
       >
         <DailyGoalsCard
           unclaimedMissions={retention.unclaimedMissions}
@@ -207,6 +222,13 @@ export default function MapScreen() {
           onMissions={() => router.push("/missions")}
         />
       </Animated.View>
+
+      {focusedTrail ? (
+        <Animated.View entering={FadeInDown.springify()} style={[styles.focusToast, { top: insets.top + 168 }]}>
+          <Text style={styles.focusEyebrow}>PISTE SÉLECTIONNÉE</Text>
+          <Text style={styles.focusText}>La carte est centrée sur le dernier lieu d'observation.</Text>
+        </Animated.View>
+      ) : null}
 
 
       <View style={[styles.mapControls, { bottom: insets.bottom + GAME.layout.sheetBottomOffset + 112 }]}>
@@ -258,6 +280,8 @@ const styles = StyleSheet.create({
     borderRadius: GAME.radius.sm,
     padding: GAME.space.sm,
     zIndex: 20,
+    minHeight: GAME.touch.min,
+    justifyContent: "center",
   },
   permissionText: {
     color: GAME.navy,
@@ -306,5 +330,28 @@ const styles = StyleSheet.create({
     ...ELEVATION.sm,
   },
   goalsCard: { position: "absolute", left: GAME.space.md, right: GAME.space.md },
+  focusToast: {
+    position: "absolute",
+    left: GAME.space.lg,
+    right: GAME.space.lg,
+    backgroundColor: GAME.glassToken.premium,
+    borderWidth: 1,
+    borderColor: "rgba(90,200,250,0.4)",
+    borderRadius: GAME.radius.lg,
+    padding: GAME.space.md,
+    gap: GAME.space.xs,
+    ...ELEVATION.md,
+  },
+  focusEyebrow: {
+    color: GAME.sky,
+    fontSize: GAME.type.micro,
+    fontWeight: GAME.weight.black,
+    letterSpacing: GAME.letterSpacing.caps,
+  },
+  focusText: {
+    color: GAME.text,
+    fontSize: GAME.type.caption,
+    fontWeight: GAME.weight.bold,
+  },
   mapControls: { position: "absolute", right: 0 },
 });

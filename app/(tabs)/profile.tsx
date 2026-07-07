@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
@@ -6,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Award, Gift, Settings, Target, Trophy, Users } from "lucide-react-native";
 import { LinkRow } from "@/components/ui/LinkRow";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { RewardToast, StatCard } from "@/components/ui/GamePrimitives";
 import { GlassCard } from "@/components/game/GlassCard";
 import { StreakWeek } from "@/components/game/StreakWeek";
 import { StreakPill } from "@/components/game/StreakPill";
@@ -17,6 +19,9 @@ import { xpToNextLevel } from "@/gameplay/xp/xp-rules";
 import { useBadges, useCaptures, useFriends, useProfileStats } from "@/hooks/useGameData";
 import { useRetention } from "@/hooks/useRetention";
 import { useAuth } from "@/providers/AuthProvider";
+import { gameplayService } from "@/services/gameplay.service";
+import { queryClient } from "@/providers/QueryProvider";
+import { queryKeys } from "@/constants/queryKeys";
 
 const STATS_KEYS = [
   { key: "total_captures" as const, label: "Captures" },
@@ -28,6 +33,7 @@ const STATS_KEYS = [
 export default function ProfileScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const [claimedBonus, setClaimedBonus] = useState<number | null>(null);
   const { data: profile, isLoading, isError, refetch } = useProfileStats(session?.user.id);
   const { data: captures = [] } = useCaptures(session?.user.id);
   const { data: badges = [] } = useBadges(session?.user.id);
@@ -44,6 +50,16 @@ export default function ProfileScreen() {
   });
 
   const xpMax = profile ? xpToNextLevel(profile.xp) : 250;
+
+  const claimDailyBonus = async () => {
+    if (!session?.user.id || !profile) return;
+    const xp = await gameplayService.claimDailyBonus(session.user.id, profile.streak);
+    if (!xp) return;
+    setClaimedBonus(xp);
+    retention.refresh();
+    queryClient.invalidateQueries({ queryKey: queryKeys.profile(session.user.id) });
+    setTimeout(() => setClaimedBonus(null), 2000);
+  };
 
   if (isLoading && !profile) {
     return (
@@ -68,6 +84,7 @@ export default function ProfileScreen() {
   return (
     <ScreenBackground variant="profile">
       <SafeAreaView style={styles.safe} edges={["top"]}>
+        {claimedBonus ? <RewardToast xp={claimedBonus} label="Bonus quotidien" /> : null}
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInDown.springify()} style={styles.hero}>
             <LinearGradient colors={[GAME.sky, GAME.indigo]} style={styles.avatarRing}>
@@ -102,19 +119,23 @@ export default function ProfileScreen() {
                 icon={Gift}
                 iconColor={GAME.gold}
                 title="Bonus du jour disponible"
-                subtitle="Retourne sur la carte pour le récupérer"
+                subtitle="Réclame-le maintenant pour garder ta série active"
                 highlight
-                onPress={() => router.push("/(tabs)/map")}
+                onPress={claimDailyBonus}
               />
             </Animated.View>
           ) : null}
 
           <Animated.View entering={FadeInDown.delay(250).springify()} style={styles.statsGrid}>
             {stats.map((s) => (
-              <GlassCard key={s.label} style={styles.statCell} padding={GAME.space.md}>
-                <Text style={styles.statValue}>{s.value}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
-              </GlassCard>
+              <StatCard
+                key={s.label}
+                label={s.label}
+                value={s.value}
+                icon={<Text style={styles.statIcon}>{s.label === "Série" ? "🔥" : s.label === "Zones" ? "🗺️" : "🐱"}</Text>}
+                accent={s.label === "Série" ? GAME.gold : s.label === "Zones" ? GAME.green : GAME.sky}
+                style={styles.statCell}
+              />
             ))}
           </Animated.View>
 
@@ -198,10 +219,9 @@ const styles = StyleSheet.create({
     borderRadius: GAME.radius.full,
   },
   levelText: { color: GAME.navy, fontWeight: GAME.weight.black, fontSize: GAME.type.caption },
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: GAME.space.sm },
-  statCell: { width: "47%", alignItems: "center", flexGrow: 1 },
-  statValue: { ...TEXT.title, textAlign: "center" },
-  statLabel: { ...TEXT.caption, marginTop: 4, textAlign: "center" },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: GAME.space.md },
+  statCell: { width: "47%", flexGrow: 1 },
+  statIcon: { fontSize: GAME.icon.md },
   section: { gap: GAME.space.sm },
   linkList: { gap: GAME.space.sm },
 });

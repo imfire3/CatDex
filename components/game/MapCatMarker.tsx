@@ -16,17 +16,20 @@ type MapCatMarkerProps = {
 
 function MapCatMarkerComponent({ cat, onPress }: MapCatMarkerProps) {
   const rarityColor = RARITY_COLORS[cat.rarity];
+  const isLegendary = cat.rarity === "légendaire";
+  const isRare = cat.rarity === "rare";
+  const shouldPulse = cat.recentlyObserved || isLegendary || (!cat.discovered && isRare);
   const pulse = useSharedValue(1);
 
   useEffect(() => {
-    if (cat.recentlyObserved && !cat.discovered) {
-      pulse.value = withRepeat(withTiming(1.12, { duration: 1000 }), -1, true);
+    if (shouldPulse) {
+      pulse.value = withRepeat(withTiming(isLegendary ? 1.22 : 1.12, { duration: isLegendary ? 900 : 1100 }), -1, true);
     }
-  }, [cat.recentlyObserved, cat.discovered, pulse]);
+  }, [shouldPulse, isLegendary, pulse]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }],
-    opacity: cat.recentlyObserved && !cat.discovered ? 2 - pulse.value : 1,
+    opacity: shouldPulse ? 2 - pulse.value : 1,
   }));
 
   return (
@@ -38,27 +41,36 @@ function MapCatMarkerComponent({ cat, onPress }: MapCatMarkerProps) {
     >
       {cat.discovered ? (
         <View style={styles.discoveredWrap}>
-          {cat.isPopular ? <View style={styles.goldenAura} /> : null}
+          {cat.isPopular || isLegendary ? (
+            <Animated.View
+              style={[
+                styles.goldenAura,
+                isLegendary && styles.legendaryAura,
+                { borderColor: `${rarityColor}88`, backgroundColor: `${rarityColor}24` },
+                pulseStyle,
+              ]}
+            />
+          ) : null}
           {cat.favorite ? (
             <View style={styles.favBadge}>
               <Text style={styles.favIcon}>♥</Text>
             </View>
           ) : null}
-          <View style={[styles.avatarRing, { borderColor: cat.isPopular ? GAME.gold : rarityColor }]}>
+          <View style={[styles.avatarRing, isLegendary && styles.avatarLegendary, { borderColor: cat.isPopular ? GAME.gold : rarityColor }]}>
             <Text style={styles.avatarEmoji}>{cat.avatar}</Text>
           </View>
         </View>
       ) : (
         <View style={styles.silhouetteWrap}>
-          <Animated.View style={[styles.silhouettePulse, pulseStyle]} />
-          <View style={styles.silhouette}>
-            <Text style={styles.silhouetteIcon}>🐱</Text>
+          <Animated.View style={[styles.silhouettePulse, { borderColor: `${rarityColor}88` }, pulseStyle]} />
+          <View style={[styles.silhouette, { borderColor: `${rarityColor}AA` }, isLegendary && styles.legendarySilhouette]}>
+            <Text style={[styles.silhouetteIcon, isLegendary && styles.legendaryIcon]}>🐱</Text>
           </View>
         </View>
       )}
-      <View style={[styles.label, { backgroundColor: cat.discovered ? rarityColor : GAME.navyLight }]}>
+      <View style={[styles.label, { backgroundColor: cat.discovered ? rarityColor : GAME.navyLight, borderColor: `${rarityColor}88` }]}>
         <Text style={styles.labelText} numberOfLines={1}>
-          {cat.discovered ? cat.name : "???"}
+          {cat.discovered ? cat.name : isLegendary ? "LÉGENDE" : "???"}
         </Text>
       </View>
     </Pressable>
@@ -68,7 +80,7 @@ function MapCatMarkerComponent({ cat, onPress }: MapCatMarkerProps) {
 export const MapCatMarker = memo(MapCatMarkerComponent);
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: "center" },
+  wrap: { alignItems: "center", minWidth: 64, minHeight: 64 },
   discoveredWrap: { alignItems: "center", justifyContent: "center" },
   goldenAura: {
     position: "absolute",
@@ -78,6 +90,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,204,0,0.22)",
     borderWidth: 2,
     borderColor: "rgba(255,204,0,0.55)",
+  },
+  legendaryAura: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 3,
   },
   favBadge: {
     position: "absolute",
@@ -107,6 +125,12 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
   },
+  avatarLegendary: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 4,
+  },
   avatarEmoji: { fontSize: 26 },
   silhouetteWrap: { alignItems: "center", justifyContent: "center" },
   silhouette: {
@@ -120,7 +144,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  legendarySilhouette: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(13,27,42,0.96)",
+  },
   silhouetteIcon: { fontSize: 22, opacity: 0.5 },
+  legendaryIcon: { fontSize: 28, opacity: 0.8 },
   silhouettePulse: {
     position: "absolute",
     width: 54,
@@ -130,11 +161,12 @@ const styles = StyleSheet.create({
     borderColor: "rgba(90,200,250,0.45)",
   },
   label: {
-    marginTop: 4,
+    marginTop: GAME.space.xs,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    maxWidth: 88,
+    paddingVertical: GAME.space.xs,
+    borderRadius: GAME.radius.full,
+    maxWidth: 96,
+    borderWidth: 1,
   },
   labelText: {
     color: GAME.text,

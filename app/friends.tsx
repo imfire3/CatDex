@@ -1,10 +1,10 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/game/ScreenHeader";
 import { GlassCard } from "@/components/game/GlassCard";
 import { EmptyState, ErrorState, LoadingView } from "@/components/feedback";
+import { ScreenBackground } from "@/components/ui/ScreenBackground";
 import { GAME } from "@/constants/game";
 import { useFriends } from "@/hooks/useGameData";
 import { useAuth } from "@/providers/AuthProvider";
@@ -14,7 +14,7 @@ export default function FriendsScreen() {
   const { data: friends = [], isLoading, isError, refetch } = useFriends(session?.user.id);
 
   return (
-    <LinearGradient colors={[GAME.navy, GAME.navyLight]} style={styles.screen}>
+    <ScreenBackground>
       <ScreenHeader title="Amis" subtitle={`${friends.length} chasseur${friends.length !== 1 ? "s" : ""}`} />
       <SafeAreaView style={styles.safe} edges={["bottom"]}>
         {isLoading ? (
@@ -29,7 +29,9 @@ export default function FriendsScreen() {
           <EmptyState
             emoji="👋"
             title="Aucun ami pour l'instant"
-            description="Ajoute des chasseurs pour comparer vos captures."
+            description="Invite un chasseur pour comparer vos captures, séries et badges."
+            actionLabel="Inviter un ami"
+            onAction={() => Share.share({ message: "Rejoins-moi sur CatDex pour capturer les chats du quartier !" })}
           />
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -46,7 +48,7 @@ export default function FriendsScreen() {
                     </Text>
                   </View>
                   <View style={styles.status}>
-                    <Text style={styles.statusText}>Hors ligne</Text>
+                    <Text style={styles.statusText}>{friend.online ? "En chasse" : "Vu récemment"}</Text>
                   </View>
                 </GlassCard>
               </Animated.View>
@@ -54,12 +56,11 @@ export default function FriendsScreen() {
           </ScrollView>
         )}
       </SafeAreaView>
-    </LinearGradient>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
   safe: { flex: 1 },
   scroll: { padding: GAME.space.lg, gap: GAME.space.sm, paddingBottom: GAME.space.xxl },
   row: { flexDirection: "row", alignItems: "center", gap: GAME.space.md },
