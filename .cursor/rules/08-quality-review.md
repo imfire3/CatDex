@@ -1,17 +1,25 @@
-# 08 - Quality Review
+---
+description: CatDex final quality and living documentation checklist.
+alwaysApply: true
+---
+# 08 - Quality Review & Documentation Vivante
 
-Toute modification CatDex doit etre revue comme un produit mobile vivant, pas seulement comme du code.
+## Checklist avant fin de tâche
+- Vision CatDex respectée; pas de traque ni position exacte de chat.
+- Apple HIG, mobile-first, 8pt grid, DS tokens, composants existants.
+- UX simple avec états loading/empty/error/permission/offline si concernés.
+- Accessibilité: labels, contraste, touch targets, reduced motion.
+- Performance: pas de render coûteux, listeners nettoyés, images/listes/animations maîtrisées.
+- Architecture: pas de duplication, logique au bon endroit, TypeScript clair.
+- Gamification responsable: reward utile, pas de dark pattern.
+- Wording FR aligné: observer/découvrir/documenter.
 
-## Checklist obligatoire
-- Le changement respecte la vision CatDex et la securite des chats.
-- Aucun ecran ne montre une position exacte de chat.
-- UI coherente avec DS, 8pt grid, Apple HIG et composants existants.
-- Pas de duplication UI ou logique inutile.
-- Flows simples avec etats loading, empty, error si necessaire.
-- Wording francais coherent: observer/decouvrir/documenter.
-- Accessibilite: labels, contraste, touch targets, reduced motion.
-- Performance: pas de render couteux, listeners propres, images maitrisees.
-- Tests ou verification adaptes au risque.
-
-## Sortie de review
-Lister les risques bloquants d'abord, puis ameliorations recommandees, puis validations effectuees.
+## Documentation vivante obligatoire
+Si la tâche change une fonctionnalité importante, mettre à jour les docs `.cursor` concernées:
+- Architecture/service/store/hook -> `PROJECT_ARCHITECTURE.md`, `TECH_DEBT.md` si dette.
+- UI/composant/token -> `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md`, `UI_GUIDELINES.md`.
+- Flow/écran -> `UX_GUIDELINES.md`, `FEATURES.md`.
+- Gameplay -> `GAME_DESIGN.md`, `ROADMAP.md` si futur.
+- Privacy/map -> `DECISIONS.md`, `KNOWN_ISSUES.md`.
+- Wording -> `COPYWRITING_GUIDELINES.md`.
+- Toujours ajouter une entrée courte dans `CHANGELOG.md` pour une mise à jour majeure de docs.

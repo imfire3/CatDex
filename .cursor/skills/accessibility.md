@@ -1,29 +1,24 @@
-# Skill - Accessibility
+# Skill - Accessibility CatDex
 
 ## Quand l'utiliser
-- Creation/review de composants interactifs.
-- Ecrans avec carte, camera, modals, icon buttons ou animations.
-- Validation avant merge d'une UI.
+Toute UI interactive, carte, camera, animations, progression, icônes, états d'erreur.
 
-## Principes cles
-- Perceptible, utilisable, comprehensible, robuste.
-- Information jamais uniquement par couleur ou mouvement.
-- Controle utilisateur et alternative textuelle pour contenus visuels.
-- Zones tactiles minimum 44px.
+## Checklist CatDex
+- `accessibilityRole` sur Pressable important.
+- `accessibilityLabel` en français sur icônes et controls.
+- `accessibilityState` pour selected/disabled.
+- `accessibilityValue` pour progressbars quand pertinent.
+- Contraste sur glass/gradient/map.
+- Touch 44px+.
+- Reduced motion.
+- Texte de zone disponible hors carte.
 
-## Checklist
-- accessibilityLabel et role sur controles non textuels.
-- Contraste suffisant sur glass/gradient/map.
-- Textes critiques compatibles grandes tailles.
-- Reduced motion respecte.
-- Etats erreur et vide lisibles par texte.
+## Erreurs à éviter
+Rareté couleur-only, marker sans label, skeleton non stoppable, texte critique tronqué, haptic comme seul feedback.
 
-## Erreurs a eviter
-- Icone seule sans label.
-- Texte blanc sur surface trop transparente.
-- Badge rarete exprime seulement par couleur.
-- Carte indispensable sans alternative descriptive.
+## Exemples
+- Marker: "Zone avec observations récentes" plutôt que coordonnées.
+- Badge: nom + description + état unlocked.
 
-## Exemples CatDex
-- Un marker de zone doit avoir un label du type "Zone avec observations recentes", sans coordonnees exactes.
-- Un badge doit avoir nom + description, pas seulement une couleur.
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

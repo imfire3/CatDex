@@ -1,92 +1,46 @@
-# CatDex Context
+# CATDEX_CONTEXT - Mémoire centrale CatDex
 
-## Vision produit
-CatDex est une experience mobile premium d'exploration urbaine ou les utilisateurs observent, decouvrent et documentent des chats de rue pour construire un ChatDex personnel et communautaire.
+Dernière vérification code: 2026-07-07. Toujours lire ce fichier avant une tâche CatDex.
 
-## Resume du concept
-- Explorer des zones proches.
-- Observer un chat de facon responsable.
-- Documenter une fiche avec photo/analyse/couleur/race/motif si disponible.
-- Ajouter la fiche au ChatDex.
-- Gagner XP, badges, missions et progression de collection.
+## Index vivant
+- Vision: `PRODUCT_VISION.md`
+- Architecture: `PROJECT_ARCHITECTURE.md`
+- Design: `DESIGN_SYSTEM.md`, `UI_GUIDELINES.md`, `COMPONENT_LIBRARY.md`
+- UX: `UX_GUIDELINES.md`
+- Gameplay: `GAME_DESIGN.md`
+- Motion: `ANIMATION_GUIDELINES.md`
+- Copy: `COPYWRITING_GUIDELINES.md`
+- Fonctionnalités: `FEATURES.md`
+- Roadmap: `ROADMAP.md`
+- Dette/issues: `KNOWN_ISSUES.md`, `TECH_DEBT.md`
+- Décisions: `DECISIONS.md`
+- Historique config: `CHANGELOG.md`
 
-## Stack technique
-- Expo Router + React Native + TypeScript.
-- Supabase pour auth, base de donnees et storage.
-- React Query pour cache/data fetching.
-- Zustand pour state local.
-- NativeWind / Tailwind pour styling.
-- React Native Maps et Mapbox RN selon plateforme.
-- Expo Camera, Location, Image Picker, Reanimated.
-- Legacy web Vite archive dans `legacy-web/`.
+## Concept
+CatDex est une app mobile Expo/React Native où l'utilisateur observe, découvre et documente des chats de rue par zones pour enrichir son ChatDex, gagner XP/badges/missions et progresser dans une expérience premium inspirée jeux d'exploration.
 
-## Principes UI
-- Mobile-first, premium, lisible, une main.
-- Source de verite design: `constants/design-system.ts` (`DS`, `TEXT`, `MOTION`, `ELEVATION`, `GRADIENTS`).
-- 8pt grid, touch targets 44px minimum.
-- Apple HIG: clarte, feedback, safe areas, navigation familiere.
-- Reutiliser `components/ui` et `components/game` avant de creer.
-- Pas de duplication UI ni valeurs hardcodees inutiles.
+## Stack
+Expo Router, React Native, TypeScript, Supabase, React Query, Zustand+MMKV, Reanimated, Expo Camera/Location, react-native-maps/Mapbox fallback, NativeWind installé mais app surtout StyleSheet+tokens.
 
-## Principes UX
-- Flow principal simple: onboarding -> carte par zones -> observation -> documentation -> celebration -> ChatDex/progression.
-- Un objectif par ecran, CTA principal clair.
-- Etats loading, empty, error et permission explicites.
-- Animations utiles et compatibles reduced motion.
-- La carte guide par zones, jamais par position exacte de chat.
+## Flow principal réel
+Splash/auth gate -> login/signup/guest -> onboarding welcome/permissions/introduction/avatar/username -> map -> capture camera/loading/analysis/confirm/celebration -> cat detail ou map -> ChatDex/profile/missions/badges.
 
-## Regles de wording
-- Langue: francais clair, chaleureux, premium, joueur.
-- Preferer: observer, decouvrir, documenter, explorer, ajouter au ChatDex.
-- Eviter en UI: capturer, traquer, chasser, adresse exacte.
-- Exception: ne pas renommer aveuglement les noms techniques existants comme routes ou variables.
+## Règles non négociables
+- Ne jamais afficher position exacte, adresse ou coordonnée précise d'un chat en UI.
+- Préférer observer, découvrir, documenter, ajouter au ChatDex; éviter capturer/chasser/traquer en UI nouvelle.
+- Utiliser design system DS/TEXT/MOTION/ELEVATION/GRADIENTS/RARITY_COLORS.
+- Mobile first, Apple HIG, 8pt grid, touch targets 44px+.
+- Pas de duplication UI, pas de refactor global, pas de code inutile.
+- Reduced motion, accessibilité et performance à considérer par défaut.
+- Mettre à jour la documentation vivante si une feature importante change.
 
-## Flow principal
-1. Splash / auth.
-2. Onboarding: introduction, avatar, username, permissions.
-3. Carte publique par zones.
-4. Camera / observation.
-5. Analyse et confirmation.
-6. Celebration / recompense.
-7. Detail chat, ChatDex, missions, profil.
+## Sources code à connaître
+- Routes: `app/`.
+- Providers: `providers/`.
+- Stores: `stores/index.ts`, `gameplay/*/*store.ts`.
+- Gameplay: `gameplay/` + `services/gameplay.service.ts`.
+- Data: `services/`, `hooks/useGameData.ts`, `types/database.ts`, `supabase/schema*.sql`.
+- UI: `constants/design-system.ts`, `components/ui`, `components/game`, `components/map`, `components/auth`, `components/feedback`.
 
-## Ecrans existants reperes
-- Auth: login, signup.
-- Onboarding: welcome, introduction, avatar, username, permissions.
-- Tabs: map, ChatDex, profile, capture tab.
-- Capture/documentation: index, loading, analysis, confirm, celebration.
-- Detail: cat detail.
-- Meta-jeu: missions, badges, leaderboard, friends, menu, settings.
-
-## Mecaniques de jeu
-- XP rules.
-- Missions et mission store.
-- Badges definitions.
-- Daily bonus, streaks, retention nudges.
-- Discovery rewards.
-- Raretés: commun, rare, legendaire.
-
-## Regles de securite
-- Ne jamais afficher la position exacte des chats.
-- Ne pas exposer adresse, lat/lng precise ou pin animal exact en UI.
-- Utiliser zones, indices generaux et proximite floue.
-- Respecter permissions et vie privee utilisateur.
-- Ne pas encourager la poursuite ou capture physique d'un animal.
-
-## Priorites MVP
-- Auth fiable.
-- Onboarding clair et permissions expliquees.
-- Carte par zones comprehensible.
-- Observation/documentation simple.
-- Fiche chat de qualite.
-- ChatDex personnel motivant.
-- Progression XP/missions/badges basique mais coherent.
-
-## Dette technique a eviter
-- Plusieurs sources de verite pour tokens UI, XP, rarete ou wording.
-- Duplications de cards, boutons, headers, chips.
-- Logique metier dans les routes UI.
-- Calculs lourds dans render.
-- Watchers geolocation sans cleanup.
-- Hardcoding de couleurs, radius, spacing et textes repetes.
-- Ajouts de dependances sans justification forte.
+## Dette prioritaire
+Privacy map à auditer, missions partiellement câblées, badges/catalogues multiples, level curve client/DB divergente, social local, reduced motion incomplet, legacy theme/ui.

@@ -1,18 +1,20 @@
+---
+description: CatDex UI system, Apple HIG, 8pt grid, components.
+globs: app/**/*.tsx,components/**/*.tsx,constants/**/*.ts
+---
 # 01 - UI Design System
 
-Le design system CatDex existe deja dans `constants/design-system.ts`. Toute UI doit partir des tokens DS, MOTION, ELEVATION, GRADIENTS, TEXT et des composants reutilisables.
-
-## Regles UI
-- Respecter une grille 8pt: espacements en multiples de 8 autant que possible.
-- Utiliser les tokens existants avant de creer une valeur locale.
-- Respecter les Apple Human Interface Guidelines: clarte, profondeur, feedback, zones tactiles 44px minimum.
-- Favoriser les composants existants dans `components/ui` et `components/game`.
-- Ne pas dupliquer une carte, un bouton, un champ ou un header si un composant existe.
-- Garder un style premium: contraste fort, surfaces controlees, radius coherents, typographie stable.
-- Limiter les styles inline aux ajustements locaux non reutilisables.
-- Un ecran = hierarchie claire: titre, contexte, action principale, feedback.
+## Obligatoire
+- Apple HIG: clarté, feedback, safe areas, contrôle, touch targets 44px+.
+- 8pt grid: DS.space d'abord; 4px seulement pour ajustement fin.
+- Source design: `constants/design-system.ts`, import via `@/constants/game`.
+- Utiliser `DS`, `TEXT`, `MOTION`, `ELEVATION`, `GRADIENTS`, `RARITY_COLORS`; `GAME` toléré pour compatibilité.
+- Réutiliser `components/ui`, `components/game`, `components/map`, `components/feedback`, `components/auth`.
+- Pas de nouveau bouton/carte/chip/header si un composant existe.
+- Premium mobile game: surfaces glass contrôlées, hiérarchie forte, radius cohérent, feedback press subtil.
 
 ## Interdits
-- Spacing arbitraire non justifie.
-- Couleurs hardcodees hors exception ponctuelle documentee.
-- Variantes visuelles proches mais incompatibles entre elles.
+Couleurs/radius/spacing hardcodés sans justification, duplications de cards/buttons, styles inline massifs, UI desktop, texte critique tronqué.
+
+## Sources à charger
+`@.cursor/DESIGN_SYSTEM.md`, `@.cursor/COMPONENT_LIBRARY.md`, `@.cursor/UI_GUIDELINES.md`, `@.cursor/skills/design-system.md`.

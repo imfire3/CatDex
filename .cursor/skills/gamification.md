@@ -1,28 +1,29 @@
-# Skill - Gamification
+# Skill - Gamification CatDex
 
 ## Quand l'utiliser
-- Ajouter ou revoir XP, niveaux, badges, streaks, bonus quotidien, nudges.
-- Rendre un etat vide motivant.
-- Construire un feedback de progression.
+Transformer un flow utilitaire en progression: daily goals, XP, nudges, empty states, célébrations.
 
-## Principes cles
-- La gamification sert la motivation intrinseque: curiosite, maitrise, collection.
-- Les recompenses doivent etre previsibles dans leur logique, surprenantes dans leur presentation.
-- Les objectifs doivent etre atteignables et non culpabilisants.
-- La progression doit valoriser qualite de documentation et diversite d'exploration.
+## Mécaniques actuelles
+- Daily/weekly missions locales MMKV.
+- First discovery day +100 XP.
+- Daily bonus selon streak.
+- Badges unlock via Supabase.
+- Rareté IA: commun/rare/légendaire.
+- Collection nudges selon chats non découverts/progression zone.
 
 ## Checklist
-- Recompense liee a un comportement souhaitable.
-- Feedback immediat et court.
-- Pas de penalite dure pour absence.
-- Progression visible dans ChatDex, missions ou profil.
-- Wording positif et non agressif.
+- Motivation intrinsèque: curiosité, maîtrise, collection.
+- Reward immédiat + explanation.
+- Objectif atteignable en session courte.
+- Pas de punition d'absence.
+- Wording positif.
 
-## Erreurs a eviter
-- Donner de l'XP pour spammer la meme action.
-- Creer des rewards qui contredisent la securite des chats.
-- Ajouter trop de popups.
+## Erreurs à éviter
+Popups trop fréquentes, streak culpabilisant, mission impossible car métrique non câblée, reward qui pousse à suivre un animal.
 
-## Exemples CatDex
-- Bonus doux: "+10 XP pour une fiche complete".
-- Nudge: "Une nouvelle zone merite d'etre exploree" plutot que "Va a cette adresse".
+## Exemples
+- Bon: "Première observation du jour +100 XP".
+- Bon: "Zone presque complète" sans préciser adresse.
+
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

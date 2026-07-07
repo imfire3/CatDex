@@ -1,29 +1,27 @@
-# Skill - Maps & Geolocation
+# Skill - Maps & Geolocation CatDex
 
 ## Quand l'utiliser
-- Toute decision liee a carte, zones, localisation, permissions, markers.
-- Review de securite des chats et confidentialite utilisateur.
-- Design de flows d'exploration.
+Carte, zones, location permission, markers, pendingMapFocus, capture zone, privacy.
 
-## Principes cles
-- Ne jamais afficher la position exacte des chats.
-- Utiliser zones, cellules, arrondis, proximite floue ou indices generaux.
-- Demander la localisation seulement avec benefice clair.
-- Separar localisation utilisateur, zones publiques et donnees sensibles.
-- Prevoir degraded mode si permission refusee.
+## Sources code
+`services/map.service.ts`, `lib/zones.ts`, `providers/LocationProvider.tsx`, `components/map/*`, `app/(tabs)/map.tsx`, `stores/index.ts`, `cats.service.ts`.
+
+## Règles privacy
+- UI par zones/quartiers, jamais adresse exacte.
+- Coordonnées de chats stockées/affichées doivent être approximées/jitterées; ne jamais présenter comme exactes.
+- Ne pas logguer ou exposer lat/lng exactes inutilement.
+- Permission location doit expliquer bénéfice: zones proches, pas tracking animal.
+- Refus permission: fallback utile mais transparent.
 
 ## Checklist
-- Pas de coordonnees exactes exposees en UI.
-- Copy explique pourquoi la localisation est utile.
-- Permission refusable sans casser toute l'app.
-- Markers representent des zones ou opportunites, pas un animal precis.
-- Donnees sensibles non logguees inutilement.
+- Marker représente observation approximative ou zone, pas animal en temps réel.
+- Sheet affiche zone/city, pas adresse.
+- `pendingMapFocus` audité si utilisé.
+- Radius 4 km et nearbyZones cohérents.
+- No exact coordinates in copy/debug UI.
 
-## Erreurs a eviter
-- Afficher adresse, lat/lng, precision metrique ou pin exact d'un chat.
-- Inciter a suivre un chat en temps reel.
-- Confondre zone publique et position source.
+## Erreurs à éviter
+"Viens ici", pin exact, distance au mètre vers un chat, suivi live, coordonnées dans params visibles.
 
-## Exemples CatDex
-- Bon: "Zone active pres du parc".
-- A eviter: "Chat vu au 12 rue X" ou pin exact sur trottoir.
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

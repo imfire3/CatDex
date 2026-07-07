@@ -1,17 +1,17 @@
+---
+description: Always-on CatDex product vision and ethics.
+alwaysApply: true
+---
 # 00 - Product Vision CatDex
 
-CatDex est une experience mobile premium d'exploration urbaine autour des chats de rue. L'utilisateur observe, decouvre et documente des chats pour enrichir son ChatDex, progresser et partager une collection vivante.
+## À appliquer toujours
+- CatDex = exploration mobile premium + observation responsable + collection + progression.
+- Tout changement doit servir au moins un pilier: exploration, collection, progression, communauté responsable, qualité premium.
+- Ne jamais afficher position exacte, adresse ou coordonnées précises d'un chat.
+- Préférer observer, découvrir, documenter, ajouter au ChatDex. Éviter capturer/chasser/traquer en UI nouvelle.
+- Protéger les chats et la confiance utilisateur avant la rétention.
+- Sessions mobiles courtes, fluides, une main.
+- Si code et vision divergent, signaler la dérive dans `KNOWN_ISSUES.md` ou proposer un patch ciblé.
 
-## Regles produit
-- Prioriser mobile-first, usage rapide, une main, sessions courtes.
-- Garder une tonalite bienveillante: exploration, curiosite, soin, respect animal.
-- Ne jamais afficher la position exacte d'un chat; utiliser zones, indices ou proximite floue.
-- Proteger la vision: pas de mecanique intrusive, stressante ou predatrice.
-- Preferer "observer", "decouvrir", "documenter" a "capturer" dans l'interface, sauf nom technique existant.
-- Toute nouvelle fonctionnalite doit renforcer au moins un pilier: exploration, collection, progression, communaute responsable.
-- Eviter les ajouts gadget: chaque element doit clarifier l'action, la recompense ou le contexte.
-
-## Definition du premium
-- Interface coherente, lisible, calme et delightful.
-- Micro-interactions utiles, jamais gratuites.
-- Contenu court, chaleureux et actionnable.
+## Sources à charger
+`@.cursor/CATDEX_CONTEXT.md`, `@.cursor/PRODUCT_VISION.md`, `@.cursor/DECISIONS.md`, `@.cursor/ROADMAP.md`.

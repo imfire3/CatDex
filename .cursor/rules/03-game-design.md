@@ -1,15 +1,19 @@
+---
+description: CatDex gameplay, XP, missions, badges, retention.
+globs: gameplay/**/*.ts,services/gameplay.service.ts,app/missions.tsx,app/badges.tsx,components/game/**/*.tsx
+---
 # 03 - Game Design
 
-CatDex emprunte aux jeux mobiles d'exploration: collection, progression, missions, badges et recompenses legeres.
+## Règles gameplay
+- Boucle: explorer -> observer -> documenter -> progresser -> revenir.
+- Récompenser observation responsable, diversité de zones et qualité de fiche.
+- Pas de dark patterns, rareté anxiogène ou streak punitif.
+- Aucun reward ne doit dépendre d'une localisation exacte visible.
+- XP/missions/badges doivent rester alignés avec `gameplay/` et Supabase.
+- Toute nouvelle mécanique doit expliquer: comportement encouragé, reward, anti-abus, impact MVP.
 
-## Regles gameplay
-- La boucle principale doit rester lisible: explorer -> observer -> documenter -> progresser -> revenir.
-- Les recompenses doivent valoriser l'observation responsable, pas la traque.
-- XP, badges, streaks et missions doivent avoir un sens thematique CatDex.
-- Eviter les dark patterns: pas de pression abusive, pas de rarete anxiogene.
-- Les missions doivent encourager la diversite: zones, moments, types de chats, soin de la fiche.
-- Les celebrations doivent etre courtes, rejouables et compatibles reduced motion.
-- La rarete ne doit jamais reveler une localisation exacte.
+## Sources code
+XP `gameplay/xp/xp-rules.ts`, missions `gameplay/missions`, badges `gameplay/badges`, retention `gameplay/retention`, seasons `gameplay/seasons`, models `gameplay/models`.
 
-## Question de decision
-Si une mecanique ne rend pas l'exploration plus claire, plus motivante ou plus responsable, ne pas l'ajouter.
+## Sources à charger
+`@.cursor/GAME_DESIGN.md`, `@.cursor/skills/mobile-game-design.md`, `@.cursor/skills/gamification.md`.

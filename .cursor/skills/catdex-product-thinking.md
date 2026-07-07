@@ -1,28 +1,23 @@
 # Skill - CatDex Product Thinking
 
 ## Quand l'utiliser
-- Prioriser une fonctionnalite, evaluer une idee ou refuser un changement.
-- Ecrire specs, prompts, tickets ou reviews produit.
-- Arbitrer entre fun, securite, simplicite et effort technique.
+Arbitrage produit, scope, roadmap, refus de feature, planning.
 
-## Principes cles
-- CatDex est une collection d'observations responsables, pas un outil de traque.
-- Le MVP doit rendre le premier cycle magique: onboarding -> zone -> observation -> fiche -> progression.
-- La valeur vient de la qualite du ChatDex, de la progression et de la communaute.
-- La confiance est plus importante que la precision geographique.
-
-## Checklist
-- Quel probleme utilisateur est resolu ?
-- Le changement renforce-t-il exploration, collection, progression ou communaute ?
-- Y a-t-il un risque pour la securite des chats ou la vie privee ?
+## Questions
+- Quel pilier est renforcé: exploration, collection, progression, communauté responsable, qualité premium ?
+- Risque pour chats, privacy ou confiance ?
+- MVP ou complexité future ?
 - Peut-on livrer avec moins de surface UI ?
-- Comment mesurer ou verifier le succes ?
+- Quelle doc vivante doit changer ?
 
-## Erreurs a eviter
-- Ajouter une fonctionnalite parce qu'elle est possible techniquement.
-- Optimiser la retention au detriment du bien-etre animal.
-- Melanger MVP et vision long terme dans un meme ecran.
+## Règles
+- Securité animale > engagement.
+- Confiance > précision géographique.
+- Cohérence DS/UX > nouveauté visuelle.
+- Petits changements vérifiables > refactor massif.
 
 ## Exemples CatDex
-- Priorite MVP: documenter une observation fiable avec recompense claire.
-- Dette a eviter: plusieurs sources de verite pour XP, rarete ou wording.
+Accepter: meilleure explication permission location. Ajuster: mission distance si mesure robuste et privacy-safe. Refuser: leaderboard basé sur localisation précise.
+
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

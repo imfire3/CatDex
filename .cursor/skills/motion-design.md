@@ -1,29 +1,24 @@
-# Skill - Motion Design
+# Skill - Motion Design CatDex
 
 ## Quand l'utiliser
-- Ajouter ou revoir transitions, micro-interactions, haptics, celebrations.
-- Ameliorer game feel sans alourdir l'app.
-- Rendre un changement d'etat plus comprehensible.
+Transitions, capture feedback, reveal, XP pop, haptics, skeleton, map markers.
 
-## Principes cles
-- Le mouvement explique une relation, confirme une action ou celebre un gain.
-- Durees courtes: MOTION.fast, normal, slow selon l'importance.
-- Les animations doivent respecter reduced motion.
-- Haptics: rares, signifiants, jamais repetitifs.
-- La fluidite prime sur l'effet spectaculaire.
+## Sources code
+`MOTION`, `hooks/useReduceMotion.ts`, `components/game/PokeballButton.tsx`, `CatRevealStage.tsx`, `CatAvatar3D.tsx`, `DailyBonusModal.tsx`, `components/feedback/Skeleton.tsx`.
 
 ## Checklist
-- Animation liee a un evenement utilisateur clair.
-- Sortie/entree lisibles, pas de layout jump.
-- Reduced motion prevu.
-- Pas d'animation infinie inutile.
-- Performance verifiee sur ecrans carte/listes.
+- Animation explique/confirme/célèbre.
+- Durée 150-420ms sauf cas justifié.
+- Reduced motion prévu.
+- Pas de loop sur liste/markers nombreux.
+- Feedback compréhensible sans mouvement/haptique.
 
-## Erreurs a eviter
-- Ajouter du mouvement decoratif partout.
-- Bloquer l'utilisateur pendant une celebration longue.
-- Animer de nombreux markers carte simultanement.
+## Erreurs à éviter
+Confetti long, haptic répétitif, pulse permanent non gated, animation qui bloque navigation, layout jump.
 
-## Exemples CatDex
-- Leger pop sur gain XP, confetti bref sur nouveau chat rare, fade sur sheet de zone.
-- Haptic subtil quand une fiche est ajoutee au ChatDex.
+## Exemples
+- Reveal rareté: court glow + scale, alternative static.
+- XP: progress bar timing, label textual.
+
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

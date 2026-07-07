@@ -1,17 +1,20 @@
+---
+description: CatDex mobile UX flows and friction rules.
+globs: app/**/*.tsx,components/**/*.tsx,hooks/**/*.ts
+---
 # 02 - UX Flow
 
-CatDex doit etre simple, fluide et comprehensible sans tutoriel long.
+## Flow canonique
+Auth/guest -> onboarding -> carte par zones -> observation/photo -> analyse -> confirmation -> célébration -> fiche/ChatDex/progression.
 
-## Regles UX
-- Chaque ecran doit avoir une intention unique et une prochaine action evidente.
-- Reduire les frictions avant la premiere decouverte.
-- Expliquer les permissions au moment utile, avec benefice utilisateur clair.
-- Toujours afficher un etat de chargement, vide et erreur quand une donnee peut manquer.
-- Ne jamais bloquer l'utilisateur sans chemin de sortie.
-- Les flows doivent rester courts: observer, confirmer, documenter, celebrer, continuer.
-- La carte doit guider vers des zones et opportunites, pas vers des positions exactes.
-- Les messages doivent rassurer et expliquer ce qui se passe.
+## Règles UX
+- Un écran = une intention dominante + CTA clair.
+- Permissions expliquées au moment utile, avec bénéfice et alternative.
+- Toujours prévoir loading, empty, error, permission denied/offline si data ou IO.
+- Carte = zones et opportunités, jamais adresse exacte.
+- Capture/documentation doit rester courte: prendre photo, analyser, vérifier, nom/note, ajouter.
+- Célébration brève, lisible et compatible reduced motion.
+- Ne jamais bloquer sans sortie.
 
-## Wording UX
-- Preferer: "Observer", "Decouvrir", "Documenter", "Ajouter au ChatDex".
-- Eviter en UI: "Capturer" pour les chats, sauf quand le code technique ou une route existante l'impose.
+## Sources à charger
+`@.cursor/UX_GUIDELINES.md`, `@.cursor/FEATURES.md`, `@.cursor/skills/laws-of-ux.md`, `@.cursor/skills/apple-hig.md`.

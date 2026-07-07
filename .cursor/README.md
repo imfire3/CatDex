@@ -1,63 +1,51 @@
-# Cursor Setup CatDex
+# Cursor Setup CatDex - Équipe d'agents spécialisés
 
-Ce dossier transforme Cursor en equipe d'agents specialises pour CatDex. Il documente les regles produit/design/dev, les skills operationnels, les agents et les prompts prets a copier.
+Ce dossier configure Cursor comme une équipe produit/design/dev pour CatDex. Il est volontairement spécifique au code actuel: Expo/React Native, Supabase, React Query, Zustand/MMKV, Reanimated, carte par zones, gameplay XP/missions/badges.
 
 ## Dossiers
-- `rules/`: contraintes courtes et actionnables a charger selon le type de tache.
-- `skills/`: methodes de travail detaillees avec checklists et exemples CatDex.
-- `agents/`: profils d'agents specialises avec prompt systeme pret a copier.
-- `prompts/`: prompts prets a lancer pour reviews et planning.
-- `CATDEX_CONTEXT.md`: memoire produit et technique commune.
+- `rules/`: règles projet applicables par type de tâche.
+- `skills/`: méthodes opérationnelles CatDex avec checklists.
+- `agents/`: rôles spécialisés avec prompts système prêts à copier.
+- `prompts/`: prompts prêts à l'emploi qui chargent automatiquement docs/rules/skills/agents via `@.cursor/...`.
+- Docs racine: mémoire vivante du produit, architecture, DS, gameplay, roadmap, dette.
 
-## Comment utiliser les agents
-1. Ouvrir le fichier d'agent dans `.cursor/agents/`.
-2. Copier le bloc "Prompt systeme pret a copier".
-3. Le coller dans Cursor Agent ou dans le prompt de tache.
-4. Ajouter le fichier ou l'ecran a analyser et demander une sortie concrete: risques, recommandations, patch minimal.
+## Routine obligatoire pour un futur agent
+1. Lire `@.cursor/CATDEX_CONTEXT.md`.
+2. Lire les docs ciblées par la tâche.
+3. Charger la rule 00 et 08, plus les rules spécialisées.
+4. Charger les skills et agent liés.
+5. Faire un changement scope, puis mettre à jour docs vivantes si la feature change.
 
-## Quel agent choisir
-- Lead Product Designer: UI, UX, Apple HIG, design system, coherence globale.
-- Mobile Game Designer: XP, missions, badges, rewards, retention.
-- Flutter Architect: architecture mobile adaptee a Expo/React Native, widgets/components, state, navigation, qualite code.
-- UI Consistency Reviewer: audit visuel strict, spacing, typography, radius, composants.
-- Motion Designer: animations, haptics, feedback, game feel.
-- Performance Engineer: FPS, rebuilds, images, lazy loading, optimisations.
-- CatDex Vision Keeper: arbitrage produit, securite chats, refus des derives.
+## Router de tâches
+| Tâche | Agent | Rules | Skills | Prompt |
+|---|---|---|---|---|
+| UI écran/composant | Lead Product Designer + UI Reviewer | 00,01,06,07,08 | apple-hig, design-system, accessibility | `prompts/ui-review.md` |
+| UX flow | Lead Product Designer + Vision Keeper | 00,02,06,07,08 | laws-of-ux, catdex-product-thinking | `prompts/ux-flow-review.md` |
+| Gameplay | Mobile Game Designer | 00,03,08 | mobile-game-design, gamification | `prompts/game-design-review.md` |
+| Architecture/code | Flutter Architect | 04,05,08 | performance | `prompts/code-quality-review.md` |
+| Performance | Performance Engineer | 05,08 | performance, motion-design | `prompts/performance-review.md` |
+| Map/privacy | Maps Privacy Reviewer | 00,02,06,08 | maps-geolocation, accessibility | `prompts/maps-privacy-review.md` |
+| Motion | Motion Designer | 05,06,08 | motion-design, performance | `prompts/motion-review.md` |
+| Vision/scope | Vision Keeper | 00,08 | catdex-product-thinking | `prompts/vision-arbitration.md` |
+| Planning | Staff Engineer + Product Design | 00,02,03,04,08 | product, game, design, performance | `prompts/sprint-planning.md` |
 
-## Quand utiliser chaque rule
-- Toujours: `00-product-vision`, `08-quality-review`.
-- UI/ecrans: `01-ui-design-system`, `02-ux-flow`, `06-accessibility`, `07-copywriting-fr`.
-- Gameplay: `03-game-design`.
-- Code: `04-mobile-architecture`, `05-performance`.
-- Carte/localisation: `00-product-vision`, `02-ux-flow`, `06-accessibility`, plus skill maps-geolocation.
+## Documentation vivante
+Mettre à jour `.cursor` quand une fonctionnalité importante change:
+- écran/flow -> `UX_GUIDELINES.md`, `FEATURES.md`;
+- architecture/service/store/hook -> `PROJECT_ARCHITECTURE.md`, `TECH_DEBT.md`;
+- composant/token -> `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md`, `UI_GUIDELINES.md`;
+- gameplay -> `GAME_DESIGN.md`, `ROADMAP.md`;
+- map/privacy -> `DECISIONS.md`, `KNOWN_ISSUES.md`;
+- wording -> `COPYWRITING_GUIDELINES.md`;
+- décision produit -> `DECISIONS.md`;
+- update majeure -> `CHANGELOG.md`.
 
-## Quand utiliser chaque skill
-- `apple-hig`: navigation, permissions, sheets, touch targets.
-- `laws-of-ux`: simplification de flows et priorisation mobile.
-- `mobile-game-design`: boucle de jeu, missions, progression.
-- `gamification`: XP, badges, streaks, rewards.
-- `design-system`: composants, tokens, coherence UI.
-- `motion-design`: animations, haptics, celebrations.
-- `accessibility`: labels, contraste, reduced motion.
-- `performance`: carte, camera, listes, images, renders.
-- `maps-geolocation`: zones, permissions, privacy, securite des chats.
-- `catdex-product-thinking`: priorisation et refus de scope incoherent.
+## Reviews rapides
+- UI: copier `prompts/ui-review.md`.
+- UX: `prompts/ux-flow-review.md`.
+- Performance: `prompts/performance-review.md`.
+- Architecture: `prompts/code-quality-review.md`.
+- Privacy map: `prompts/maps-privacy-review.md`.
 
-## Lancer une review UI
-Utiliser `.cursor/prompts/ui-review.md` avec l'agent UI Consistency Reviewer ou Lead Product Designer. Joindre les fichiers d'ecran/composants concernes et demander des references fichier/ligne.
-
-## Lancer une review UX
-Utiliser `.cursor/prompts/ux-flow-review.md` avec Lead Product Designer et CatDex Vision Keeper. Demander le flow actuel, les frictions, les risques et un plan de correction minimal.
-
-## Lancer une review performance
-Utiliser `.cursor/prompts/performance-review.md` avec Performance Engineer. Demander de cibler renders, listes, images, carte, camera, geolocation et animations.
-
-## Lancer une review architecture
-Utiliser `.cursor/prompts/code-quality-review.md` avec Flutter Architect. Preciser que CatDex est Expo/React Native et demander une evaluation scopee sans refactor global.
-
-## Eviter que Cursor modifie trop de choses
-- Demander explicitement: "Ne modifie que les fichiers listés".
-- Ajouter: "Pas de refactor global, pas de changement de dependance, pas de config build".
-- Demander une phase review avant patch.
-- Limiter la tache a un ecran, un composant ou un flow.
-- Exiger une checklist avant/apres et un resume des fichiers touches.
+## Éviter que Cursor modifie trop de choses
+Ajouter au prompt: "Ne modifie que les fichiers listés. Pas de refactor global. Pas de dépendance. Pas de config build. Si la documentation doit changer, limite-toi aux fichiers `.cursor` pertinents." Demander une review avant patch pour les flows sensibles.

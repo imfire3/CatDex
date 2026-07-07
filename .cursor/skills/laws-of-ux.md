@@ -1,29 +1,24 @@
-# Skill - Laws of UX
+# Skill - Laws of UX pour CatDex
 
 ## Quand l'utiliser
-- Simplifier un flow confus.
-- Evaluer onboarding, carte, ChatDex, missions et profil.
-- Prioriser les informations visibles sur mobile.
+Simplification de onboarding, map, capture, ChatDex, missions, profil.
 
-## Principes cles
-- Hick: moins de choix = decision plus rapide.
-- Fitts: grandes cibles proches du pouce pour actions frequentes.
-- Jakob: respecter les conventions mobiles connues.
-- Peak-End: soigner le moment de decouverte et la fin de session.
-- Tesler: cacher la complexite sans mentir sur l'etat.
+## Application CatDex
+- Hick: limiter choix par écran; map = zone + capture + objectifs, pas 6 CTA.
+- Fitts: capture tab/FAB et recenter doivent être grands et proches du pouce.
+- Jakob: respecter patterns iOS: tabs, stack, sheets, back.
+- Peak-End: soigner reveal/célébration après documentation.
+- Tesler: cacher complexité Supabase/gameplay, montrer état utile.
 
 ## Checklist
-- Un objectif par ecran.
-- CTA principal unique.
-- Texte court, contexte avant action.
-- Etats vides utiles et motivants.
-- Feedback immediat apres interaction.
+- L'utilisateur sait quoi faire maintenant.
+- Le flow peut être expliqué en une phrase.
+- Les erreurs donnent une reprise.
+- La carte n'est pas la seule source d'information.
+- Un écran surchargé perd des options avant d'en gagner.
 
-## Erreurs a eviter
-- Ajouter une option au lieu de clarifier la decision.
-- Creer des flows a embranchements inutiles.
-- Utiliser la carte comme seule source de comprehension.
+## Erreurs à éviter
+Onboarding trop long, permission sans bénéfice, reward non expliqué, empty state passif, navigation en boucle.
 
-## Exemples CatDex
-- Sur la carte, montrer des zones d'interet et une sheet contextuelle plutot que plusieurs overlays concurrents.
-- Apres documentation d'un chat, conclure par XP, badge potentiel et prochaine action simple.
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

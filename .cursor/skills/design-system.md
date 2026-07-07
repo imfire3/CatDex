@@ -1,28 +1,25 @@
-# Skill - Design System
+# Skill - Design System CatDex
 
 ## Quand l'utiliser
-- Creer ou harmoniser composants, tokens, cards, buttons, chips, headers.
-- Faire une review de coherence visuelle.
-- Reduire duplication UI.
+Toute UI, review visuelle, nouveau composant, harmonisation, suppression duplication.
 
-## Principes cles
-- `constants/design-system.ts` est la source de verite.
-- `components/ui` et `components/game` doivent etre preferes aux implementations locales.
-- 8pt grid, radius coherents, typographie stable, couleurs tokenisees.
-- Une variante reutilisable vaut mieux que trois copies legerement differentes.
+## Sources code
+`constants/design-system.ts`, `constants/game.ts`, `components/ui`, `components/game`, `components/map`, `components/feedback`, `components/auth`.
 
 ## Checklist
-- Tokens DS/TEXT/MOTION utilises.
-- Espacements en multiples de 8 quand possible.
-- Touch targets conformes.
-- Variantes nommees et limitees.
-- Pas de couleur ou radius local si un token existe.
+- Import depuis `@/constants/game`.
+- DS/TEXT/MOTION/ELEVATION/GRADIENTS/RARITY_COLORS utilisés.
+- 8pt grid, touch 44px+.
+- Composant existant cherché dans `COMPONENT_LIBRARY.md`.
+- `StyleSheet.create`, inline seulement pour dynamique.
+- Rarity + text, pas couleur seule.
 
-## Erreurs a eviter
-- Ajouter un nouveau composant sans chercher l'existant.
-- Duplications de cartes glass ou boutons gradient.
-- Styles inline massifs dans les routes.
+## Erreurs à éviter
+Créer une autre Card/Button, hardcoder colors/radius, utiliser `theme.ts` en nouveau code, oublier light surfaces dans sheets.
 
-## Exemples CatDex
-- Utiliser `ScreenHeader`, `GlassCard`, `ProgressBar`, `TagChip` ou equivalents existants avant d'en creer de nouveaux.
-- Une fiche chat doit partager les memes tokens de rarete que le reste du ChatDex.
+## Exemples
+- Ecran secondaire: `ScreenBackground` + `ScreenHeader` + `GlassCard`.
+- CTA: `FloatingButton` avant nouveau Pressable gradient.
+
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

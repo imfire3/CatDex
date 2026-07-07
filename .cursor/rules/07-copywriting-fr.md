@@ -1,16 +1,19 @@
+---
+description: French CatDex copywriting and responsible wording.
+globs: app/**/*.tsx,components/**/*.tsx,constants/**/*.ts,gameplay/**/*.ts
+---
 # 07 - Copywriting FR
 
-Le ton CatDex est francais, chaleureux, premium, joueur et respectueux des chats.
+## Voix CatDex
+Français naturel, chaleureux, premium, joueur, respectueux des chats.
 
-## Voix
-- Court, naturel, positif, jamais infantilisant.
-- Verbes preferes: observer, decouvrir, documenter, ajouter, completer, explorer.
-- Eviter "capturer" en interface utilisateur pour parler des chats; le garder uniquement si deja present comme nom technique.
-- Eviter le vocabulaire de chasse agressif, de possession ou de localisation exacte.
-- Donner du contexte avant de demander une permission.
-- CTA = verbe d'action + benefice clair.
+## Lexique
+- Préférer: observer, découvrir, documenter, explorer, ajouter au ChatDex, zone, observation, fiche, progression.
+- Éviter en UI nouvelle: capturer, chasser, traquer, adresse exacte, position précise.
+- Exceptions techniques: routes `/capture`, stores, tokens `capture`, noms existants si les renommer sort du scope.
 
-## Exemples
-- Bon: "Documenter ce chat", "Decouvrir la zone", "Ajouter au ChatDex".
-- A eviter: "Capturer le chat", "Voir l'adresse", "Traquer ce chat".
-- Etat vide: "Aucun chat documente ici pour le moment. Explore une zone proche pour commencer.".
+## CTA
+Verbe + bénéfice: "Ajouter au ChatDex", "Explorer cette zone", "Documenter l'observation".
+
+## Sources à charger
+`@.cursor/COPYWRITING_GUIDELINES.md`, `@.cursor/PRODUCT_VISION.md`.

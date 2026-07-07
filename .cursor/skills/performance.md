@@ -1,29 +1,25 @@
-# Skill - Performance
+# Skill - Performance CatDex
 
 ## Quand l'utiliser
-- Review de carte, camera, listes, animations, images et data fetching.
-- Avant d'ajouter markers, sheets, effets visuels ou calculs gameplay.
-- Investigation de lenteurs ou FPS bas.
+Map, camera, lists, animations, image loading, React Query/Zustand, geolocation.
 
-## Principes cles
-- Rendu mobile fluide avant sophistication visuelle.
-- Calculs hors render, subscriptions nettoyees, listes bornees.
-- Fetching cache via React Query quand approprie.
-- Images dimensionnees et chargees progressivement.
+## Hotspots
+- `app/(tabs)/map.tsx`: nearby cats, zones, markers, daily bonus, goals.
+- `components/map/GameMapNative.tsx`, `GameMapMapbox.tsx`.
+- `app/(tabs)/chatdex.tsx`: grid.
+- `app/capture/*`: camera/compression/AI/save.
+- Reanimated loops: markers, cat avatar, skeleton, goals.
 
 ## Checklist
-- Aucun calcul lourd dans JSX/render.
-- Markers et listes memoises ou limites si necessaire.
-- Listes longues virtualisees.
-- Effets et listeners avec cleanup.
-- Animations compatibles 60 FPS et reduced motion.
+- Calculs hors render ou memo justifié.
+- Stable keys, memo components si densité.
+- Cleanup effects, timers, location watchers.
+- Query invalidation ciblée.
+- Images compressées/dimensionnées.
+- Pas d'animation infinie coûteuse.
 
-## Erreurs a eviter
-- Recalculer toutes les missions a chaque render visible.
-- Re-render toute la carte sur changement mineur de UI.
-- Charger images originales non redimensionnees.
-- Garder un watcher geolocation actif hors besoin.
+## Erreurs à éviter
+Optimisation prématurée complexe, rerender carte entier sur UI mineure, watchers permanents, charger photos originales dans listes.
 
-## Exemples CatDex
-- Clusteriser ou simplifier les zones si trop de markers.
-- Utiliser une preview optimisee pour les cartes chat dans le ChatDex.
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

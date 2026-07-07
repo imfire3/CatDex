@@ -1,15 +1,23 @@
+---
+description: Clean mobile architecture for CatDex Expo/React Native plus Flutter best-practice principles.
+globs: app/**/*.tsx,components/**/*.tsx,hooks/**/*.ts,services/**/*.ts,gameplay/**/*.ts,providers/**/*.tsx,stores/**/*.ts,lib/**/*.ts
+---
 # 04 - Mobile Architecture
 
-CatDex est une app Expo Router / React Native / TypeScript avec Supabase, React Query, Zustand, NativeWind et services dedies.
+## Architecture propre
+- `app/` compose routes/navigation; pas de logique lourde.
+- `components/` rend UI réutilisable.
+- `services/` gère IO/Supabase/side effects.
+- `gameplay/` contient règles jeu et stores de gameplay.
+- `hooks/` composent data/state pour UI.
+- `providers/` expose contextes globaux.
+- `lib/` contient adapters/helpers infra.
 
-## Regles architecture
-- Respecter les frontieres: `app/` pour routes, `components/` pour UI, `services/` pour acces metier, `gameplay/` pour regles de jeu, `hooks/` pour composition.
-- Garder les ecrans minces: extraire composants et logique quand cela clarifie.
-- Utiliser des composants reutilisables au lieu de dupliquer des structures UI.
-- Centraliser les constantes dans `constants/` ou le domaine gameplay approprie.
-- Eviter le code mort, les helpers prematurement generiques et les abstractions inutiles.
-- Preferer TypeScript strict, types explicites aux frontieres et noms metier clairs.
-- Ne pas melanger navigation, fetching, calcul de recompense et rendu dans un meme bloc.
+## Flutter Best Practices transposées
+Le projet est Expo/React Native. Appliquer les principes Flutter utiles: petits composants composables, state explicite, rebuilds limités, logique hors render, séparation UI/domain/data, props typées, side effects isolés, navigation prévisible.
 
-## Modification minimale
-Toute intervention doit etre scopee: corriger le besoin sans refactor global non demande.
+## Règles de code
+Pas de refactor global non demandé, pas de dépendance inutile, pas de duplication logique, pas de calcul coûteux dans render, cleanup effects/listeners, TypeScript clair aux frontières.
+
+## Sources à charger
+`@.cursor/PROJECT_ARCHITECTURE.md`, `@.cursor/TECH_DEBT.md`, `@.cursor/skills/performance.md`.

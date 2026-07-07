@@ -1,30 +1,28 @@
-# Skill - Apple Human Interface Guidelines
+# Skill - Apple HIG appliqué à CatDex
 
 ## Quand l'utiliser
-- Creation ou review d'ecrans iOS/React Native.
-- Decisions de navigation, hierarchy, feedback, sheets, permissions.
-- Ajustements de touch targets, spacing, typographie et gestes.
+Écrans `app/`, navigation Expo Router, permissions camera/location, sheets, modals, tab bar, touch targets.
 
-## Principes cles
-- Clarte: l'utilisateur comprend l'etat et l'action suivante.
-- Deference: le contenu prime sur le chrome UI.
-- Profondeur: transitions et couches aident la comprehension.
-- Controle utilisateur: pas d'action irreversible sans feedback.
-- 44px minimum pour les zones tactiles.
+## Principes CatDex
+- Clarté: zone, action, reward et état doivent être évidents.
+- Contrôle: permission refusée ou offline ne doit pas casser l'app sans alternative.
+- Profondeur: glass, sheets et transitions expliquent le contexte, pas juste décorer.
+- Touch: 44px minimum, actions capture/progression accessibles au pouce.
 
 ## Checklist
-- Action principale visible et accessible au pouce.
-- Navigation coherente avec Expo Router et les patterns iOS.
-- Permission demandee avec contexte et benefice.
-- Sheet/modal utilisee pour une decision courte, pas un flow complexe.
-- Etat pressed/disabled/loading present.
+- Safe areas respectées (`SafeAreaView`, insets tab/map).
+- CTA principal unique.
+- Permission copy indique bénéfice et privacy.
+- Back/close disponible dans flows secondaires.
+- Feedback pressed/loading/disabled.
 
-## Erreurs a eviter
-- Copier des patterns desktop.
-- Multiplier les boutons concurrents.
-- Masquer une action critique dans une icone non labelisee.
-- Ignorer safe areas et bottom tabs.
+## Erreurs à éviter
+Pattern desktop, icône sans label, modal pour flow long, tab/FAB qui concurrence la sheet, action critique trop proche du bord.
 
 ## Exemples CatDex
-- Une demande de localisation doit expliquer qu'elle sert a proposer des zones proches, jamais des adresses exactes.
-- Une celebration de decouverte doit etre courte et laisser continuer l'exploration.
+- Map: sheet zone + CTA plutôt que overlay dense.
+- Capture: étapes courtes et stack modal slide_from_bottom.
+- DailyBonusModal: célébration brève, dismiss claire.
+
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

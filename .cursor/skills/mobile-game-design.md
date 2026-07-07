@@ -1,30 +1,27 @@
-# Skill - Mobile Game Design
+# Skill - Mobile Game Design CatDex
 
 ## Quand l'utiliser
-- Concevoir missions, badges, XP, daily goals, streaks ou rewards.
-- Evaluer la retention et la boucle principale.
-- Transformer une fonctionnalite utilitaire en moment joueur.
+XP, missions, badges, streaks, daily bonus, seasons, rewards, retention, celebration.
 
-## Principes cles
-- Boucle courte: explorer -> observer -> documenter -> recompense.
-- Objectifs lisibles: daily, weekly, collection, progression.
-- Recompenses proportionnees a l'effort.
-- Sessions de 30 secondes a quelques minutes.
-- Respect animal et securite avant engagement.
+## Connaissance code
+- XP: `gameplay/xp/xp-rules.ts`.
+- Missions: `gameplay/missions/mission-definitions.ts`, `mission-store.ts`, `hooks/useMissions.ts`.
+- Badges: `gameplay/badges/badge-definitions.ts`, `services/badges.service.ts`.
+- Retention: `gameplay/retention/*`, `hooks/useRetention.ts`.
+- Discovery: `services/gameplay.service.ts`, `gameplay/discovery/discovery-rewards.ts`.
+
+## Principes
+Boucle courte, reward lisible, pas de pression punitive, pas de traque. Valoriser diversité de zones, première découverte, qualité documentation, streak doux.
 
 ## Checklist
-- Le joueur sait quoi faire maintenant.
-- La recompense explique pourquoi elle est gagnee.
-- La progression est visible sans surcharger l'ecran.
-- Les missions favorisent l'exploration responsable.
-- Les mecaniques ne poussent pas a reveler une position exacte.
+- Comportement encouragé identifié.
+- Reward proportionné.
+- Anti-abus prévu.
+- Pas d'exposition de position exacte.
+- Impact sur missions/badges/DB compris.
 
-## Erreurs a eviter
-- Ajouter de la rarete anxiogene.
-- Rendre les streaks punitifs.
-- Encourager la poursuite physique d'un animal.
-- Multiplier badges et devises sans signification.
+## Erreurs à éviter
+Multiplier devises, ajouter rareté anxiogène, récompenser spam, oublier catalogues badges DB/gameplay, introduire saison sans claim.
 
-## Exemples CatDex
-- Mission: "Documenter 2 robes differentes cette semaine".
-- Badge: "Observateur du quartier" pour plusieurs zones documentees, sans precision d'adresse.
+## Documents à charger
+Toujours charger `@.cursor/CATDEX_CONTEXT.md` puis les docs/rules cités par la tâche.

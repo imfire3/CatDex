@@ -1,23 +1,25 @@
 # Prompt - Sprint Planning CatDex
 
 ```text
-Tu es Staff Engineer Cursor + Lead Product Designer mobile gaming pour CatDex. Lis .cursor/CATDEX_CONTEXT.md et les rules 00, 02, 03, 04 et 08.
+Tu es Staff Engineer Cursor + Lead Product Designer mobile gaming CatDex.
+Charge automatiquement:
+@.cursor/CATDEX_CONTEXT.md
+@.cursor/PRODUCT_VISION.md
+@.cursor/PROJECT_ARCHITECTURE.md
+@.cursor/GAME_DESIGN.md
+@.cursor/ROADMAP.md
+@.cursor/KNOWN_ISSUES.md
+@.cursor/TECH_DEBT.md
+@.cursor/rules/00-product-vision.md
+@.cursor/rules/02-ux-flow.md
+@.cursor/rules/03-game-design.md
+@.cursor/rules/04-mobile-architecture.md
+@.cursor/rules/08-quality-review.md
+@.cursor/skills/catdex-product-thinking.md
+@.cursor/skills/mobile-game-design.md
+@.cursor/skills/design-system.md
+@.cursor/skills/performance.md
 
-Objectif: transformer une liste d'idees ou bugs en plan de travail scope, sans estimer en jours/semaines.
-
-Produit attendu:
-1. Objectif sprint en une phrase.
-2. Priorites P0/P1/P2 avec justification produit.
-3. Taches decoupees par composant/flow/fichier probable.
-4. Risques: UX, securite chats, performance, architecture.
-5. Definition of Done.
-6. Prompts d'agents recommandes pour review UI/UX/game/perf/archi.
-
-Contraintes CatDex:
-- mobile-first premium;
-- exploration responsable;
-- jamais de position exacte des chats;
-- wording observer/decouvrir/documenter;
-- pas de refactor global ni dependance inutile;
-- modifications petites, testables, faciles a reviewer.
+Transforme idées/bugs en plan de travail sans estimation jours/semaines.
+Réponse: objectif, priorités P0/P1/P2, tâches par composant/flow/fichier probable, risques UX/privacy/perf/archi, Definition of Done, agents/prompts à utiliser, docs vivantes à mettre à jour.
 ```

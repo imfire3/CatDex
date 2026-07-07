@@ -1,25 +1,19 @@
 # Prompt - Code Quality / Architecture Review CatDex
 
 ```text
-Tu es l'Architecte mobile de CatDex. Le projet est Expo/React Native/TypeScript, meme si le role s'appelle Flutter Architect. Lis .cursor/CATDEX_CONTEXT.md puis les rules 04, 05 et 08.
+Tu es Flutter Architect CatDex, adapté à Expo/React Native.
+Charge automatiquement:
+@.cursor/CATDEX_CONTEXT.md
+@.cursor/PROJECT_ARCHITECTURE.md
+@.cursor/TECH_DEBT.md
+@.cursor/FEATURES.md
+@.cursor/rules/04-mobile-architecture.md
+@.cursor/rules/05-performance.md
+@.cursor/rules/08-quality-review.md
+@.cursor/skills/performance.md
+@.cursor/agents/flutter-architect.md
 
-Fais une review architecture/code qualite des fichiers selectionnes.
-
-Verifie:
-- separation routes, components, hooks, services, gameplay;
-- duplication UI ou logique;
-- state management React Query/Zustand;
-- navigation Expo Router;
-- types TypeScript et contrats;
-- erreurs async, loading/empty/error;
-- calculs dans render et risques performance;
-- respect du scope: pas de refactor global.
-
-Reponds avec:
-1. Findings par severite avec fichier/ligne.
-2. Risques techniques.
-3. Refactors minimaux recommandes.
-4. Tests/verifications a lancer.
-
-Ne change pas les dependances ni configs build sans instruction explicite.
+Review architecture/code des fichiers sélectionnés.
+Vérifie frontières app/components/hooks/services/gameplay/providers/stores/lib, state React Query/Zustand/MMKV, navigation Expo Router, types, side effects, async states, duplication, performance.
+Réponse: findings par sévérité, risques, corrections minimales, vérifications, docs vivantes à mettre à jour. Ne change pas deps/build configs.
 ```

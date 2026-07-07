@@ -1,18 +1,20 @@
+---
+description: Mobile performance for map, camera, lists, animations, data.
+globs: app/**/*.tsx,components/**/*.tsx,hooks/**/*.ts,services/**/*.ts,gameplay/**/*.ts
+---
 # 05 - Performance
 
-La sensation premium depend de la fluidite mobile: interactions rapides, carte reactive, images maitrisees, animations sobres.
+## Obligatoire
+- Protéger FPS sur map, camera, ChatDex grid, animations et capture flow.
+- Éviter calculs lourds dans render; utiliser memo seulement si utile.
+- Nettoyer watchers geolocation, timers, subscriptions, intervals.
+- Listes longues: FlatList/virtualisation, key stable, composants memo si besoin.
+- Markers: éviter re-render massif; `tracksViewChanges={false}` côté native déjà en place.
+- Images: dimensions connues, compression via cameraService, lazy/progressive si liste.
+- Animations décoratives: reduced motion + pas de loops coûteuses.
 
-## Regles performance
-- Eviter les re-renders inutiles sur carte, listes, sheets et composants animes.
-- Memoiser seulement quand le benefice est concret et lisible.
-- Charger les images avec dimensions connues et strategies progressives quand possible.
-- Garder les listes lazy, paginees ou virtualisees si elles peuvent grandir.
-- Ne pas executer de calcul lourd dans le render.
-- Limiter les listeners geoloc et nettoyer les subscriptions.
-- Tester les impacts sur FPS, temps de demarrage et fluidite de navigation.
-- Respecter reduced motion pour reduire cout et inconfort.
+## Zones à haut risque
+`app/(tabs)/map.tsx`, `components/map/*`, `app/capture/*`, `components/game/CatAvatar3D.tsx`, `CatRevealStage.tsx`, `Skeleton.tsx`.
 
-## Signaux d'alerte
-- Styles/objets recrees massivement dans des children frequents.
-- Markers carte trop nombreux sans clustering ou simplification.
-- Animations continues sans valeur UX.
+## Sources à charger
+`@.cursor/ANIMATION_GUIDELINES.md`, `@.cursor/skills/performance.md`, `@.cursor/skills/motion-design.md`.
