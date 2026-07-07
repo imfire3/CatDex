@@ -13,7 +13,7 @@ export function Chip({ label, selected = false, style, ...props }: ChipProps) {
         styles.chip,
         selected && styles.chipSelected,
         pressed && styles.chipPressed,
-        typeof style === "function" ? style({ pressed }) : style,
+        typeof style === "function" ? style({ pressed, hovered: false } as any) : style,
       ]}
       accessibilityRole="button"
       accessibilityState={{ selected }}

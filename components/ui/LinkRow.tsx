@@ -25,7 +25,7 @@ export function LinkRow({
 }: LinkRowProps) {
   return (
     <Pressable
-      style={({ pressed }) => [pressed && styles.pressed, typeof style === "function" ? style({ pressed }) : style]}
+      style={({ pressed }) => [pressed && styles.pressed, typeof style === "function" ? style({ pressed, hovered: false } as any) : style]}
       accessibilityRole="button"
       accessibilityLabel={subtitle ? `${title}, ${subtitle}` : title}
       {...props}

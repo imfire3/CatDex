@@ -69,7 +69,7 @@ export function GameButton({
         styles.buttonShell,
         animStyle,
         disabled && styles.disabled,
-        typeof style === "function" ? style({ pressed: false }) : style,
+        typeof style === "function" ? style({ pressed: false, hovered: false } as any) : style,
       ]}
       {...props}
     >

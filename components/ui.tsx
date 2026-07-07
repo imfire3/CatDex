@@ -56,7 +56,7 @@ export function Button({
           transform: [{ scale: pressed && !disabled ? 0.98 : 1 }],
         },
         buttonStyle,
-        typeof style === "function" ? style({ pressed }) : style,
+        typeof style === "function" ? style({ pressed, hovered: false } as any) : style,
       ]}
       {...props}
     >
