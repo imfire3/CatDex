@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "CatDex",
+    "slug": "catdex",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "catdex",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "CatDex a besoin de la caméra pour scanner les chats."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "CatDex utilise ta position pour placer les chats sur la carte."
+        }
+      ],
+      "expo-splash-screen"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.catdex.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CatDex a besoin de la caméra pour scanner les chats.",
+        "NSLocationWhenInUseUsageDescription": "CatDex utilise ta position pour placer les chats sur la carte."
+      }
+    },
+    "android": {
+      "package": "com.catdex.app",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#0E0F12",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
