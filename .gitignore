@@ -45,3 +45,4 @@ ChatDex Mobile App UI/
 # generated native folders
 /ios
 /android
+.DS_Store
