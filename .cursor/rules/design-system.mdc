@@ -1,0 +1,101 @@
+---
+description: CatDex design tokens — colors, type, spacing, radius, shadows, naming. Never invent styles.
+globs: app/**/*.{ts,tsx},src/**/*.{ts,tsx}
+alwaysApply: true
+---
+
+# CatDex Design System
+
+**Source of truth:** `src/theme/` via `useTheme()` from `@/theme`. Never hardcode hex/rgba or ad-hoc spacing. Do not use tokens from `ChatDex Mobile App UI/` (Figma/web export).
+
+```ts
+import { useTheme } from '@/theme';
+const { colors, spacing, radius, typography, shadow, gradients, motion, iconSize } = useTheme();
+```
+
+## Colors (dark-first — light/dark palettes are identical)
+
+| Token | Value |
+|---|---|
+| `background` | `#060816` |
+| `surface` | `#10152B` |
+| `surfaceSecondary` | `#161D38` |
+| `surfaceTertiary` | `#1C2444` |
+| `text` | `#FFFFFF` |
+| `textBody` | `rgba(255,255,255,0.78)` |
+| `textSecondary` | `rgba(255,255,255,0.55)` |
+| `placeholder` | `rgba(255,255,255,0.35)` |
+| `accent` / `primary` | `#6E87FF` |
+| `accentStrong` / `violet` | `#8D7BFF` |
+| `accentSoft` | `rgba(110,135,255,0.18)` |
+| `primarySoft` | `rgba(110,135,255,0.16)` |
+| `mint` / `success` | `#5EE4B0` |
+| `yellow` / `warning` | `#FFD56A` |
+| `orange` | `#FF9F6B` |
+| `sky` | `#6EC8FF` |
+| `rose` | `#FF8FB3` |
+| `danger` | `#FF6B8A` |
+| `border` | `rgba(255,255,255,0.08)` |
+| `overlay` | `rgba(6,8,22,0.72)` |
+| `glassFill` | `rgba(16,21,43,0.72)` |
+| `tabBar` | `rgba(6,8,22,0.92)` |
+| `gradientStart` → `gradientEnd` | `#6E87FF` → `#8D7BFF` |
+| `onAccent` / `onPrimary` / `onSurface` | `#FFFFFF` |
+
+Soft variants (`mintSoft`, `yellowSoft`, …) use `rgba(..., 0.16)`. Coat themes: `src/lib/catTheme.ts` only.
+
+**Gradients** (`gradients`): `primary`, `primarySoft`, `surface`, `hero`, `capture`, `xp`.
+
+## Typography
+
+Fonts: iOS System (SF); Android/web Syne (display) + Manrope (body).
+
+Use `<Text variant="…" color="…" />` — do not invent font sizes.
+
+| Variant | Size / Line / Tracking |
+|---|---|
+| `display` | 40 / 48 / -1.2 |
+| `h1` | 32 / 40 / -0.8 |
+| `h2` | 24 / 32 / -0.4 |
+| `h3` | 20 / 28 / -0.2 |
+| `body` | 16 / 24 / -0.1 |
+| `bodySmall` | 14 / 20 / 0 |
+| `caption` | 12 / 16 / 0.1 |
+| `label` | 12 / 16 / 0.8 uppercase |
+
+## Spacing — 8pt grid only
+
+Allowed: `4 · 8 · 16 · 24 · 32 · 40 · 48 · 64 · 96`  
+Aliases: `xs=4 sm=8 md=16 lg=24 xl=32 2xl=40 3xl=48 4xl=64 5xl=96`  
+Use `spacing.md`, not magic numbers outside this scale.
+
+## Radius
+
+`12 · 16 · 20 · 24 · 28 · 32 · full(9999)`  
+Aliases: `sm=12 md=16 lg=20 xl=24 sheet=28 2xl=32`  
+Convention: buttons `20`, cards `24`, sheets `28`, FAB `full`.
+
+## Shadow / Motion / Icons
+
+Shadows: `shadow.small | medium | large | glow` (glow = Scanner FAB only). Also `accentShadow`.  
+Motion duration: `instant=80 fast=160 normal=240 slow=400 reveal=600`. Press scales: `0.96` / card `0.98`.  
+Icons: `sm=16 md=24 lg=32 xl=40`; stroke `1.5` / `1.8`.
+
+## Component naming
+
+- Folder + PascalCase file: `src/components/Button/Button.tsx`, barrel `index.ts`.
+- Export from `@/components` when shared.
+- Prefer existing primitives: `Text`, `Button` (`primary|secondary|ghost|icon`), `TextInput`/`SearchInput`/`Textarea`, `Card`/`GlassCard`/`ImageCard`/`PhotoCard`/`GalleryCard`/`StatCard`, `Badge`, `Chip`, `Avatar`, `ProgressBar`/`XPBar`, `BottomSheet`, `Modal`, `Toast`, `EmptyState`, `Spinner`/`Skeleton`.
+- Screens live in `app/`; feature UI may be colocated but must consume theme tokens.
+- Brand: **CatDex** — slogan “Ton quartier. Tes chats.” (`src/constants/design.ts`).
+
+```tsx
+// ❌ BAD
+<View style={{ backgroundColor: '#1a1a2e', padding: 12, borderRadius: 8 }} />
+<Text style={{ fontSize: 18, color: '#ccc' }}>Title</Text>
+
+// ✅ GOOD
+const { colors, spacing, radius } = useTheme();
+<View style={{ backgroundColor: colors.surface, padding: spacing.md, borderRadius: radius.xl }} />
+<Text variant="h3" color="text">Title</Text>
+```

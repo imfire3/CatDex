@@ -32,11 +32,7 @@ function RootNavigator() {
       }}
     >
       <Stack.Screen name="index" />
-      <Stack.Screen name="(auth)/welcome" />
-      <Stack.Screen name="(auth)/signup" />
-      <Stack.Screen name="(auth)/login" />
-      <Stack.Screen name="(auth)/intro" />
-      <Stack.Screen name="(auth)/permissions" />
+      <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen
         name="scanner"
