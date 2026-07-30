@@ -1,65 +1,83 @@
 import { Tabs, router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Platform, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ScannerFab } from '@/components/ScannerFab';
+import { FloatingActionButton } from '@/layout/FloatingActionButton';
 import { useTheme } from '@/theme/ThemeProvider';
 
 function TabIcon({
   name,
   color,
+  focused,
 }: {
   name: 'map' | 'catdex' | 'missions' | 'profile';
   color: string;
+  focused: boolean;
 }) {
+  const stroke = focused ? 0 : 1.6;
+  const fill = focused ? color : 'none';
+
   if (name === 'map') {
     return (
-      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
         <Path
-          d="M3 7.5 9 5l6 2.5L21 5v13.5L15 21l-6-2.5L3 21V7.5Z"
+          d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
           stroke={color}
-          strokeWidth="1.7"
+          strokeWidth={focused ? 0 : 1.6}
+          fill={fill}
           strokeLinejoin="round"
         />
+        {!focused ? <Circle cx="12" cy="10" r="2.5" stroke={color} strokeWidth={1.6} /> : null}
       </Svg>
     );
   }
-
   if (name === 'catdex') {
     return (
-      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-        <Rect x="4" y="3.5" width="16" height="17" rx="2.5" stroke={color} strokeWidth="1.7" />
-        <Path d="M8 9h8M8 13h5" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Rect
+          x="4"
+          y="3.5"
+          width="16"
+          height="17"
+          rx="2.5"
+          stroke={color}
+          strokeWidth={stroke || 1.6}
+          fill={fill}
+        />
+        {!focused ? (
+          <Path d="M8 9h8M8 13h5" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+        ) : null}
       </Svg>
     );
   }
-
   if (name === 'missions') {
     return (
-      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-        <Circle cx="12" cy="12" r="8" stroke={color} strokeWidth="1.7" />
-        <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.7" />
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Circle cx="12" cy="12" r="8" stroke={color} strokeWidth={stroke || 1.6} fill={fill} />
+        {!focused ? <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={1.6} /> : null}
       </Svg>
     );
   }
-
   return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="9" r="3.2" stroke={color} strokeWidth="1.7" />
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="9" r="3.2" stroke={color} strokeWidth={stroke || 1.6} fill={fill} />
       <Path
         d="M5.5 19c1.4-3 3.8-4.5 6.5-4.5S17.1 16 18.5 19"
         stroke={color}
-        strokeWidth="1.7"
+        strokeWidth={1.6}
         strokeLinecap="round"
+        fill={focused ? color : 'none'}
       />
     </Svg>
   );
 }
 
 export default function TabsLayout() {
-  const { colors, fonts } = useTheme();
+  const { colors, fonts, spacing } = useTheme();
   const insets = useSafeAreaInsets();
+  const tabHeight = spacing[64] + Math.max(insets.bottom, spacing[8]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -67,64 +85,81 @@ export default function TabsLayout() {
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.accent,
-          tabBarInactiveTintColor: colors.textMuted,
+          tabBarInactiveTintColor: colors.textSecondary,
           tabBarStyle: {
-            backgroundColor: colors.tabBar,
+            position: 'absolute',
+            backgroundColor: Platform.OS === 'ios' ? 'transparent' : colors.tabBar,
             borderTopColor: colors.border,
-            height: 62 + Math.max(insets.bottom, 8),
-            paddingTop: 8,
-            paddingBottom: Math.max(insets.bottom, 8),
+            borderTopWidth: 1,
+            height: tabHeight,
+            paddingTop: spacing[8],
+            paddingBottom: Math.max(insets.bottom, spacing[8]),
+            elevation: 0,
           },
+          tabBarBackground: () =>
+            Platform.OS === 'ios' ? (
+              <BlurView intensity={48} tint="dark" style={{ flex: 1 }} />
+            ) : (
+              <View style={{ flex: 1, backgroundColor: colors.tabBar }} />
+            ),
           tabBarLabelStyle: {
-            fontFamily: fonts.bodyMedium,
+            fontFamily: fonts.bodySemi,
             fontSize: 11,
+            marginTop: 2,
           },
         }}
       >
         <Tabs.Screen
           name="map"
           options={{
-            title: 'Carte',
-            tabBarIcon: ({ color }) => <TabIcon name="map" color={String(color)} />,
+            title: 'Explore',
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon name="map" color={String(color)} focused={focused} />
+            ),
           }}
         />
         <Tabs.Screen
           name="catdex"
           options={{
             title: 'CatDex',
-            tabBarIcon: ({ color }) => <TabIcon name="catdex" color={String(color)} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon name="catdex" color={String(color)} focused={focused} />
+            ),
           }}
         />
         <Tabs.Screen
           name="missions"
           options={{
             title: 'Missions',
-            tabBarIcon: ({ color }) => <TabIcon name="missions" color={String(color)} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon name="missions" color={String(color)} focused={focused} />
+            ),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: 'Profil',
-            tabBarIcon: ({ color }) => <TabIcon name="profile" color={String(color)} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon name="profile" color={String(color)} focused={focused} />
+            ),
           }}
         />
       </Tabs>
 
-      <ScannerFab onPress={() => router.push('/scanner')} />
-
-      {/* Spacer hint so center FAB doesn't cover labels oddly on web */}
-      <View pointerEvents="none" style={styles.fabSpacer} />
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: Math.max(insets.bottom, spacing[8]) + spacing[4],
+          alignItems: 'center',
+          zIndex: 20,
+        }}
+      >
+        <FloatingActionButton embedded onPress={() => router.push('/scanner')} />
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  fabSpacer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 0,
-  },
-});

@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useMemo } from 'react';
-import { useColorScheme } from 'react-native';
 
 import { resolveThemeColors, type ColorScheme, type ThemeColors } from './colors';
+import { gradients } from './gradients';
 import { iconSize, iconStroke } from './icons';
 import { motion } from './motion';
 import { radius } from './radius';
-import { accentShadow, shadow } from './shadow';
+import { createAccentShadow, createShadows } from './shadow';
 import { spacing } from './spacing';
 import { fontFamilies, typography } from './typography';
 
@@ -16,38 +16,40 @@ export type Theme = {
   radius: typeof radius;
   typography: typeof typography;
   fonts: typeof fontFamilies;
-  shadow: typeof shadow;
-  accentShadow: typeof accentShadow;
+  shadow: ReturnType<typeof createShadows>;
+  accentShadow: ReturnType<typeof createAccentShadow>;
   motion: typeof motion;
   iconSize: typeof iconSize;
   iconStroke: typeof iconStroke;
-  /** @deprecated use radius — kept for Phase 0 screen compatibility */
+  gradients: typeof gradients;
+  /** @deprecated use radius */
   radii: typeof radius;
 };
 
-const ThemeContext = createContext<Theme | null>(null);
+export const ThemeContext = createContext<Theme | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const system = useColorScheme();
-  const scheme: ColorScheme = system === 'dark' ? 'dark' : 'light';
+  // CatDex is dark-first premium — always dark
+  const scheme: ColorScheme = 'dark';
 
-  const value = useMemo<Theme>(
-    () => ({
+  const value = useMemo<Theme>(() => {
+    const colors = resolveThemeColors(scheme);
+    return {
       scheme,
-      colors: resolveThemeColors(scheme),
+      colors,
       spacing,
       radius,
       typography,
       fonts: fontFamilies,
-      shadow,
-      accentShadow,
+      shadow: createShadows(colors),
+      accentShadow: createAccentShadow(colors),
       motion,
       iconSize,
       iconStroke,
+      gradients,
       radii: radius,
-    }),
-    [scheme],
-  );
+    };
+  }, [scheme]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

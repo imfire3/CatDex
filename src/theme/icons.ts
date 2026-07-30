@@ -11,8 +11,8 @@ export const iconSize = {
 
 export type IconSize = keyof typeof iconSize;
 
-/** Stroke weight for outline icons */
+/** Stroke weight for outline icons — SF Symbols / Lucide thin feel */
 export const iconStroke = {
-  regular: 1.7,
-  bold: 2.2,
+  regular: 1.5,
+  bold: 1.8,
 } as const;

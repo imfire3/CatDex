@@ -1,14 +1,21 @@
+import { Platform, type TextStyle } from 'react-native';
+
 /**
- * Typography tokens — Syne (brand/display) + Manrope (UI).
+ * Typography — SF Pro Display on iOS, Manrope/Syne elsewhere.
+ * Large display hierarchy for premium feel.
  */
 
+const iosDisplay = 'System';
+const iosBody = 'System';
+
 export const fontFamilies = {
-  display: 'Syne_700Bold',
-  displaySemi: 'Syne_600SemiBold',
-  body: 'Manrope_400Regular',
-  bodyMedium: 'Manrope_500Medium',
-  bodySemi: 'Manrope_600SemiBold',
-  bodyBold: 'Manrope_700Bold',
+  display: Platform.OS === 'ios' ? iosDisplay : 'Syne_700Bold',
+  displaySemi: Platform.OS === 'ios' ? iosDisplay : 'Syne_600SemiBold',
+  body: Platform.OS === 'ios' ? iosBody : 'Manrope_500Medium',
+  bodyMedium: Platform.OS === 'ios' ? iosBody : 'Manrope_600SemiBold',
+  bodySemi: Platform.OS === 'ios' ? iosBody : 'Manrope_700Bold',
+  bodyBold: Platform.OS === 'ios' ? iosBody : 'Manrope_700Bold',
+  bodyBlack: Platform.OS === 'ios' ? iosBody : 'Manrope_800ExtraBold',
 } as const;
 
 export type TextVariant =
@@ -26,6 +33,7 @@ export type TypographyStyle = {
   fontSize: number;
   lineHeight: number;
   letterSpacing: number;
+  fontWeight?: TextStyle['fontWeight'];
   textTransform?: 'none' | 'uppercase';
 };
 
@@ -34,49 +42,57 @@ export const typography: Record<TextVariant, TypographyStyle> = {
     fontFamily: fontFamilies.display,
     fontSize: 40,
     lineHeight: 48,
-    letterSpacing: -1,
+    letterSpacing: -1.2,
+    fontWeight: Platform.OS === 'ios' ? '800' : undefined,
   },
   h1: {
-    fontFamily: fontFamilies.display,
-    fontSize: 34,
+    fontFamily: fontFamilies.bodyBlack,
+    fontSize: 32,
     lineHeight: 40,
     letterSpacing: -0.8,
+    fontWeight: Platform.OS === 'ios' ? '700' : undefined,
   },
   h2: {
-    fontFamily: fontFamilies.displaySemi,
-    fontSize: 28,
-    lineHeight: 34,
-    letterSpacing: -0.6,
+    fontFamily: fontFamilies.bodySemi,
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.4,
+    fontWeight: Platform.OS === 'ios' ? '600' : undefined,
   },
   h3: {
     fontFamily: fontFamilies.bodySemi,
     fontSize: 20,
     lineHeight: 28,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
+    fontWeight: Platform.OS === 'ios' ? '600' : undefined,
   },
   body: {
     fontFamily: fontFamilies.body,
     fontSize: 16,
     lineHeight: 24,
-    letterSpacing: 0,
+    letterSpacing: -0.1,
+    fontWeight: Platform.OS === 'ios' ? '400' : undefined,
   },
   bodySmall: {
     fontFamily: fontFamilies.body,
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: 0,
+    fontWeight: Platform.OS === 'ios' ? '400' : undefined,
   },
   caption: {
     fontFamily: fontFamilies.body,
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: 0.1,
+    fontWeight: Platform.OS === 'ios' ? '500' : undefined,
   },
   label: {
     fontFamily: fontFamilies.bodySemi,
     fontSize: 12,
     lineHeight: 16,
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
+    fontWeight: Platform.OS === 'ios' ? '600' : undefined,
     textTransform: 'uppercase',
   },
 };

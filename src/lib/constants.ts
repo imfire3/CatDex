@@ -16,7 +16,7 @@ export const PARIS_20E = {
   },
 } as const;
 
-export const SLOGAN = 'Ton quartier. Tes chats.';
+export const SLOGAN = 'Explore ton quartier, capture les chats et construis ton CatDex.';
 
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';

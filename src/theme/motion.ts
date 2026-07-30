@@ -1,32 +1,25 @@
-import { Easing } from 'react-native-reanimated';
-
 /**
- * Motion tokens — prepare curves without wiring product flows.
- * Respect reduced motion at the call site via useReducedMotion.
+ * Motion — smooth, premium, never abrupt.
  */
-
 export const motionDuration = {
-  fast: 150,
-  normal: 250,
+  instant: 80,
+  fast: 160,
+  normal: 240,
   slow: 400,
+  reveal: 600,
 } as const;
 
 export type MotionSpeed = keyof typeof motionDuration;
 
-/** Natural ease-out for UI settles */
 export const motionEasing = {
-  standard: Easing.bezier(0.25, 0.1, 0.25, 1),
-  emphasized: Easing.bezier(0.2, 0, 0, 1),
-  decelerate: Easing.bezier(0, 0, 0.2, 1),
-  accelerate: Easing.bezier(0.3, 0, 1, 1),
-  spring: {
-    damping: 18,
-    stiffness: 220,
-    mass: 0.9,
-  },
+  standard: { damping: 20, stiffness: 220 },
+  spring: { damping: 16, stiffness: 180 },
+  bouncy: { damping: 12, stiffness: 200 },
 } as const;
 
 export const motion = {
   duration: motionDuration,
   easing: motionEasing,
+  pressScale: 0.96,
+  cardPressScale: 0.98,
 } as const;

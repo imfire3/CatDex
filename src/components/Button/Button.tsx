@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback } from 'react';
 import {
   ActivityIndicator,
@@ -28,6 +29,7 @@ export type ButtonProps = {
   fullWidth?: boolean;
 };
 
+/** PrimaryButton / SecondaryButton / GhostButton via variant */
 export function Button({
   title,
   children,
@@ -40,22 +42,8 @@ export function Button({
   style,
   fullWidth = variant !== 'icon',
 }: ButtonProps) {
-  const { colors, spacing, radius, shadow, fonts } = useTheme();
+  const { colors, spacing, radius, shadow, fonts, gradients, motion } = useTheme();
   const isDisabled = disabled || loading;
-
-  const backgroundColor =
-    variant === 'primary'
-      ? colors.accent
-      : variant === 'secondary'
-        ? colors.surfaceSecondary
-        : 'transparent';
-
-  const labelColor =
-    variant === 'primary'
-      ? ('onAccent' as const)
-      : variant === 'ghost'
-        ? ('textSecondary' as const)
-        : ('text' as const);
 
   const handlePress = useCallback(
     (event: GestureResponderEvent) => {
@@ -81,12 +69,16 @@ export function Button({
         style={({ pressed }) => [
           styles.iconButton,
           {
-            backgroundColor: colors.surfaceSecondary,
+            backgroundColor: colors.surface,
             borderRadius: radius.full,
+            borderWidth: 1,
+            borderColor: colors.border,
             opacity: isDisabled ? 0.45 : pressed ? 0.88 : 1,
-            width: spacing[40],
-            height: spacing[40],
+            width: spacing[48],
+            height: spacing[48],
+            transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           },
+          shadow.small,
           style,
         ]}
       >
@@ -94,6 +86,31 @@ export function Button({
       </Pressable>
     );
   }
+
+  const content = (
+    <View style={[styles.content, { gap: spacing[8] }]}>
+      {loading ? (
+        <ActivityIndicator color={variant === 'primary' ? colors.onPrimary : colors.text} />
+      ) : (
+        <>
+          {icon}
+          {title ? (
+            <Text
+              variant="body"
+              style={{
+                fontFamily: fonts.bodySemi,
+                color: variant === 'primary' ? colors.onPrimary : colors.text,
+              }}
+            >
+              {title}
+            </Text>
+          ) : (
+            children
+          )}
+        </>
+      )}
+    </View>
+  );
 
   return (
     <Pressable
@@ -106,48 +123,65 @@ export function Button({
         styles.button,
         fullWidth && styles.fullWidth,
         {
-          backgroundColor,
           borderRadius: radius.lg,
-          paddingHorizontal: spacing[16],
-          minHeight: spacing[48],
-          opacity: isDisabled ? 0.45 : pressed ? 0.9 : 1,
-          borderWidth: variant === 'ghost' ? 1 : 0,
+          minHeight: 56,
+          opacity: isDisabled ? 0.45 : 1,
+          transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
+          overflow: 'hidden',
+          borderWidth: variant === 'secondary' ? 1 : 0,
           borderColor: colors.border,
-          transform: [{ scale: pressed && !isDisabled ? 0.98 : 1 }],
+          backgroundColor:
+            variant === 'secondary' ? 'transparent' : variant === 'ghost' ? 'transparent' : undefined,
         },
-        variant === 'primary' ? shadow.small : null,
+        variant === 'primary' ? shadow.medium : null,
         style,
       ]}
     >
-      {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.onAccent : colors.accent} />
+      {variant === 'primary' ? (
+        <LinearGradient
+          colors={[gradients.primary[0], gradients.primary[1]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.gradientFill, { paddingHorizontal: spacing[16] }]}
+        >
+          {content}
+        </LinearGradient>
       ) : (
-        <View style={[styles.content, { gap: spacing[8] }]}>
-          {icon}
-          {title ? (
-            <Text variant="body" color={labelColor} style={{ fontFamily: fonts.bodySemi }}>
-              {title}
-            </Text>
-          ) : (
-            children
-          )}
+        <View style={{ paddingHorizontal: spacing[16], flex: 1, justifyContent: 'center' }}>
+          {content}
         </View>
       )}
     </Pressable>
   );
 }
 
+export const PrimaryButton = (props: Omit<ButtonProps, 'variant'>) => (
+  <Button {...props} variant="primary" />
+);
+export const SecondaryButton = (props: Omit<ButtonProps, 'variant'>) => (
+  <Button {...props} variant="secondary" />
+);
+export const GhostButton = (props: Omit<ButtonProps, 'variant'>) => (
+  <Button {...props} variant="ghost" />
+);
+
 const styles = StyleSheet.create({
   button: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: 'stretch',
   },
   fullWidth: {
     alignSelf: 'stretch',
   },
+  gradientFill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+  },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   iconButton: {
     alignItems: 'center',

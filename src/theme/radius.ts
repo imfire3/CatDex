@@ -1,20 +1,23 @@
 /**
- * Corner radius scale — single source of truth.
+ * Corner radius — large, soft, premium.
+ * Buttons 20 · Cards 24 · Sheets 28 · FAB full
  */
-export const radiusScale = [8, 12, 16, 24, 32] as const;
+export const radiusScale = [12, 16, 20, 24, 28, 32] as const;
 
 export type RadiusValue = (typeof radiusScale)[number];
 
 export const radius = {
-  8: 8,
   12: 12,
   16: 16,
+  20: 20,
   24: 24,
+  28: 28,
   32: 32,
-  sm: 8,
-  md: 12,
-  lg: 16,
+  sm: 12,
+  md: 16,
+  lg: 20,
   xl: 24,
+  sheet: 28,
   '2xl': 32,
-  full: 999,
+  full: 9999,
 } as const;

@@ -19,8 +19,9 @@ type CardBaseProps = {
   padded?: boolean;
 };
 
+/** Surface card — depth, soft border, 24 radius */
 export function Card({ children, onPress, style, padded = true }: CardBaseProps) {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
 
   const content = (
     <View
@@ -30,10 +31,10 @@ export function Card({ children, onPress, style, padded = true }: CardBaseProps)
           borderRadius: radius.xl,
           borderWidth: 1,
           borderColor: colors.border,
-          padding: padded ? spacing[16] : 0,
+          padding: padded ? spacing[24] : 0,
           overflow: 'hidden',
         },
-        shadow.small,
+        shadow.medium,
         style,
       ]}
     >
@@ -46,7 +47,7 @@ export function Card({ children, onPress, style, padded = true }: CardBaseProps)
       <Pressable
         accessibilityRole="button"
         onPress={onPress}
-        style={({ pressed }) => [{ opacity: pressed ? 0.94 : 1 }]}
+        style={({ pressed }) => [{ transform: [{ scale: pressed ? motion.cardPressScale : 1 }] }]}
       >
         {content}
       </Pressable>
@@ -57,7 +58,7 @@ export function Card({ children, onPress, style, padded = true }: CardBaseProps)
 }
 
 export function GlassCard({ children, onPress, style, padded = true }: CardBaseProps) {
-  const { colors, spacing, radius, scheme } = useTheme();
+  const { colors, spacing, radius, scheme, shadow, motion } = useTheme();
 
   const body = (
     <View
@@ -68,10 +69,11 @@ export function GlassCard({ children, onPress, style, padded = true }: CardBaseP
           borderWidth: 1,
           borderColor: colors.border,
         },
+        shadow.small,
         style,
       ]}
     >
-      <BlurView intensity={28} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+      <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={{ padding: padded ? spacing[16] : 0, backgroundColor: colors.glassFill }}>
         {children}
       </View>
@@ -80,7 +82,11 @@ export function GlassCard({ children, onPress, style, padded = true }: CardBaseP
 
   if (onPress) {
     return (
-      <Pressable accessibilityRole="button" onPress={onPress}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [{ transform: [{ scale: pressed ? motion.cardPressScale : 1 }] }]}
+      >
         {body}
       </Pressable>
     );
@@ -98,7 +104,7 @@ export type ImageCardProps = {
 };
 
 export function ImageCard({ source, title, subtitle, onPress, style }: ImageCardProps) {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
 
   return (
     <Pressable
@@ -109,12 +115,12 @@ export function ImageCard({ source, title, subtitle, onPress, style }: ImageCard
         {
           flex: 1,
           aspectRatio: 3 / 4,
-          borderRadius: radius.lg,
+          borderRadius: radius.xl,
           overflow: 'hidden',
-          opacity: pressed ? 0.92 : 1,
           backgroundColor: colors.surfaceSecondary,
+          transform: [{ scale: pressed ? motion.cardPressScale : 1 }],
         },
-        shadow.small,
+        shadow.medium,
         style,
       ]}
     >
@@ -129,7 +135,7 @@ export function ImageCard({ source, title, subtitle, onPress, style }: ImageCard
           backgroundColor: colors.overlay,
         }}
       >
-        <Text variant="body" color="onAccent" numberOfLines={1} style={{ fontFamily: 'Manrope_600SemiBold' }}>
+        <Text variant="body" color="onAccent" numberOfLines={1} style={{ fontFamily: fonts.bodySemi }}>
           {title}
         </Text>
         {subtitle ? (

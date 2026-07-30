@@ -4,6 +4,7 @@ import type { CatAnalysis } from '@/types/cat';
 type AnalyzeResponse = {
   analysis: CatAnalysis;
   mocked?: boolean;
+  error?: string;
 };
 
 export async function analyzeCatPhoto(
@@ -16,10 +17,24 @@ export async function analyzeCatPhoto(
     body: JSON.stringify({ imageBase64: base64Image, mimeType }),
   });
 
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || 'Analyse IA impossible');
+  let data: AnalyzeResponse | null = null;
+  try {
+    data = (await response.json()) as AnalyzeResponse;
+  } catch {
+    data = null;
   }
 
-  return response.json() as Promise<AnalyzeResponse>;
+  // Le serveur peut renvoyer une analyse de secours même en 502
+  if (data?.analysis) {
+    return data;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error ||
+        `Analyse IA impossible (${response.status}). Vérifie que le serveur tourne sur ${API_URL}.`,
+    );
+  }
+
+  throw new Error('Réponse d’analyse invalide');
 }

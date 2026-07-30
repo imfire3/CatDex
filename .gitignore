@@ -35,6 +35,10 @@ yarn-error.*
 .env*.local
 server/.env
 
+# design reference (Figma Make export — not part of Expo app)
+ChatDex Mobile App UI/
+
+
 # typescript
 *.tsbuildinfo
 

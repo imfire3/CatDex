@@ -1,5 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -11,57 +12,86 @@ export type FloatingActionButtonProps = {
   disabled?: boolean;
   icon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  embedded?: boolean;
 };
 
+/** Pokémon GO–style center scanner — large, floating, glowing */
 export function FloatingActionButton({
   onPress,
-  label = 'Scanner',
-  accessibilityLabel,
+  label,
+  accessibilityLabel = 'Scanner',
   disabled,
   icon,
   style,
+  embedded = true,
 }: FloatingActionButtonProps) {
-  const { colors, spacing, radius, accentShadow, iconStroke } = useTheme();
+  const { colors, spacing, radius, accentShadow, iconStroke, iconSize, gradients, motion } =
+    useTheme();
+  const size = spacing[64] + spacing[8];
 
   return (
-    <View style={[styles.wrap, style]} pointerEvents="box-none">
+    <View
+      style={[styles.wrap, embedded && { width: size + spacing[24] }, style]}
+      pointerEvents="box-none"
+    >
+      <View
+        pointerEvents="none"
+        style={[
+          styles.glowRing,
+          {
+            width: size + spacing[16],
+            height: size + spacing[16],
+            borderRadius: radius.full,
+            backgroundColor: colors.accentSoft,
+          },
+        ]}
+      />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityLabel={accessibilityLabel}
         disabled={disabled}
         onPress={onPress}
         style={({ pressed }) => [
-          styles.fab,
           {
-            backgroundColor: colors.accent,
+            width: size,
+            height: size,
             borderRadius: radius.full,
-            width: spacing[64],
-            height: spacing[64],
             opacity: disabled ? 0.45 : 1,
-            transform: [{ scale: pressed ? 0.94 : 1 }],
+            transform: [
+              { scale: pressed ? motion.pressScale : 1 },
+              { translateY: embedded ? -spacing[24] : 0 },
+            ],
+            overflow: 'hidden',
+            borderWidth: 4,
+            borderColor: colors.background,
           },
           accentShadow,
         ]}
       >
-        {icon ?? (
-          <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-            <Circle
-              cx="12"
-              cy="12"
-              r="3.2"
-              stroke={colors.onAccent}
-              strokeWidth={iconStroke.regular}
-            />
-            <Path
-              d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"
-              stroke={colors.onAccent}
-              strokeWidth={iconStroke.regular}
-              strokeLinecap="round"
-            />
-          </Svg>
-        )}
+        <LinearGradient
+          colors={[gradients.primary[0], gradients.primary[1]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradient}
+        >
+          {icon ?? (
+            <Svg width={iconSize.lg} height={iconSize.lg} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"
+                stroke={colors.onAccent}
+                strokeWidth={iconStroke.regular}
+                strokeLinecap="round"
+              />
+              <Path
+                d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+                stroke={colors.onAccent}
+                strokeWidth={iconStroke.regular}
+              />
+            </Svg>
+          )}
+        </LinearGradient>
       </Pressable>
-      {label ? (
+      {label && !embedded ? (
         <Text variant="caption" color="textSecondary" style={{ marginTop: spacing[4] }}>
           {label}
         </Text>
@@ -73,8 +103,14 @@ export function FloatingActionButton({
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  fab: {
+  glowRing: {
+    position: 'absolute',
+    top: -4,
+  },
+  gradient: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

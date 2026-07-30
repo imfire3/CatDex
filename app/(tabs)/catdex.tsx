@@ -1,51 +1,119 @@
 import { router } from 'expo-router';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { CatCard } from '@/components/CatCard';
+import { CatDexCard } from '@/components/CatDexCard';
+import { Chip } from '@/components/Chip';
+import { EmptyState } from '@/components/EmptyState';
+import { SearchInput } from '@/components/Input';
+import { ProgressBar, SectionHeader } from '@/components/Progress';
+import { Text } from '@/components/Text';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
+import type { Cat } from '@/types/cat';
+
+const TARGET = 50;
 
 export default function CatDexScreen() {
-  const { colors, fonts, spacing } = useTheme();
+  const { colors, fonts, spacing, radius, shadow, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const cats = useCatsStore((state) => state.cats);
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    return cats.filter((cat) => {
+      if (!search.trim()) return true;
+      return cat.name.toLowerCase().includes(search.toLowerCase());
+    });
+  }, [cats, search]);
+
+  const progress = Math.min(1, cats.length / TARGET);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.display }]}>
-          CatDex
-        </Text>
-        <Text style={[styles.sub, { color: colors.textMuted, fontFamily: fonts.body }]}>
-          {cats.length === 0
-            ? 'Ta collection est vide. Scanne ton premier chat.'
-            : `${cats.length} découverte${cats.length > 1 ? 's' : ''} · plus récents`}
-        </Text>
+      <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[24], gap: spacing[16] }}>
+        <View style={styles.headerRow}>
+          <View style={{ gap: spacing[4] }}>
+            <Text variant="h1">CatDex</Text>
+            <Text variant="bodySmall" color="textSecondary">
+              Ta collection de chats
+            </Text>
+          </View>
+          <View
+            style={[
+              {
+                paddingHorizontal: spacing[16],
+                paddingVertical: spacing[8],
+                borderRadius: radius.full,
+                backgroundColor: colors.accentSoft,
+                borderWidth: 1,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text variant="caption" color="accent" style={{ fontFamily: fonts.bodySemi }}>
+              {cats.length} / {TARGET}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={[
+            {
+              borderRadius: radius.xl,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing[16],
+              gap: spacing[8],
+            },
+            shadow.small,
+          ]}
+        >
+          <LinearGradient
+            colors={[gradients.primarySoft[0], 'transparent']}
+            style={StyleSheet.absoluteFill}
+          />
+          <Text variant="label" color="textSecondary">
+            Progression
+          </Text>
+          <Text variant="h3">{Math.round(progress * 100)}% complété</Text>
+          <ProgressBar progress={progress} height={10} />
+        </View>
+
+        <SearchInput placeholder="Rechercher un chat…" value={search} onChangeText={setSearch} />
+
+        <View style={{ flexDirection: 'row', gap: spacing[8] }}>
+          <Chip label="Tous" selected />
+          <Chip label="Récents" />
+          <Chip label="Rares" />
+        </View>
+
+        <SectionHeader title="Collection" />
       </View>
 
       <FlatList
-        data={cats}
-        keyExtractor={(item) => item.id}
+        data={filtered}
+        keyExtractor={(item: Cat) => item.id}
         numColumns={2}
-        columnWrapperStyle={{ gap: 12 }}
+        columnWrapperStyle={{ gap: spacing[16] }}
         contentContainerStyle={{
-          paddingHorizontal: spacing.md,
-          paddingBottom: 120,
-          gap: 12,
+          paddingHorizontal: spacing[24],
+          paddingBottom: spacing[96] + spacing[24],
+          gap: spacing[16],
         }}
         ListEmptyComponent={
-          <View style={[styles.empty, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.emptyTitle, { color: colors.text, fontFamily: fonts.bodySemi }]}>
-              Aucun chat pour l’instant
-            </Text>
-            <Text style={[styles.emptyBody, { color: colors.textMuted, fontFamily: fonts.body }]}>
-              Appuie sur Scanner pour capturer un chat dans le 20e.
-            </Text>
-          </View>
+          <EmptyState
+            title="Collection vide"
+            description="Scanne ton premier chat pour commencer ton CatDex."
+            actionLabel="Scanner"
+            onAction={() => router.push('/scanner')}
+          />
         }
         renderItem={({ item }) => (
-          <CatCard cat={item} onPress={() => router.push(`/cat/${item.id}`)} />
+          <CatDexCard cat={item} onPress={() => router.push(`/cat/${item.id}`)} />
         )}
       />
     </View>
@@ -53,33 +121,11 @@ export default function CatDexScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  title: {
-    fontSize: 34,
-    letterSpacing: -0.8,
-  },
-  sub: {
-    marginTop: 6,
-    fontSize: 14,
-  },
-  empty: {
-    marginTop: 24,
-    borderRadius: 20,
-    padding: 24,
-  },
-  emptyTitle: {
-    fontSize: 17,
-  },
-  emptyBody: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 20,
+  root: { flex: 1 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 16,
   },
 });

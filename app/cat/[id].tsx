@@ -1,15 +1,22 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
+import { Badge } from '@/components/Badge';
+import { StatCard } from '@/components/Card/StatCard';
 import { MiniMap } from '@/components/maps/CatMap';
+import { Text } from '@/components/Text';
 import { formatCaptureTime } from '@/lib/constants';
+import { themeFromColorLabel } from '@/lib/catTheme';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function CatDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { colors, fonts } = useTheme();
+  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const insets = useSafeAreaInsets();
   const cat = useCatsStore((state) => state.cats.find((item) => item.id === id));
   const incrementViews = useCatsStore((state) => state.incrementViews);
 
@@ -20,80 +27,146 @@ export default function CatDetailScreen() {
   if (!cat) {
     return (
       <View style={[styles.missing, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.textMuted, fontFamily: fonts.body }}>Chat introuvable</Text>
+        <Text variant="body" color="textSecondary">
+          Chat introuvable
+        </Text>
       </View>
     );
   }
 
+  const theme = themeFromColorLabel(cat.analysis.color, cat.number);
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: 40 }}
-    >
-      <Stack.Screen options={{ title: cat.name }} />
-      <Image source={{ uri: cat.photoUri }} style={styles.hero} />
-
-      <View style={styles.section}>
-        <Text style={[styles.name, { color: colors.text, fontFamily: fonts.display }]}>
-          {cat.name}
-        </Text>
-        <Text style={[styles.sub, { color: colors.textMuted, fontFamily: fonts.body }]}>
-          Découvert le {formatCaptureTime(cat.discoveredAt)}
-        </Text>
-      </View>
-
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.cardTitle, { color: colors.text, fontFamily: fonts.bodySemi }]}>
-          Infos IA
-        </Text>
-        <InfoRow label="Race probable" value={cat.analysis.breed} />
-        <InfoRow label="Couleur" value={cat.analysis.color} />
-        <InfoRow label="Robe" value={cat.analysis.coat} />
-        <Text style={[styles.description, { color: colors.textMuted, fontFamily: fonts.body }]}>
-          {cat.analysis.description}
-        </Text>
-      </View>
-
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.cardTitle, { color: colors.text, fontFamily: fonts.bodySemi }]}>
-          Statistiques
-        </Text>
-        <InfoRow label="Vues" value={String(cat.views)} />
-        <InfoRow label="Heure de capture" value={formatCaptureTime(cat.discoveredAt)} />
-      </View>
-
-      {cat.notes ? (
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.cardTitle, { color: colors.text, fontFamily: fonts.bodySemi }]}>
-            Notes
-          </Text>
-          <Text style={[styles.description, { color: colors.textMuted, fontFamily: fonts.body }]}>
-            {cat.notes}
-          </Text>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScrollView contentContainerStyle={{ paddingBottom: spacing[48] }}>
+        <View style={{ height: 380, backgroundColor: colors.surfaceSecondary }}>
+          <Image source={{ uri: cat.photoUri }} style={StyleSheet.absoluteFill} />
+          <LinearGradient
+            colors={['transparent', colors.background]}
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 140 }}
+          />
+          <View
+            style={{
+              position: 'absolute',
+              top: insets.top + spacing[8],
+              left: spacing[16],
+              right: spacing[16],
+            }}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Retour"
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                {
+                  width: spacing[48],
+                  height: spacing[48],
+                  borderRadius: radius.full,
+                  backgroundColor: colors.glassFill,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.85 : 1,
+                },
+                shadow.small,
+              ]}
+            >
+              <Text variant="h3">‹</Text>
+            </Pressable>
+          </View>
         </View>
-      ) : null}
 
-      <View style={[styles.card, { backgroundColor: colors.surface, overflow: 'hidden', padding: 0 }]}>
-        <Text
-          style={[
-            styles.cardTitle,
-            { color: colors.text, fontFamily: fonts.bodySemi, padding: 16, paddingBottom: 10 },
-          ]}
+        <View
+          style={{
+            marginTop: -spacing[32],
+            paddingHorizontal: spacing[24],
+            gap: spacing[24],
+          }}
         >
-          Lieu d’observation
-        </Text>
-        <MiniMap latitude={cat.latitude} longitude={cat.longitude} />
-      </View>
-    </ScrollView>
-  );
-}
+          <View
+            style={[
+              {
+                backgroundColor: colors.surface,
+                borderRadius: radius.xl,
+                borderWidth: 1,
+                borderColor: colors.border,
+                padding: spacing[24],
+                gap: spacing[16],
+                overflow: 'hidden',
+              },
+              shadow.medium,
+            ]}
+          >
+            <LinearGradient
+              colors={[`${theme.hex}33`, 'transparent']}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text variant="h1">{cat.name}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[8] }}>
+              <Badge label={cat.analysis.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+              <Badge label={cat.analysis.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+              <Badge label={cat.analysis.coat} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+            </View>
+            <Text variant="body" color="textBody">
+              {cat.analysis.description}
+            </Text>
+            <Text variant="caption" color="textSecondary" style={{ fontFamily: fonts.bodySemi }}>
+              Capturé le {formatCaptureTime(cat.discoveredAt)} · {cat.views} vues
+            </Text>
+          </View>
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  const { colors, fonts } = useTheme();
-  return (
-    <View style={styles.row}>
-      <Text style={{ color: colors.textMuted, fontFamily: fonts.body, fontSize: 14 }}>{label}</Text>
-      <Text style={{ color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 14 }}>{value}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[16] }}>
+            <StatCard label="Race" value={cat.analysis.breed} />
+            <StatCard label="Couleur" value={cat.analysis.color} />
+            <StatCard label="Robe" value={cat.analysis.coat} />
+            <StatCard label="Vues" value={String(cat.views)} />
+          </View>
+
+          {cat.notes ? (
+            <View
+              style={[
+                {
+                  backgroundColor: colors.surface,
+                  borderRadius: radius.xl,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  padding: spacing[24],
+                  gap: spacing[8],
+                },
+                shadow.small,
+              ]}
+            >
+              <Text variant="label" color="textSecondary">
+                Notes
+              </Text>
+              <Text variant="bodySmall" color="textBody">
+                {cat.notes}
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={{ gap: spacing[8] }}>
+            <Text variant="label" color="textSecondary">
+              Position GPS
+            </Text>
+            <View
+              style={[
+                {
+                  borderRadius: radius.xl,
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                },
+                shadow.small,
+              ]}
+            >
+              <MiniMap latitude={cat.latitude} longitude={cat.longitude} />
+            </View>
+          </View>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -103,42 +176,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  hero: {
-    width: '100%',
-    height: 360,
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 8,
-  },
-  name: {
-    fontSize: 32,
-    letterSpacing: -0.7,
-  },
-  sub: {
-    marginTop: 6,
-    fontSize: 14,
-  },
-  card: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 18,
-    padding: 16,
-  },
-  cardTitle: {
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  description: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 20,
   },
 });

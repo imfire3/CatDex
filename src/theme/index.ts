@@ -13,7 +13,8 @@ export {
   type TextVariant,
   type TypographyStyle,
 } from './typography';
-export { shadow, accentShadow, type ShadowToken } from './shadow';
+export { createShadows, createAccentShadow, shadow, accentShadow, type ShadowToken } from './shadow';
 export { motion, motionDuration, motionEasing, type MotionSpeed } from './motion';
 export { iconSize, iconStroke, type IconSize } from './icons';
+export { gradients } from './gradients';
 export { ThemeProvider, useTheme, type Theme } from './ThemeProvider';

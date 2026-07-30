@@ -1,19 +1,21 @@
 import {
-  Manrope_400Regular,
   Manrope_500Medium,
   Manrope_600SemiBold,
   Manrope_700Bold,
+  Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope';
 import { Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { Spinner } from '@/components/Loader';
 import { useMissionSync } from '@/hooks/useMissionSync';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+import { palette } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -26,11 +28,15 @@ function RootNavigator() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
-        animation: 'fade',
+        animation: 'slide_from_right',
       }}
     >
       <Stack.Screen name="index" />
+      <Stack.Screen name="(auth)/welcome" />
+      <Stack.Screen name="(auth)/signup" />
       <Stack.Screen name="(auth)/login" />
+      <Stack.Screen name="(auth)/intro" />
+      <Stack.Screen name="(auth)/permissions" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen
         name="scanner"
@@ -43,11 +49,7 @@ function RootNavigator() {
       <Stack.Screen
         name="cat/[id]"
         options={{
-          headerShown: true,
-          title: 'Fiche',
-          headerTintColor: colors.text,
-          headerStyle: { backgroundColor: colors.background },
-          headerShadowVisible: false,
+          headerShown: false,
           animation: 'slide_from_right',
         }}
       />
@@ -59,10 +61,10 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     Syne_600SemiBold,
     Syne_700Bold,
-    Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,
     Manrope_700Bold,
+    Manrope_800ExtraBold,
   });
 
   useEffect(() => {
@@ -73,8 +75,15 @@ export default function RootLayout() {
 
   if (!loaded) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0E0F12' }}>
-        <ActivityIndicator color="#FF6A3D" />
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: palette.dark.background,
+        }}
+      >
+        <Spinner color={palette.dark.accent} />
       </View>
     );
   }

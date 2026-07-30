@@ -28,13 +28,13 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
           styles.sheet,
           {
             backgroundColor: colors.surface,
-            borderTopLeftRadius: radius.xl,
-            borderTopRightRadius: radius.xl,
+            borderTopLeftRadius: radius.sheet,
+            borderTopRightRadius: radius.sheet,
             paddingHorizontal: spacing[24],
             paddingTop: spacing[8],
-            paddingBottom: Math.max(insets.bottom, spacing[16]),
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
           },
-          shadow.large,
+          shadow.medium,
           style,
         ]}
       >

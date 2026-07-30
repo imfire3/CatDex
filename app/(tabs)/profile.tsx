@@ -1,100 +1,123 @@
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { XPBar } from '@/components/Progress';
+import { Text } from '@/components/Text';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function ProfileScreen() {
-  const { colors, fonts, spacing } = useTheme();
+  const { colors, fonts, spacing, radius, shadow, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
   const catsCount = useCatsStore((state) => state.cats.length);
+  const level = Math.max(1, Math.floor(catsCount / 3) + 1);
+  const xp = (catsCount % 3) * 40;
+  const xpMax = 120;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.display }]}>
-          Profil
-        </Text>
-        <Text style={[styles.sub, { color: colors.textMuted, fontFamily: fonts.body }]}>
-          Compte et préférences
-        </Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: spacing[24],
+          paddingTop: spacing[24],
+          paddingBottom: spacing[96] + spacing[24],
+          gap: spacing[24],
+        }}
+      >
+        <Card padded={false}>
+          <LinearGradient
+            colors={[gradients.primarySoft[0], colors.surface]}
+            style={{
+              padding: spacing[24],
+              alignItems: 'center',
+              gap: spacing[16],
+            }}
+          >
+            <View
+              style={[
+                {
+                  width: spacing[96],
+                  height: spacing[96],
+                  borderRadius: radius.full,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 3,
+                  borderColor: colors.accent,
+                  overflow: 'hidden',
+                },
+                shadow.glow,
+              ]}
+            >
+              <LinearGradient
+                colors={[gradients.primary[0], gradients.primary[1]]}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text variant="h1" color="onAccent">
+                  {(user?.displayName ?? 'E').slice(0, 1).toUpperCase()}
+                </Text>
+              </LinearGradient>
+            </View>
+            <Text variant="h2">{user?.displayName ?? 'Explorateur'}</Text>
+            <Text variant="bodySmall" color="textSecondary">
+              {user?.email}
+            </Text>
+          </LinearGradient>
+        </Card>
 
-      <View style={{ paddingHorizontal: spacing.md, gap: 12 }}>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.label, { color: colors.textMuted, fontFamily: fonts.body }]}>
-            Explorateur
-          </Text>
-          <Text style={[styles.value, { color: colors.text, fontFamily: fonts.bodySemi }]}>
-            {user?.displayName ?? '—'}
-          </Text>
-          <Text style={[styles.meta, { color: colors.textMuted, fontFamily: fonts.body }]}>
-            {user?.email} · {user?.provider}
-          </Text>
+        <XPBar level={level} xp={xp} xpMax={xpMax} />
+
+        <View style={{ flexDirection: 'row', gap: spacing[16] }}>
+          <Card style={{ flex: 1 }}>
+            <Text variant="label" color="textSecondary">
+              Découvertes
+            </Text>
+            <Text variant="h2" style={{ marginTop: spacing[8], fontFamily: fonts.bodySemi }}>
+              {catsCount}
+            </Text>
+          </Card>
+          <Card style={{ flex: 1 }}>
+            <Text variant="label" color="textSecondary">
+              Niveau
+            </Text>
+            <Text variant="h2" style={{ marginTop: spacing[8], fontFamily: fonts.bodySemi }}>
+              {level}
+            </Text>
+          </Card>
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.label, { color: colors.textMuted, fontFamily: fonts.body }]}>
-            Collection
+        <Card>
+          <Text variant="label" color="textSecondary">
+            Zone
           </Text>
-          <Text style={[styles.value, { color: colors.text, fontFamily: fonts.bodySemi }]}>
-            {catsCount} chat{catsCount === 1 ? '' : 's'}
+          <Text variant="h3" style={{ marginTop: spacing[8] }}>
+            Paris 20e
           </Text>
-          <Text style={[styles.meta, { color: colors.textMuted, fontFamily: fonts.body }]}>
-            Zone de test · Paris 20e
+          <Text variant="bodySmall" color="textSecondary" style={{ marginTop: spacing[8] }}>
+            Terrain de chasse actuel · captures locales
           </Text>
-        </View>
+        </Card>
 
         <Button
           title="Se déconnecter"
           variant="secondary"
           onPress={() => {
             signOut();
-            router.replace('/(auth)/login');
+            router.replace('/(auth)/welcome');
           }}
         />
-      </View>
+      </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  title: {
-    fontSize: 34,
-    letterSpacing: -0.8,
-  },
-  sub: {
-    marginTop: 6,
-    fontSize: 14,
-  },
-  card: {
-    borderRadius: 18,
-    padding: 18,
-  },
-  label: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  value: {
-    marginTop: 8,
-    fontSize: 20,
-  },
-  meta: {
-    marginTop: 6,
-    fontSize: 13,
-  },
-});

@@ -3,6 +3,8 @@ export type CatAnalysis = {
   breed: string;
   coat: string;
   description: string;
+  /** Nom poétique proposé par le LLM (optionnel) */
+  suggestedName?: string;
 };
 
 export type Cat = {

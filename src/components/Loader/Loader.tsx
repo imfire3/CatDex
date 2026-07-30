@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
@@ -10,12 +10,24 @@ import Animated, {
 
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { useTheme } from '@/theme/ThemeProvider';
+import { ThemeContext, useTheme } from '@/theme/ThemeProvider';
+import { iconSize as iconSizeTokens } from '@/theme/icons';
+import { palette } from '@/theme/colors';
 
-export function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const { colors, iconSize } = useTheme();
-  const dimension = size === 'sm' ? iconSize.sm : size === 'lg' ? iconSize.xl : iconSize.lg;
-  return <ActivityIndicator color={colors.accent} size={dimension > 24 ? 'large' : 'small'} />;
+export function Spinner({
+  size = 'md',
+  color,
+}: {
+  size?: 'sm' | 'md' | 'lg';
+  color?: string;
+}) {
+  const theme = useContext(ThemeContext);
+  const resolvedColor = color ?? theme?.colors.primary ?? palette.light.accent;
+  const sizes = theme?.iconSize ?? iconSizeTokens;
+  const dimension = size === 'sm' ? sizes.sm : size === 'lg' ? sizes.xl : sizes.lg;
+  return (
+    <ActivityIndicator color={resolvedColor} size={dimension > 24 ? 'large' : 'small'} />
+  );
 }
 
 export function Skeleton({

@@ -7,16 +7,16 @@ export type ChipProps = {
   label: string;
   selected?: boolean;
   onPress?: () => void;
-  /** Static chips are not pressable */
   static?: boolean;
   disabled?: boolean;
+  icon?: React.ReactNode;
 };
 
-export function Chip({ label, selected, onPress, static: isStatic, disabled }: ChipProps) {
-  const { colors, spacing, radius } = useTheme();
+export function Chip({ label, selected, onPress, static: isStatic, disabled, icon }: ChipProps) {
+  const { colors, fonts, spacing, radius, motion } = useTheme();
 
-  const backgroundColor = selected ? colors.accent : colors.surfaceSecondary;
-  const textColor = selected ? ('onAccent' as const) : ('text' as const);
+  const backgroundColor = selected ? colors.accentSoft : colors.surface;
+  const textColor = selected ? colors.accent : colors.textSecondary;
 
   const body = (
     <View
@@ -26,19 +26,21 @@ export function Chip({ label, selected, onPress, static: isStatic, disabled }: C
         paddingHorizontal: spacing[16],
         paddingVertical: spacing[8],
         borderWidth: 1,
-        borderColor: selected ? colors.accent : colors.border,
+        borderColor: selected ? colors.accent + '66' : colors.border,
         opacity: disabled ? 0.45 : 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing[8],
       }}
     >
-      <Text variant="bodySmall" color={textColor} style={{ fontFamily: 'Manrope_600SemiBold' }}>
+      {icon}
+      <Text variant="bodySmall" style={{ fontFamily: fonts.bodySemi, color: textColor }}>
         {label}
       </Text>
     </View>
   );
 
-  if (isStatic || !onPress) {
-    return body;
-  }
+  if (isStatic || !onPress) return body;
 
   return (
     <Pressable
@@ -46,7 +48,9 @@ export function Chip({ label, selected, onPress, static: isStatic, disabled }: C
       accessibilityState={{ selected: !!selected, disabled: !!disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
+      style={({ pressed }) => [
+        { transform: [{ scale: pressed ? motion.pressScale : 1 }] },
+      ]}
     >
       {body}
     </Pressable>

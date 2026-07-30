@@ -20,7 +20,7 @@ export function CatMap({ cats, scheme, onSelectCat }: Props) {
         ...PARIS_20E.center,
         ...PARIS_20E.delta,
       }}
-      userInterfaceStyle={scheme}
+      userInterfaceStyle="dark"
       showsUserLocation
       mapPadding={{ top: 0, right: 0, bottom: 90, left: 0 }}
     >

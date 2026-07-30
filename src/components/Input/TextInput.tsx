@@ -49,7 +49,7 @@ function FieldShell({
           {
             backgroundColor: disabled ? colors.surfaceSecondary : colors.surface,
             borderColor,
-            borderRadius: radius.lg,
+            borderRadius: radius.md,
             paddingHorizontal: spacing[16],
             minHeight: spacing[48],
             opacity: disabled ? 0.6 : 1,
@@ -99,7 +99,7 @@ export function TextInput({
     >
       <RNTextInput
         editable={!disabled}
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={colors.placeholder}
         accessibilityState={{ disabled: !!disabled }}
         style={[
           {

@@ -27,7 +27,7 @@ export function BottomNavigation({
   centerSlot,
   style,
 }: BottomNavigationProps) {
-  const { colors, spacing } = useTheme();
+  const { colors, fonts, spacing } = useTheme();
   const insets = useSafeAreaInsets();
 
   const mid = Math.ceil(items.length / 2);
@@ -36,7 +36,7 @@ export function BottomNavigation({
 
   const renderItem = (item: BottomNavItem) => {
     const active = item.key === activeKey;
-    const color = active ? colors.accent : colors.textSecondary;
+    const color = active ? colors.primary : colors.textSecondary;
     return (
       <Pressable
         key={item.key}
@@ -56,8 +56,8 @@ export function BottomNavigation({
         {item.icon(color)}
         <Text
           variant="caption"
-          color={active ? 'accent' : 'textSecondary'}
-          style={{ fontFamily: 'Manrope_500Medium' }}
+          color={active ? 'primary' : 'textSecondary'}
+          style={{ fontFamily: fonts.body }}
         >
           {item.label}
         </Text>

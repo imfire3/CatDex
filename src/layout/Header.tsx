@@ -23,7 +23,7 @@ export function Header({
   style,
   transparent,
 }: HeaderProps) {
-  const { colors, spacing } = useTheme();
+  const { colors, fonts, spacing } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -48,7 +48,7 @@ export function Header({
           onPress={onBack}
           hitSlop={spacing[8]}
         >
-          <Text variant="body" color="accent" style={{ fontFamily: 'Manrope_600SemiBold' }}>
+          <Text variant="body" color="primary" style={{ fontFamily: fonts.bodySemi }}>
             Retour
           </Text>
         </Pressable>

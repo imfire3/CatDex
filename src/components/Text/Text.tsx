@@ -5,7 +5,20 @@ import type { TextVariant } from '@/theme/typography';
 
 export type TextProps = RNTextProps & {
   variant?: TextVariant;
-  color?: 'text' | 'textSecondary' | 'accent' | 'success' | 'warning' | 'danger' | 'onAccent';
+  color?:
+    | 'text'
+    | 'textBody'
+    | 'textSecondary'
+    | 'placeholder'
+    | 'accent'
+    | 'primary'
+    | 'mint'
+    | 'yellow'
+    | 'success'
+    | 'warning'
+    | 'danger'
+    | 'onAccent'
+    | 'onPrimary';
   align?: TextStyle['textAlign'];
 };
 
@@ -19,6 +32,25 @@ export function Text({
 }: TextProps) {
   const { colors, typography } = useTheme();
   const token = typography[variant];
+  const defaultColor =
+    color === 'text' && (variant === 'body' || variant === 'bodySmall')
+      ? colors.textBody
+      : undefined;
+  const colorMap: Record<NonNullable<TextProps['color']>, string> = {
+    text: colors.text,
+    textBody: colors.textBody,
+    textSecondary: colors.textSecondary,
+    placeholder: colors.placeholder,
+    accent: colors.accent,
+    primary: colors.primary,
+    mint: colors.mint,
+    yellow: colors.yellow,
+    success: colors.success,
+    warning: colors.warning,
+    danger: colors.danger,
+    onAccent: colors.onAccent,
+    onPrimary: colors.onPrimary,
+  };
 
   return (
     <RNText
@@ -29,8 +61,9 @@ export function Text({
           fontSize: token.fontSize,
           lineHeight: token.lineHeight,
           letterSpacing: token.letterSpacing,
+          fontWeight: token.fontWeight,
           textTransform: token.textTransform,
-          color: colors[color === 'text' ? 'text' : color === 'textSecondary' ? 'textSecondary' : color],
+          color: defaultColor ?? colorMap[color],
           textAlign: align,
         },
         style,

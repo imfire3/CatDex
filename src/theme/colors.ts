@@ -1,70 +1,131 @@
 /**
- * CatDex Design System — Color tokens
- * Accent (coral) is reserved for Scanner, primary CTAs, discovery, and active states.
+ * CatDex Design System — Premium dark “Pokémon GO of cats”
+ * Background #060816 · Cards #10152B · Accent gradient #6E87FF → #8D7BFF
  */
 
 export const palette = {
   light: {
-    background: '#F3F2EF',
-    surface: '#FFFFFF',
-    surfaceSecondary: '#EAE8E3',
-    text: '#14151A',
-    textSecondary: '#6E717A',
-    accent: '#E4572E',
-    accentSoft: '#F6D5C8',
-    success: '#2F6F4E',
-    warning: '#B8751A',
-    danger: '#C0392B',
-    border: '#DDDAD3',
-    overlay: 'rgba(14, 15, 18, 0.48)',
-    focusRing: '#E4572E',
+    background: '#060816',
+    surface: '#10152B',
+    surfaceSecondary: '#161D38',
+    surfaceTertiary: '#1C2444',
+    text: '#FFFFFF',
+    textBody: 'rgba(255,255,255,0.78)',
+    textSecondary: 'rgba(255,255,255,0.55)',
+    placeholder: 'rgba(255,255,255,0.35)',
+    accent: '#6E87FF',
+    accentSoft: 'rgba(110, 135, 255, 0.18)',
+    accentStrong: '#8D7BFF',
+    primary: '#6E87FF',
+    primarySoft: 'rgba(110, 135, 255, 0.16)',
+    mint: '#5EE4B0',
+    mintSoft: 'rgba(94, 228, 176, 0.16)',
+    yellow: '#FFD56A',
+    yellowSoft: 'rgba(255, 213, 106, 0.16)',
+    orange: '#FF9F6B',
+    orangeSoft: 'rgba(255, 159, 107, 0.16)',
+    sky: '#6EC8FF',
+    skySoft: 'rgba(110, 200, 255, 0.16)',
+    violet: '#8D7BFF',
+    violetSoft: 'rgba(141, 123, 255, 0.16)',
+    rose: '#FF8FB3',
+    roseSoft: 'rgba(255, 143, 179, 0.16)',
+    success: '#5EE4B0',
+    warning: '#FFD56A',
+    danger: '#FF6B8A',
+    border: 'rgba(255,255,255,0.08)',
+    overlay: 'rgba(6, 8, 22, 0.72)',
+    focusRing: '#6E87FF',
     onAccent: '#FFFFFF',
-    onSurface: '#14151A',
-    skeleton: '#E2DFD8',
-    skeletonHighlight: '#F3F2EF',
-    glassFill: 'rgba(255, 255, 255, 0.62)',
-    shadowColor: '#0E0F12',
+    onPrimary: '#FFFFFF',
+    onSurface: '#FFFFFF',
+    skeleton: '#161D38',
+    skeletonHighlight: '#1C2444',
+    glassFill: 'rgba(16, 21, 43, 0.72)',
+    shadowColor: '#000000',
     mapPinRing: '#FFFFFF',
-    tabBar: '#FFFFFF',
+    tabBar: 'rgba(6, 8, 22, 0.92)',
+    gradientStart: '#6E87FF',
+    gradientEnd: '#8D7BFF',
   },
   dark: {
-    background: '#0E0F12',
-    surface: '#17181C',
-    surfaceSecondary: '#22242A',
-    text: '#F2F1EE',
-    textSecondary: '#9A9DA6',
-    accent: '#FF6A3D',
-    accentSoft: '#3A221C',
-    success: '#5CB88A',
-    warning: '#E6A84A',
-    danger: '#FF6B6B',
-    border: '#2C2E35',
-    overlay: 'rgba(0, 0, 0, 0.62)',
-    focusRing: '#FF6A3D',
+    background: '#060816',
+    surface: '#10152B',
+    surfaceSecondary: '#161D38',
+    surfaceTertiary: '#1C2444',
+    text: '#FFFFFF',
+    textBody: 'rgba(255,255,255,0.78)',
+    textSecondary: 'rgba(255,255,255,0.55)',
+    placeholder: 'rgba(255,255,255,0.35)',
+    accent: '#6E87FF',
+    accentSoft: 'rgba(110, 135, 255, 0.18)',
+    accentStrong: '#8D7BFF',
+    primary: '#6E87FF',
+    primarySoft: 'rgba(110, 135, 255, 0.16)',
+    mint: '#5EE4B0',
+    mintSoft: 'rgba(94, 228, 176, 0.16)',
+    yellow: '#FFD56A',
+    yellowSoft: 'rgba(255, 213, 106, 0.16)',
+    orange: '#FF9F6B',
+    orangeSoft: 'rgba(255, 159, 107, 0.16)',
+    sky: '#6EC8FF',
+    skySoft: 'rgba(110, 200, 255, 0.16)',
+    violet: '#8D7BFF',
+    violetSoft: 'rgba(141, 123, 255, 0.16)',
+    rose: '#FF8FB3',
+    roseSoft: 'rgba(255, 143, 179, 0.16)',
+    success: '#5EE4B0',
+    warning: '#FFD56A',
+    danger: '#FF6B8A',
+    border: 'rgba(255,255,255,0.08)',
+    overlay: 'rgba(6, 8, 22, 0.72)',
+    focusRing: '#6E87FF',
     onAccent: '#FFFFFF',
-    onSurface: '#F2F1EE',
-    skeleton: '#2A2C33',
-    skeletonHighlight: '#3A3D46',
-    glassFill: 'rgba(23, 24, 28, 0.62)',
+    onPrimary: '#FFFFFF',
+    onSurface: '#FFFFFF',
+    skeleton: '#161D38',
+    skeletonHighlight: '#1C2444',
+    glassFill: 'rgba(16, 21, 43, 0.72)',
     shadowColor: '#000000',
-    mapPinRing: '#17181C',
-    tabBar: '#17181C',
+    mapPinRing: '#FFFFFF',
+    tabBar: 'rgba(6, 8, 22, 0.92)',
+    gradientStart: '#6E87FF',
+    gradientEnd: '#8D7BFF',
   },
 } as const;
 
 export type ColorScheme = keyof typeof palette;
+
 export type ThemeColors = {
   background: string;
   surface: string;
   surfaceSecondary: string;
+  surfaceTertiary: string;
   /** @deprecated use surfaceSecondary */
   surface2: string;
   text: string;
+  textBody: string;
   textSecondary: string;
   /** @deprecated use textSecondary */
   textMuted: string;
+  placeholder: string;
   accent: string;
   accentSoft: string;
+  accentStrong: string;
+  primary: string;
+  primarySoft: string;
+  mint: string;
+  mintSoft: string;
+  yellow: string;
+  yellowSoft: string;
+  orange: string;
+  orangeSoft: string;
+  sky: string;
+  skySoft: string;
+  violet: string;
+  violetSoft: string;
+  rose: string;
+  roseSoft: string;
   success: string;
   warning: string;
   danger: string;
@@ -72,6 +133,7 @@ export type ThemeColors = {
   overlay: string;
   focusRing: string;
   onAccent: string;
+  onPrimary: string;
   onSurface: string;
   skeleton: string;
   skeletonHighlight: string;
@@ -79,6 +141,8 @@ export type ThemeColors = {
   shadowColor: string;
   mapPinRing: string;
   tabBar: string;
+  gradientStart: string;
+  gradientEnd: string;
 };
 
 export function resolveThemeColors(scheme: ColorScheme): ThemeColors {
