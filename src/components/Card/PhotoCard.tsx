@@ -79,7 +79,7 @@ export function PhotoCard({
       <View style={{ aspectRatio: 0.85, backgroundColor: colors.surfaceSecondary }}>
         <Image source={source} style={StyleSheet.absoluteFill} resizeMode="cover" />
         <LinearGradient
-          colors={['transparent', 'rgba(26,30,58,0.45)']}
+          colors={['transparent', colors.overlay]}
           style={StyleSheet.absoluteFill}
         />
         {dexLabel ? (
