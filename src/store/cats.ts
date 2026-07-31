@@ -17,9 +17,12 @@ type AddCatInput = {
 type CatsState = {
   cats: Cat[];
   nextNumber: number;
+  hydrated: boolean;
+  setHydrated: (value: boolean) => void;
   addCat: (input: AddCatInput) => Cat;
   incrementViews: (id: string) => void;
   updateCat: (id: string, patch: Partial<Pick<Cat, 'name' | 'notes'>>) => void;
+  removeCat: (id: string) => void;
   getCat: (id: string) => Cat | undefined;
 };
 
@@ -28,6 +31,8 @@ export const useCatsStore = create<CatsState>()(
     (set, get) => ({
       cats: [],
       nextNumber: 1,
+      hydrated: false,
+      setHydrated: (value) => set({ hydrated: value }),
       addCat: (input) => {
         const number = get().nextNumber;
         const cat: Cat = {
@@ -62,11 +67,22 @@ export const useCatsStore = create<CatsState>()(
             cat.id === id ? { ...cat, ...patch } : cat,
           ),
         })),
+      removeCat: (id) =>
+        set((state) => ({
+          cats: state.cats.filter((cat) => cat.id !== id),
+        })),
       getCat: (id) => get().cats.find((cat) => cat.id === id),
     }),
     {
       name: 'catdex-cats',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        cats: state.cats,
+        nextNumber: state.nextNumber,
+      }),
+      onRehydrateStorage: () => () => {
+        useCatsStore.getState().setHydrated(true);
+      },
     },
   ),
 );

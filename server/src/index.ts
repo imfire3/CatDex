@@ -124,6 +124,6 @@ app.post('/analyze-cat', async (c) => {
   }
 });
 
-serve({ fetch: app.fetch, port }, () => {
-  console.log(`CatDex API ready on http://localhost:${port}`);
+serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, () => {
+  console.log(`CatDex API ready on http://0.0.0.0:${port}`);
 });

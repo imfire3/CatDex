@@ -44,6 +44,8 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
           style={[
             styles.handle,
             {
+              width: spacing[40],
+              height: spacing[4],
               backgroundColor: colors.border,
               marginBottom: spacing[16],
               borderRadius: radius.full,
@@ -68,7 +70,5 @@ const styles = StyleSheet.create({
   },
   handle: {
     alignSelf: 'center',
-    width: 40,
-    height: 4,
   },
 });

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   TextInput as RNTextInput,
   StyleSheet,
@@ -90,9 +91,12 @@ export function TextInput({
   containerStyle,
   light: _light,
   style,
+  onFocus,
+  onBlur,
   ...rest
 }: AppTextInputProps) {
   const { colors, fonts, typography } = useTheme();
+  const [focused, setFocused] = useState(false);
 
   return (
     <FieldShell
@@ -103,11 +107,20 @@ export function TextInput({
       leftIcon={leftIcon}
       rightIcon={rightIcon}
       containerStyle={containerStyle}
+      focused={focused}
     >
       <RNTextInput
         editable={!disabled}
         placeholderTextColor={colors.placeholder}
         accessibilityState={{ disabled: !!disabled }}
+        onFocus={(event) => {
+          setFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setFocused(false);
+          onBlur?.(event);
+        }}
         style={[
           {
             color: colors.text,
