@@ -22,10 +22,10 @@ import type { Cat } from '@/types/cat';
 type FilterId = 'nearby' | 'rare' | 'seen';
 
 /**
- * Explore map — reference HUD: avatar + CatDex wordmark + vertical side actions.
+ * Explorer — HUD from design: avatar · CatDex · bell, then À proximité + filters.
  */
 export default function MapScreen() {
-  const { colors, fonts, scheme, spacing, radius, iconStroke, iconSize } = useTheme();
+  const { colors, fonts, spacing, radius, iconStroke, iconSize, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const cats = useCatsStore((state) => state.cats);
@@ -33,7 +33,6 @@ export default function MapScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [filter, setFilter] = useState<FilterId>('nearby');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [mapScheme, setMapScheme] = useState<'light' | 'dark'>(scheme);
   const [focusCoordinate, setFocusCoordinate] = useState<{
     latitude: number;
     longitude: number;
@@ -84,7 +83,7 @@ export default function MapScreen() {
     <View style={styles.root}>
       <CatMap
         cats={cats}
-        scheme={mapScheme}
+        scheme="light"
         focusCoordinate={focusCoordinate}
         onSelectCat={(item) => {
           setSelected(item);
@@ -92,7 +91,6 @@ export default function MapScreen() {
         }}
       />
 
-      {/* Top HUD */}
       <View
         pointerEvents="box-none"
         style={[
@@ -100,11 +98,12 @@ export default function MapScreen() {
           {
             paddingTop: insets.top + spacing[8],
             paddingHorizontal: spacing[16],
+            gap: spacing[16],
           },
         ]}
       >
+        {/* Top bar: avatar · CatDex · notifications */}
         <View style={styles.topBar} pointerEvents="box-none">
-          {/* Avatar */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Profil"
@@ -123,7 +122,7 @@ export default function MapScreen() {
                 style={[
                   styles.badge,
                   {
-                    backgroundColor: colors.brand,
+                    backgroundColor: colors.accent,
                     borderColor: colors.surface,
                     minWidth: spacing[24],
                     height: spacing[24],
@@ -135,7 +134,7 @@ export default function MapScreen() {
                 <Text
                   variant="caption"
                   style={{
-                    color: colors.onBrand,
+                    color: colors.onAccent,
                     fontFamily: fonts.bodySemi,
                     fontSize: 10,
                     lineHeight: 12,
@@ -147,148 +146,126 @@ export default function MapScreen() {
             ) : null}
           </Pressable>
 
-          {/* Wordmark */}
           <View style={styles.wordmark} pointerEvents="none">
             <Text
               variant="h2"
               align="center"
-              style={{ fontFamily: fonts.display, color: colors.text }}
+              color="textBrand"
+              style={{ fontFamily: fonts.display }}
             >
-              Cat
-              <Text
-                variant="h2"
-                style={{ fontFamily: fonts.display, color: colors.accent }}
-              >
-                Dex
-              </Text>
+              CatDex
             </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: spacing[4],
-                marginTop: spacing[4],
-              }}
-            >
-              <View style={{ flex: 1, height: 1, backgroundColor: colors.border, maxWidth: 40 }} />
-              <Svg width={14} height={10} viewBox="0 0 14 10" fill="none">
-                <Path
-                  d="M1 4h4M9 4h4M7 1v3M5 7c.8 1.2 2.2 1.2 3 0"
-                  stroke={colors.brand}
-                  strokeWidth={1.4}
-                  strokeLinecap="round"
-                />
-              </Svg>
-              <View style={{ flex: 1, height: 1, backgroundColor: colors.border, maxWidth: 40 }} />
-            </View>
           </View>
 
-          {/* Spacer matching avatar width so logo stays centered */}
-          <View style={{ width: spacing[48] }} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+            onPress={() => void recenter()}
+            style={({ pressed }) => [
+              {
+                width: spacing[48],
+                height: spacing[48],
+                borderRadius: radius.full,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+              shadow.low,
+            ]}
+          >
+            <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M6 9a6 6 0 1 1 12 0c0 3.2 1.2 4.8 1.8 5.5.3.4 0 1.5-.8 1.5H5c-.8 0-1.1-1.1-.8-1.5C4.8 13.8 6 12.2 6 9Z"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M10 18a2 2 0 0 0 4 0"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </Pressable>
         </View>
 
-        {/* Vertical side actions — top right */}
-        <View
-          style={[
-            styles.sideActions,
-            {
-              top: insets.top + spacing[8],
-              right: spacing[16],
-              gap: spacing[8],
-            },
-          ]}
-        >
-          <MapSideButton
-            accessibilityLabel={
-              mapScheme === 'light' ? 'Passer en carte sombre' : 'Passer en carte claire'
-            }
-            onPress={() => setMapScheme((s) => (s === 'light' ? 'dark' : 'light'))}
-            icon={
-              mapScheme === 'light' ? (
-                <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                  <Circle
-                    cx="12"
-                    cy="12"
-                    r="4"
-                    stroke={colors.brand}
-                    strokeWidth={iconStroke.regular}
-                  />
-                  <Path
-                    d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
-                    stroke={colors.brand}
-                    strokeWidth={iconStroke.regular}
-                    strokeLinecap="round"
-                  />
-                </Svg>
-              ) : (
-                <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5Z"
-                    stroke={colors.brand}
-                    strokeWidth={iconStroke.regular}
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              )
-            }
-          />
-          <MapSideButton
-            accessibilityLabel="Recentrer la carte"
-            onPress={() => void recenter()}
-            icon={
-              <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                <Circle
-                  cx="12"
-                  cy="12"
-                  r="3"
-                  stroke={colors.brand}
-                  strokeWidth={iconStroke.regular}
-                />
-                <Path
-                  d="M12 3v3M12 18v3M3 12h3M18 12h3"
-                  stroke={colors.brand}
-                  strokeWidth={iconStroke.regular}
-                  strokeLinecap="round"
-                />
-                <Circle
-                  cx="12"
-                  cy="12"
-                  r="8"
-                  stroke={colors.brand}
-                  strokeWidth={iconStroke.regular}
-                />
-              </Svg>
-            }
-          />
-          <MapSideButton
+        {/* Secondary: À proximité + filters */}
+        <View style={styles.filterRow} pointerEvents="box-none">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="À proximité"
+            onPress={() => {
+              setFilter('nearby');
+              void recenter();
+            }}
+            style={({ pressed }) => [
+              {
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing[8],
+                paddingHorizontal: spacing[16],
+                paddingVertical: spacing[8],
+                borderRadius: radius.full,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: filter === 'nearby' ? colors.accent : colors.border,
+                opacity: pressed ? 0.92 : 1,
+              },
+              shadow.low,
+            ]}
+          >
+            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
+                stroke={colors.accent}
+                strokeWidth={iconStroke.regular}
+                strokeLinejoin="round"
+              />
+              <Circle cx="12" cy="10" r="2.5" fill={colors.accent} />
+            </Svg>
+            <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+              À proximité
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Filtres"
+            accessibilityState={{ selected: filtersOpen }}
             onPress={() => setFiltersOpen((open) => !open)}
-            active={filtersOpen}
-            icon={
-              <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M4 6h16M7 12h10M10 18h4"
-                  stroke={filtersOpen ? colors.accent : colors.brand}
-                  strokeWidth={iconStroke.regular}
-                  strokeLinecap="round"
-                />
-              </Svg>
-            }
-          />
+            style={({ pressed }) => [
+              {
+                width: spacing[48],
+                height: spacing[48],
+                borderRadius: radius.full,
+                backgroundColor: filtersOpen ? colors.accentSoft : colors.surface,
+                borderWidth: 1,
+                borderColor: filtersOpen ? colors.accent : colors.border,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.88 : 1,
+              },
+              shadow.low,
+            ]}
+          >
+            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M4 6h16M7 12h10M10 18h4"
+                stroke={filtersOpen ? colors.accent : colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </Pressable>
         </View>
 
         {filtersOpen ? (
-          <View
-            style={[
-              styles.filterPanel,
-              {
-                marginTop: spacing[16],
-                marginRight: spacing[56],
-                gap: spacing[8],
-              },
-            ]}
-          >
+          <View style={[styles.filterPanel, { gap: spacing[8] }]}>
             <Chip
               label="À proximité"
               selected={filter === 'nearby'}
@@ -319,6 +296,7 @@ export default function MapScreen() {
               opacity: pressed ? 0.96 : 1,
               transform: [{ scale: pressed ? 0.99 : 1 }],
             },
+            shadow.low,
           ]}
         >
           <Image
@@ -327,7 +305,7 @@ export default function MapScreen() {
               width: spacing[64],
               height: spacing[64],
               borderRadius: radius.md,
-              backgroundColor: themeSoft(nearbyTheme, scheme),
+              backgroundColor: themeSoft(nearbyTheme, 'light'),
             }}
           />
           <View style={{ flex: 1, gap: spacing[8] }}>
@@ -388,47 +366,6 @@ export default function MapScreen() {
   );
 }
 
-function MapSideButton({
-  icon,
-  onPress,
-  accessibilityLabel,
-  active,
-}: {
-  icon: React.ReactNode;
-  onPress: () => void;
-  accessibilityLabel: string;
-  active?: boolean;
-}) {
-  const { colors, spacing, radius } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ selected: !!active }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        {
-          width: spacing[48],
-          height: spacing[48],
-          borderRadius: radius.full,
-          backgroundColor: active ? colors.accentSoft : colors.surface,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: active ? colors.accent : colors.border,
-          opacity: pressed ? 0.88 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-          // Flat — no drop shadow (reference UI)
-          shadowOpacity: 0,
-          elevation: 0,
-        },
-      ]}
-    >
-      {icon}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1 },
   hud: {
@@ -462,14 +399,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  sideActions: {
-    position: 'absolute',
-    zIndex: 12,
+  filterRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   filterPanel: {
-    alignSelf: 'flex-end',
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   nearbyCard: {
     position: 'absolute',

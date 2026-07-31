@@ -22,10 +22,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path, Rect } from 'react-native-svg';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { PageLoading, Skeleton } from '@/components/Loader';
+import { ProgressBar } from '@/components/Progress';
 import { ScanFrame } from '@/components/ScanFrame';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -425,8 +427,8 @@ export default function ScannerScreen() {
             gap: spacing[8],
           }}
         >
-          <Button title="Ajouter au CatDex" onPress={handleAddToCatDex} />
-          <Button title="Reprendre la photo" variant="ghost" onPress={resetToCamera} />
+          <Button title="Ajouter à ma collection" onPress={handleAddToCatDex} />
+          <Button title="Reprendre la photo" variant="secondary" onPress={resetToCamera} />
         </View>
       </View>
     );
@@ -435,23 +437,104 @@ export default function ScannerScreen() {
   if (step === 'review' && photoUri) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[16], gap: spacing[8] }}>
-          <Text variant="h2">{analyzing ? 'Préparation…' : 'Presque'}</Text>
-          <Text variant="bodySmall" color="textSecondary">
-            {analyzing
-              ? 'Ta Cat Card se prépare. Un instant.'
-              : 'Relance l’analyse ou reprends une photo.'}
-          </Text>
+        {/* Header: close · spacer · gallery */}
+        <View
+          style={{
+            paddingHorizontal: spacing[16],
+            paddingTop: spacing[8],
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Fermer"
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              {
+                width: spacing[48],
+                height: spacing[48],
+                borderRadius: radius.full,
+                backgroundColor: colors.surfaceSecondary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text color="textBrand" style={{ fontSize: 18, lineHeight: 20 }}>
+              ✕
+            </Text>
+          </Pressable>
+
+          <View style={{ width: spacing[48] }} />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Galerie"
+            onPress={handlePickFromLibrary}
+            style={({ pressed }) => [
+              {
+                width: spacing[48],
+                height: spacing[48],
+                borderRadius: radius.full,
+                backgroundColor: colors.surfaceSecondary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+              <Rect
+                x="4"
+                y="5"
+                width="16"
+                height="14"
+                rx="2"
+                stroke={colors.brand}
+                strokeWidth={1.6}
+              />
+              <Path
+                d="M8 15l2.5-3 2 2.5L15 11l3 4"
+                stroke={colors.brand}
+                strokeWidth={1.6}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </Pressable>
+        </View>
+
+        <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[16], gap: spacing[16] }}>
+          {analyzing ? <ProgressBar progress={0.72} height={6} /> : <ProgressBar progress={1} height={6} />}
+
+          <View style={{ gap: spacing[8] }}>
+            <Text variant="h2" color="textBrand">
+              {analyzing ? 'Analyse…' : 'Presque !'}
+            </Text>
+            <Text variant="bodySmall" color="textSecondary">
+              {analyzing
+                ? 'Ta Cat Card se prépare. Un instant.'
+                : 'Relance l’analyse ou reprends une photo.'}
+            </Text>
+          </View>
         </View>
 
         <View
-          style={{
-            marginHorizontal: spacing[24],
-            marginTop: spacing[24],
-            borderRadius: radius.xl,
-            overflow: 'hidden',
-            backgroundColor: colors.surfaceSecondary,
-          }}
+          style={[
+            {
+              marginHorizontal: spacing[24],
+              marginTop: spacing[24],
+              borderRadius: radius.lg,
+              overflow: 'hidden',
+              backgroundColor: colors.surfaceSecondary,
+              borderWidth: 1,
+              borderColor: colors.border,
+            },
+            shadow.low,
+          ]}
         >
           <Image
             source={{ uri: photoUri }}
@@ -493,8 +576,39 @@ export default function ScannerScreen() {
               <Button
                 title="Relancer l’analyse"
                 onPress={() => photoBase64 && photoUri && runAnalysis(photoBase64, photoUri)}
+                icon={
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3Z"
+                      fill={colors.onAccent}
+                    />
+                    <Path
+                      d="M18 13l.7 2.1L21 16l-2.3.8L18 19l-.7-2.2L15 16l2.3-.9L18 13Z"
+                      fill={colors.onAccent}
+                    />
+                  </Svg>
+                }
               />
-              <Button title="Reprendre" variant="ghost" onPress={resetToCamera} />
+              <Button
+                title="Reprendre la photo"
+                variant="secondary"
+                onPress={resetToCamera}
+                icon={
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"
+                      stroke={colors.brand}
+                      strokeWidth={1.6}
+                      strokeLinecap="round"
+                    />
+                    <Path
+                      d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                      stroke={colors.brand}
+                      strokeWidth={1.6}
+                    />
+                  </Svg>
+                }
+              />
             </>
           )}
         </View>
