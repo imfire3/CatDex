@@ -20,6 +20,8 @@ export type TextProps = RNTextProps & {
     | 'success'
     | 'warning'
     | 'danger'
+    | 'rare'
+    | 'legendary'
     | 'onAccent'
     | 'onPrimary';
   align?: TextStyle['textAlign'];
@@ -54,6 +56,8 @@ export function Text({
     success: colors.success,
     warning: colors.warning,
     danger: colors.danger,
+    rare: colors.rare,
+    legendary: colors.legendary,
     onAccent: colors.onAccent,
     onPrimary: colors.onPrimary,
   };

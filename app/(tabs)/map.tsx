@@ -3,17 +3,23 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { GlassIconButton } from '@/components/GlassIconButton';
 import { Text } from '@/components/Text';
 import { CatMap } from '@/components/maps/CatMap';
-import { isInParis20e, PARIS_20E } from '@/lib/constants';
-import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import { isInParis20e } from '@/lib/constants';
+import {
+  rarityFromCat,
+  rarityTokens,
+  themeFromColorLabel,
+  themeSoft,
+} from '@/lib/catTheme';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -22,10 +28,11 @@ import type { Cat } from '@/types/cat';
 type FilterId = 'nearby' | 'rare' | 'seen';
 
 /**
- * Explorer — HUD from design: avatar · CatDex · bell, then À proximité + filters.
+ * Explorer map — HUD hero: avatar · CatDex wordmark · bell.
+ * Soft nearby card + sheet. No vertical side stacks.
  */
 export default function MapScreen() {
-  const { colors, fonts, spacing, radius, iconStroke, iconSize, shadow } = useTheme();
+  const { colors, fonts, scheme, spacing, radius, shadow, iconStroke, iconSize } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const cats = useCatsStore((state) => state.cats);
@@ -33,13 +40,12 @@ export default function MapScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [filter, setFilter] = useState<FilterId>('nearby');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [focusCoordinate, setFocusCoordinate] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
 
   const nearby = cats[0] ?? null;
   const nearbyTheme = nearby ? themeFromColorLabel(nearby.analysis.color, nearby.number) : null;
+  const nearbyRarity = nearby
+    ? rarityTokens[rarityFromCat(nearby.analysis.color, nearby.analysis.coat, nearby.number)]
+    : null;
   const initials = (user?.displayName ?? 'C').slice(0, 2).toUpperCase();
   const avatarSource = nearby?.photoUri ? { uri: nearby.photoUri } : undefined;
 
@@ -62,29 +68,11 @@ export default function MapScreen() {
     };
   }, []);
 
-  const recenter = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const position = await Location.getCurrentPositionAsync({});
-        setFocusCoordinate({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        return;
-      }
-    } catch {
-      // fallback below
-    }
-    setFocusCoordinate({ ...PARIS_20E.center });
-  };
-
   return (
     <View style={styles.root}>
       <CatMap
         cats={cats}
         scheme="light"
-        focusCoordinate={focusCoordinate}
         onSelectCat={(item) => {
           setSelected(item);
           setSheetVisible(true);
@@ -102,7 +90,6 @@ export default function MapScreen() {
           },
         ]}
       >
-        {/* Top bar: avatar · CatDex · notifications */}
         <View style={styles.topBar} pointerEvents="box-none">
           <Pressable
             accessibilityRole="button"
@@ -122,7 +109,7 @@ export default function MapScreen() {
                 style={[
                   styles.badge,
                   {
-                    backgroundColor: colors.accent,
+                    backgroundColor: colors.brand,
                     borderColor: colors.surface,
                     minWidth: spacing[24],
                     height: spacing[24],
@@ -132,12 +119,10 @@ export default function MapScreen() {
                 ]}
               >
                 <Text
-                  variant="caption"
+                  variant="tiny"
                   style={{
-                    color: colors.onAccent,
+                    color: colors.onBrand,
                     fontFamily: fonts.bodySemi,
-                    fontSize: 10,
-                    lineHeight: 12,
                   }}
                 >
                   {cats.length > 99 ? '99+' : String(cats.length)}
@@ -150,36 +135,25 @@ export default function MapScreen() {
             <Text
               variant="h2"
               align="center"
-              color="textBrand"
-              style={{ fontFamily: fonts.display }}
+              style={{ fontFamily: fonts.display, color: colors.brand }}
             >
-              CatDex
+              Cat
+              <Text
+                variant="h2"
+                style={{ fontFamily: fonts.display, color: colors.accent }}
+              >
+                Dex
+              </Text>
             </Text>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
+          <GlassIconButton
             accessibilityLabel="Notifications"
-            onPress={() => void recenter()}
-            style={({ pressed }) => [
-              {
-                width: spacing[48],
-                height: spacing[48],
-                borderRadius: radius.full,
-                backgroundColor: colors.surface,
-                borderWidth: 1,
-                borderColor: colors.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-              shadow.low,
-            ]}
+            onPress={() => undefined}
           >
             <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
               <Path
-                d="M6 9a6 6 0 1 1 12 0c0 3.2 1.2 4.8 1.8 5.5.3.4 0 1.5-.8 1.5H5c-.8 0-1.1-1.1-.8-1.5C4.8 13.8 6 12.2 6 9Z"
+                d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 13 6 9Z"
                 stroke={colors.brand}
                 strokeWidth={iconStroke.regular}
                 strokeLinejoin="round"
@@ -191,67 +165,29 @@ export default function MapScreen() {
                 strokeLinecap="round"
               />
             </Svg>
-          </Pressable>
+          </GlassIconButton>
         </View>
 
-        {/* Secondary: À proximité + filters */}
-        <View style={styles.filterRow} pointerEvents="box-none">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="À proximité"
-            onPress={() => {
-              setFilter('nearby');
-              void recenter();
-            }}
-            style={({ pressed }) => [
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing[8],
-                paddingHorizontal: spacing[16],
-                paddingVertical: spacing[8],
-                borderRadius: radius.full,
-                backgroundColor: colors.surface,
-                borderWidth: 1,
-                borderColor: filter === 'nearby' ? colors.accent : colors.border,
-                opacity: pressed ? 0.92 : 1,
-              },
-              shadow.low,
-            ]}
-          >
-            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
-                stroke={colors.accent}
-                strokeWidth={iconStroke.regular}
-                strokeLinejoin="round"
-              />
-              <Circle cx="12" cy="10" r="2.5" fill={colors.accent} />
-            </Svg>
-            <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-              À proximité
-            </Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing[8],
+            flexWrap: 'wrap',
+          }}
+        >
+          <Chip
+            label="À proximité"
+            selected={filter === 'nearby'}
+            onPress={() => setFilter('nearby')}
+          />
+          <GlassIconButton
             accessibilityLabel="Filtres"
-            accessibilityState={{ selected: filtersOpen }}
             onPress={() => setFiltersOpen((open) => !open)}
-            style={({ pressed }) => [
-              {
-                width: spacing[48],
-                height: spacing[48],
-                borderRadius: radius.full,
-                backgroundColor: filtersOpen ? colors.accentSoft : colors.surface,
-                borderWidth: 1,
-                borderColor: filtersOpen ? colors.accent : colors.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.88 : 1,
-              },
-              shadow.low,
-            ]}
+            style={{
+              backgroundColor: filtersOpen ? colors.accentSoft : colors.glassFill,
+              borderColor: filtersOpen ? colors.accent : colors.border,
+            }}
           >
             <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
               <Path
@@ -261,23 +197,25 @@ export default function MapScreen() {
                 strokeLinecap="round"
               />
             </Svg>
-          </Pressable>
+          </GlassIconButton>
+          {filtersOpen ? (
+            <>
+              <Chip
+                label="Rares"
+                selected={filter === 'rare'}
+                onPress={() => setFilter('rare')}
+              />
+              <Chip
+                label="Vus"
+                selected={filter === 'seen'}
+                onPress={() => setFilter('seen')}
+              />
+            </>
+          ) : null}
         </View>
-
-        {filtersOpen ? (
-          <View style={[styles.filterPanel, { gap: spacing[8] }]}>
-            <Chip
-              label="À proximité"
-              selected={filter === 'nearby'}
-              onPress={() => setFilter('nearby')}
-            />
-            <Chip label="Rares" selected={filter === 'rare'} onPress={() => setFilter('rare')} />
-            <Chip label="Vus" selected={filter === 'seen'} onPress={() => setFilter('seen')} />
-          </View>
-        ) : null}
       </View>
 
-      {!sheetVisible && nearby && nearbyTheme ? (
+      {!sheetVisible && nearby && nearbyTheme && nearbyRarity ? (
         <Pressable
           onPress={() => {
             setSelected(nearby);
@@ -289,10 +227,11 @@ export default function MapScreen() {
               bottom: insets.bottom + spacing[96],
               marginHorizontal: spacing[24],
               backgroundColor: colors.surface,
-              borderRadius: radius.lg,
+              borderRadius: radius.card,
               borderWidth: 1,
               borderColor: colors.border,
               padding: spacing[16],
+              gap: spacing[16],
               opacity: pressed ? 0.96 : 1,
               transform: [{ scale: pressed ? 0.99 : 1 }],
             },
@@ -305,29 +244,29 @@ export default function MapScreen() {
               width: spacing[64],
               height: spacing[64],
               borderRadius: radius.md,
-              backgroundColor: themeSoft(nearbyTheme, 'light'),
+              backgroundColor: themeSoft(nearbyTheme, scheme),
             }}
           />
           <View style={{ flex: 1, gap: spacing[8] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
               <Text
-                variant="body"
+                variant="title"
                 color="textBrand"
-                style={{ fontFamily: fonts.bodySemi }}
+                style={{ flex: 1 }}
                 numberOfLines={1}
               >
                 {nearby.name}
               </Text>
               <Badge
-                label={nearby.analysis.coat || 'Chat'}
-                color={nearbyTheme.badge}
-                backgroundColor={`${nearbyTheme.hex}22`}
+                label={nearbyRarity.label}
+                color={nearbyRarity.foreground}
+                backgroundColor={nearbyRarity.background}
               />
             </View>
             <Text variant="caption" color="textSecondary" numberOfLines={1}>
               {nearby.analysis.breed} · {nearby.analysis.color}
             </Text>
-            <Text variant="caption" color="textMuted">
+            <Text variant="tiny" color="textMuted">
               Nouveau signalement à proximité
             </Text>
           </View>
@@ -342,26 +281,54 @@ export default function MapScreen() {
         }}
       >
         {selected ? (
-          <View style={{ gap: spacing[16] }}>
-            <Text variant="h2" color="textBrand">
-              {selected.name}
-            </Text>
-            <Text variant="bodySmall" color="textSecondary">
-              {selected.analysis.breed} · {selected.analysis.color}
-            </Text>
-            <Text variant="body" color="textBody" numberOfLines={3}>
-              {selected.analysis.description}
-            </Text>
-            <Button
-              title="Voir la fiche"
-              onPress={() => {
-                setSheetVisible(false);
-                router.push(`/cat/${selected.id}`);
-              }}
-            />
-          </View>
+          <SelectedCatSheet
+            cat={selected}
+            onOpenFiche={() => {
+              setSheetVisible(false);
+              router.push(`/cat/${selected.id}`);
+            }}
+          />
         ) : null}
       </BottomSheet>
+    </View>
+  );
+}
+
+function SelectedCatSheet({ cat, onOpenFiche }: { cat: Cat; onOpenFiche: () => void }) {
+  const { scheme, spacing, radius } = useTheme();
+  const theme = themeFromColorLabel(cat.analysis.color, cat.number);
+  const rarity = rarityTokens[rarityFromCat(cat.analysis.color, cat.analysis.coat, cat.number)];
+
+  return (
+    <View style={{ gap: spacing[16] }}>
+      <View style={{ flexDirection: 'row', gap: spacing[16], alignItems: 'center' }}>
+        <Image
+          source={{ uri: cat.photoUri }}
+          style={{
+            width: spacing[80],
+            height: spacing[80],
+            borderRadius: radius.card,
+            backgroundColor: themeSoft(theme, scheme),
+          }}
+        />
+        <View style={{ flex: 1, gap: spacing[8] }}>
+          <Text variant="h3" color="textBrand">
+            {cat.name}
+          </Text>
+          <Badge
+            label={rarity.label}
+            color={rarity.foreground}
+            backgroundColor={rarity.background}
+          />
+          <Text variant="bodySmall" color="textSecondary">
+            {cat.analysis.breed} · {cat.analysis.color}
+          </Text>
+        </View>
+      </View>
+      <Text variant="body" color="textBody" numberOfLines={3}>
+        {cat.analysis.description}
+      </Text>
+      <Button title="Voir la fiche" onPress={onOpenFiche} />
     </View>
   );
 }
@@ -399,15 +366,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  filterPanel: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
   nearbyCard: {
     position: 'absolute',
     left: 0,
@@ -415,6 +373,5 @@ const styles = StyleSheet.create({
     zIndex: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
   },
 });

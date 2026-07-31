@@ -1,20 +1,16 @@
-export {
-  colors,
-  palette,
-  resolveThemeColors,
-  type ColorScheme,
-  type ThemeColors,
-} from './colors';
-export { spacing, spacingScale, type SpacingValue } from './spacing';
-export { radius, radiusScale, type RadiusValue } from './radius';
-export {
-  typography,
-  fontFamilies,
-  type TextVariant,
-  type TypographyStyle,
-} from './typography';
-export { createShadows, createAccentShadow, shadow, accentShadow, type ShadowToken } from './shadow';
-export { motion, motionDuration, motionEasing, type MotionSpeed } from './motion';
-export { iconSize, iconStroke, type IconSize } from './icons';
+export { palette, resolveThemeColors, colors } from './colors';
+export type { ColorScheme, ThemeColors } from './colors';
 export { gradients } from './gradients';
-export { ThemeProvider, useTheme, type Theme } from './ThemeProvider';
+export { iconSize, iconStroke } from './icons';
+export { motion, motionDuration, motionEasing } from './motion';
+export { opacity } from './opacity';
+export { radius, radiusScale } from './radius';
+export type { RadiusValue } from './radius';
+export { createShadows, createAccentShadow, shadow, accentShadow } from './shadow';
+export type { ShadowToken } from './shadow';
+export { spacing, spacingScale, assertSpacing } from './spacing';
+export type { SpacingValue } from './spacing';
+export { fontFamilies, typography } from './typography';
+export type { TextVariant, TypographyStyle } from './typography';
+export { ThemeProvider, useTheme, ThemeContext } from './ThemeProvider';
+export type { Theme } from './ThemeProvider';

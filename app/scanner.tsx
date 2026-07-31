@@ -22,7 +22,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Rect } from 'react-native-svg';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -39,7 +38,12 @@ import {
   isInParis20e,
   PARIS_20E,
 } from '@/lib/constants';
-import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import {
+  rarityFromCat,
+  rarityTokens,
+  themeFromColorLabel,
+  themeSoft,
+} from '@/lib/catTheme';
 import { useCatsStore } from '@/store/cats';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -313,6 +317,7 @@ export default function ScannerScreen() {
 
   if (step === 'reveal' && photoUri && analysis) {
     const theme = themeFromColorLabel(analysis.color, nextNumber);
+    const rarity = rarityTokens[rarityFromCat(analysis.color, analysis.coat, nextNumber)];
     const dexLabel = formatDexNumber(nextNumber);
     const displayName =
       analysis.suggestedName?.trim() || formatCatDefaultName(nextNumber);
@@ -328,14 +333,14 @@ export default function ScannerScreen() {
           },
         ]}
       >
-        <View style={{ alignItems: 'center', gap: spacing[4], marginBottom: spacing[16] }}>
+        <View style={{ alignItems: 'center', gap: spacing[8], marginBottom: spacing[24] }}>
           <Text variant="label" color="accent" align="center">
             Nouveau CatDex
           </Text>
           <Text
-            variant="display"
+            variant="h1"
             align="center"
-            style={{ fontFamily: fonts.display, color: colors.text }}
+            style={{ fontFamily: fonts.display, color: colors.brand }}
           >
             {dexLabel}
           </Text>
@@ -345,79 +350,119 @@ export default function ScannerScreen() {
           <View
             style={[
               {
-                padding: spacing[8],
-                borderRadius: radius['2xl'],
-                backgroundColor: themeSoft(theme, scheme),
+                width: '100%',
+                padding: spacing[16],
+                borderRadius: radius.card,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: rarity.border,
                 overflow: 'hidden',
+                gap: spacing[16],
+                alignItems: 'center',
               },
               shadow.medium,
             ]}
           >
-            <View>
+            <View
+              style={{
+                padding: spacing[8],
+                borderRadius: radius.card,
+                backgroundColor: themeSoft(theme, scheme),
+                overflow: 'hidden',
+              }}
+            >
               <Image
                 source={{ uri: photoUri }}
                 style={{
                   width: spacing[96] * 2,
                   height: spacing[96] * 2,
-                  borderRadius: radius.xl,
+                  borderRadius: radius.md,
                 }}
               />
               <Animated.View
                 pointerEvents="none"
-                style={[StyleSheet.absoluteFill, blurOverlayStyle, { borderRadius: radius.xl }]}
+                style={[StyleSheet.absoluteFill, blurOverlayStyle, { borderRadius: radius.md }]}
               >
                 {Platform.OS === 'web' ? (
                   <View
                     style={[
                       StyleSheet.absoluteFill,
-                      { backgroundColor: colors.overlay, borderRadius: radius.xl },
+                      { backgroundColor: colors.overlay, borderRadius: radius.md },
                     ]}
                   />
                 ) : (
                   <BlurView
                     intensity={48}
                     tint="dark"
-                    style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
+                    style={[StyleSheet.absoluteFill, { borderRadius: radius.md }]}
                   />
                 )}
               </Animated.View>
             </View>
+
+            <Text
+              variant="h2"
+              align="center"
+              color="textBrand"
+              style={{ fontFamily: fonts.display }}
+            >
+              {displayName}
+            </Text>
+
+            <Badge
+              label={rarity.label}
+              color={rarity.foreground}
+              backgroundColor={rarity.background}
+            />
+
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: spacing[8],
+              }}
+            >
+              <Badge label={analysis.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+              <Badge label={analysis.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+              <Badge label={analysis.coat} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+            </View>
+
+            <View
+              style={{
+                width: '100%',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: spacing[8],
+                justifyContent: 'center',
+              }}
+            >
+              <Badge
+                label={`Sexe · ${nextNumber % 2 === 0 ? '♂' : '♀'}`}
+                color={colors.brand}
+                backgroundColor={colors.brandSoft}
+              />
+              <Badge
+                label={`Âge · ${nextNumber % 3 === 0 ? 'Chaton' : nextNumber % 3 === 1 ? 'Adulte' : 'Sénior'}`}
+                color={colors.textSecondary}
+                backgroundColor={colors.surfaceTertiary}
+              />
+              <Badge
+                label="Traits · Curieux"
+                color={rarity.foreground}
+                backgroundColor={rarity.background}
+              />
+            </View>
+
+            <Text
+              variant="body"
+              color="textBody"
+              align="center"
+              style={{ paddingHorizontal: spacing[8] }}
+            >
+              {analysis.description}
+            </Text>
           </View>
-
-          <Text
-            variant="h2"
-            align="center"
-            style={{ marginTop: spacing[24], fontFamily: fonts.display }}
-          >
-            {displayName}
-          </Text>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: spacing[8],
-              marginTop: spacing[16],
-            }}
-          >
-            <Badge label={analysis.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-            <Badge label={analysis.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-            <Badge label={analysis.coat} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-          </View>
-
-          <Text
-            variant="body"
-            color="textBody"
-            align="center"
-            style={{
-              marginTop: spacing[16],
-              paddingHorizontal: spacing[8],
-              fontFamily: fonts.body,
-            }}
-          >
-            {analysis.description}
-          </Text>
         </Animated.View>
 
         <View
@@ -427,7 +472,7 @@ export default function ScannerScreen() {
             gap: spacing[8],
           }}
         >
-          <Button title="Ajouter à ma collection" onPress={handleAddToCatDex} />
+          <Button title="Ajouter au CatDex" onPress={handleAddToCatDex} />
           <Button title="Reprendre la photo" variant="secondary" onPress={resetToCamera} />
         </View>
       </View>
@@ -437,99 +482,26 @@ export default function ScannerScreen() {
   if (step === 'review' && photoUri) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        {/* Header: close · spacer · gallery */}
-        <View
-          style={{
-            paddingHorizontal: spacing[16],
-            paddingTop: spacing[8],
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Fermer"
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              {
-                width: spacing[48],
-                height: spacing[48],
-                borderRadius: radius.full,
-                backgroundColor: colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            <Text color="textBrand" style={{ fontSize: 18, lineHeight: 20 }}>
-              ✕
-            </Text>
-          </Pressable>
-
-          <View style={{ width: spacing[48] }} />
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Galerie"
-            onPress={handlePickFromLibrary}
-            style={({ pressed }) => [
-              {
-                width: spacing[48],
-                height: spacing[48],
-                borderRadius: radius.full,
-                backgroundColor: colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Rect
-                x="4"
-                y="5"
-                width="16"
-                height="14"
-                rx="2"
-                stroke={colors.brand}
-                strokeWidth={1.6}
-              />
-              <Path
-                d="M8 15l2.5-3 2 2.5L15 11l3 4"
-                stroke={colors.brand}
-                strokeWidth={1.6}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </Pressable>
-        </View>
-
-        <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[16], gap: spacing[16] }}>
-          {analyzing ? <ProgressBar progress={0.72} height={6} /> : <ProgressBar progress={1} height={6} />}
-
-          <View style={{ gap: spacing[8] }}>
-            <Text variant="h2" color="textBrand">
-              {analyzing ? 'Analyse…' : 'Presque !'}
-            </Text>
-            <Text variant="bodySmall" color="textSecondary">
-              {analyzing
-                ? 'Ta Cat Card se prépare. Un instant.'
-                : 'Relance l’analyse ou reprends une photo.'}
-            </Text>
-          </View>
+        <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[24], gap: spacing[16] }}>
+          <Text variant="h1" color="textBrand">
+            Presque !
+          </Text>
+          <Text variant="body" color="textSecondary">
+            {analyzing
+              ? 'Ta carte de collection se prépare…'
+              : 'Relance l’analyse ou reprends une photo.'}
+          </Text>
+          <ProgressBar progress={analyzing ? 0.65 : 1} height={8} />
         </View>
 
         <View
           style={[
             {
               marginHorizontal: spacing[24],
-              marginTop: spacing[24],
-              borderRadius: radius.lg,
+              marginTop: spacing[32],
+              borderRadius: radius.card,
               overflow: 'hidden',
-              backgroundColor: colors.surfaceSecondary,
+              backgroundColor: colors.surface,
               borderWidth: 1,
               borderColor: colors.border,
             },
@@ -574,41 +546,10 @@ export default function ScannerScreen() {
           ) : (
             <>
               <Button
-                title="Relancer l’analyse"
+                title="Relancer"
                 onPress={() => photoBase64 && photoUri && runAnalysis(photoBase64, photoUri)}
-                icon={
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                    <Path
-                      d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3Z"
-                      fill={colors.onAccent}
-                    />
-                    <Path
-                      d="M18 13l.7 2.1L21 16l-2.3.8L18 19l-.7-2.2L15 16l2.3-.9L18 13Z"
-                      fill={colors.onAccent}
-                    />
-                  </Svg>
-                }
               />
-              <Button
-                title="Reprendre la photo"
-                variant="secondary"
-                onPress={resetToCamera}
-                icon={
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                    <Path
-                      d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"
-                      stroke={colors.brand}
-                      strokeWidth={1.6}
-                      strokeLinecap="round"
-                    />
-                    <Path
-                      d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
-                      stroke={colors.brand}
-                      strokeWidth={1.6}
-                    />
-                  </Svg>
-                }
-              />
+              <Button title="Reprendre" variant="secondary" onPress={resetToCamera} />
             </>
           )}
         </View>
@@ -623,7 +564,7 @@ export default function ScannerScreen() {
       {!isWebCamera ? (
         <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
       ) : (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surface }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSecondary }]} />
       )}
 
       <View
@@ -641,17 +582,22 @@ export default function ScannerScreen() {
           onPress={() => router.back()}
           style={({ pressed }) => [
             {
-              width: spacing[40],
-              height: spacing[40],
+              width: spacing[48],
+              height: spacing[48],
               borderRadius: radius.full,
-              backgroundColor: colors.overlay,
+              backgroundColor: colors.glassFill,
+              borderWidth: 1,
+              borderColor: colors.border,
               alignItems: 'center',
               justifyContent: 'center',
               opacity: pressed ? 0.85 : 1,
             },
+            shadow.low,
           ]}
         >
-          <Text color="onAccent">✕</Text>
+          <Text color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+            ✕
+          </Text>
         </Pressable>
 
         <View style={{ alignItems: 'center', gap: spacing[24] }}>
@@ -674,6 +620,7 @@ export default function ScannerScreen() {
                     right: spacing[24],
                     height: spacing[4],
                     backgroundColor: colors.accent,
+                    borderRadius: radius.full,
                   },
                   scanStyle,
                 ]}
@@ -681,8 +628,8 @@ export default function ScannerScreen() {
             ) : null}
           </View>
           <Text
-            variant="body"
-            color={isWebCamera ? 'text' : 'onAccent'}
+            variant="title"
+            color={isWebCamera ? 'textBrand' : 'onAccent'}
             align="center"
             style={{ fontFamily: fonts.bodySemi }}
           >
@@ -707,17 +654,22 @@ export default function ScannerScreen() {
             accessibilityRole="button"
             accessibilityLabel="Galerie"
             onPress={handlePickFromLibrary}
-            style={({ pressed }) => ({
-              width: spacing[48],
-              height: spacing[48],
-              borderRadius: radius.lg,
-              backgroundColor: colors.overlay,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 0.85 : 1,
-            })}
+            style={({ pressed }) => [
+              {
+                width: spacing[48],
+                height: spacing[48],
+                borderRadius: radius.full,
+                backgroundColor: colors.glassFill,
+                borderWidth: 1,
+                borderColor: colors.border,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.85 : 1,
+              },
+              shadow.low,
+            ]}
           >
-            <Text color="onAccent">🖼</Text>
+            <Text color="textBrand">🖼</Text>
           </Pressable>
 
           {isWebCamera ? (
@@ -731,20 +683,20 @@ export default function ScannerScreen() {
                 {
                   width: spacing[64] + spacing[16],
                   height: spacing[64] + spacing[16],
-                  borderRadius: radius['2xl'],
+                  borderRadius: radius.full,
                   backgroundColor: colors.accent,
                   alignItems: 'center',
                   justifyContent: 'center',
                   transform: [{ scale: pressed ? 0.94 : 1 }],
                 },
-                shadow.medium,
+                shadow.glow,
               ]}
             >
               <View
                 style={{
                   width: spacing[64],
                   height: spacing[64],
-                  borderRadius: radius.xl,
+                  borderRadius: radius.full,
                   borderWidth: spacing[4],
                   borderColor: colors.onAccent,
                 }}

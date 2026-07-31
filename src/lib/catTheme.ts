@@ -1,6 +1,6 @@
 /**
- * Coat themes for CatDex cards — soft pastels on white surfaces.
- * Separate from brand navy / turquoise interface tokens.
+ * Coat themes + rarity for CatDex collection chrome.
+ * Separate from brand interface tokens — coat accents only.
  */
 
 const THEME_PALETTE = [
@@ -41,10 +41,10 @@ const THEME_PALETTE = [
   },
   {
     key: 'lavande',
-    hex: '#6B5CC7',
-    soft: '#F0EEFA',
-    softDark: '#F0EEFA',
-    badge: '#6B5CC7',
+    hex: '#8B5CF6',
+    soft: '#F3EEFF',
+    softDark: '#F3EEFF',
+    badge: '#8B5CF6',
   },
   {
     key: 'noir',
@@ -64,37 +64,68 @@ const THEME_PALETTE = [
 
 export type CatTheme = (typeof THEME_PALETTE)[number];
 
-export type RarityId = 'common' | 'uncommon' | 'rare' | 'exceptional';
+export type RarityId = 'common' | 'uncommon' | 'rare' | 'legendary';
 
 export const rarityTokens: Record<
   RarityId,
-  { label: string; foreground: string; background: string; border: string }
+  { label: string; foreground: string; background: string; border: string; ring: string }
 > = {
   common: {
     label: 'Commun',
-    foreground: '#667085',
-    background: '#F2F4F8',
-    border: '#E8EAF0',
+    foreground: '#69758F',
+    background: '#EEF2F7',
+    border: '#E7EAF3',
+    ring: '#43D2C8',
   },
   uncommon: {
     label: 'Peu commun',
-    foreground: '#2E90FA',
-    background: 'rgba(46, 144, 250, 0.12)',
-    border: 'rgba(46, 144, 250, 0.28)',
+    foreground: '#2D3B8F',
+    background: 'rgba(45, 59, 143, 0.10)',
+    border: 'rgba(45, 59, 143, 0.24)',
+    ring: '#2D3B8F',
   },
   rare: {
     label: 'Rare',
-    foreground: '#7A5AF8',
-    background: 'rgba(122, 90, 248, 0.12)',
-    border: 'rgba(122, 90, 248, 0.28)',
+    foreground: '#8B5CF6',
+    background: 'rgba(139, 92, 246, 0.14)',
+    border: 'rgba(139, 92, 246, 0.28)',
+    ring: '#8B5CF6',
   },
-  exceptional: {
-    label: 'Exceptionnel',
-    foreground: '#E8834A',
-    background: 'rgba(232, 131, 74, 0.12)',
-    border: 'rgba(232, 131, 74, 0.28)',
+  legendary: {
+    label: 'Légendaire',
+    foreground: '#F59E0B',
+    background: 'rgba(245, 158, 11, 0.14)',
+    border: 'rgba(245, 158, 11, 0.28)',
+    ring: '#F59E0B',
   },
 };
+
+/** UI-only rarity from coat / color / seed — does not change data models. */
+export function rarityFromCat(colorLabel: string, coatLabel: string, seed = 0): RarityId {
+  const text = `${colorLabel} ${coatLabel}`.toLowerCase();
+  if (
+    text.includes('écaille') ||
+    text.includes('calico') ||
+    text.includes('tricolore') ||
+    text.includes('lavande')
+  ) {
+    return 'legendary';
+  }
+  if (
+    text.includes('siamois') ||
+    text.includes('bleu') ||
+    text.includes('violet') ||
+    text.includes('noir')
+  ) {
+    return 'rare';
+  }
+  if (text.includes('tigré') || text.includes('tabby') || text.includes('roux')) {
+    return 'uncommon';
+  }
+  const hash = [...text].reduce((acc, ch) => acc + ch.charCodeAt(0), seed);
+  const ladder: RarityId[] = ['common', 'common', 'uncommon', 'rare', 'legendary'];
+  return ladder[hash % ladder.length];
+}
 
 export function themeFromColorLabel(label: string, seed = 0): CatTheme {
   const text = label.toLowerCase();

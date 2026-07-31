@@ -16,7 +16,7 @@ const FLOATING_CARDS: {
   source: ImageSourcePropType;
   dex: string;
   name: string;
-  tint: string;
+  tintKey: 'mintSoft' | 'skySoft' | 'orangeSoft';
   rotate: string;
   side: 'left' | 'right';
   top: 'safe' | 'mid';
@@ -25,7 +25,7 @@ const FLOATING_CARDS: {
     source: require('../../assets/welcome-cat.jpg'),
     dex: '#003',
     name: 'Moka',
-    tint: '#E8F8F2',
+    tintKey: 'mintSoft',
     rotate: '-10deg',
     side: 'left',
     top: 'safe',
@@ -34,7 +34,7 @@ const FLOATING_CARDS: {
     source: require('../../assets/welcome-hero.jpg'),
     dex: '#007',
     name: 'Nori',
-    tint: '#EAF6FC',
+    tintKey: 'skySoft',
     rotate: '8deg',
     side: 'right',
     top: 'safe',
@@ -43,7 +43,7 @@ const FLOATING_CARDS: {
     source: require('../../assets/welcome-cat.png'),
     dex: '#012',
     name: 'Pacha',
-    tint: '#FFF3EC',
+    tintKey: 'orangeSoft',
     rotate: '-6deg',
     side: 'left',
     top: 'mid',
@@ -54,14 +54,14 @@ function MiniCollectible({
   source,
   dex,
   name,
-  tint,
+  tintKey,
   rotate,
   width,
 }: {
   source: ImageSourcePropType;
   dex: string;
   name: string;
-  tint: string;
+  tintKey: 'mintSoft' | 'skySoft' | 'orangeSoft';
   rotate: string;
   width: number;
 }) {
@@ -72,7 +72,7 @@ function MiniCollectible({
       style={[
         {
           width,
-          borderRadius: radius.lg,
+          borderRadius: radius.card,
           overflow: 'hidden',
           backgroundColor: colors.surface,
           borderWidth: 1,
@@ -81,7 +81,7 @@ function MiniCollectible({
         },
       ]}
     >
-      <View style={{ aspectRatio: 1, backgroundColor: tint, padding: spacing[8] }}>
+      <View style={{ aspectRatio: 1, backgroundColor: colors[tintKey], padding: spacing[8] }}>
         <Image
           source={source}
           resizeMode="cover"
@@ -155,12 +155,12 @@ export default function WelcomeScreen() {
           style={[styles.map, mapWebStyle as object]}
         />
         <LinearGradient
-          colors={['rgba(255,255,255,0.55)', 'transparent', 'transparent']}
+          colors={[colors.glassFill, 'transparent', 'transparent']}
           style={[styles.topVeil, { height: insets.top + spacing[96] }]}
           pointerEvents="none"
         />
         <LinearGradient
-          colors={['transparent', 'rgba(255,255,255,0.45)', '#FFFFFF']}
+          colors={['transparent', colors.glassFill, colors.surface]}
           style={styles.bottomVeil}
           pointerEvents="none"
         />
@@ -183,7 +183,7 @@ export default function WelcomeScreen() {
           style={{
             fontFamily: fonts.display,
             color: colors.brand,
-            textShadowColor: '#FFFFFF',
+            textShadowColor: colors.surface,
             textShadowOffset: { width: 0, height: 1 },
             textShadowRadius: 8,
           }}
@@ -197,7 +197,7 @@ export default function WelcomeScreen() {
             fontFamily: fonts.bodySemi,
             color: colors.brand,
             marginTop: spacing[4],
-            textShadowColor: '#FFFFFF',
+            textShadowColor: colors.surface,
             textShadowOffset: { width: 0, height: 1 },
             textShadowRadius: 6,
           }}
@@ -238,7 +238,7 @@ export default function WelcomeScreen() {
               source={card.source}
               dex={card.dex}
               name={card.name}
-              tint={card.tint}
+              tintKey={card.tintKey}
               rotate={card.rotate}
               width={cardWidth}
             />

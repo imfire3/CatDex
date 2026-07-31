@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '@/theme/ThemeProvider';
+import { resolveThemeColors } from '@/theme/colors';
 
 const WELCOME_MAP = require('../../../assets/welcome-map-bg.jpg');
 
@@ -82,11 +83,11 @@ export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProp
           style={[styles.map, mapWebStyle as object]}
         />
         <LinearGradient
-          colors={['rgba(255,255,255,0.55)', 'transparent']}
+          colors={[colors.glassFill, 'transparent']}
           style={[styles.topVeil, { height: insets.top + spacing[64] }]}
         />
         <LinearGradient
-          colors={['transparent', 'rgba(255,255,255,0.75)', colors.surface]}
+          colors={['transparent', colors.glassFill, colors.surface]}
           style={styles.bottomVeil}
         />
       </View>
@@ -117,23 +118,25 @@ export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProp
   );
 }
 
-/** @deprecated Use theme colors — kept for secondary CTA styles during migration */
+const lightColors = resolveThemeColors('light');
+
+/** @deprecated Prefer useTheme().colors — soft alias during migration */
 export const AUTH_LIGHT = {
-  text: '#15172B',
-  textBody: 'rgba(21,23,43,0.78)',
-  textSecondary: '#667085',
-  sheet: '#FFFFFF',
-  field: '#F7F8FC',
-  secondaryBg: '#F7F8FC',
-  border: '#E8EAF0',
-  skySoft: '#EAF6FC',
-  orangeSoft: '#FFF3EC',
-  mintSoft: '#E8F8F2',
+  text: lightColors.text,
+  textBody: lightColors.textBody,
+  textSecondary: lightColors.textSecondary,
+  sheet: lightColors.surface,
+  field: lightColors.surfaceSecondary,
+  secondaryBg: lightColors.surfaceSecondary,
+  border: lightColors.border,
+  skySoft: lightColors.skySoft,
+  orangeSoft: lightColors.orangeSoft,
+  mintSoft: lightColors.mintSoft,
 } as const;
 
 export const authSecondaryOnLight = {
-  backgroundColor: '#F7F8FC',
-  borderColor: '#E8EAF0',
+  backgroundColor: lightColors.surfaceSecondary,
+  borderColor: lightColors.border,
   minHeight: 56,
 } as ViewStyle;
 
