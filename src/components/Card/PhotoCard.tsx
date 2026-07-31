@@ -52,27 +52,32 @@ export function PhotoCard({
       style={({ pressed }) => [
         {
           flex: 1,
-          borderRadius: radius.xl,
+          borderRadius: radius.lg,
           overflow: 'hidden',
           backgroundColor: surface,
           borderWidth: 1,
           borderColor: colors.border,
           transform: [{ scale: pressed ? motion.cardPressScale : 1 }],
         },
-        shadow.medium,
+        shadow.low,
         style,
       ]}
     >
       <View style={{ aspectRatio: 1, backgroundColor: colors.surfaceSecondary }}>
         <Image source={source} style={StyleSheet.absoluteFill} />
         <LinearGradient
-          colors={['transparent', 'rgba(6,8,22,0.75)']}
+          colors={['transparent', 'rgba(17,20,90,0.55)']}
           style={StyleSheet.absoluteFill}
         />
       </View>
 
       <View style={{ padding: spacing[16], gap: spacing[8] }}>
-        <Text variant="h3" numberOfLines={1} style={{ fontFamily: fonts.bodySemi }}>
+        <Text
+          variant="h3"
+          color="textBrand"
+          numberOfLines={1}
+          style={{ fontFamily: fonts.bodySemi }}
+        >
           {title}
         </Text>
 
@@ -95,7 +100,7 @@ export function PhotoCard({
           </Text>
         ) : null}
         {meta ? (
-          <Text variant="caption" color="textSecondary" numberOfLines={1}>
+          <Text variant="caption" color="textMuted" numberOfLines={1}>
             {meta}
           </Text>
         ) : null}

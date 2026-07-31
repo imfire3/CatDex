@@ -1,67 +1,100 @@
 /**
- * Coat themes for CatDex cards — luminous accents on dark surfaces.
+ * Coat themes for CatDex cards — soft pastels on white surfaces.
+ * Separate from brand navy / turquoise interface tokens.
  */
 
 const THEME_PALETTE = [
   {
     key: 'roux',
-    hex: '#FF9F6B',
-    soft: '#2A1C16',
-    softDark: '#1A1412',
-    badge: '#FF9F6B',
+    hex: '#E8834A',
+    soft: '#FFF3EC',
+    softDark: '#FFF3EC',
+    badge: '#E8834A',
   },
   {
     key: 'tigré',
-    hex: '#FFD56A',
-    soft: '#2A2412',
-    softDark: '#1A1810',
-    badge: '#FFD56A',
+    hex: '#D4A017',
+    soft: '#FFF8E8',
+    softDark: '#FFF8E8',
+    badge: '#D4A017',
   },
   {
     key: 'siamois',
-    hex: '#6EC8FF',
-    soft: '#12202A',
-    softDark: '#0E1620',
-    badge: '#6EC8FF',
+    hex: '#3B9AD9',
+    soft: '#EAF6FC',
+    softDark: '#EAF6FC',
+    badge: '#3B9AD9',
   },
   {
     key: 'menthe',
-    hex: '#5EE4B0',
-    soft: '#12241E',
-    softDark: '#0E1A16',
-    badge: '#5EE4B0',
+    hex: '#2BB88A',
+    soft: '#E8F8F2',
+    softDark: '#E8F8F2',
+    badge: '#2BB88A',
   },
   {
     key: 'écaille',
-    hex: '#FF8FB3',
-    soft: '#2A181E',
-    softDark: '#1A1216',
-    badge: '#FF8FB3',
+    hex: '#E85A8A',
+    soft: '#FDEEF3',
+    softDark: '#FDEEF3',
+    badge: '#E85A8A',
   },
   {
     key: 'lavande',
-    hex: '#8D7BFF',
-    soft: '#1E162A',
-    softDark: '#14101C',
-    badge: '#8D7BFF',
+    hex: '#6B5CC7',
+    soft: '#F0EEFA',
+    softDark: '#F0EEFA',
+    badge: '#6B5CC7',
   },
   {
     key: 'noir',
-    hex: '#A8B0C8',
-    soft: '#161A28',
-    softDark: '#10141E',
-    badge: '#A8B0C8',
+    hex: '#4A5168',
+    soft: '#EEF0F5',
+    softDark: '#EEF0F5',
+    badge: '#4A5168',
   },
   {
     key: 'blanc',
-    hex: '#E8EAF4',
-    soft: '#1A1E2C',
-    softDark: '#12161F',
-    badge: '#E8EAF4',
+    hex: '#8B93A7',
+    soft: '#F5F6FA',
+    softDark: '#F5F6FA',
+    badge: '#8B93A7',
   },
 ] as const;
 
 export type CatTheme = (typeof THEME_PALETTE)[number];
+
+export type RarityId = 'common' | 'uncommon' | 'rare' | 'exceptional';
+
+export const rarityTokens: Record<
+  RarityId,
+  { label: string; foreground: string; background: string; border: string }
+> = {
+  common: {
+    label: 'Commun',
+    foreground: '#667085',
+    background: '#F2F4F8',
+    border: '#E8EAF0',
+  },
+  uncommon: {
+    label: 'Peu commun',
+    foreground: '#2E90FA',
+    background: 'rgba(46, 144, 250, 0.12)',
+    border: 'rgba(46, 144, 250, 0.28)',
+  },
+  rare: {
+    label: 'Rare',
+    foreground: '#7A5AF8',
+    background: 'rgba(122, 90, 248, 0.12)',
+    border: 'rgba(122, 90, 248, 0.28)',
+  },
+  exceptional: {
+    label: 'Exceptionnel',
+    foreground: '#E8834A',
+    background: 'rgba(232, 131, 74, 0.12)',
+    border: 'rgba(232, 131, 74, 0.28)',
+  },
+};
 
 export function themeFromColorLabel(label: string, seed = 0): CatTheme {
   const text = label.toLowerCase();
@@ -115,18 +148,10 @@ export function themeFromColorLabel(label: string, seed = 0): CatTheme {
   return THEME_PALETTE[hash % THEME_PALETTE.length];
 }
 
-export function themeSoft(theme: CatTheme, _scheme: 'light' | 'dark') {
-  return theme.softDark;
+export function themeSoft(theme: CatTheme, _scheme: 'light' | 'dark' = 'light') {
+  return theme.soft;
 }
 
-export function deriveCatStats(id: string) {
-  const seed = [...id].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const pick = (offset: number) => 35 + ((seed * (offset + 3)) % 61);
-  return [
-    { key: 'curiosite', label: 'Curiosité', value: pick(1), color: '#5EE4B0' },
-    { key: 'vitesse', label: 'Vitesse', value: pick(2), color: '#6EC8FF' },
-    { key: 'charisme', label: 'Charisme', value: pick(3), color: '#8D7BFF' },
-    { key: 'discretion', label: 'Discrétion', value: pick(4), color: '#A8B0C8' },
-    { key: 'appetit', label: 'Appétit', value: pick(5), color: '#FF9F6B' },
-  ] as const;
+export function dexNumberLabel(n: number) {
+  return `#${String(n).padStart(3, '0')}`;
 }

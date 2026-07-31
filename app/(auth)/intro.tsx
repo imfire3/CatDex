@@ -1,8 +1,8 @@
 import { Redirect, router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { useAuthStore } from '@/store/auth';
@@ -13,24 +13,27 @@ const STEPS = [
     key: 'explore',
     title: 'Explore ton quartier',
     body: 'La carte montre les chats autour de toi. Filtre par proximité, rareté ou déjà vus.',
-    tint: 'sky' as const,
-    icon: 'map',
+    softKey: 'skySoft' as const,
+    tintKey: 'sky' as const,
+    icon: 'map' as const,
   },
   {
     key: 'capture',
     title: 'Capture avec la caméra',
     body: 'Photographie un chat : l’IA le décrit (couleur, race, robe) et te propose un nom.',
-    tint: 'orange' as const,
-    icon: 'camera',
+    softKey: 'orangeSoft' as const,
+    tintKey: 'orange' as const,
+    icon: 'camera' as const,
   },
   {
     key: 'collect',
     title: 'Remplis ton CatDex',
     body: 'Chaque capture rejoint ta collection. Relis les fiches, gagne des missions, progresse.',
-    tint: 'mint' as const,
-    icon: 'book',
+    softKey: 'mintSoft' as const,
+    tintKey: 'mint' as const,
+    icon: 'book' as const,
   },
-] as const;
+];
 
 function StepIcon({
   name,
@@ -68,15 +71,27 @@ function StepIcon({
   }
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Rect x="4" y="3.5" width="16" height="17" rx="2.5" stroke={color} strokeWidth={iconStroke.regular} />
-      <Path d="M8 9h8M8 13h5" stroke={color} strokeWidth={iconStroke.regular} strokeLinecap="round" />
+      <Rect
+        x="4"
+        y="3.5"
+        width="16"
+        height="17"
+        rx="2.5"
+        stroke={color}
+        strokeWidth={iconStroke.regular}
+      />
+      <Path
+        d="M8 9h8M8 13h5"
+        stroke={color}
+        strokeWidth={iconStroke.regular}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
 
 export default function IntroScreen() {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
-  const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
 
@@ -87,40 +102,21 @@ export default function IntroScreen() {
     return <Redirect href="/(tabs)/map" />;
   }
 
-  const soft = {
-    sky: colors.skySoft,
-    orange: colors.orangeSoft,
-    mint: colors.mintSoft,
-  };
-  const solid = {
-    sky: colors.sky,
-    orange: colors.orange,
-    mint: colors.mint,
-  };
-
   return (
-    <View
-      style={[
-        styles.root,
-        {
-          backgroundColor: colors.background,
-          paddingTop: insets.top + spacing[32],
-          paddingBottom: Math.max(insets.bottom, spacing[24]),
-          paddingHorizontal: spacing[24],
-        },
-      ]}
-    >
-      <View style={{ gap: spacing[8], marginBottom: spacing[32] }}>
-        <Text variant="label" color="textSecondary">
+    <AuthShell>
+      <View style={{ gap: spacing[8] }}>
+        <Text variant="label" color="textMuted">
           Comment ça marche
         </Text>
-        <Text variant="h1">CatDex en 3 gestes</Text>
-        <Text variant="body" color="textBody">
+        <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
+          CatDex en 3 gestes
+        </Text>
+        <Text variant="body" color="textSecondary">
           Salut {user.displayName} — voici l’essentiel avant de partir explorer.
         </Text>
       </View>
 
-      <View style={{ flex: 1, gap: spacing[16] }}>
+      <View style={{ gap: spacing[16] }}>
         {STEPS.map((step, index) => (
           <View
             key={step.key}
@@ -129,32 +125,38 @@ export default function IntroScreen() {
                 flexDirection: 'row',
                 gap: spacing[16],
                 padding: spacing[16],
-                borderRadius: radius.xl,
-                backgroundColor: colors.surface,
+                borderRadius: radius.lg,
+                backgroundColor: colors.surfaceSecondary,
                 borderWidth: 1,
                 borderColor: colors.border,
               },
-              shadow.small,
+              shadow.low,
             ]}
           >
             <View
               style={{
                 width: spacing[48],
                 height: spacing[48],
-                borderRadius: radius.lg,
-                backgroundColor: soft[step.tint],
+                borderRadius: radius.md,
+                backgroundColor: colors[step.softKey],
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <StepIcon name={step.icon} color={solid[step.tint]} />
+              <StepIcon name={step.icon} color={colors[step.tintKey]} />
             </View>
             <View style={{ flex: 1, gap: spacing[4] }}>
-              <Text variant="caption" color="textSecondary" style={{ fontFamily: fonts.bodySemi }}>
+              <Text
+                variant="caption"
+                color="textMuted"
+                style={{ fontFamily: fonts.bodySemi }}
+              >
                 {index + 1} / {STEPS.length}
               </Text>
-              <Text variant="h3">{step.title}</Text>
-              <Text variant="bodySmall" color="textBody">
+              <Text variant="h3" color="textBrand">
+                {step.title}
+              </Text>
+              <Text variant="bodySmall" color="textSecondary">
                 {step.body}
               </Text>
             </View>
@@ -163,10 +165,6 @@ export default function IntroScreen() {
       </View>
 
       <Button title="Continuer" onPress={() => router.push('/(auth)/permissions')} />
-    </View>
+    </AuthShell>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-});

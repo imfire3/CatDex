@@ -15,7 +15,7 @@ export type FloatingActionButtonProps = {
   embedded?: boolean;
 };
 
-/** Pokémon GO–style center scanner — large, floating, glowing */
+/** Center scanner FAB — turquoise disc, soft elevation. */
 export function FloatingActionButton({
   onPress,
   label,
@@ -25,7 +25,7 @@ export function FloatingActionButton({
   style,
   embedded = true,
 }: FloatingActionButtonProps) {
-  const { colors, spacing, radius, accentShadow, iconStroke, iconSize, gradients, motion } =
+  const { colors, spacing, radius, iconStroke, iconSize, gradients, motion, shadow } =
     useTheme();
   const size = spacing[64] + spacing[8];
 
@@ -34,18 +34,6 @@ export function FloatingActionButton({
       style={[styles.wrap, embedded && { width: size + spacing[24] }, style]}
       pointerEvents="box-none"
     >
-      <View
-        pointerEvents="none"
-        style={[
-          styles.glowRing,
-          {
-            width: size + spacing[16],
-            height: size + spacing[16],
-            borderRadius: radius.full,
-            backgroundColor: colors.accentSoft,
-          },
-        ]}
-      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
@@ -64,8 +52,9 @@ export function FloatingActionButton({
             overflow: 'hidden',
             borderWidth: 4,
             borderColor: colors.background,
+            backgroundColor: pressed ? colors.accentPressed : colors.accent,
           },
-          accentShadow,
+          shadow.medium,
         ]}
       >
         <LinearGradient
@@ -104,10 +93,6 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  glowRing: {
-    position: 'absolute',
-    top: -4,
   },
   gradient: {
     flex: 1,

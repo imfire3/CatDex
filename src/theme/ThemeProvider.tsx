@@ -29,8 +29,8 @@ export type Theme = {
 export const ThemeContext = createContext<Theme | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // CatDex is dark-first premium — always dark
-  const scheme: ColorScheme = 'dark';
+  // CatDex is white-first — single light palette
+  const scheme: ColorScheme = 'light';
 
   const value = useMemo<Theme>(() => {
     const colors = resolveThemeColors(scheme);

@@ -33,8 +33,10 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
             paddingHorizontal: spacing[24],
             paddingTop: spacing[8],
             paddingBottom: Math.max(insets.bottom, spacing[24]),
+            borderTopWidth: 1,
+            borderColor: colors.border,
           },
-          shadow.medium,
+          shadow.floating,
           style,
         ]}
       >

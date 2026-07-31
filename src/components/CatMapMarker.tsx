@@ -11,7 +11,7 @@ type Props = {
 
 /** Circular photo avatar pin — Apple Maps / Mapbox sober style. */
 export function CatMapMarker({ cat, onPress }: Props) {
-  const { colors, spacing, shadow } = useTheme();
+  const { colors, spacing } = useTheme();
   const size = spacing[48];
 
   return (
@@ -31,7 +31,6 @@ export function CatMapMarker({ cat, onPress }: Props) {
             borderColor: colors.accent,
             backgroundColor: colors.surfaceSecondary,
           },
-          shadow.glow,
         ]}
       >
         <Image source={{ uri: cat.photoUri }} style={styles.photo} />

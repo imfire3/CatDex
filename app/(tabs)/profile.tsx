@@ -111,7 +111,7 @@ export default function ProfileScreen() {
 
         <Button
           title="Se déconnecter"
-          variant="secondary"
+          variant="destructive"
           onPress={() => {
             signOut();
             router.replace('/(auth)/welcome');

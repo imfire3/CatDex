@@ -1,12 +1,13 @@
 /**
- * Motion — smooth, premium, never abrupt.
+ * Motion — semantic durations for pressed, sheets, reveal.
  */
 export const motionDuration = {
   instant: 80,
-  fast: 160,
-  normal: 240,
-  slow: 400,
-  reveal: 600,
+  fast: 140,
+  normal: 220,
+  standard: 220,
+  slow: 320,
+  reveal: 520,
 } as const;
 
 export type MotionSpeed = keyof typeof motionDuration;
@@ -20,6 +21,6 @@ export const motionEasing = {
 export const motion = {
   duration: motionDuration,
   easing: motionEasing,
-  pressScale: 0.96,
-  cardPressScale: 0.98,
+  pressScale: 0.98,
+  cardPressScale: 0.99,
 } as const;

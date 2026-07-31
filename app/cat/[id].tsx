@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 
 import { Badge } from '@/components/Badge';
 import { StatCard } from '@/components/Card/StatCard';
@@ -15,7 +16,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 export default function CatDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, fonts, spacing, radius, shadow, iconStroke } = useTheme();
   const insets = useSafeAreaInsets();
   const cat = useCatsStore((state) => state.cats.find((item) => item.id === id));
   const incrementViews = useCatsStore((state) => state.incrementViews);
@@ -70,10 +71,18 @@ export default function CatDetailScreen() {
                   justifyContent: 'center',
                   opacity: pressed ? 0.85 : 1,
                 },
-                shadow.small,
+                shadow.low,
               ]}
             >
-              <Text variant="h3">‹</Text>
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M15 18 9 12l6-6"
+                  stroke={colors.brand}
+                  strokeWidth={iconStroke.regular}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
             </Pressable>
           </View>
         </View>
@@ -89,21 +98,23 @@ export default function CatDetailScreen() {
             style={[
               {
                 backgroundColor: colors.surface,
-                borderRadius: radius.xl,
+                borderRadius: radius.lg,
                 borderWidth: 1,
                 borderColor: colors.border,
                 padding: spacing[24],
                 gap: spacing[16],
                 overflow: 'hidden',
               },
-              shadow.medium,
+              shadow.low,
             ]}
           >
             <LinearGradient
               colors={[`${theme.hex}33`, 'transparent']}
               style={StyleSheet.absoluteFill}
             />
-            <Text variant="h1">{cat.name}</Text>
+            <Text variant="h1" color="textBrand">
+              {cat.name}
+            </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[8] }}>
               <Badge label={cat.analysis.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
               <Badge label={cat.analysis.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />

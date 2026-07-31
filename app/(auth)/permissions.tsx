@@ -2,22 +2,20 @@ import { Camera } from 'expo-camera';
 import * as Location from 'expo-location';
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Platform, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, Platform, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 type PermKey = 'location' | 'camera';
-
 type PermState = 'idle' | 'granted' | 'denied';
 
 export default function PermissionsScreen() {
   const { colors, fonts, spacing, radius, shadow, iconStroke } = useTheme();
-  const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
@@ -109,28 +107,21 @@ export default function PermissionsScreen() {
   ];
 
   return (
-    <View
-      style={[
-        styles.root,
-        {
-          backgroundColor: colors.background,
-          paddingTop: insets.top + spacing[32],
-          paddingBottom: Math.max(insets.bottom, spacing[24]),
-          paddingHorizontal: spacing[24],
-        },
-      ]}
-    >
-      <View style={{ gap: spacing[8], marginBottom: spacing[32] }}>
-        <Text variant="label" color="textSecondary">
+    <AuthShell>
+      <View style={{ gap: spacing[8] }}>
+        <Text variant="label" color="textMuted">
           Dernière étape
         </Text>
-        <Text variant="h1">Autorisations</Text>
-        <Text variant="body" color="textBody">
-          CatDex a besoin de deux accès pour fonctionner pleinement. Tu peux tout activer d’un coup.
+        <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
+          Autorisations
+        </Text>
+        <Text variant="body" color="textSecondary">
+          CatDex a besoin de deux accès pour fonctionner pleinement. Tu peux tout activer d’un
+          coup.
         </Text>
       </View>
 
-      <View style={{ flex: 1, gap: spacing[16] }}>
+      <View style={{ gap: spacing[16] }}>
         {rows.map((row) => (
           <View
             key={row.key}
@@ -140,19 +131,19 @@ export default function PermissionsScreen() {
                 alignItems: 'center',
                 gap: spacing[16],
                 padding: spacing[16],
-                borderRadius: radius.xl,
-                backgroundColor: colors.surface,
+                borderRadius: radius.lg,
+                backgroundColor: colors.surfaceSecondary,
                 borderWidth: 1,
                 borderColor: colors.border,
               },
-              shadow.small,
+              shadow.low,
             ]}
           >
             <View
               style={{
                 width: spacing[48],
                 height: spacing[48],
-                borderRadius: radius.lg,
+                borderRadius: radius.md,
                 backgroundColor: row.soft,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -166,7 +157,13 @@ export default function PermissionsScreen() {
                     strokeWidth={iconStroke.regular}
                     strokeLinejoin="round"
                   />
-                  <Circle cx="12" cy="10" r="2.5" stroke={row.tint} strokeWidth={iconStroke.regular} />
+                  <Circle
+                    cx="12"
+                    cy="10"
+                    r="2.5"
+                    stroke={row.tint}
+                    strokeWidth={iconStroke.regular}
+                  />
                 </Svg>
               ) : (
                 <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -176,14 +173,22 @@ export default function PermissionsScreen() {
                     strokeWidth={iconStroke.regular}
                     strokeLinecap="round"
                   />
-                  <Circle cx="12" cy="12" r="3" stroke={row.tint} strokeWidth={iconStroke.regular} />
+                  <Circle
+                    cx="12"
+                    cy="12"
+                    r="3"
+                    stroke={row.tint}
+                    strokeWidth={iconStroke.regular}
+                  />
                 </Svg>
               )}
             </View>
 
             <View style={{ flex: 1, gap: spacing[4] }}>
-              <Text variant="h3">{row.title}</Text>
-              <Text variant="bodySmall" color="textBody">
+              <Text variant="h3" color="textBrand">
+                {row.title}
+              </Text>
+              <Text variant="bodySmall" color="textSecondary">
                 {row.body}
               </Text>
               <Text
@@ -192,10 +197,10 @@ export default function PermissionsScreen() {
                   fontFamily: fonts.bodySemi,
                   color:
                     row.status === 'granted'
-                      ? colors.mint
+                      ? colors.success
                       : row.status === 'denied'
                         ? colors.danger
-                        : colors.textSecondary,
+                        : colors.textMuted,
                 }}
               >
                 {row.status === 'granted'
@@ -207,12 +212,12 @@ export default function PermissionsScreen() {
             </View>
 
             <Button
-              title={row.status === 'granted' ? 'OK' : 'Autoriser'}
               variant="secondary"
               fullWidth={false}
               disabled={row.status === 'granted' || busy}
               onPress={() => void row.onAsk()}
               style={{ paddingHorizontal: spacing[16], minWidth: 96 }}
+              title={row.status === 'granted' ? 'OK' : 'Autoriser'}
             />
           </View>
         ))}
@@ -224,12 +229,8 @@ export default function PermissionsScreen() {
           loading={busy}
           onPress={() => void requestAll()}
         />
-        <Button title="Passer pour l’instant" variant="ghost" onPress={finish} />
+        <Button variant="ghost" title="Passer pour l’instant" onPress={finish} />
       </View>
-    </View>
+    </AuthShell>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-});

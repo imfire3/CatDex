@@ -16,21 +16,23 @@ export function Chip({ label, selected, onPress, static: isStatic, disabled, ico
   const { colors, fonts, spacing, radius, motion } = useTheme();
 
   const backgroundColor = selected ? colors.accentSoft : colors.surface;
-  const textColor = selected ? colors.accent : colors.textSecondary;
+  const textColor = selected ? colors.accentPressed : colors.textSecondary;
+  const borderColor = selected ? colors.accent : colors.border;
 
   const body = (
     <View
       style={{
         backgroundColor,
-        borderRadius: radius.full,
+        borderRadius: radius.pill,
         paddingHorizontal: spacing[16],
         paddingVertical: spacing[8],
         borderWidth: 1,
-        borderColor: selected ? colors.accent + '66' : colors.border,
+        borderColor,
         opacity: disabled ? 0.45 : 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing[8],
+        minHeight: 40,
       }}
     >
       {icon}

@@ -84,8 +84,8 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: colors.accent,
-          tabBarInactiveTintColor: colors.textSecondary,
+          tabBarActiveTintColor: colors.brand,
+          tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: {
             position: 'absolute',
             backgroundColor: Platform.OS === 'ios' ? 'transparent' : colors.tabBar,
@@ -95,10 +95,11 @@ export default function TabsLayout() {
             paddingTop: spacing[8],
             paddingBottom: Math.max(insets.bottom, spacing[8]),
             elevation: 0,
+            shadowOpacity: 0,
           },
           tabBarBackground: () =>
             Platform.OS === 'ios' ? (
-              <BlurView intensity={48} tint="dark" style={{ flex: 1 }} />
+              <BlurView intensity={48} tint="light" style={{ flex: 1 }} />
             ) : (
               <View style={{ flex: 1, backgroundColor: colors.tabBar }} />
             ),

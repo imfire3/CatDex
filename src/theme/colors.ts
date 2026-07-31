@@ -1,119 +1,120 @@
 /**
- * CatDex Design System — Premium dark “Pokémon GO of cats”
- * Background #060816 · Cards #10152B · Accent gradient #6E87FF → #8D7BFF
+ * CatDex Design System — white-first, navy brand, turquoise accent
+ *
+ * brand (navy) → headings, active nav, secondary CTAs
+ * accent/primary (turquoise) → primary buttons, scanner, progress
+ * Coat/rarity colors live in src/lib/catTheme.ts — not here.
  */
 
+const light = {
+  brand: '#11145A',
+  brandPressed: '#0C0F42',
+  brandSoft: 'rgba(17, 20, 90, 0.08)',
+  accent: '#2EC9C3',
+  accentPressed: '#24A8A3',
+  accentSoft: 'rgba(46, 201, 195, 0.14)',
+  accentStrong: '#24A8A3',
+  primary: '#2EC9C3',
+  primarySoft: 'rgba(46, 201, 195, 0.14)',
+  violet: '#11145A',
+  violetSoft: 'rgba(17, 20, 90, 0.08)',
+
+  background: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceSecondary: '#F7F8FC',
+  surfaceTertiary: '#F2F4F8',
+  surfaceMuted: '#F2F4F8',
+  surfaceDisabled: '#ECEFF3',
+
+  text: '#15172B',
+  textBrand: '#11145A',
+  textBody: 'rgba(21, 23, 43, 0.78)',
+  textSecondary: '#667085',
+  textMuted: '#98A2B3',
+  placeholder: '#98A2B3',
+  textInverse: '#FFFFFF',
+  textDisabled: '#B7BDC8',
+
+  border: '#E8EAF0',
+  borderDefault: '#D9DDE6',
+  borderStrong: '#BCC3D0',
+  focusRing: '#2EC9C3',
+  borderError: '#E5484D',
+
+  mint: '#12B76A',
+  mintSoft: 'rgba(18, 183, 106, 0.12)',
+  yellow: '#F79009',
+  yellowSoft: 'rgba(247, 144, 9, 0.12)',
+  orange: '#F79009',
+  orangeSoft: 'rgba(247, 144, 9, 0.12)',
+  sky: '#2E90FA',
+  skySoft: 'rgba(46, 144, 250, 0.12)',
+  rose: '#F63D68',
+  roseSoft: 'rgba(246, 61, 104, 0.12)',
+  success: '#12B76A',
+  successSoft: 'rgba(18, 183, 106, 0.12)',
+  warning: '#F79009',
+  warningSoft: 'rgba(247, 144, 9, 0.12)',
+  danger: '#E5484D',
+  dangerSoft: 'rgba(229, 72, 77, 0.12)',
+  info: '#2E90FA',
+  infoSoft: 'rgba(46, 144, 250, 0.12)',
+
+  overlay: 'rgba(17, 20, 90, 0.4)',
+  onAccent: '#FFFFFF',
+  onPrimary: '#FFFFFF',
+  onBrand: '#FFFFFF',
+  onSurface: '#15172B',
+  skeleton: '#EBEEF5',
+  skeletonHighlight: '#F7F8FC',
+  glassFill: 'rgba(255, 255, 255, 0.9)',
+  shadowColor: '#11145A',
+  mapPinRing: '#FFFFFF',
+  tabBar: 'rgba(255, 255, 255, 0.96)',
+  gradientStart: '#2EC9C3',
+  gradientEnd: '#24A8A3',
+} as const;
+
 export const palette = {
-  light: {
-    background: '#060816',
-    surface: '#10152B',
-    surfaceSecondary: '#161D38',
-    surfaceTertiary: '#1C2444',
-    text: '#FFFFFF',
-    textBody: 'rgba(255,255,255,0.78)',
-    textSecondary: 'rgba(255,255,255,0.55)',
-    placeholder: 'rgba(255,255,255,0.35)',
-    accent: '#6E87FF',
-    accentSoft: 'rgba(110, 135, 255, 0.18)',
-    accentStrong: '#8D7BFF',
-    primary: '#6E87FF',
-    primarySoft: 'rgba(110, 135, 255, 0.16)',
-    mint: '#5EE4B0',
-    mintSoft: 'rgba(94, 228, 176, 0.16)',
-    yellow: '#FFD56A',
-    yellowSoft: 'rgba(255, 213, 106, 0.16)',
-    orange: '#FF9F6B',
-    orangeSoft: 'rgba(255, 159, 107, 0.16)',
-    sky: '#6EC8FF',
-    skySoft: 'rgba(110, 200, 255, 0.16)',
-    violet: '#8D7BFF',
-    violetSoft: 'rgba(141, 123, 255, 0.16)',
-    rose: '#FF8FB3',
-    roseSoft: 'rgba(255, 143, 179, 0.16)',
-    success: '#5EE4B0',
-    warning: '#FFD56A',
-    danger: '#FF6B8A',
-    border: 'rgba(255,255,255,0.08)',
-    overlay: 'rgba(6, 8, 22, 0.72)',
-    focusRing: '#6E87FF',
-    onAccent: '#FFFFFF',
-    onPrimary: '#FFFFFF',
-    onSurface: '#FFFFFF',
-    skeleton: '#161D38',
-    skeletonHighlight: '#1C2444',
-    glassFill: 'rgba(16, 21, 43, 0.72)',
-    shadowColor: '#000000',
-    mapPinRing: '#FFFFFF',
-    tabBar: 'rgba(6, 8, 22, 0.92)',
-    gradientStart: '#6E87FF',
-    gradientEnd: '#8D7BFF',
-  },
-  dark: {
-    background: '#060816',
-    surface: '#10152B',
-    surfaceSecondary: '#161D38',
-    surfaceTertiary: '#1C2444',
-    text: '#FFFFFF',
-    textBody: 'rgba(255,255,255,0.78)',
-    textSecondary: 'rgba(255,255,255,0.55)',
-    placeholder: 'rgba(255,255,255,0.35)',
-    accent: '#6E87FF',
-    accentSoft: 'rgba(110, 135, 255, 0.18)',
-    accentStrong: '#8D7BFF',
-    primary: '#6E87FF',
-    primarySoft: 'rgba(110, 135, 255, 0.16)',
-    mint: '#5EE4B0',
-    mintSoft: 'rgba(94, 228, 176, 0.16)',
-    yellow: '#FFD56A',
-    yellowSoft: 'rgba(255, 213, 106, 0.16)',
-    orange: '#FF9F6B',
-    orangeSoft: 'rgba(255, 159, 107, 0.16)',
-    sky: '#6EC8FF',
-    skySoft: 'rgba(110, 200, 255, 0.16)',
-    violet: '#8D7BFF',
-    violetSoft: 'rgba(141, 123, 255, 0.16)',
-    rose: '#FF8FB3',
-    roseSoft: 'rgba(255, 143, 179, 0.16)',
-    success: '#5EE4B0',
-    warning: '#FFD56A',
-    danger: '#FF6B8A',
-    border: 'rgba(255,255,255,0.08)',
-    overlay: 'rgba(6, 8, 22, 0.72)',
-    focusRing: '#6E87FF',
-    onAccent: '#FFFFFF',
-    onPrimary: '#FFFFFF',
-    onSurface: '#FFFFFF',
-    skeleton: '#161D38',
-    skeletonHighlight: '#1C2444',
-    glassFill: 'rgba(16, 21, 43, 0.72)',
-    shadowColor: '#000000',
-    mapPinRing: '#FFFFFF',
-    tabBar: 'rgba(6, 8, 22, 0.92)',
-    gradientStart: '#6E87FF',
-    gradientEnd: '#8D7BFF',
-  },
+  light,
+  dark: light,
 } as const;
 
 export type ColorScheme = keyof typeof palette;
 
 export type ThemeColors = {
-  background: string;
-  surface: string;
-  surfaceSecondary: string;
-  surfaceTertiary: string;
-  /** @deprecated use surfaceSecondary */
-  surface2: string;
-  text: string;
-  textBody: string;
-  textSecondary: string;
-  /** @deprecated use textSecondary */
-  textMuted: string;
-  placeholder: string;
+  brand: string;
+  brandPressed: string;
+  brandSoft: string;
   accent: string;
+  accentPressed: string;
   accentSoft: string;
   accentStrong: string;
   primary: string;
   primarySoft: string;
+  violet: string;
+  violetSoft: string;
+  background: string;
+  surface: string;
+  surfaceSecondary: string;
+  surfaceTertiary: string;
+  surfaceMuted: string;
+  surfaceDisabled: string;
+  /** @deprecated use surfaceSecondary */
+  surface2: string;
+  text: string;
+  textBrand: string;
+  textBody: string;
+  textSecondary: string;
+  textMuted: string;
+  placeholder: string;
+  textInverse: string;
+  textDisabled: string;
+  border: string;
+  borderDefault: string;
+  borderStrong: string;
+  focusRing: string;
+  borderError: string;
   mint: string;
   mintSoft: string;
   yellow: string;
@@ -122,18 +123,20 @@ export type ThemeColors = {
   orangeSoft: string;
   sky: string;
   skySoft: string;
-  violet: string;
-  violetSoft: string;
   rose: string;
   roseSoft: string;
   success: string;
+  successSoft: string;
   warning: string;
+  warningSoft: string;
   danger: string;
-  border: string;
+  dangerSoft: string;
+  info: string;
+  infoSoft: string;
   overlay: string;
-  focusRing: string;
   onAccent: string;
   onPrimary: string;
+  onBrand: string;
   onSurface: string;
   skeleton: string;
   skeletonHighlight: string;
@@ -150,7 +153,6 @@ export function resolveThemeColors(scheme: ColorScheme): ThemeColors {
   return {
     ...base,
     surface2: base.surfaceSecondary,
-    textMuted: base.textSecondary,
   };
 }
 

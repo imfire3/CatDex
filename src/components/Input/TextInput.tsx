@@ -18,6 +18,8 @@ type FieldProps = {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   containerStyle?: StyleProp<ViewStyle>;
+  /** @deprecated Theme is light-first; kept for API compatibility */
+  light?: boolean;
 };
 
 export type AppTextInputProps = RNTextInputProps & FieldProps;
@@ -34,7 +36,11 @@ function FieldShell({
   focused,
 }: FieldProps & { children: React.ReactNode; focused?: boolean }) {
   const { colors, spacing, radius } = useTheme();
-  const borderColor = error ? colors.danger : focused ? colors.focusRing : colors.border;
+  const borderColor = error
+    ? colors.borderError
+    : focused
+      ? colors.focusRing
+      : colors.border;
 
   return (
     <View style={[{ gap: spacing[8] }, containerStyle]}>
@@ -47,12 +53,12 @@ function FieldShell({
         style={[
           styles.field,
           {
-            backgroundColor: disabled ? colors.surfaceSecondary : colors.surface,
+            backgroundColor: disabled ? colors.surfaceDisabled : colors.surfaceSecondary,
             borderColor,
             borderRadius: radius.md,
             paddingHorizontal: spacing[16],
-            minHeight: spacing[48],
-            opacity: disabled ? 0.6 : 1,
+            minHeight: spacing[56],
+            opacity: disabled ? 0.7 : 1,
             gap: spacing[8],
           },
         ]}
@@ -66,7 +72,7 @@ function FieldShell({
           {error}
         </Text>
       ) : helperText ? (
-        <Text variant="caption" color="textSecondary">
+        <Text variant="caption" color="textMuted">
           {helperText}
         </Text>
       ) : null}
@@ -82,6 +88,7 @@ export function TextInput({
   leftIcon,
   rightIcon,
   containerStyle,
+  light: _light,
   style,
   ...rest
 }: AppTextInputProps) {

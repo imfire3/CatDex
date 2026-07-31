@@ -28,13 +28,13 @@ export function Card({ children, onPress, style, padded = true }: CardBaseProps)
       style={[
         {
           backgroundColor: colors.surface,
-          borderRadius: radius.xl,
+          borderRadius: radius.lg,
           borderWidth: 1,
           borderColor: colors.border,
           padding: padded ? spacing[24] : 0,
           overflow: 'hidden',
         },
-        shadow.medium,
+        shadow.low,
         style,
       ]}
     >
@@ -58,22 +58,22 @@ export function Card({ children, onPress, style, padded = true }: CardBaseProps)
 }
 
 export function GlassCard({ children, onPress, style, padded = true }: CardBaseProps) {
-  const { colors, spacing, radius, scheme, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
 
   const body = (
     <View
       style={[
         {
-          borderRadius: radius.xl,
+          borderRadius: radius.lg,
           overflow: 'hidden',
           borderWidth: 1,
           borderColor: colors.border,
         },
-        shadow.small,
+        shadow.low,
         style,
       ]}
     >
-      <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
       <View style={{ padding: padded ? spacing[16] : 0, backgroundColor: colors.glassFill }}>
         {children}
       </View>

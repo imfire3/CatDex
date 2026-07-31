@@ -88,8 +88,8 @@ export default function DiscoveryScreen() {
         },
       ]}
     >
-      <Text variant="label" color="textSecondary" align="center" style={{ marginBottom: spacing[16] }}>
-        {params.mocked === '1' ? 'Analyse de secours' : 'Découvert par l’IA'}
+      <Text variant="label" color="accent" align="center" style={{ marginBottom: spacing[16] }}>
+        {params.mocked === '1' ? 'Analyse de secours' : 'Nouveau dans ton CatDex'}
       </Text>
 
       <Animated.View style={animatedStyle}>

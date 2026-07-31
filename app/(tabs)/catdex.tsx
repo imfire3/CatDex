@@ -36,7 +36,9 @@ export default function CatDexScreen() {
       <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[24], gap: spacing[16] }}>
         <View style={styles.headerRow}>
           <View style={{ gap: spacing[4] }}>
-            <Text variant="h1">CatDex</Text>
+            <Text variant="h1" color="textBrand">
+              CatDex
+            </Text>
             <Text variant="bodySmall" color="textSecondary">
               Ta collection de chats
             </Text>

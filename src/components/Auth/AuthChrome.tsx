@@ -6,7 +6,13 @@ import { router } from 'expo-router';
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
-export function AuthBackButton({ onPress }: { onPress?: () => void }) {
+export function AuthBackButton({
+  onPress,
+}: {
+  onPress?: () => void;
+  /** @deprecated Theme is light-first */
+  light?: boolean;
+}) {
   const { colors, spacing, radius, iconStroke, shadow } = useTheme();
 
   return (
@@ -32,15 +38,15 @@ export function AuthBackButton({ onPress }: { onPress?: () => void }) {
           alignItems: 'center',
           justifyContent: 'center',
           opacity: pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.96 : 1 }],
+          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
-        shadow.small,
+        shadow.low,
       ]}
     >
       <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
         <Path
           d="M15 18 9 12l6-6"
-          stroke={colors.text}
+          stroke={colors.brand}
           strokeWidth={iconStroke.regular}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -55,22 +61,36 @@ export function AuthHeader({
   subtitle,
   showBack = true,
   onBack,
+  embedded = false,
 }: {
   title: string;
   subtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
+  light?: boolean;
+  embedded?: boolean;
 }) {
-  const { spacing } = useTheme();
+  const { fonts, spacing } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ paddingTop: insets.top + spacing[16], gap: spacing[24] }}>
-      {showBack ? <AuthBackButton onPress={onBack} /> : <View style={{ height: spacing[40] }} />}
+    <View
+      style={{
+        paddingTop: embedded ? spacing[8] : insets.top + spacing[16],
+        gap: spacing[24],
+      }}
+    >
+      {showBack ? (
+        <AuthBackButton onPress={onBack} />
+      ) : (
+        <View style={{ height: spacing[40] }} />
+      )}
       <View style={{ gap: spacing[8] }}>
-        <Text variant="h1">{title}</Text>
+        <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
+          {title}
+        </Text>
         {subtitle ? (
-          <Text variant="body" color="textBody">
+          <Text variant="body" color="textSecondary">
             {subtitle}
           </Text>
         ) : null}
@@ -79,7 +99,7 @@ export function AuthHeader({
   );
 }
 
-export function AuthDivider({ label = 'ou' }: { label?: string }) {
+export function AuthDivider({ label = 'ou' }: { label?: string; light?: boolean }) {
   const { colors, spacing } = useTheme();
   return (
     <View
@@ -91,7 +111,7 @@ export function AuthDivider({ label = 'ou' }: { label?: string }) {
       }}
     >
       <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-      <Text variant="caption" color="textSecondary">
+      <Text variant="caption" color="textMuted">
         {label}
       </Text>
       <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
@@ -107,6 +127,7 @@ export function TermsCheckbox({
   checked: boolean;
   onChange: (value: boolean) => void;
   error?: string | null;
+  light?: boolean;
 }) {
   const { colors, spacing, radius, fonts, iconStroke } = useTheme();
 
@@ -122,20 +143,20 @@ export function TermsCheckbox({
           style={{
             width: spacing[24],
             height: spacing[24],
-            borderRadius: radius.sm,
+            borderRadius: radius.xs,
             borderWidth: 1.5,
-            borderColor: error ? colors.danger : checked ? colors.text : colors.border,
-            backgroundColor: checked ? colors.text : colors.surface,
+            borderColor: error ? colors.danger : checked ? colors.accent : colors.border,
+            backgroundColor: checked ? colors.accent : colors.surface,
             alignItems: 'center',
             justifyContent: 'center',
-            marginTop: 2,
+            marginTop: spacing[4],
           }}
         >
           {checked ? (
             <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
               <Path
                 d="M5 12.5 10 17.5 19 7"
-                stroke={colors.onPrimary}
+                stroke={colors.onAccent}
                 strokeWidth={iconStroke.bold}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -143,7 +164,11 @@ export function TermsCheckbox({
             </Svg>
           ) : null}
         </View>
-        <Text variant="bodySmall" color="textBody" style={{ flex: 1, fontFamily: fonts.body }}>
+        <Text
+          variant="bodySmall"
+          color="textBody"
+          style={{ flex: 1, fontFamily: fonts.body }}
+        >
           J’accepte les conditions d’utilisation
         </Text>
       </Pressable>

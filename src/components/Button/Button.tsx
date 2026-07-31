@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback } from 'react';
 import {
   ActivityIndicator,
@@ -14,7 +13,12 @@ import {
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'icon';
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  | 'destructive'
+  | 'icon';
 
 export type ButtonProps = {
   title?: string;
@@ -29,7 +33,7 @@ export type ButtonProps = {
   fullWidth?: boolean;
 };
 
-/** PrimaryButton / SecondaryButton / GhostButton via variant */
+/** Primary = turquoise · Secondary = navy border · Ghost · Destructive · Icon */
 export function Button({
   title,
   children,
@@ -42,7 +46,7 @@ export function Button({
   style,
   fullWidth = variant !== 'icon',
 }: ButtonProps) {
-  const { colors, spacing, radius, shadow, fonts, gradients, motion } = useTheme();
+  const { colors, spacing, radius, fonts, motion, shadow } = useTheme();
   const isDisabled = disabled || loading;
 
   const handlePress = useCallback(
@@ -73,12 +77,12 @@ export function Button({
             borderRadius: radius.full,
             borderWidth: 1,
             borderColor: colors.border,
-            opacity: isDisabled ? 0.45 : pressed ? 0.88 : 1,
+            opacity: isDisabled ? 0.5 : pressed ? 0.88 : 1,
             width: spacing[48],
             height: spacing[48],
             transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           },
-          shadow.small,
+          shadow.low,
           style,
         ]}
       >
@@ -87,10 +91,17 @@ export function Button({
     );
   }
 
+  const labelColor =
+    variant === 'primary'
+      ? colors.onAccent
+      : variant === 'destructive'
+        ? colors.danger
+        : colors.brand;
+
   const content = (
     <View style={[styles.content, { gap: spacing[8] }]}>
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.onPrimary : colors.text} />
+        <ActivityIndicator color={labelColor} />
       ) : (
         <>
           {icon}
@@ -99,7 +110,7 @@ export function Button({
               variant="body"
               style={{
                 fontFamily: fonts.bodySemi,
-                color: variant === 'primary' ? colors.onPrimary : colors.text,
+                color: labelColor,
               }}
             >
               {title}
@@ -112,6 +123,15 @@ export function Button({
     </View>
   );
 
+  const surfaceBg =
+    variant === 'primary'
+      ? colors.accent
+      : variant === 'secondary'
+        ? colors.surface
+        : variant === 'destructive'
+          ? colors.dangerSoft
+          : 'transparent';
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -123,34 +143,35 @@ export function Button({
         styles.button,
         fullWidth && styles.fullWidth,
         {
-          borderRadius: radius.lg,
-          minHeight: 56,
-          opacity: isDisabled ? 0.45 : 1,
+          borderRadius: radius.md,
+          minHeight: spacing[56],
+          opacity: isDisabled ? 0.5 : 1,
           transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           overflow: 'hidden',
-          borderWidth: variant === 'secondary' ? 1 : 0,
-          borderColor: colors.border,
-          backgroundColor:
-            variant === 'secondary' ? 'transparent' : variant === 'ghost' ? 'transparent' : undefined,
+          borderWidth: variant === 'secondary' || variant === 'destructive' ? 1 : 0,
+          borderColor:
+            variant === 'destructive'
+              ? colors.danger
+              : variant === 'secondary'
+                ? colors.borderDefault
+                : 'transparent',
+          backgroundColor: pressed
+            ? variant === 'primary'
+              ? colors.accentPressed
+              : variant === 'secondary'
+                ? colors.brandSoft
+                : variant === 'destructive'
+                  ? colors.dangerSoft
+                  : colors.brandSoft
+            : surfaceBg,
         },
-        variant === 'primary' ? shadow.medium : null,
+        variant === 'primary' ? shadow.low : null,
         style,
       ]}
     >
-      {variant === 'primary' ? (
-        <LinearGradient
-          colors={[gradients.primary[0], gradients.primary[1]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.gradientFill, { paddingHorizontal: spacing[16] }]}
-        >
-          {content}
-        </LinearGradient>
-      ) : (
-        <View style={{ paddingHorizontal: spacing[16], flex: 1, justifyContent: 'center' }}>
-          {content}
-        </View>
-      )}
+      <View style={{ paddingHorizontal: spacing[16], flex: 1, justifyContent: 'center' }}>
+        {content}
+      </View>
     </Pressable>
   );
 }
@@ -171,12 +192,6 @@ const styles = StyleSheet.create({
   },
   fullWidth: {
     alignSelf: 'stretch',
-  },
-  gradientFill: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
   },
   content: {
     flexDirection: 'row',

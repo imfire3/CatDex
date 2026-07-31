@@ -4,7 +4,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 
 # Design System
 
-CatDex UI must use tokens from `src/theme/` only (via `useTheme()`). Never invent hex colors, font sizes, spacing, or radii.
+CatDex UI must use tokens from `src/theme/` only (via `useTheme()`). Never invent hex colors, font sizes, spacing, or radii. White-first · navy brand (`#11145A`) · turquoise accent (`#2EC9C3`). Soft elevation via borders + `shadow.low|medium|floating`.
 
 Full token tables, naming conventions, and good/bad examples: `.cursor/rules/design-system.mdc`
 

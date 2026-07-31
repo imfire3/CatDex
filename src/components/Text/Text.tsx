@@ -7,11 +7,14 @@ export type TextProps = RNTextProps & {
   variant?: TextVariant;
   color?:
     | 'text'
+    | 'textBrand'
     | 'textBody'
     | 'textSecondary'
+    | 'textMuted'
     | 'placeholder'
     | 'accent'
     | 'primary'
+    | 'brand'
     | 'mint'
     | 'yellow'
     | 'success'
@@ -38,11 +41,14 @@ export function Text({
       : undefined;
   const colorMap: Record<NonNullable<TextProps['color']>, string> = {
     text: colors.text,
+    textBrand: colors.textBrand,
     textBody: colors.textBody,
     textSecondary: colors.textSecondary,
+    textMuted: colors.textMuted,
     placeholder: colors.placeholder,
     accent: colors.accent,
     primary: colors.primary,
+    brand: colors.brand,
     mint: colors.mint,
     yellow: colors.yellow,
     success: colors.success,

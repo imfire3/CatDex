@@ -30,7 +30,9 @@ export default function MissionsScreen() {
         }}
       >
         <View style={{ gap: spacing[8] }}>
-          <Text variant="h1">Missions</Text>
+          <Text variant="h1" color="textBrand">
+            Missions
+          </Text>
           <Text variant="body" color="textBody">
             Gagne de l’XP, remplis tes objectifs, progresse comme un dresseur urbain.
           </Text>

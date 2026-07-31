@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 
@@ -9,18 +10,36 @@ type Props = {
   cats: Cat[];
   scheme: 'light' | 'dark';
   onSelectCat: (cat: Cat) => void;
+  /** When set, camera animates to this coordinate (compass / recenter). */
+  focusCoordinate?: { latitude: number; longitude: number } | null;
 };
 
-export function CatMap({ cats, scheme, onSelectCat }: Props) {
+export function CatMap({ cats, scheme, onSelectCat, focusCoordinate }: Props) {
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    if (!focusCoordinate) return;
+    mapRef.current?.animateToRegion(
+      {
+        latitude: focusCoordinate.latitude,
+        longitude: focusCoordinate.longitude,
+        latitudeDelta: PARIS_20E.delta.latitudeDelta,
+        longitudeDelta: PARIS_20E.delta.longitudeDelta,
+      },
+      480,
+    );
+  }, [focusCoordinate]);
+
   return (
     <MapView
+      ref={mapRef}
       style={StyleSheet.absoluteFill}
       provider={PROVIDER_DEFAULT}
       initialRegion={{
         ...PARIS_20E.center,
         ...PARIS_20E.delta,
       }}
-      userInterfaceStyle="dark"
+      userInterfaceStyle={scheme}
       showsUserLocation
       mapPadding={{ top: 0, right: 0, bottom: 90, left: 0 }}
     >

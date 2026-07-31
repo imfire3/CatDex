@@ -1,5 +1,5 @@
 ---
-description: CatDex design tokens — colors, type, spacing, radius, shadows, naming. Never invent styles.
+description: CatDex design tokens — colors, type, spacing, radius, elevation, naming. Never invent styles.
 globs: app/**/*.{ts,tsx},src/**/*.{ts,tsx}
 alwaysApply: true
 ---
@@ -13,44 +13,40 @@ import { useTheme } from '@/theme';
 const { colors, spacing, radius, typography, shadow, gradients, motion, iconSize } = useTheme();
 ```
 
-## Colors (dark-first — light/dark palettes are identical)
+## Colors (white-first · navy brand · turquoise accent)
 
-| Token | Value |
-|---|---|
-| `background` | `#060816` |
-| `surface` | `#10152B` |
-| `surfaceSecondary` | `#161D38` |
-| `surfaceTertiary` | `#1C2444` |
-| `text` | `#FFFFFF` |
-| `textBody` | `rgba(255,255,255,0.78)` |
-| `textSecondary` | `rgba(255,255,255,0.55)` |
-| `placeholder` | `rgba(255,255,255,0.35)` |
-| `accent` / `primary` | `#6E87FF` |
-| `accentStrong` / `violet` | `#8D7BFF` |
-| `accentSoft` | `rgba(110,135,255,0.18)` |
-| `primarySoft` | `rgba(110,135,255,0.16)` |
-| `mint` / `success` | `#5EE4B0` |
-| `yellow` / `warning` | `#FFD56A` |
-| `orange` | `#FF9F6B` |
-| `sky` | `#6EC8FF` |
-| `rose` | `#FF8FB3` |
-| `danger` | `#FF6B8A` |
-| `border` | `rgba(255,255,255,0.08)` |
-| `overlay` | `rgba(6,8,22,0.72)` |
-| `glassFill` | `rgba(16,21,43,0.72)` |
-| `tabBar` | `rgba(6,8,22,0.92)` |
-| `gradientStart` → `gradientEnd` | `#6E87FF` → `#8D7BFF` |
-| `onAccent` / `onPrimary` / `onSurface` | `#FFFFFF` |
+| Token | Value | Role |
+|---|---|---|
+| `brand` / `textBrand` | `#11145A` | Headings, active nav, secondary CTAs |
+| `brandPressed` | `#0C0F42` | Pressed navy |
+| `brandSoft` | `rgba(17,20,90,0.08)` | Soft navy tint |
+| `accent` / `primary` | `#2EC9C3` | Primary buttons, FAB, progress |
+| `accentPressed` | `#24A8A3` | Pressed turquoise |
+| `accentSoft` | `rgba(46,201,195,0.14)` | Soft turquoise tint |
+| `background` / `surface` | `#FFFFFF` | App canvas |
+| `surfaceSecondary` | `#F7F8FC` | Inputs, muted cards |
+| `surfaceTertiary` / `surfaceMuted` | `#F2F4F8` | Nested surfaces |
+| `text` | `#15172B` | Primary ink |
+| `textBody` | `rgba(21,23,43,0.78)` | Body copy |
+| `textSecondary` | `#667085` | Supporting text |
+| `textMuted` / `placeholder` | `#98A2B3` | Metadata, placeholders |
+| `border` | `#E8EAF0` | Subtle borders |
+| `borderDefault` | `#D9DDE6` | Default control borders |
+| `focusRing` | `#2EC9C3` | Focus |
+| `success` / `warning` / `danger` / `info` | semantic | States (+ Soft variants) |
+| `tabBar` | `rgba(255,255,255,0.96)` | Bottom nav |
+| `onAccent` / `onPrimary` | `#FFFFFF` | On turquoise |
+| `onBrand` | `#FFFFFF` | On navy |
 
-Soft variants (`mintSoft`, `yellowSoft`, …) use `rgba(..., 0.16)`. Coat themes: `src/lib/catTheme.ts` only.
+Coat / rarity accents: `src/lib/catTheme.ts` only — never as app chrome.
 
-**Gradients** (`gradients`): `primary`, `primarySoft`, `surface`, `hero`, `capture`, `xp`.
+**Gradients:** `primary` turquoise, `xp` turquoise→green. Avoid heavy multi-stop gradients.
 
 ## Typography
 
 Fonts: iOS System (SF); Android/web Syne (display) + Manrope (body).
 
-Use `<Text variant="…" color="…" />` — do not invent font sizes.
+Use `<Text variant="…" color="…" />` — prefer `color="textBrand"` for titles.
 
 | Variant | Size / Line / Tracking |
 |---|---|
@@ -63,39 +59,37 @@ Use `<Text variant="…" color="…" />` — do not invent font sizes.
 | `caption` | 12 / 16 / 0.1 |
 | `label` | 12 / 16 / 0.8 uppercase |
 
-## Spacing — 8pt grid only
+## Spacing — 8pt grid
 
-Allowed: `4 · 8 · 16 · 24 · 32 · 40 · 48 · 64 · 96`  
-Aliases: `xs=4 sm=8 md=16 lg=24 xl=32 2xl=40 3xl=48 4xl=64 5xl=96`  
-Use `spacing.md`, not magic numbers outside this scale.
+Allowed: `4 · 8 · 16 · 24 · 32 · 40 · 48 · 56 · 64 · 80 · 96`  
+Screen padding `24` · card padding `16`/`24` · section gap `32` · button height `56`.
 
 ## Radius
 
-`12 · 16 · 20 · 24 · 28 · 32 · full(9999)`  
-Aliases: `sm=12 md=16 lg=20 xl=24 sheet=28 2xl=32`  
-Convention: buttons `20`, cards `24`, sheets `28`, FAB `full`.
+`xs=8 · sm=12 · md=16 · lg=24 · xl/sheet=32 · pill/full`  
+Chips `12` · inputs/buttons `16` · cards `24` · sheets `32` · FAB/avatar `pill`.
 
-## Shadow / Motion / Icons
+## Elevation
 
-Shadows: `shadow.small | medium | large | glow` (glow = Scanner FAB only). Also `accentShadow`.  
-Motion duration: `instant=80 fast=160 normal=240 slow=400 reveal=600`. Press scales: `0.96` / card `0.98`.  
-Icons: `sm=16 md=24 lg=32 xl=40`; stroke `1.5` / `1.8`.
+Prefer borders + soft navy-tinted shadows: `shadow.none | low | medium | floating | glow`.  
+Cards: border + `low`. FAB/nav: `medium`. Sheets: `floating`. Glow = turquoise FAB only.
 
-## Component naming
+## Motion / Icons
 
-- Folder + PascalCase file: `src/components/Button/Button.tsx`, barrel `index.ts`.
-- Export from `@/components` when shared.
-- Prefer existing primitives: `Text`, `Button` (`primary|secondary|ghost|icon`), `TextInput`/`SearchInput`/`Textarea`, `Card`/`GlassCard`/`ImageCard`/`PhotoCard`/`GalleryCard`/`StatCard`, `Badge`, `Chip`, `Avatar`, `ProgressBar`/`XPBar`, `BottomSheet`, `Modal`, `Toast`, `EmptyState`, `Spinner`/`Skeleton`.
-- Screens live in `app/`; feature UI may be colocated but must consume theme tokens.
-- Brand: **CatDex** — slogan “Ton quartier. Tes chats.” (`src/constants/design.ts`).
+`fast≈140 · standard/normal≈220 · slow≈320 · reveal≈520`. Press `0.98` / card `0.99`.  
+Icons: inline `react-native-svg`; sizes `sm=16 md=24 lg=32 xl=40`.
+
+## Components
+
+- Prefer shared: `Text`, `Button` (`primary|secondary|ghost|destructive|icon`), `TextInput`/`SearchInput`, `Card`/`PhotoCard`, `Chip`, `Badge`, `BottomSheet`, `EmptyState`, `Spinner`/`Skeleton`.
+- Brand: **CatDex** — “Ton quartier. Tes chats.”
 
 ```tsx
 // ❌ BAD
-<View style={{ backgroundColor: '#1a1a2e', padding: 12, borderRadius: 8 }} />
-<Text style={{ fontSize: 18, color: '#ccc' }}>Title</Text>
+<View style={{ backgroundColor: '#1a1a2e', padding: 13, shadowOpacity: 0.5 }} />
 
 // ✅ GOOD
-const { colors, spacing, radius } = useTheme();
-<View style={{ backgroundColor: colors.surface, padding: spacing.md, borderRadius: radius.xl }} />
-<Text variant="h3" color="text">Title</Text>
+const { colors, spacing, radius, shadow } = useTheme();
+<View style={[{ backgroundColor: colors.surface, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border }, shadow.low]} />
+<Text variant="h3" color="textBrand">Title</Text>
 ```
