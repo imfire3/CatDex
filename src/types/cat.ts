@@ -1,3 +1,5 @@
+export type CatGender = 'male' | 'female' | 'unknown';
+
 export type CatAnalysis = {
   color: string;
   breed: string;
@@ -5,6 +7,11 @@ export type CatAnalysis = {
   description: string;
   /** Nom poétique proposé par le LLM (optionnel) */
   suggestedName?: string;
+  gender?: CatGender;
+  eyes?: string;
+  size?: string;
+  /** Tags d’ambiance / personnalité (ex: Ombre, Mystère) */
+  tags?: string[];
 };
 
 export type Cat = {

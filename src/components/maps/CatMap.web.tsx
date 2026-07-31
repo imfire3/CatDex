@@ -1,9 +1,9 @@
 import { createElement } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
 import { PARIS_20E } from '@/lib/constants';
-import { themeFromColorLabel } from '@/lib/catTheme';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -45,7 +45,6 @@ export function CatMap({ cats, selectedCatId, onSelectCat }: Props) {
       <View pointerEvents="box-none" style={styles.overlay}>
         {cats.map((cat) => {
           const pos = project(cat.latitude, cat.longitude);
-          const theme = themeFromColorLabel(cat.analysis.color, cat.number);
           const selected = cat.id === selectedCatId;
           const size = selected ? spacing[64] : spacing[48];
 
@@ -66,19 +65,18 @@ export function CatMap({ cats, selectedCatId, onSelectCat }: Props) {
                   marginTop: -size / 2,
                   borderRadius: size / 2,
                   borderWidth: selected ? 3 : 2,
-                  borderColor: theme.hex,
-                  backgroundColor: colors.surface,
+                  borderColor: colors.surface,
+                  backgroundColor: colors.accentSoft,
                 },
-                selected ? shadow.medium : shadow.small,
+                selected ? shadow.medium : shadow.low,
               ]}
             >
-              {cat.photoUri ? (
-                <Image source={{ uri: cat.photoUri }} style={styles.photo} />
-              ) : (
-                <Text variant="caption" color="accent">
-                  C
-                </Text>
-              )}
+              <CatSprite
+                colorLabel={cat.analysis.color}
+                seed={cat.number}
+                size={size - 8}
+                faceOnly
+              />
             </Pressable>
           );
         })}
@@ -149,10 +147,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
   },
   hint: {
     position: 'absolute',

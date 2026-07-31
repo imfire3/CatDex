@@ -22,7 +22,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -40,6 +40,7 @@ import {
   PARIS_20E,
 } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import { enrichAnalysis } from '@/lib/catTraits';
 import { useCatsStore } from '@/store/cats';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -246,7 +247,7 @@ export default function ScannerScreen() {
       latitude: coords.latitude,
       longitude: coords.longitude,
       name,
-      analysis,
+      analysis: enrichAnalysis(analysis, nextNumber),
     });
 
     if (Platform.OS !== 'web') {
@@ -437,7 +438,7 @@ export default function ScannerScreen() {
   if (step === 'review' && photoUri) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        {/* Header: close · spacer · gallery */}
+        {/* Header: close · flash · frame (mock) */}
         <View
           style={{
             paddingHorizontal: spacing[16],
@@ -468,7 +469,24 @@ export default function ScannerScreen() {
             </Text>
           </Pressable>
 
-          <View style={{ width: spacing[48] }} />
+          <View
+            style={{
+              width: spacing[48],
+              height: spacing[48],
+              borderRadius: radius.full,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"
+                stroke={colors.brand}
+                strokeWidth={1.6}
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </View>
 
           <Pressable
             accessibilityRole="button"
@@ -488,27 +506,40 @@ export default function ScannerScreen() {
           >
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
               <Rect
-                x="4"
+                x="5"
                 y="5"
-                width="16"
+                width="14"
                 height="14"
                 rx="2"
                 stroke={colors.brand}
                 strokeWidth={1.6}
               />
               <Path
-                d="M8 15l2.5-3 2 2.5L15 11l3 4"
+                d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"
                 stroke={colors.brand}
-                strokeWidth={1.6}
+                strokeWidth={2}
                 strokeLinecap="round"
-                strokeLinejoin="round"
               />
             </Svg>
           </Pressable>
         </View>
 
         <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[16], gap: spacing[16] }}>
-          {analyzing ? <ProgressBar progress={0.72} height={6} /> : <ProgressBar progress={1} height={6} />}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M12 7v5l3 2"
+                stroke={colors.textMuted}
+                strokeWidth={1.6}
+                strokeLinecap="round"
+              />
+              <Circle cx="12" cy="12" r="8" stroke={colors.textMuted} strokeWidth={1.6} />
+            </Svg>
+            <Text variant="caption" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
+              {analyzing ? 'Analyse' : 'Prêt'}
+            </Text>
+          </View>
+          {analyzing ? <ProgressBar progress={0.62} height={8} /> : <ProgressBar progress={1} height={8} />}
 
           <View style={{ gap: spacing[8] }}>
             <Text variant="h2" color="textBrand">

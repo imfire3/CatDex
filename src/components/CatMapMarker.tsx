@@ -1,6 +1,7 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
 
+import { CatSprite } from '@/components/CatSprite';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -9,9 +10,9 @@ type Props = {
   onPress: (cat: Cat) => void;
 };
 
-/** Circular photo avatar pin — Apple Maps / Mapbox sober style. */
+/** Circular cat-face sprite pin — matches Explorer mock markers. */
 export function CatMapMarker({ cat, onPress }: Props) {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, shadow } = useTheme();
   const size = spacing[48];
 
   return (
@@ -28,12 +29,18 @@ export function CatMapMarker({ cat, onPress }: Props) {
             height: size,
             borderRadius: size / 2,
             borderWidth: 3,
-            borderColor: colors.accent,
-            backgroundColor: colors.surfaceSecondary,
+            borderColor: colors.surface,
+            backgroundColor: colors.accentSoft,
           },
+          shadow.low,
         ]}
       >
-        <Image source={{ uri: cat.photoUri }} style={styles.photo} />
+        <CatSprite
+          colorLabel={cat.analysis.color}
+          seed={cat.number}
+          size={size - 6}
+          faceOnly
+        />
       </View>
     </Marker>
   );
@@ -44,9 +51,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
   },
 });

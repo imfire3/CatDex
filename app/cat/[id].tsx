@@ -1,16 +1,18 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { StatCard } from '@/components/Card/StatCard';
+import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
 import { formatCaptureTime, formatDexNumber } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -36,9 +38,11 @@ export default function CatDetailScreen() {
     );
   }
 
-  const theme = themeFromColorLabel(cat.analysis.color, cat.number);
-  const locationLabel = 'Paris 20e';
+  const analysis = enrichAnalysis(cat.analysis, cat.number);
+  const theme = themeFromColorLabel(analysis.color, cat.number);
+  const locationLabel = 'Rue de Belleville, Paris 20e';
   const dateLabel = formatCaptureTime(cat.discoveredAt);
+  const symbol = genderSymbol(analysis.gender);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -47,29 +51,21 @@ export default function CatDetailScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + spacing[96] }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero */}
+        {/* Hero — soft tint + centered sprite (mock) */}
         <View
           style={{
-            height: 360,
+            height: 320,
             backgroundColor: themeSoft(theme, scheme),
             overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <LinearGradient
-            colors={[`${theme.hex}55`, colors.brandSoft, colors.background]}
+            colors={[themeSoft(theme, scheme), colors.brandSoft, colors.background]}
             style={StyleSheet.absoluteFill}
           />
-          <Image
-            source={{ uri: cat.photoUri }}
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              resizeMode: 'cover',
-            }}
-          />
-          <LinearGradient
-            colors={['transparent', colors.background]}
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 120 }}
-          />
+          <CatSprite colorLabel={analysis.color} seed={cat.number} size={220} />
 
           <View
             style={{
@@ -166,7 +162,7 @@ export default function CatDetailScreen() {
           </View>
         </View>
 
-        <View style={{ paddingHorizontal: spacing[24], gap: spacing[24], marginTop: -spacing[16] }}>
+        <View style={{ paddingHorizontal: spacing[24], gap: spacing[24], marginTop: spacing[8] }}>
           {/* Identity */}
           <View style={{ gap: spacing[8] }}>
             <Badge
@@ -181,18 +177,17 @@ export default function CatDetailScreen() {
               style={{ fontFamily: fonts.display, textTransform: 'uppercase' }}
             >
               {cat.name}
+              {symbol ? ` ${symbol}` : ''}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[8] }}>
-              <Badge
-                label={cat.analysis.color}
-                color={theme.badge}
-                backgroundColor={`${theme.hex}33`}
-              />
-              <Badge
-                label={cat.analysis.coat}
-                color={colors.brand}
-                backgroundColor={colors.brandSoft}
-              />
+              {(analysis.tags ?? []).map((tag, index) => (
+                <Badge
+                  key={tag}
+                  label={tag}
+                  color={index === 0 ? colors.textInverse : colors.brand}
+                  backgroundColor={index === 0 ? colors.brand : colors.brandSoft}
+                />
+              ))}
             </View>
           </View>
 
@@ -236,54 +231,74 @@ export default function CatDetailScreen() {
                   stroke={colors.brand}
                   strokeWidth={iconStroke.regular}
                 />
-                <Path
-                  d="M9 10.5c.5-.8 1.5-1.2 2.2-1M15 10.5c-.5-.8-1.5-1.2-2.2-1"
-                  stroke={colors.brand}
-                  strokeWidth={iconStroke.regular}
-                  strokeLinecap="round"
-                />
               </Svg>
               <Text variant="body" color="textBody" style={{ flex: 1 }}>
-                {cat.analysis.description}
+                {analysis.description}
               </Text>
             </View>
           </View>
 
-          {/* Caractéristiques */}
+          {/* Caractéristiques — Couleur · Pelage · Yeux · Taille */}
           <View style={{ gap: spacing[16] }}>
             <Text variant="h3" color="textBrand">
               Caractéristiques
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[16] }}>
-              <StatCard label="Couleur" value={cat.analysis.color} />
-              <StatCard label="Race" value={cat.analysis.breed} />
-              <StatCard label="Pelage" value={cat.analysis.coat} />
-              <StatCard label="Vues" value={String(cat.views)} />
+              <StatCard
+                label="Couleur"
+                value={analysis.color}
+                icon={
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M12 18c3.5 0 6-2 6-5.5S15 7 12 7 6 9.5 6 12.5 8.5 18 12 18Z"
+                      stroke={colors.brand}
+                      strokeWidth={1.6}
+                    />
+                  </Svg>
+                }
+              />
+              <StatCard
+                label="Pelage"
+                value={analysis.coat}
+                icon={
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3Z"
+                      fill={colors.accent}
+                    />
+                  </Svg>
+                }
+              />
+              <StatCard
+                label="Yeux"
+                value={analysis.eyes ?? '—'}
+                icon={
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"
+                      stroke={colors.brand}
+                      strokeWidth={1.6}
+                    />
+                    <Circle cx="12" cy="12" r="2.5" fill={colors.accent} />
+                  </Svg>
+                }
+              />
+              <StatCard
+                label="Taille"
+                value={analysis.size ?? '—'}
+                icon={
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M8 4v16M16 4v16M8 12h8"
+                      stroke={colors.brand}
+                      strokeWidth={1.6}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                }
+              />
             </View>
           </View>
-
-          {cat.notes ? (
-            <View
-              style={[
-                {
-                  backgroundColor: colors.surface,
-                  borderRadius: radius.lg,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  padding: spacing[24],
-                  gap: spacing[8],
-                },
-                shadow.low,
-              ]}
-            >
-              <Text variant="label" color="textSecondary">
-                Notes
-              </Text>
-              <Text variant="bodySmall" color="textBody">
-                {cat.notes}
-              </Text>
-            </View>
-          ) : null}
         </View>
       </ScrollView>
 
@@ -302,15 +317,24 @@ export default function CatDetailScreen() {
         }}
       >
         <Button
-          title="Voir sur la carte"
-          onPress={() => router.push('/(tabs)/map')}
+          title="Ajouter à ma collection"
+          onPress={() => router.push('/(tabs)/catdex')}
           icon={
             <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
+              <Rect
+                x="4"
+                y="7"
+                width="16"
+                height="13"
+                rx="2"
                 stroke={colors.onAccent}
                 strokeWidth={1.8}
-                strokeLinejoin="round"
+              />
+              <Path
+                d="M8 7V6a4 4 0 0 1 8 0v1"
+                stroke={colors.onAccent}
+                strokeWidth={1.8}
+                strokeLinecap="round"
               />
             </Svg>
           }

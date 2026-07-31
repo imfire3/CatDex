@@ -1,8 +1,11 @@
 /**
- * PhotoCard adapter — coat theme border + CatDex number.
+ * Sprite gallery tile — dense CatDex grid matching design mock.
  */
-import { PhotoCard } from '@/components/Card/PhotoCard';
-import { formatCaptureTime, formatDexNumber } from '@/lib/constants';
+import { Pressable, View } from 'react-native';
+
+import { CatSprite } from '@/components/CatSprite';
+import { Text } from '@/components/Text';
+import { formatDexNumber } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
@@ -13,24 +16,51 @@ type Props = {
 };
 
 export function CatDexCard({ cat, onPress }: Props) {
-  const { scheme } = useTheme();
+  const { colors, fonts, spacing, radius, shadow, scheme, motion } = useTheme();
   const theme = themeFromColorLabel(cat.analysis.color, cat.number);
   const dexLabel = formatDexNumber(cat.number);
 
   return (
-    <PhotoCard
-      source={{ uri: cat.photoUri }}
-      title={cat.name}
-      subtitle={cat.analysis.breed}
-      meta={formatCaptureTime(cat.discoveredAt)}
-      dexLabel={dexLabel}
-      badges={[cat.analysis.coat, cat.analysis.color].filter(Boolean)}
-      tint={themeSoft(theme, scheme)}
-      accentColor={`${theme.hex}88`}
-      badgeColor={theme.badge}
-      badgeBackground={`${theme.hex}33`}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${dexLabel}, ${cat.name}`}
       onPress={onPress}
-      accessibilityLabel={`${dexLabel}, ${cat.name}, ${cat.analysis.breed}`}
-    />
+      style={({ pressed }) => [
+        {
+          flex: 1,
+          borderRadius: radius.lg,
+          backgroundColor: themeSoft(theme, scheme),
+          borderWidth: 1,
+          borderColor: colors.border,
+          overflow: 'hidden',
+          transform: [{ scale: pressed ? motion.cardPressScale : 1 }],
+        },
+        shadow.low,
+      ]}
+    >
+      <View
+        style={{
+          aspectRatio: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: spacing[8],
+        }}
+      >
+        <CatSprite colorLabel={cat.analysis.color} seed={cat.number} size={112} />
+      </View>
+      <View style={{ paddingHorizontal: spacing[16], paddingBottom: spacing[16], gap: spacing[4] }}>
+        <Text variant="caption" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
+          {dexLabel}
+        </Text>
+        <Text
+          variant="bodySmall"
+          color="textBrand"
+          numberOfLines={1}
+          style={{ fontFamily: fonts.bodySemi, textTransform: 'uppercase' }}
+        >
+          {cat.name}
+        </Text>
+      </View>
+    </Pressable>
   );
 }

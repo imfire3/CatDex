@@ -54,9 +54,12 @@ export default function CatDexScreen() {
               <Text variant="h1" color="textBrand">
                 CatDex
               </Text>
+              <Text variant="h3" color="textSecondary" style={{ fontFamily: fonts.body }}>
+                — Sprites
+              </Text>
             </View>
             <Text variant="bodySmall" color="textSecondary">
-              Ta collection de chats
+              Ta collection de sprites
             </Text>
           </View>
           <View

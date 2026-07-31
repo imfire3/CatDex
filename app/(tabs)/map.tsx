@@ -38,10 +38,23 @@ export default function MapScreen() {
     longitude: number;
   } | null>(null);
 
-  const nearby = cats[0] ?? null;
+  const filteredCats = cats.filter((cat) => {
+    if (filter === 'rare') {
+      const coat = cat.analysis.coat?.toLowerCase() ?? '';
+      const color = cat.analysis.color?.toLowerCase() ?? '';
+      return (
+        coat.includes('long') ||
+        color.includes('siamois') ||
+        color.includes('écaille') ||
+        color.includes('bengal')
+      );
+    }
+    if (filter === 'seen') return cat.views > 0;
+    return true;
+  });
+  const nearby = filteredCats[0] ?? cats[0] ?? null;
   const nearbyTheme = nearby ? themeFromColorLabel(nearby.analysis.color, nearby.number) : null;
   const initials = (user?.displayName ?? 'C').slice(0, 2).toUpperCase();
-  const avatarSource = nearby?.photoUri ? { uri: nearby.photoUri } : undefined;
 
   useEffect(() => {
     let mounted = true;
@@ -82,7 +95,7 @@ export default function MapScreen() {
   return (
     <View style={styles.root}>
       <CatMap
-        cats={cats}
+        cats={filteredCats}
         scheme="light"
         focusCoordinate={focusCoordinate}
         onSelectCat={(item) => {
@@ -116,7 +129,7 @@ export default function MapScreen() {
               },
             ]}
           >
-            <Avatar size="L" source={avatarSource} initials={initials} />
+            <Avatar size="L" initials={initials} />
             {cats.length > 0 ? (
               <View
                 style={[
@@ -157,44 +170,76 @@ export default function MapScreen() {
             </Text>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Notifications"
-            onPress={() => void recenter()}
-            style={({ pressed }) => [
-              {
-                width: spacing[48],
-                height: spacing[48],
-                borderRadius: radius.full,
-                backgroundColor: colors.surface,
-                borderWidth: 1,
-                borderColor: colors.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-              shadow.low,
-            ]}
-          >
-            <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M6 9a6 6 0 1 1 12 0c0 3.2 1.2 4.8 1.8 5.5.3.4 0 1.5-.8 1.5H5c-.8 0-1.1-1.1-.8-1.5C4.8 13.8 6 12.2 6 9Z"
-                stroke={colors.brand}
-                strokeWidth={iconStroke.regular}
-                strokeLinejoin="round"
-              />
-              <Path
-                d="M10 18a2 2 0 0 0 4 0"
-                stroke={colors.brand}
-                strokeWidth={iconStroke.regular}
-                strokeLinecap="round"
-              />
-            </Svg>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: spacing[8], zIndex: 2 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
+              onPress={() => void recenter()}
+              style={({ pressed }) => [
+                {
+                  width: spacing[48],
+                  height: spacing[48],
+                  borderRadius: radius.full,
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+                shadow.low,
+              ]}
+            >
+              <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M6 9a6 6 0 1 1 12 0c0 3.2 1.2 4.8 1.8 5.5.3.4 0 1.5-.8 1.5H5c-.8 0-1.1-1.1-.8-1.5C4.8 13.8 6 12.2 6 9Z"
+                  stroke={colors.brand}
+                  strokeWidth={iconStroke.regular}
+                  strokeLinejoin="round"
+                />
+                <Path
+                  d="M10 18a2 2 0 0 0 4 0"
+                  stroke={colors.brand}
+                  strokeWidth={iconStroke.regular}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Filtres"
+              accessibilityState={{ selected: filtersOpen }}
+              onPress={() => setFiltersOpen((open) => !open)}
+              style={({ pressed }) => [
+                {
+                  width: spacing[48],
+                  height: spacing[48],
+                  borderRadius: radius.full,
+                  backgroundColor: filtersOpen ? colors.accentSoft : colors.surface,
+                  borderWidth: 1,
+                  borderColor: filtersOpen ? colors.accent : colors.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.88 : 1,
+                },
+                shadow.low,
+              ]}
+            >
+              <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M4 6h16M7 12h10M10 18h4"
+                  stroke={filtersOpen ? colors.accent : colors.brand}
+                  strokeWidth={iconStroke.regular}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            </Pressable>
+          </View>
         </View>
 
-        {/* Secondary: À proximité + filters */}
+        {/* Secondary: À proximité chip (mock layout) */}
         <View style={styles.filterRow} pointerEvents="box-none">
           <Pressable
             accessibilityRole="button"
@@ -210,7 +255,7 @@ export default function MapScreen() {
                 gap: spacing[8],
                 paddingHorizontal: spacing[16],
                 paddingVertical: spacing[8],
-                borderRadius: radius.full,
+                borderRadius: radius.sm,
                 backgroundColor: colors.surface,
                 borderWidth: 1,
                 borderColor: filter === 'nearby' ? colors.accent : colors.border,
@@ -231,34 +276,13 @@ export default function MapScreen() {
             <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
               À proximité
             </Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Filtres"
-            accessibilityState={{ selected: filtersOpen }}
-            onPress={() => setFiltersOpen((open) => !open)}
-            style={({ pressed }) => [
-              {
-                width: spacing[48],
-                height: spacing[48],
-                borderRadius: radius.full,
-                backgroundColor: filtersOpen ? colors.accentSoft : colors.surface,
-                borderWidth: 1,
-                borderColor: filtersOpen ? colors.accent : colors.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.88 : 1,
-              },
-              shadow.low,
-            ]}
-          >
-            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
               <Path
-                d="M4 6h16M7 12h10M10 18h4"
-                stroke={filtersOpen ? colors.accent : colors.brand}
+                d="M6 9l6 6 6-6"
+                stroke={colors.textMuted}
                 strokeWidth={iconStroke.regular}
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </Svg>
           </Pressable>
@@ -402,7 +426,7 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   filterPanel: {
     flexDirection: 'row',
