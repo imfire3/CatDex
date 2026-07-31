@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/Text';
 import { PARIS_20E } from '@/lib/constants';
-import { themeFromColorLabel } from '@/lib/catTheme';
+import { rarityFromCat, rarityTokens } from '@/lib/catTheme';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -45,7 +45,8 @@ export function CatMap({ cats, selectedCatId, onSelectCat }: Props) {
       <View pointerEvents="box-none" style={styles.overlay}>
         {cats.map((cat) => {
           const pos = project(cat.latitude, cat.longitude);
-          const theme = themeFromColorLabel(cat.analysis.color, cat.number);
+          const rarity = rarityFromCat(cat.analysis.color, cat.analysis.coat, cat.number);
+          const ring = rarityTokens[rarity].ring;
           const selected = cat.id === selectedCatId;
           const size = selected ? spacing[64] : spacing[48];
 
@@ -65,11 +66,11 @@ export function CatMap({ cats, selectedCatId, onSelectCat }: Props) {
                   marginLeft: -size / 2,
                   marginTop: -size / 2,
                   borderRadius: size / 2,
-                  borderWidth: selected ? 3 : 2,
-                  borderColor: theme.hex,
+                  borderWidth: selected ? 3 : 3,
+                  borderColor: ring,
                   backgroundColor: colors.surface,
                 },
-                selected ? shadow.medium : shadow.small,
+                selected ? shadow.medium : shadow.low,
               ]}
             >
               {cat.photoUri ? (

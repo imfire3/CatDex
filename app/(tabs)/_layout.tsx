@@ -86,7 +86,7 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
-  const { colors, fonts, spacing } = useTheme();
+  const { colors, fonts, spacing, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const tabHeight = spacing[64] + Math.max(insets.bottom, spacing[8]);
 
@@ -116,7 +116,7 @@ export default function TabsLayout() {
             ),
           tabBarLabelStyle: {
             fontFamily: fonts.bodySemi,
-            fontSize: 12,
+            fontSize: typography.tiny.fontSize,
             marginTop: spacing[4],
           },
         }}

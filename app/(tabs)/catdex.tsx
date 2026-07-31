@@ -47,7 +47,7 @@ export default function CatDexScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[24], gap: spacing[24] }}>
-        <View style={styles.headerRow}>
+        <View style={[styles.headerRow, { gap: spacing[16] }]}>
           <View
             style={{
               width: spacing[48],
@@ -188,6 +188,5 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
   },
 });

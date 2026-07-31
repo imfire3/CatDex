@@ -428,6 +428,32 @@ export default function ScannerScreen() {
               <Badge label={analysis.coat} color={theme.badge} backgroundColor={`${theme.hex}33`} />
             </View>
 
+            <View
+              style={{
+                width: '100%',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: spacing[8],
+                justifyContent: 'center',
+              }}
+            >
+              <Badge
+                label={`Sexe · ${nextNumber % 2 === 0 ? '♂' : '♀'}`}
+                color={colors.brand}
+                backgroundColor={colors.brandSoft}
+              />
+              <Badge
+                label={`Âge · ${nextNumber % 3 === 0 ? 'Chaton' : nextNumber % 3 === 1 ? 'Adulte' : 'Sénior'}`}
+                color={colors.textSecondary}
+                backgroundColor={colors.surfaceTertiary}
+              />
+              <Badge
+                label="Traits · Curieux"
+                color={rarity.foreground}
+                backgroundColor={rarity.background}
+              />
+            </View>
+
             <Text
               variant="body"
               color="textBody"
