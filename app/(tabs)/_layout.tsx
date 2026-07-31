@@ -74,6 +74,35 @@ function TabIcon({
   );
 }
 
+function TabIconWithDot({
+  name,
+  color,
+  focused,
+}: {
+  name: 'map' | 'catdex' | 'missions' | 'profile';
+  color: string;
+  focused: boolean;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ alignItems: 'center', gap: 4 }}>
+      <TabIcon name={name} color={color} focused={focused} />
+      {focused ? (
+        <View
+          style={{
+            width: 4,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: colors.brand,
+          }}
+        />
+      ) : (
+        <View style={{ width: 4, height: 4 }} />
+      )}
+    </View>
+  );
+}
+
 export default function TabsLayout() {
   const { colors, fonts, spacing } = useTheme();
   const insets = useSafeAreaInsets();
@@ -115,7 +144,7 @@ export default function TabsLayout() {
           options={{
             title: 'Explorer',
             tabBarIcon: ({ color, focused }) => (
-              <TabIcon name="map" color={String(color)} focused={focused} />
+              <TabIconWithDot name="map" color={String(color)} focused={focused} />
             ),
           }}
         />
@@ -124,7 +153,7 @@ export default function TabsLayout() {
           options={{
             title: 'CatDex',
             tabBarIcon: ({ color, focused }) => (
-              <TabIcon name="catdex" color={String(color)} focused={focused} />
+              <TabIconWithDot name="catdex" color={String(color)} focused={focused} />
             ),
           }}
         />
@@ -133,7 +162,7 @@ export default function TabsLayout() {
           options={{
             title: 'Missions',
             tabBarIcon: ({ color, focused }) => (
-              <TabIcon name="missions" color={String(color)} focused={focused} />
+              <TabIconWithDot name="missions" color={String(color)} focused={focused} />
             ),
           }}
         />
@@ -142,7 +171,7 @@ export default function TabsLayout() {
           options={{
             title: 'Profil',
             tabBarIcon: ({ color, focused }) => (
-              <TabIcon name="profile" color={String(color)} focused={focused} />
+              <TabIconWithDot name="profile" color={String(color)} focused={focused} />
             ),
           }}
         />
