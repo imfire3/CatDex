@@ -60,7 +60,7 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
 
 const styles = StyleSheet.create({
   backdrop: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
   },
   sheet: {
     position: 'absolute',
