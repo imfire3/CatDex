@@ -1,3 +1,6 @@
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
 /** Approximate bounding box for Paris 20e (MVP geofence). */
 export const PARIS_20E = {
   center: {
@@ -21,8 +24,44 @@ export const SLOGAN = 'Explore ton quartier, capture les chats et construis ton 
 /** Product-defined CatDex completion target (ghost slots + progress). */
 export const CATDEX_TARGET = 50;
 
-export const API_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
+const API_PORT = 8787;
+
+/** LAN IP of the machine running Metro (Expo Go / device). */
+function metroHostIp(): string | null {
+  const candidates = [
+    Constants.expoConfig?.hostUri,
+    Constants.expoGoConfig?.debuggerHost,
+    // Legacy manifest shapes
+    (Constants as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost,
+  ].filter(Boolean) as string[];
+
+  for (const raw of candidates) {
+    const host = raw
+      .replace(/^[a-z]+:\/\//i, '')
+      .split('/')[0]
+      ?.split(':')[0]
+      ?.trim();
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return host;
+    }
+  }
+  return null;
+}
+
+/**
+ * API base URL.
+ * On native, prefer the Metro host IP so a physical phone can reach the Mac API
+ * (localhost in .env only works on the same machine / web).
+ */
+export function resolveApiUrl(): string {
+  if (Platform.OS !== 'web') {
+    const ip = metroHostIp();
+    if (ip) return `http://${ip}:${API_PORT}`;
+  }
+  return process.env.EXPO_PUBLIC_API_URL?.trim() || `http://localhost:${API_PORT}`;
+}
+
+export const API_URL = resolveApiUrl();
 
 /** Soft gate: warn outside 20e but still allow capture in development. */
 export function isInParis20e(latitude: number, longitude: number): boolean {

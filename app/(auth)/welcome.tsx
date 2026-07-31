@@ -10,7 +10,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useAuthStore, getPostAuthHref } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const WELCOME_MAP = require('../../assets/welcome-map-bg.jpg');
+const WELCOME_MAP = require('../../assets/welcome-paris-bg.jpg');
 
 const FLOATING_CARDS: {
   source: ImageSourcePropType;
@@ -177,26 +177,24 @@ export default function WelcomeScreen() {
           },
         ]}
       >
-        <Text
-          variant="display"
-          align="center"
+        <Image
+          source={require('../../assets/logo.png')}
+          accessibilityLabel="CatDex"
           style={{
-            fontFamily: fonts.display,
-            color: colors.brand,
-            textShadowColor: colors.surface,
-            textShadowOffset: { width: 0, height: 1 },
-            textShadowRadius: 8,
+            width: spacing[96] + spacing[16],
+            height: spacing[96] + spacing[16],
+            alignSelf: 'center',
+            borderRadius: radius.full,
           }}
-        >
-          CatDex
-        </Text>
+          resizeMode="cover"
+        />
         <Text
           variant="bodySmall"
           align="center"
           style={{
             fontFamily: fonts.bodySemi,
             color: colors.brand,
-            marginTop: spacing[4],
+            marginTop: spacing[8],
             textShadowColor: colors.surface,
             textShadowOffset: { width: 0, height: 1 },
             textShadowRadius: 6,

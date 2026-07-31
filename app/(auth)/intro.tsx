@@ -128,7 +128,7 @@ export default function IntroScreen() {
                 borderRadius: radius.lg,
                 backgroundColor: colors.surfaceSecondary,
                 borderWidth: 1,
-                borderColor: colors.border,
+                borderColor: colors.borderDefault,
               },
               shadow.low,
             ]}

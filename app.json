@@ -16,7 +16,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "CatDex a besoin de la caméra pour scanner les chats."
+          "cameraPermission": "CatDex a besoin de la cam\u00e9ra pour scanner les chats."
         }
       ],
       [
@@ -31,8 +31,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.catdex.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "CatDex a besoin de la caméra pour scanner les chats.",
-        "NSLocationWhenInUseUsageDescription": "CatDex utilise ta position pour placer les chats sur la carte."
+        "NSCameraUsageDescription": "CatDex a besoin de la cam\u00e9ra pour scanner les chats.",
+        "NSLocationWhenInUseUsageDescription": "CatDex utilise ta position pour placer les chats sur la carte.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {
@@ -47,7 +50,7 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#0A1628",
+        "backgroundColor": "#11145A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

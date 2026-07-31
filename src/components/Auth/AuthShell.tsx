@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme/ThemeProvider';
 import { resolveThemeColors } from '@/theme/colors';
 
-const WELCOME_MAP = require('../../../assets/welcome-map-bg.jpg');
+const WELCOME_MAP = require('../../../assets/welcome-paris-bg.jpg');
 
 const mapWebStyle = {
   objectFit: 'cover' as const,

@@ -132,19 +132,12 @@ export default function MapScreen() {
           </Pressable>
 
           <View style={styles.wordmark} pointerEvents="none">
-            <Text
-              variant="h2"
-              align="center"
-              style={{ fontFamily: fonts.display, color: colors.brand }}
-            >
-              Cat
-              <Text
-                variant="h2"
-                style={{ fontFamily: fonts.display, color: colors.accent }}
-              >
-                Dex
-              </Text>
-            </Text>
+            <Image
+              source={require('../../assets/logo.png')}
+              accessibilityLabel="CatDex"
+              style={{ width: spacing[64], height: spacing[64], borderRadius: radius.full }}
+              resizeMode="cover"
+            />
           </View>
 
           <GlassIconButton

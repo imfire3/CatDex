@@ -123,43 +123,59 @@ export default function ScannerScreen() {
     opacity: blurAmount.value,
   }));
 
+  const parisFallback = {
+    coords: {
+      latitude: PARIS_20E.center.latitude,
+      longitude: PARIS_20E.center.longitude,
+    },
+  } as Location.LocationObject;
+
   const ensureLocation = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        return Location.getCurrentPositionAsync({});
-      }
+      const permissionPromise = Location.requestForegroundPermissionsAsync();
+      const { status } = await Promise.race([
+        permissionPromise,
+        new Promise<{ status: 'denied' }>((resolve) =>
+          setTimeout(() => resolve({ status: 'denied' }), 2500),
+        ),
+      ]);
+      if (status !== 'granted') return parisFallback;
+
+      return await Promise.race([
+        Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }),
+        new Promise<Location.LocationObject>((resolve) =>
+          setTimeout(() => resolve(parisFallback), 3000),
+        ),
+      ]);
     } catch {
-      // fallback
+      return parisFallback;
     }
-    return {
-      coords: {
-        latitude: PARIS_20E.center.latitude,
-        longitude: PARIS_20E.center.longitude,
-      },
-    } as Location.LocationObject;
   };
 
   const enterReveal = async (nextAnalysis: CatAnalysis, imageUri: string, mocked?: boolean) => {
-    const position = await ensureLocation();
-    const { latitude, longitude } = position.coords;
-    setCoords({ latitude, longitude });
     setAnalysis(nextAnalysis);
     setPhotoUri(imageUri);
     setStep('reveal');
+    setAnalyzing(false);
+
+    if (mocked) {
+      showToast({
+        title: 'Analyse simulée',
+        description: 'API indisponible — Cat Card de secours.',
+        tone: 'warning',
+      });
+    }
+
+    const position = await ensureLocation();
+    const { latitude, longitude } = position.coords;
+    setCoords({ latitude, longitude });
 
     if (!isInParis20e(latitude, longitude) && __DEV__) {
       showToast({
         title: 'Hors du 20e',
         description: 'Zone de test : capture autorisée en développement.',
-        tone: 'warning',
-      });
-    }
-
-    if (mocked && __DEV__) {
-      showToast({
-        title: 'Analyse simulée',
-        description: 'API indisponible — Cat Card mock.',
         tone: 'warning',
       });
     }

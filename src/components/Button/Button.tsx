@@ -127,7 +127,7 @@ export function Button({
     variant === 'primary'
       ? colors.accent
       : variant === 'secondary'
-        ? colors.surface
+        ? colors.surfaceSecondary
         : variant === 'destructive'
           ? colors.dangerSoft
           : 'transparent';

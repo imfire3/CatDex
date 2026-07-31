@@ -15,7 +15,7 @@ export type ChipProps = {
 export function Chip({ label, selected, onPress, static: isStatic, disabled, icon }: ChipProps) {
   const { colors, fonts, spacing, radius, motion } = useTheme();
 
-  const backgroundColor = selected ? colors.accentSoft : colors.surface;
+  const backgroundColor = colors.surface;
   const textColor = selected ? colors.accentPressed : colors.textSecondary;
   const borderColor = selected ? colors.accent : colors.border;
 
