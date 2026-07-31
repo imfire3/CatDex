@@ -13,6 +13,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Spinner } from '@/components/Loader';
+import { ToastHost } from '@/components/Toast';
 import { useMissionSync } from '@/hooks/useMissionSync';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/colors';
@@ -88,6 +89,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <RootNavigator />
+        <ToastHost />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

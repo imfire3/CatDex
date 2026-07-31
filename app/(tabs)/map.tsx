@@ -3,17 +3,23 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { GlassIconButton } from '@/components/GlassIconButton';
 import { Text } from '@/components/Text';
 import { CatMap } from '@/components/maps/CatMap';
-import { isInParis20e, PARIS_20E } from '@/lib/constants';
-import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import { isInParis20e } from '@/lib/constants';
+import {
+  rarityFromCat,
+  rarityTokens,
+  themeFromColorLabel,
+  themeSoft,
+} from '@/lib/catTheme';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -22,10 +28,11 @@ import type { Cat } from '@/types/cat';
 type FilterId = 'nearby' | 'rare' | 'seen';
 
 /**
- * Explore map — reference HUD: avatar + CatDex wordmark + vertical side actions.
+ * Explorer map — HUD hero: avatar · CatDex wordmark · bell.
+ * Soft nearby card + sheet. No vertical side stacks.
  */
 export default function MapScreen() {
-  const { colors, fonts, scheme, spacing, radius, iconStroke, iconSize } = useTheme();
+  const { colors, fonts, scheme, spacing, radius, shadow, iconStroke, iconSize } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const cats = useCatsStore((state) => state.cats);
@@ -33,14 +40,12 @@ export default function MapScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [filter, setFilter] = useState<FilterId>('nearby');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [mapScheme, setMapScheme] = useState<'light' | 'dark'>(scheme);
-  const [focusCoordinate, setFocusCoordinate] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
 
   const nearby = cats[0] ?? null;
   const nearbyTheme = nearby ? themeFromColorLabel(nearby.analysis.color, nearby.number) : null;
+  const nearbyRarity = nearby
+    ? rarityTokens[rarityFromCat(nearby.analysis.color, nearby.analysis.coat, nearby.number)]
+    : null;
   const initials = (user?.displayName ?? 'C').slice(0, 2).toUpperCase();
   const avatarSource = nearby?.photoUri ? { uri: nearby.photoUri } : undefined;
 
@@ -63,36 +68,17 @@ export default function MapScreen() {
     };
   }, []);
 
-  const recenter = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const position = await Location.getCurrentPositionAsync({});
-        setFocusCoordinate({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        return;
-      }
-    } catch {
-      // fallback below
-    }
-    setFocusCoordinate({ ...PARIS_20E.center });
-  };
-
   return (
     <View style={styles.root}>
       <CatMap
         cats={cats}
-        scheme={mapScheme}
-        focusCoordinate={focusCoordinate}
+        scheme="light"
         onSelectCat={(item) => {
           setSelected(item);
           setSheetVisible(true);
         }}
       />
 
-      {/* Top HUD */}
       <View
         pointerEvents="box-none"
         style={[
@@ -100,11 +86,11 @@ export default function MapScreen() {
           {
             paddingTop: insets.top + spacing[8],
             paddingHorizontal: spacing[16],
+            gap: spacing[16],
           },
         ]}
       >
         <View style={styles.topBar} pointerEvents="box-none">
-          {/* Avatar */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Profil"
@@ -133,12 +119,10 @@ export default function MapScreen() {
                 ]}
               >
                 <Text
-                  variant="caption"
+                  variant="tiny"
                   style={{
                     color: colors.onBrand,
                     fontFamily: fonts.bodySemi,
-                    fontSize: 10,
-                    lineHeight: 12,
                   }}
                 >
                   {cats.length > 99 ? '99+' : String(cats.length)}
@@ -147,12 +131,11 @@ export default function MapScreen() {
             ) : null}
           </Pressable>
 
-          {/* Wordmark */}
           <View style={styles.wordmark} pointerEvents="none">
             <Text
               variant="h2"
               align="center"
-              style={{ fontFamily: fonts.display, color: colors.text }}
+              style={{ fontFamily: fonts.display, color: colors.brand }}
             >
               Cat
               <Text
@@ -162,145 +145,77 @@ export default function MapScreen() {
                 Dex
               </Text>
             </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: spacing[4],
-                marginTop: spacing[4],
-              }}
-            >
-              <View style={{ flex: 1, height: 1, backgroundColor: colors.border, maxWidth: 40 }} />
-              <Svg width={14} height={10} viewBox="0 0 14 10" fill="none">
-                <Path
-                  d="M1 4h4M9 4h4M7 1v3M5 7c.8 1.2 2.2 1.2 3 0"
-                  stroke={colors.brand}
-                  strokeWidth={1.4}
-                  strokeLinecap="round"
-                />
-              </Svg>
-              <View style={{ flex: 1, height: 1, backgroundColor: colors.border, maxWidth: 40 }} />
-            </View>
           </View>
 
-          {/* Spacer matching avatar width so logo stays centered */}
-          <View style={{ width: spacing[48] }} />
+          <GlassIconButton
+            accessibilityLabel="Notifications"
+            onPress={() => undefined}
+          >
+            <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 13 6 9Z"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M10 18a2 2 0 0 0 4 0"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </GlassIconButton>
         </View>
 
-        {/* Vertical side actions — top right */}
         <View
-          style={[
-            styles.sideActions,
-            {
-              top: insets.top + spacing[8],
-              right: spacing[16],
-              gap: spacing[8],
-            },
-          ]}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing[8],
+            flexWrap: 'wrap',
+          }}
         >
-          <MapSideButton
-            accessibilityLabel={
-              mapScheme === 'light' ? 'Passer en carte sombre' : 'Passer en carte claire'
-            }
-            onPress={() => setMapScheme((s) => (s === 'light' ? 'dark' : 'light'))}
-            icon={
-              mapScheme === 'light' ? (
-                <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                  <Circle
-                    cx="12"
-                    cy="12"
-                    r="4"
-                    stroke={colors.brand}
-                    strokeWidth={iconStroke.regular}
-                  />
-                  <Path
-                    d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
-                    stroke={colors.brand}
-                    strokeWidth={iconStroke.regular}
-                    strokeLinecap="round"
-                  />
-                </Svg>
-              ) : (
-                <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5Z"
-                    stroke={colors.brand}
-                    strokeWidth={iconStroke.regular}
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              )
-            }
+          <Chip
+            label="À proximité"
+            selected={filter === 'nearby'}
+            onPress={() => setFilter('nearby')}
           />
-          <MapSideButton
-            accessibilityLabel="Recentrer la carte"
-            onPress={() => void recenter()}
-            icon={
-              <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                <Circle
-                  cx="12"
-                  cy="12"
-                  r="3"
-                  stroke={colors.brand}
-                  strokeWidth={iconStroke.regular}
-                />
-                <Path
-                  d="M12 3v3M12 18v3M3 12h3M18 12h3"
-                  stroke={colors.brand}
-                  strokeWidth={iconStroke.regular}
-                  strokeLinecap="round"
-                />
-                <Circle
-                  cx="12"
-                  cy="12"
-                  r="8"
-                  stroke={colors.brand}
-                  strokeWidth={iconStroke.regular}
-                />
-              </Svg>
-            }
-          />
-          <MapSideButton
+          <GlassIconButton
             accessibilityLabel="Filtres"
             onPress={() => setFiltersOpen((open) => !open)}
-            active={filtersOpen}
-            icon={
-              <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M4 6h16M7 12h10M10 18h4"
-                  stroke={filtersOpen ? colors.accent : colors.brand}
-                  strokeWidth={iconStroke.regular}
-                  strokeLinecap="round"
-                />
-              </Svg>
-            }
-          />
-        </View>
-
-        {filtersOpen ? (
-          <View
-            style={[
-              styles.filterPanel,
-              {
-                marginTop: spacing[16],
-                marginRight: spacing[56],
-                gap: spacing[8],
-              },
-            ]}
+            style={{
+              backgroundColor: filtersOpen ? colors.accentSoft : colors.glassFill,
+              borderColor: filtersOpen ? colors.accent : colors.border,
+            }}
           >
-            <Chip
-              label="À proximité"
-              selected={filter === 'nearby'}
-              onPress={() => setFilter('nearby')}
-            />
-            <Chip label="Rares" selected={filter === 'rare'} onPress={() => setFilter('rare')} />
-            <Chip label="Vus" selected={filter === 'seen'} onPress={() => setFilter('seen')} />
-          </View>
-        ) : null}
+            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M4 6h16M7 12h10M10 18h4"
+                stroke={filtersOpen ? colors.accent : colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </GlassIconButton>
+          {filtersOpen ? (
+            <>
+              <Chip
+                label="Rares"
+                selected={filter === 'rare'}
+                onPress={() => setFilter('rare')}
+              />
+              <Chip
+                label="Vus"
+                selected={filter === 'seen'}
+                onPress={() => setFilter('seen')}
+              />
+            </>
+          ) : null}
+        </View>
       </View>
 
-      {!sheetVisible && nearby && nearbyTheme ? (
+      {!sheetVisible && nearby && nearbyTheme && nearbyRarity ? (
         <Pressable
           onPress={() => {
             setSelected(nearby);
@@ -312,13 +227,15 @@ export default function MapScreen() {
               bottom: insets.bottom + spacing[96],
               marginHorizontal: spacing[24],
               backgroundColor: colors.surface,
-              borderRadius: radius.lg,
+              borderRadius: radius.card,
               borderWidth: 1,
               borderColor: colors.border,
               padding: spacing[16],
+              gap: spacing[16],
               opacity: pressed ? 0.96 : 1,
               transform: [{ scale: pressed ? 0.99 : 1 }],
             },
+            shadow.low,
           ]}
         >
           <Image
@@ -333,23 +250,23 @@ export default function MapScreen() {
           <View style={{ flex: 1, gap: spacing[8] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
               <Text
-                variant="body"
+                variant="title"
                 color="textBrand"
-                style={{ fontFamily: fonts.bodySemi }}
+                style={{ flex: 1 }}
                 numberOfLines={1}
               >
                 {nearby.name}
               </Text>
               <Badge
-                label={nearby.analysis.coat || 'Chat'}
-                color={nearbyTheme.badge}
-                backgroundColor={`${nearbyTheme.hex}22`}
+                label={nearbyRarity.label}
+                color={nearbyRarity.foreground}
+                backgroundColor={nearbyRarity.background}
               />
             </View>
             <Text variant="caption" color="textSecondary" numberOfLines={1}>
               {nearby.analysis.breed} · {nearby.analysis.color}
             </Text>
-            <Text variant="caption" color="textMuted">
+            <Text variant="tiny" color="textMuted">
               Nouveau signalement à proximité
             </Text>
           </View>
@@ -364,68 +281,55 @@ export default function MapScreen() {
         }}
       >
         {selected ? (
-          <View style={{ gap: spacing[16] }}>
-            <Text variant="h2" color="textBrand">
-              {selected.name}
-            </Text>
-            <Text variant="bodySmall" color="textSecondary">
-              {selected.analysis.breed} · {selected.analysis.color}
-            </Text>
-            <Text variant="body" color="textBody" numberOfLines={3}>
-              {selected.analysis.description}
-            </Text>
-            <Button
-              title="Voir la fiche"
-              onPress={() => {
-                setSheetVisible(false);
-                router.push(`/cat/${selected.id}`);
-              }}
-            />
-          </View>
+          <SelectedCatSheet
+            cat={selected}
+            onOpenFiche={() => {
+              setSheetVisible(false);
+              router.push(`/cat/${selected.id}`);
+            }}
+          />
         ) : null}
       </BottomSheet>
     </View>
   );
 }
 
-function MapSideButton({
-  icon,
-  onPress,
-  accessibilityLabel,
-  active,
-}: {
-  icon: React.ReactNode;
-  onPress: () => void;
-  accessibilityLabel: string;
-  active?: boolean;
-}) {
-  const { colors, spacing, radius } = useTheme();
+function SelectedCatSheet({ cat, onOpenFiche }: { cat: Cat; onOpenFiche: () => void }) {
+  const { scheme, spacing, radius } = useTheme();
+  const theme = themeFromColorLabel(cat.analysis.color, cat.number);
+  const rarity = rarityTokens[rarityFromCat(cat.analysis.color, cat.analysis.coat, cat.number)];
+
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ selected: !!active }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        {
-          width: spacing[48],
-          height: spacing[48],
-          borderRadius: radius.full,
-          backgroundColor: active ? colors.accentSoft : colors.surface,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: active ? colors.accent : colors.border,
-          opacity: pressed ? 0.88 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-          // Flat — no drop shadow (reference UI)
-          shadowOpacity: 0,
-          elevation: 0,
-        },
-      ]}
-    >
-      {icon}
-    </Pressable>
+    <View style={{ gap: spacing[16] }}>
+      <View style={{ flexDirection: 'row', gap: spacing[16], alignItems: 'center' }}>
+        <Image
+          source={{ uri: cat.photoUri }}
+          style={{
+            width: spacing[80],
+            height: spacing[80],
+            borderRadius: radius.card,
+            backgroundColor: themeSoft(theme, scheme),
+          }}
+        />
+        <View style={{ flex: 1, gap: spacing[8] }}>
+          <Text variant="h3" color="textBrand">
+            {cat.name}
+          </Text>
+          <Badge
+            label={rarity.label}
+            color={rarity.foreground}
+            backgroundColor={rarity.background}
+          />
+          <Text variant="bodySmall" color="textSecondary">
+            {cat.analysis.breed} · {cat.analysis.color}
+          </Text>
+        </View>
+      </View>
+      <Text variant="body" color="textBody" numberOfLines={3}>
+        {cat.analysis.description}
+      </Text>
+      <Button title="Voir la fiche" onPress={onOpenFiche} />
+    </View>
   );
 }
 
@@ -462,15 +366,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  sideActions: {
-    position: 'absolute',
-    zIndex: 12,
-    alignItems: 'center',
-  },
-  filterPanel: {
-    alignSelf: 'flex-end',
-    alignItems: 'flex-end',
-  },
   nearbyCard: {
     position: 'absolute',
     left: 0,
@@ -478,6 +373,5 @@ const styles = StyleSheet.create({
     zIndex: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
   },
 });

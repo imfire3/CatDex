@@ -22,7 +22,7 @@ export function StatCard({ label, value, hint, style }: StatCardProps) {
           flex: 1,
           minWidth: '40%',
           padding: spacing[16],
-          borderRadius: radius.xl,
+          borderRadius: radius.card,
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.border,

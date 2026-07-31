@@ -16,7 +16,7 @@ type CardBaseProps = {
   padded?: boolean;
 };
 
-/** Surface card — depth, soft border, 24 radius */
+/** Surface card — white, soft border, radius 28 */
 export function Card({ children, onPress, style, padded = true }: CardBaseProps) {
   const { colors, spacing, radius, shadow, motion } = useTheme();
 
@@ -25,7 +25,7 @@ export function Card({ children, onPress, style, padded = true }: CardBaseProps)
       style={[
         {
           backgroundColor: colors.surface,
-          borderRadius: radius.lg,
+          borderRadius: radius.card,
           borderWidth: 1,
           borderColor: colors.border,
           padding: padded ? spacing[24] : 0,
@@ -65,7 +65,7 @@ export function GlassCard({ children, onPress, style, padded = true }: CardBaseP
     <View
       style={[
         {
-          borderRadius: radius.lg,
+          borderRadius: radius.card,
           overflow: 'hidden',
           borderWidth: 1,
           borderColor: colors.border,

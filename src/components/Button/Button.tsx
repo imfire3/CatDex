@@ -143,7 +143,7 @@ export function Button({
         styles.button,
         fullWidth && styles.fullWidth,
         {
-          borderRadius: radius.md,
+          borderRadius: radius.button,
           minHeight: spacing[56],
           opacity: isDisabled ? 0.5 : 1,
           transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
@@ -153,7 +153,7 @@ export function Button({
             variant === 'destructive'
               ? colors.danger
               : variant === 'secondary'
-                ? colors.borderDefault
+                ? colors.border
                 : 'transparent',
           backgroundColor: pressed
             ? variant === 'primary'
@@ -165,7 +165,7 @@ export function Button({
                   : colors.brandSoft
             : surfaceBg,
         },
-        variant === 'primary' ? shadow.low : null,
+        variant === 'primary' ? shadow.medium : null,
         style,
       ]}
     >

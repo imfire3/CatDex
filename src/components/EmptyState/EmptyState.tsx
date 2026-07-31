@@ -26,7 +26,7 @@ export function EmptyState({
       accessibilityRole="summary"
       style={{
         backgroundColor: colors.surface,
-        borderRadius: radius.xl,
+        borderRadius: radius.card,
         borderWidth: 1,
         borderColor: colors.border,
         padding: spacing[24],

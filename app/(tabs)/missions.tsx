@@ -24,17 +24,17 @@ export default function MissionsScreen() {
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: spacing[24],
-          paddingTop: spacing[24],
+          paddingTop: spacing[32],
           paddingBottom: spacing[96] + spacing[24],
-          gap: spacing[24],
+          gap: spacing[32],
         }}
       >
         <View style={{ gap: spacing[8] }}>
           <Text variant="h1" color="textBrand">
             Missions
           </Text>
-          <Text variant="body" color="textBody">
-            Gagne de l’XP, remplis tes objectifs, progresse comme un dresseur urbain.
+          <Text variant="body" color="textSecondary">
+            Gagne de l’XP et progresse comme un explorateur urbain.
           </Text>
         </View>
 
@@ -44,17 +44,19 @@ export default function MissionsScreen() {
           style={[
             {
               backgroundColor: colors.surface,
-              borderRadius: radius.xl,
+              borderRadius: radius.card,
               borderWidth: 1,
               borderColor: colors.border,
-              padding: spacing[16],
-              gap: spacing[8],
+              padding: spacing[24],
+              gap: spacing[16],
             },
-            shadow.small,
+            shadow.low,
           ]}
         >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text variant="h3">Objectif hebdo</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <Text variant="title" color="textBrand">
+              Objectif hebdo
+            </Text>
             <Text variant="caption" color="accent" style={{ fontFamily: fonts.bodySemi }}>
               {done}/{missions.length}
             </Text>
@@ -63,7 +65,9 @@ export default function MissionsScreen() {
         </View>
 
         <View style={{ gap: spacing[16] }}>
-          <Text variant="h3">Quêtes du jour</Text>
+          <Text variant="title" color="textBrand">
+            Quêtes du jour
+          </Text>
           {missions.map((mission) => (
             <Card key={mission.id}>
               <View style={{ gap: spacing[8] }}>
@@ -75,7 +79,7 @@ export default function MissionsScreen() {
                     gap: spacing[8],
                   }}
                 >
-                  <Text variant="h3" style={{ flex: 1 }}>
+                  <Text variant="title" style={{ flex: 1 }} color="textBrand">
                     {mission.title}
                   </Text>
                   <Badge
@@ -83,7 +87,7 @@ export default function MissionsScreen() {
                     variant={mission.completed ? 'success' : 'accent'}
                   />
                 </View>
-                <Text variant="bodySmall" color="textBody">
+                <Text variant="body" color="textBody">
                   {mission.description}
                 </Text>
               </View>

@@ -4,6 +4,7 @@ import { resolveThemeColors, type ColorScheme, type ThemeColors } from './colors
 import { gradients } from './gradients';
 import { iconSize, iconStroke } from './icons';
 import { motion } from './motion';
+import { opacity } from './opacity';
 import { radius } from './radius';
 import { createAccentShadow, createShadows } from './shadow';
 import { spacing } from './spacing';
@@ -19,6 +20,7 @@ export type Theme = {
   shadow: ReturnType<typeof createShadows>;
   accentShadow: ReturnType<typeof createAccentShadow>;
   motion: typeof motion;
+  opacity: typeof opacity;
   iconSize: typeof iconSize;
   iconStroke: typeof iconStroke;
   gradients: typeof gradients;
@@ -29,7 +31,6 @@ export type Theme = {
 export const ThemeContext = createContext<Theme | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // CatDex is white-first — single light palette
   const scheme: ColorScheme = 'light';
 
   const value = useMemo<Theme>(() => {
@@ -44,6 +45,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       shadow: createShadows(colors),
       accentShadow: createAccentShadow(colors),
       motion,
+      opacity,
       iconSize,
       iconStroke,
       gradients,

@@ -16,11 +16,12 @@ function TabIcon({
   color: string;
   focused: boolean;
 }) {
+  const { colors, spacing } = useTheme();
   const stroke = focused ? 0 : 1.6;
   const fill = focused ? color : 'none';
 
-  if (name === 'map') {
-    return (
+  const icon =
+    name === 'map' ? (
       <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
         <Path
           d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
@@ -31,10 +32,7 @@ function TabIcon({
         />
         {!focused ? <Circle cx="12" cy="10" r="2.5" stroke={color} strokeWidth={1.6} /> : null}
       </Svg>
-    );
-  }
-  if (name === 'catdex') {
-    return (
+    ) : name === 'catdex' ? (
       <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
         <Rect
           x="4"
@@ -50,27 +48,40 @@ function TabIcon({
           <Path d="M8 9h8M8 13h5" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
         ) : null}
       </Svg>
-    );
-  }
-  if (name === 'missions') {
-    return (
+    ) : name === 'missions' ? (
       <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
         <Circle cx="12" cy="12" r="8" stroke={color} strokeWidth={stroke || 1.6} fill={fill} />
         {!focused ? <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={1.6} /> : null}
       </Svg>
+    ) : (
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Circle cx="12" cy="9" r="3.2" stroke={color} strokeWidth={stroke || 1.6} fill={fill} />
+        <Path
+          d="M5.5 19c1.4-3 3.8-4.5 6.5-4.5S17.1 16 18.5 19"
+          stroke={color}
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          fill={focused ? color : 'none'}
+        />
+      </Svg>
     );
-  }
+
   return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="9" r="3.2" stroke={color} strokeWidth={stroke || 1.6} fill={fill} />
-      <Path
-        d="M5.5 19c1.4-3 3.8-4.5 6.5-4.5S17.1 16 18.5 19"
-        stroke={color}
-        strokeWidth={1.6}
-        strokeLinecap="round"
-        fill={focused ? color : 'none'}
-      />
-    </Svg>
+    <View style={{ alignItems: 'center', gap: spacing[4] }}>
+      {icon}
+      {focused ? (
+        <View
+          style={{
+            width: spacing[4],
+            height: spacing[4],
+            borderRadius: spacing[4],
+            backgroundColor: colors.brand,
+          }}
+        />
+      ) : (
+        <View style={{ width: spacing[4], height: spacing[4] }} />
+      )}
+    </View>
   );
 }
 
@@ -159,7 +170,11 @@ export default function TabsLayout() {
           zIndex: 20,
         }}
       >
-        <FloatingActionButton embedded onPress={() => router.push('/scanner')} />
+        <FloatingActionButton
+          embedded
+          accessibilityLabel="Capture"
+          onPress={() => router.push('/scanner')}
+        />
       </View>
     </View>
   );

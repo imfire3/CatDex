@@ -15,11 +15,11 @@ export type FloatingActionButtonProps = {
   embedded?: boolean;
 };
 
-/** Center scanner FAB — turquoise disc, soft elevation. */
+/** Center Capture FAB — Pokémon GO style lift + turquoise glow */
 export function FloatingActionButton({
   onPress,
   label,
-  accessibilityLabel = 'Scanner',
+  accessibilityLabel = 'Capture',
   disabled,
   icon,
   style,
@@ -54,7 +54,7 @@ export function FloatingActionButton({
             borderColor: colors.background,
             backgroundColor: pressed ? colors.accentPressed : colors.accent,
           },
-          shadow.medium,
+          shadow.glow,
         ]}
       >
         <LinearGradient
@@ -81,7 +81,7 @@ export function FloatingActionButton({
         </LinearGradient>
       </Pressable>
       {label && !embedded ? (
-        <Text variant="caption" color="textSecondary" style={{ marginTop: spacing[4] }}>
+        <Text variant="tiny" color="textSecondary" style={{ marginTop: spacing[4] }}>
           {label}
         </Text>
       ) : null}

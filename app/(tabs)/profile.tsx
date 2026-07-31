@@ -26,16 +26,25 @@ export default function ProfileScreen() {
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: spacing[24],
-          paddingTop: spacing[24],
+          paddingTop: spacing[32],
           paddingBottom: spacing[96] + spacing[24],
-          gap: spacing[24],
+          gap: spacing[32],
         }}
       >
+        <View style={{ gap: spacing[8] }}>
+          <Text variant="h1" color="textBrand">
+            Profil
+          </Text>
+          <Text variant="body" color="textSecondary">
+            Ton identité d’explorateur
+          </Text>
+        </View>
+
         <Card padded={false}>
           <LinearGradient
             colors={[gradients.primarySoft[0], colors.surface]}
             style={{
-              padding: spacing[24],
+              padding: spacing[32],
               alignItems: 'center',
               gap: spacing[16],
             }}
@@ -48,7 +57,7 @@ export default function ProfileScreen() {
                   borderRadius: radius.full,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 3,
+                  borderWidth: 4,
                   borderColor: colors.accent,
                   overflow: 'hidden',
                 },
@@ -69,7 +78,9 @@ export default function ProfileScreen() {
                 </Text>
               </LinearGradient>
             </View>
-            <Text variant="h2">{user?.displayName ?? 'Explorateur'}</Text>
+            <Text variant="h2" color="textBrand">
+              {user?.displayName ?? 'Explorateur'}
+            </Text>
             <Text variant="bodySmall" color="textSecondary">
               {user?.email}
             </Text>
@@ -83,7 +94,11 @@ export default function ProfileScreen() {
             <Text variant="label" color="textSecondary">
               Découvertes
             </Text>
-            <Text variant="h2" style={{ marginTop: spacing[8], fontFamily: fonts.bodySemi }}>
+            <Text
+              variant="h2"
+              color="textBrand"
+              style={{ marginTop: spacing[8], fontFamily: fonts.bodySemi }}
+            >
               {catsCount}
             </Text>
           </Card>
@@ -91,7 +106,11 @@ export default function ProfileScreen() {
             <Text variant="label" color="textSecondary">
               Niveau
             </Text>
-            <Text variant="h2" style={{ marginTop: spacing[8], fontFamily: fonts.bodySemi }}>
+            <Text
+              variant="h2"
+              color="textBrand"
+              style={{ marginTop: spacing[8], fontFamily: fonts.bodySemi }}
+            >
               {level}
             </Text>
           </Card>
@@ -101,7 +120,7 @@ export default function ProfileScreen() {
           <Text variant="label" color="textSecondary">
             Zone
           </Text>
-          <Text variant="h3" style={{ marginTop: spacing[8] }}>
+          <Text variant="title" color="textBrand" style={{ marginTop: spacing[8] }}>
             Paris 20e
           </Text>
           <Text variant="bodySmall" color="textSecondary" style={{ marginTop: spacing[8] }}>

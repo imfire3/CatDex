@@ -1,8 +1,8 @@
 import { Platform, type TextStyle } from 'react-native';
 
 /**
- * Typography — SF Pro Display on iOS, Manrope/Syne elsewhere.
- * Large display hierarchy for premium feel.
+ * Typography — SF Pro on iOS, Syne (display) + Manrope (body) elsewhere.
+ * Marked hierarchy for premium game feel.
  */
 
 const iosDisplay = 'System';
@@ -23,9 +23,11 @@ export type TextVariant =
   | 'h1'
   | 'h2'
   | 'h3'
+  | 'title'
   | 'body'
   | 'bodySmall'
   | 'caption'
+  | 'tiny'
   | 'label';
 
 export type TypographyStyle = {
@@ -40,35 +42,42 @@ export type TypographyStyle = {
 export const typography: Record<TextVariant, TypographyStyle> = {
   display: {
     fontFamily: fontFamilies.display,
-    fontSize: 40,
-    lineHeight: 48,
+    fontSize: 44,
+    lineHeight: 52,
     letterSpacing: -1.2,
     fontWeight: Platform.OS === 'ios' ? '800' : undefined,
   },
   h1: {
     fontFamily: fontFamilies.bodyBlack,
-    fontSize: 32,
-    lineHeight: 40,
-    letterSpacing: -0.8,
+    fontSize: 44,
+    lineHeight: 52,
+    letterSpacing: -1.0,
     fontWeight: Platform.OS === 'ios' ? '700' : undefined,
   },
   h2: {
     fontFamily: fontFamilies.bodySemi,
-    fontSize: 24,
-    lineHeight: 32,
-    letterSpacing: -0.4,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -0.6,
     fontWeight: Platform.OS === 'ios' ? '600' : undefined,
   },
   h3: {
     fontFamily: fontFamilies.bodySemi,
-    fontSize: 20,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.4,
+    fontWeight: Platform.OS === 'ios' ? '600' : undefined,
+  },
+  title: {
+    fontFamily: fontFamilies.bodySemi,
+    fontSize: 22,
     lineHeight: 28,
     letterSpacing: -0.2,
     fontWeight: Platform.OS === 'ios' ? '600' : undefined,
   },
   body: {
     fontFamily: fontFamilies.body,
-    fontSize: 16,
+    fontSize: 17,
     lineHeight: 24,
     letterSpacing: -0.1,
     fontWeight: Platform.OS === 'ios' ? '400' : undefined,
@@ -81,6 +90,13 @@ export const typography: Record<TextVariant, TypographyStyle> = {
     fontWeight: Platform.OS === 'ios' ? '400' : undefined,
   },
   caption: {
+    fontFamily: fontFamilies.body,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: 0.1,
+    fontWeight: Platform.OS === 'ios' ? '500' : undefined,
+  },
+  tiny: {
     fontFamily: fontFamilies.body,
     fontSize: 12,
     lineHeight: 16,

@@ -13,8 +13,13 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { TextInput } from '@/components/Input';
 import { Text } from '@/components/Text';
-import { formatCatDefaultName } from '@/lib/constants';
-import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import { formatCatDefaultName, formatDexNumber } from '@/lib/constants';
+import {
+  rarityFromCat,
+  rarityTokens,
+  themeFromColorLabel,
+  themeSoft,
+} from '@/lib/catTheme';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -46,6 +51,10 @@ export default function DiscoveryScreen() {
     formatCatDefaultName(nextNumber);
   const [name, setName] = useState(defaultName);
   const theme = themeFromColorLabel(params.color ?? '', nextNumber);
+  const rarity = rarityTokens[
+    rarityFromCat(params.color ?? '', params.coat ?? '', nextNumber)
+  ];
+  const dexLabel = formatDexNumber(nextNumber);
 
   useEffect(() => {
     scale.value = withSpring(1, motion.easing.spring);
@@ -88,62 +97,89 @@ export default function DiscoveryScreen() {
         },
       ]}
     >
-      <Text variant="label" color="accent" align="center" style={{ marginBottom: spacing[16] }}>
-        {params.mocked === '1' ? 'Analyse de secours' : 'Nouveau dans ton CatDex'}
-      </Text>
+      <View style={{ alignItems: 'center', gap: spacing[8], marginBottom: spacing[24] }}>
+        <Text variant="label" color="accent" align="center">
+          {params.mocked === '1' ? 'Analyse de secours' : 'Nouveau CatDex'}
+        </Text>
+        <Text
+          variant="h1"
+          align="center"
+          style={{ fontFamily: fonts.display, color: colors.brand }}
+        >
+          {dexLabel}
+        </Text>
+      </View>
 
       <Animated.View style={animatedStyle}>
         <View
           style={[
             {
-              padding: spacing[8],
-              borderRadius: radius['2xl'],
-              backgroundColor: themeSoft(theme, scheme),
+              width: '100%',
+              padding: spacing[16],
+              borderRadius: radius.card,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: rarity.border,
+              alignItems: 'center',
+              gap: spacing[16],
             },
             shadow.medium,
           ]}
         >
-          <Image
-            source={{ uri: params.photoUri }}
+          <View
             style={{
-              width: spacing[96] * 2,
-              height: spacing[96] * 2,
-              borderRadius: radius.xl,
+              padding: spacing[8],
+              borderRadius: radius.card,
+              backgroundColor: themeSoft(theme, scheme),
             }}
+          >
+            <Image
+              source={{ uri: params.photoUri }}
+              style={{
+                width: spacing[96] * 2,
+                height: spacing[96] * 2,
+                borderRadius: radius.md,
+              }}
+            />
+          </View>
+
+          <View style={{ width: '100%', gap: spacing[8] }}>
+            <TextInput
+              label="Nom"
+              value={name}
+              onChangeText={setName}
+              placeholder="Nom du chat"
+            />
+          </View>
+
+          <Badge
+            label={rarity.label}
+            color={rarity.foreground}
+            backgroundColor={rarity.background}
           />
-        </View>
 
-        <View style={{ width: '100%', marginTop: spacing[24], gap: spacing[8] }}>
-          <TextInput
-            label="Nom"
-            value={name}
-            onChangeText={setName}
-            placeholder="Nom du chat"
-          />
-        </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: spacing[8],
+            }}
+          >
+            <Badge label={params.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+            <Badge label={params.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+            <Badge label={params.coat} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+          </View>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            gap: spacing[8],
-            marginTop: spacing[16],
-          }}
-        >
-          <Badge label={params.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-          <Badge label={params.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-          <Badge label={params.coat} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+          <Text
+            variant="body"
+            color="textBody"
+            align="center"
+            style={{ paddingHorizontal: spacing[8] }}
+          >
+            {params.description}
+          </Text>
         </View>
-
-        <Text
-          variant="body"
-          color="textBody"
-          align="center"
-          style={{ marginTop: spacing[16], paddingHorizontal: spacing[8], fontFamily: fonts.body }}
-        >
-          {params.description}
-        </Text>
       </Animated.View>
 
       <View
@@ -153,10 +189,10 @@ export default function DiscoveryScreen() {
           gap: spacing[8],
         }}
       >
-        <Button title="Ajouter à la carte" onPress={confirm} />
+        <Button title="Ajouter au CatDex" onPress={confirm} />
         <Button
           title="Annuler"
-          variant="ghost"
+          variant="secondary"
           onPress={() => router.replace('/(tabs)/map')}
         />
       </View>

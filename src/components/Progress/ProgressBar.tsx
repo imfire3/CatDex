@@ -59,13 +59,13 @@ export function XPBar({
       style={[
         {
           backgroundColor: colors.surface,
-          borderRadius: radius.xl,
+          borderRadius: radius.card,
           borderWidth: 1,
           borderColor: colors.border,
           padding: spacing[16],
           gap: spacing[8],
         },
-        shadow.small,
+        shadow.low,
       ]}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

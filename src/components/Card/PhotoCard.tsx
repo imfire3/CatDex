@@ -18,8 +18,12 @@ export type PhotoCardProps = {
   title: string;
   subtitle?: string;
   meta?: string;
+  location?: string;
   dexLabel?: string;
   badges?: string[];
+  rarityLabel?: string;
+  rarityColor?: string;
+  rarityBackground?: string;
   tint?: string;
   accentColor?: string;
   badgeColor?: string;
@@ -29,14 +33,18 @@ export type PhotoCardProps = {
   accessibilityLabel?: string;
 };
 
-/** Pokédex-style collection card */
+/** Pokédex-style collection card — photo ~60%, secondary meta below */
 export function PhotoCard({
   source,
   title,
   subtitle,
   meta,
+  location,
   dexLabel,
   badges,
+  rarityLabel,
+  rarityColor,
+  rarityBackground,
   tint,
   accentColor,
   badgeColor,
@@ -56,7 +64,7 @@ export function PhotoCard({
       style={({ pressed }) => [
         {
           flex: 1,
-          borderRadius: radius.lg,
+          borderRadius: radius.card,
           overflow: 'hidden',
           backgroundColor: surface,
           borderWidth: 1,
@@ -67,10 +75,11 @@ export function PhotoCard({
         style,
       ]}
     >
-      <View style={{ aspectRatio: 1, backgroundColor: colors.surfaceSecondary }}>
-        <Image source={source} style={StyleSheet.absoluteFill} />
+      {/* Photo dominates (~60% visual weight via tall aspect) */}
+      <View style={{ aspectRatio: 0.85, backgroundColor: colors.surfaceSecondary }}>
+        <Image source={source} style={StyleSheet.absoluteFill} resizeMode="cover" />
         <LinearGradient
-          colors={['transparent', 'rgba(17,20,90,0.55)']}
+          colors={['transparent', 'rgba(26,30,58,0.45)']}
           style={StyleSheet.absoluteFill}
         />
         {dexLabel ? (
@@ -81,22 +90,31 @@ export function PhotoCard({
               left: spacing[8],
               paddingHorizontal: spacing[8],
               paddingVertical: spacing[4],
-              borderRadius: radius.full,
+              borderRadius: radius.pill,
               backgroundColor: colors.surface,
               borderWidth: 1,
               borderColor: colors.border,
             }}
           >
-            <Text variant="caption" color="accent" style={{ fontFamily: fonts.bodySemi }}>
+            <Text variant="tiny" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
               {dexLabel}
             </Text>
+          </View>
+        ) : null}
+        {rarityLabel ? (
+          <View style={{ position: 'absolute', top: spacing[8], right: spacing[8] }}>
+            <Badge
+              label={rarityLabel}
+              color={rarityColor}
+              backgroundColor={rarityBackground}
+            />
           </View>
         ) : null}
       </View>
 
       <View style={{ padding: spacing[16], gap: spacing[8] }}>
         <Text
-          variant="h3"
+          variant="title"
           color="textBrand"
           numberOfLines={1}
           style={{ fontFamily: fonts.bodySemi }}
@@ -122,8 +140,13 @@ export function PhotoCard({
             {subtitle}
           </Text>
         ) : null}
+        {location ? (
+          <Text variant="tiny" color="textMuted" numberOfLines={1}>
+            {location}
+          </Text>
+        ) : null}
         {meta ? (
-          <Text variant="caption" color="textMuted" numberOfLines={1}>
+          <Text variant="tiny" color="textMuted" numberOfLines={1}>
             {meta}
           </Text>
         ) : null}

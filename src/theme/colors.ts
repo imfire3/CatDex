@@ -1,78 +1,82 @@
 /**
- * CatDex Design System — white-first, navy brand, turquoise accent
+ * CatDex Design System — luminous game UI
  *
- * brand (navy) → headings, active nav, secondary CTAs
- * accent/primary (turquoise) → primary buttons, scanner, progress
- * Coat/rarity colors live in src/lib/catTheme.ts — not here.
+ * Primary (indigo navy) → brand, headings, secondary chrome
+ * Accent (turquoise) → primary CTAs, FAB, progress, focus
+ * Rare / Legendary → collection rarity only (also in catTheme)
  */
 
 const light = {
-  brand: '#11145A',
-  brandPressed: '#0C0F42',
-  brandSoft: 'rgba(17, 20, 90, 0.08)',
-  accent: '#2EC9C3',
-  accentPressed: '#24A8A3',
-  accentSoft: 'rgba(46, 201, 195, 0.14)',
-  accentStrong: '#24A8A3',
-  primary: '#2EC9C3',
-  primarySoft: 'rgba(46, 201, 195, 0.14)',
-  violet: '#11145A',
-  violetSoft: 'rgba(17, 20, 90, 0.08)',
+  brand: '#2D3B8F',
+  brandPressed: '#243074',
+  brandSoft: 'rgba(45, 59, 143, 0.10)',
+  accent: '#43D2C8',
+  accentPressed: '#36B8AF',
+  accentSoft: 'rgba(67, 210, 200, 0.16)',
+  accentStrong: '#36B8AF',
+  primary: '#43D2C8',
+  primarySoft: 'rgba(67, 210, 200, 0.16)',
+  violet: '#8B5CF6',
+  violetSoft: 'rgba(139, 92, 246, 0.14)',
+  rare: '#8B5CF6',
+  rareSoft: 'rgba(139, 92, 246, 0.14)',
+  legendary: '#F59E0B',
+  legendarySoft: 'rgba(245, 158, 11, 0.14)',
 
-  background: '#FFFFFF',
+  background: '#F8FAFC',
   surface: '#FFFFFF',
-  surfaceSecondary: '#F7F8FC',
-  surfaceTertiary: '#F2F4F8',
-  surfaceMuted: '#F2F4F8',
-  surfaceDisabled: '#ECEFF3',
+  surfaceSecondary: '#F8FAFC',
+  surfaceTertiary: '#EEF2F7',
+  surfaceMuted: '#EEF2F7',
+  surfaceDisabled: '#E7EAF3',
 
-  text: '#15172B',
-  textBrand: '#11145A',
-  textBody: 'rgba(21, 23, 43, 0.78)',
-  textSecondary: '#667085',
-  textMuted: '#98A2B3',
-  placeholder: '#98A2B3',
+  text: '#1A1E3A',
+  textBrand: '#2D3B8F',
+  textBody: 'rgba(26, 30, 58, 0.82)',
+  textSecondary: '#69758F',
+  textMuted: '#69758F',
+  placeholder: '#69758F',
   textInverse: '#FFFFFF',
-  textDisabled: '#B7BDC8',
+  textDisabled: '#A8B0C2',
 
-  border: '#E8EAF0',
-  borderDefault: '#D9DDE6',
-  borderStrong: '#BCC3D0',
-  focusRing: '#2EC9C3',
-  borderError: '#E5484D',
+  border: '#E7EAF3',
+  borderDefault: '#E7EAF3',
+  borderStrong: '#C9D0DE',
+  focusRing: '#43D2C8',
+  borderError: '#FF5C5C',
 
-  mint: '#12B76A',
-  mintSoft: 'rgba(18, 183, 106, 0.12)',
-  yellow: '#F79009',
-  yellowSoft: 'rgba(247, 144, 9, 0.12)',
-  orange: '#F79009',
-  orangeSoft: 'rgba(247, 144, 9, 0.12)',
-  sky: '#2E90FA',
-  skySoft: 'rgba(46, 144, 250, 0.12)',
-  rose: '#F63D68',
-  roseSoft: 'rgba(246, 61, 104, 0.12)',
-  success: '#12B76A',
-  successSoft: 'rgba(18, 183, 106, 0.12)',
-  warning: '#F79009',
-  warningSoft: 'rgba(247, 144, 9, 0.12)',
-  danger: '#E5484D',
-  dangerSoft: 'rgba(229, 72, 77, 0.12)',
-  info: '#2E90FA',
-  infoSoft: 'rgba(46, 144, 250, 0.12)',
+  mint: '#34C759',
+  mintSoft: 'rgba(52, 199, 89, 0.14)',
+  yellow: '#F59E0B',
+  yellowSoft: 'rgba(245, 158, 11, 0.14)',
+  orange: '#F59E0B',
+  orangeSoft: 'rgba(245, 158, 11, 0.14)',
+  sky: '#2D3B8F',
+  skySoft: 'rgba(45, 59, 143, 0.10)',
+  rose: '#FF5C5C',
+  roseSoft: 'rgba(255, 92, 92, 0.14)',
+  success: '#34C759',
+  successSoft: 'rgba(52, 199, 89, 0.14)',
+  warning: '#F59E0B',
+  warningSoft: 'rgba(245, 158, 11, 0.14)',
+  danger: '#FF5C5C',
+  dangerSoft: 'rgba(255, 92, 92, 0.14)',
+  info: '#2D3B8F',
+  infoSoft: 'rgba(45, 59, 143, 0.10)',
 
-  overlay: 'rgba(17, 20, 90, 0.4)',
+  overlay: 'rgba(26, 30, 58, 0.40)',
   onAccent: '#FFFFFF',
   onPrimary: '#FFFFFF',
   onBrand: '#FFFFFF',
-  onSurface: '#15172B',
-  skeleton: '#EBEEF5',
-  skeletonHighlight: '#F7F8FC',
-  glassFill: 'rgba(255, 255, 255, 0.9)',
-  shadowColor: '#11145A',
+  onSurface: '#1A1E3A',
+  skeleton: '#E7EAF3',
+  skeletonHighlight: '#F8FAFC',
+  glassFill: 'rgba(255, 255, 255, 0.92)',
+  shadowColor: '#2D3B8F',
   mapPinRing: '#FFFFFF',
   tabBar: 'rgba(255, 255, 255, 0.96)',
-  gradientStart: '#2EC9C3',
-  gradientEnd: '#24A8A3',
+  gradientStart: '#43D2C8',
+  gradientEnd: '#36B8AF',
 } as const;
 
 export const palette = {
@@ -94,6 +98,10 @@ export type ThemeColors = {
   primarySoft: string;
   violet: string;
   violetSoft: string;
+  rare: string;
+  rareSoft: string;
+  legendary: string;
+  legendarySoft: string;
   background: string;
   surface: string;
   surfaceSecondary: string;

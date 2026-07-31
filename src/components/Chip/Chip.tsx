@@ -32,7 +32,7 @@ export function Chip({ label, selected, onPress, static: isStatic, disabled, ico
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing[8],
-        minHeight: 40,
+        minHeight: spacing[40],
       }}
     >
       {icon}
