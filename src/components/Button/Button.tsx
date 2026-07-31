@@ -1,7 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   StyleSheet,
   View,
@@ -11,6 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { Spinner } from '@/components/Loader';
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -82,7 +82,7 @@ export function Button({
           style,
         ]}
       >
-        {loading ? <ActivityIndicator color={colors.accent} /> : icon}
+        {loading ? <Spinner size="sm" color={colors.accent} /> : icon}
       </Pressable>
     );
   }
@@ -90,7 +90,10 @@ export function Button({
   const content = (
     <View style={[styles.content, { gap: spacing[8] }]}>
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.onPrimary : colors.text} />
+        <Spinner
+          size="sm"
+          color={variant === 'primary' ? colors.onPrimary : colors.text}
+        />
       ) : (
         <>
           {icon}
@@ -124,7 +127,7 @@ export function Button({
         fullWidth && styles.fullWidth,
         {
           borderRadius: radius.lg,
-          minHeight: 56,
+          minHeight: spacing[48],
           opacity: isDisabled ? 0.45 : 1,
           transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           overflow: 'hidden',
@@ -176,7 +179,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 56,
+    minHeight: 48,
   },
   content: {
     flexDirection: 'row',

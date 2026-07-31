@@ -17,10 +17,18 @@ type AuthState = {
   setHydrated: (value: boolean) => void;
   signIn: (provider: User['provider'], email?: string, displayName?: string) => void;
   signUp: (input: SignUpInput) => void;
-  continueAsGuest: () => void;
   completeOnboarding: () => void;
   signOut: () => void;
 };
+
+function isGuestUser(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return (
+    user.id.startsWith('user_guest_') ||
+    user.email === 'invite@catdex.app' ||
+    user.displayName === 'Invité'
+  );
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -61,19 +69,8 @@ export const useAuthStore = create<AuthState>()(
           onboardingCompleted: false,
         });
       },
-      continueAsGuest: () => {
-        set({
-          user: {
-            id: `user_guest_${Date.now()}`,
-            email: 'invite@catdex.app',
-            displayName: 'Invité',
-            provider: 'email',
-          },
-          onboardingCompleted: false,
-        });
-      },
       completeOnboarding: () => set({ onboardingCompleted: true }),
-      signOut: () => set({ user: null }),
+      signOut: () => set({ user: null, onboardingCompleted: false }),
     }),
     {
       name: 'catdex-auth',
@@ -82,7 +79,10 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         onboardingCompleted: state.onboardingCompleted,
       }),
-      onRehydrateStorage: () => () => {
+      onRehydrateStorage: () => (state) => {
+        if (isGuestUser(state?.user)) {
+          useAuthStore.setState({ user: null, onboardingCompleted: false });
+        }
         useAuthStore.getState().setHydrated(true);
       },
     },

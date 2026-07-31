@@ -118,15 +118,3 @@ export function themeFromColorLabel(label: string, seed = 0): CatTheme {
 export function themeSoft(theme: CatTheme, _scheme: 'light' | 'dark') {
   return theme.softDark;
 }
-
-export function deriveCatStats(id: string) {
-  const seed = [...id].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const pick = (offset: number) => 35 + ((seed * (offset + 3)) % 61);
-  return [
-    { key: 'curiosite', label: 'Curiosité', value: pick(1), color: '#5EE4B0' },
-    { key: 'vitesse', label: 'Vitesse', value: pick(2), color: '#6EC8FF' },
-    { key: 'charisme', label: 'Charisme', value: pick(3), color: '#8D7BFF' },
-    { key: 'discretion', label: 'Discrétion', value: pick(4), color: '#A8B0C8' },
-    { key: 'appetit', label: 'Appétit', value: pick(5), color: '#FF9F6B' },
-  ] as const;
-}

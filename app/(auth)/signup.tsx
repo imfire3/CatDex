@@ -3,17 +3,16 @@ import { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
 import { Button } from '@/components/Button';
 import { TextInput } from '@/components/Input';
-import { Text } from '@/components/Text';
 import {
   validateEmail,
   validatePassword,
@@ -24,12 +23,11 @@ import { useAuthStore, getPostAuthHref } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SignupScreen() {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const signUp = useAuthStore((state) => state.signUp);
-  const continueAsGuest = useAuthStore((state) => state.continueAsGuest);
 
   const [pseudo, setPseudo] = useState('');
   const [email, setEmail] = useState('');
@@ -61,7 +59,7 @@ export default function SignupScreen() {
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
   }
 
-  const onSubmit = () => {
+  const handleSubmit = () => {
     setSubmitted(true);
     const next = {
       pseudo: validatePseudo(pseudo),
@@ -82,6 +80,11 @@ export default function SignupScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <LinearGradient
+        colors={[gradients.primarySoft[0], 'transparent']}
+        style={styles.atmosphere}
+        pointerEvents="none"
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
@@ -96,12 +99,8 @@ export default function SignupScreen() {
         >
           <AuthHeader
             title="Créer un compte"
-            subtitle="Créez un compte pour sauvegarder vos données."
+            subtitle="Sauvegarde ton CatDex et retrouve tes chats où que tu sois."
           />
-
-          <Text variant="bodySmall" color="textSecondary">
-            Vous pouvez aussi créer votre compte plus tard.
-          </Text>
 
           <View style={{ gap: spacing[16] }}>
             <TextInput
@@ -154,29 +153,12 @@ export default function SignupScreen() {
           </View>
 
           <View style={{ gap: spacing[8], marginTop: spacing[8] }}>
-            <Button title="Créer mon compte" onPress={onSubmit} />
+            <Button title="Créer mon compte" onPress={handleSubmit} />
             <Button
               title="J’ai déjà un compte"
               variant="secondary"
               onPress={() => router.push('/(auth)/login')}
             />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                continueAsGuest();
-                router.replace('/(auth)/intro');
-              }}
-              style={({ pressed }) => ({
-                minHeight: spacing[48],
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.7 : 1,
-              })}
-            >
-              <Text variant="bodySmall" color="textSecondary">
-                Continuer sans compte
-              </Text>
-            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -186,4 +168,11 @@ export default function SignupScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  atmosphere: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '45%',
+  },
 });

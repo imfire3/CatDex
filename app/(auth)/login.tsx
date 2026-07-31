@@ -8,9 +8,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { AuthDivider, AuthHeader } from '@/components/Auth/AuthChrome';
+import { AuthHeader } from '@/components/Auth/AuthChrome';
 import { Button } from '@/components/Button';
 import { TextInput } from '@/components/Input';
 import { validateEmail, validatePassword } from '@/lib/authValidation';
@@ -18,7 +18,7 @@ import { useAuthStore, getPostAuthHref } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function LoginScreen() {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
@@ -40,19 +40,20 @@ export default function LoginScreen() {
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
   }
 
-  const enter = (provider: 'email' | 'google' | 'apple') => {
-    if (provider === 'email') {
-      setSubmitted(true);
-      if (validateEmail(email) || validatePassword(password)) return;
-      signIn('email', email.trim());
-    } else {
-      signIn(provider);
-    }
+  const handleLogin = () => {
+    setSubmitted(true);
+    if (validateEmail(email) || validatePassword(password)) return;
+    signIn('email', email.trim());
     router.replace(getPostAuthHref(useAuthStore.getState().onboardingCompleted));
   };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <LinearGradient
+        colors={[gradients.primarySoft[0], 'transparent']}
+        style={styles.atmosphere}
+        pointerEvents="none"
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
@@ -68,7 +69,7 @@ export default function LoginScreen() {
         >
           <AuthHeader
             title="Connexion"
-            subtitle="Content de te revoir. Connecte-toi pour retrouver ton CatDex."
+            subtitle="Retrouve ton CatDex et continue ta collection."
           />
 
           <View style={{ gap: spacing[16] }}>
@@ -92,38 +93,7 @@ export default function LoginScreen() {
               placeholder="••••••••"
               error={errors.password ?? undefined}
             />
-            <Button title="Se connecter" onPress={() => enter('email')} />
-          </View>
-
-          <AuthDivider />
-
-          <View style={{ gap: spacing[8] }}>
-            <Button
-              title="Continuer avec Google"
-              variant="secondary"
-              onPress={() => enter('google')}
-              icon={
-                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M12 11v2.8h6.6c-.3 1.5-2 4.4-6.6 4.4A6.8 6.8 0 1 1 12 5.2c1.9 0 3.2.8 4 1.5l2.1-2A10 10 0 1 0 12 22c5.5 0 9.1-3.9 9.1-9.3 0-.6 0-1.1-.1-1.7H12Z"
-                    fill={colors.text}
-                  />
-                </Svg>
-              }
-            />
-            <Button
-              title="Continuer avec Apple"
-              variant="secondary"
-              onPress={() => enter('apple')}
-              icon={
-                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M16.7 12.6c0-2.2 1.8-3.2 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.8-.8-3-.7-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.3-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8ZM14.5 6.5c.6-.8 1.1-1.9.9-3-1 .1-2.2.7-2.9 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.2-.5 3-1.4Z"
-                    fill={colors.text}
-                  />
-                </Svg>
-              }
-            />
+            <Button title="Se connecter" onPress={handleLogin} />
           </View>
 
           <View style={{ marginTop: 'auto', gap: spacing[8], paddingTop: spacing[24] }}>
@@ -141,4 +111,11 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  atmosphere: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '45%',
+  },
 });

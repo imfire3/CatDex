@@ -1,15 +1,12 @@
 import { BlurView } from 'expo-blur';
 import {
-  Image,
   Pressable,
   StyleSheet,
   View,
-  type ImageSourcePropType,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 
-import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
 type CardBaseProps = {
@@ -57,8 +54,12 @@ export function Card({ children, onPress, style, padded = true }: CardBaseProps)
   return content;
 }
 
+/**
+ * Glass surface — kept for atmospheric panels (blur + glassFill).
+ * Prefer Card for dense content lists.
+ */
 export function GlassCard({ children, onPress, style, padded = true }: CardBaseProps) {
-  const { colors, spacing, radius, scheme, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
 
   const body = (
     <View
@@ -93,57 +94,4 @@ export function GlassCard({ children, onPress, style, padded = true }: CardBaseP
   }
 
   return body;
-}
-
-export type ImageCardProps = {
-  source: ImageSourcePropType | { uri: string };
-  title: string;
-  subtitle?: string;
-  onPress?: () => void;
-  style?: StyleProp<ViewStyle>;
-};
-
-export function ImageCard({ source, title, subtitle, onPress, style }: ImageCardProps) {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      onPress={onPress}
-      style={({ pressed }) => [
-        {
-          flex: 1,
-          aspectRatio: 3 / 4,
-          borderRadius: radius.xl,
-          overflow: 'hidden',
-          backgroundColor: colors.surfaceSecondary,
-          transform: [{ scale: pressed ? motion.cardPressScale : 1 }],
-        },
-        shadow.medium,
-        style,
-      ]}
-    >
-      <Image source={source} style={StyleSheet.absoluteFill} />
-      <View
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          padding: spacing[16],
-          backgroundColor: colors.overlay,
-        }}
-      >
-        <Text variant="body" color="onAccent" numberOfLines={1} style={{ fontFamily: fonts.bodySemi }}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text variant="caption" color="onAccent" numberOfLines={1} style={{ opacity: 0.8 }}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-    </Pressable>
-  );
 }

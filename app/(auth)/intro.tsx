@@ -11,22 +11,22 @@ import { useTheme } from '@/theme/ThemeProvider';
 const STEPS = [
   {
     key: 'explore',
-    title: 'Explore ton quartier',
-    body: 'La carte montre les chats autour de toi. Filtre par proximité, rareté ou déjà vus.',
+    title: 'Explorer',
+    body: 'Parcours la carte de ton quartier et repère les chats déjà découverts.',
     tint: 'sky' as const,
     icon: 'map',
   },
   {
     key: 'capture',
-    title: 'Capture avec la caméra',
-    body: 'Photographie un chat : l’IA le décrit (couleur, race, robe) et te propose un nom.',
+    title: 'Photographier',
+    body: 'Capture un chat : une Cat Card se révèle avec son portrait et ses traits.',
     tint: 'orange' as const,
     icon: 'camera',
   },
   {
     key: 'collect',
-    title: 'Remplis ton CatDex',
-    body: 'Chaque capture rejoint ta collection. Relis les fiches, gagne des missions, progresse.',
+    title: 'Collectionner',
+    body: 'Chaque rencontre rejoint ton CatDex. Complète ta collection, chat après chat.',
     tint: 'mint' as const,
     icon: 'book',
   },
@@ -79,6 +79,7 @@ export default function IntroScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
+  const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
@@ -98,6 +99,11 @@ export default function IntroScreen() {
     mint: colors.mint,
   };
 
+  const handleFinish = () => {
+    completeOnboarding();
+    router.replace('/(tabs)/map');
+  };
+
   return (
     <View
       style={[
@@ -112,11 +118,11 @@ export default function IntroScreen() {
     >
       <View style={{ gap: spacing[8], marginBottom: spacing[32] }}>
         <Text variant="label" color="textSecondary">
-          Comment ça marche
+          Premiers pas
         </Text>
-        <Text variant="h1">CatDex en 3 gestes</Text>
+        <Text variant="h1">Trois gestes</Text>
         <Text variant="body" color="textBody">
-          Salut {user.displayName} — voici l’essentiel avant de partir explorer.
+          Salut {user.displayName} — l’essentiel pour commencer ta collection.
         </Text>
       </View>
 
@@ -162,7 +168,10 @@ export default function IntroScreen() {
         ))}
       </View>
 
-      <Button title="Continuer" onPress={() => router.push('/(auth)/permissions')} />
+      <View style={{ gap: spacing[8] }}>
+        <Button title="Commencer l’exploration" onPress={handleFinish} />
+        <Button title="Passer" variant="ghost" onPress={handleFinish} />
+      </View>
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -13,7 +14,7 @@ export type ToastProps = {
   actionLabel?: string;
   onAction?: () => void;
   onDismiss?: () => void;
-  tone?: 'default' | 'success' | 'warning';
+  tone?: 'default' | 'success' | 'warning' | 'danger';
 };
 
 export function Toast({
@@ -26,20 +27,29 @@ export function Toast({
   tone = 'default',
 }: ToastProps) {
   const { colors, fonts, spacing, radius, scheme, shadow } = useTheme();
+  const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
 
   if (!visible) return null;
 
   const accent =
-    tone === 'success' ? colors.success : tone === 'warning' ? colors.warning : colors.primary;
+    tone === 'success'
+      ? colors.success
+      : tone === 'warning'
+        ? colors.warning
+        : tone === 'danger'
+          ? colors.danger
+          : colors.primary;
 
   return (
     <Animated.View
       entering={reduceMotion ? undefined : FadeIn.duration(200)}
       exiting={reduceMotion ? undefined : FadeOut.duration(160)}
+      pointerEvents="box-none"
       style={[
         styles.wrap,
         {
+          top: insets.top + spacing[8],
           marginHorizontal: spacing[16],
           borderRadius: radius.xl,
           borderWidth: 1,

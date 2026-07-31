@@ -8,10 +8,11 @@ import type { Cat } from '@/types/cat';
 type Props = {
   cats: Cat[];
   scheme: 'light' | 'dark';
+  selectedCatId?: string | null;
   onSelectCat: (cat: Cat) => void;
 };
 
-export function CatMap({ cats, scheme, onSelectCat }: Props) {
+export function CatMap({ cats, selectedCatId, onSelectCat }: Props) {
   return (
     <MapView
       style={StyleSheet.absoluteFill}
@@ -25,7 +26,12 @@ export function CatMap({ cats, scheme, onSelectCat }: Props) {
       mapPadding={{ top: 0, right: 0, bottom: 90, left: 0 }}
     >
       {cats.map((cat) => (
-        <CatMapMarker key={cat.id} cat={cat} onPress={onSelectCat} />
+        <CatMapMarker
+          key={cat.id}
+          cat={cat}
+          selected={cat.id === selectedCatId}
+          onPress={onSelectCat}
+        />
       ))}
     </MapView>
   );
