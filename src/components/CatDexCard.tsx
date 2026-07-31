@@ -1,10 +1,11 @@
 /**
  * PhotoCard adapter — coat theme border + CatDex number.
  */
+import { memo } from 'react';
+
 import { PhotoCard } from '@/components/Card/PhotoCard';
 import { formatCaptureTime, formatDexNumber } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
-import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
 type Props = {
@@ -12,8 +13,7 @@ type Props = {
   onPress: () => void;
 };
 
-export function CatDexCard({ cat, onPress }: Props) {
-  const { scheme } = useTheme();
+function CatDexCardComponent({ cat, onPress }: Props) {
   const theme = themeFromColorLabel(cat.analysis.color, cat.number);
   const dexLabel = formatDexNumber(cat.number);
 
@@ -25,7 +25,7 @@ export function CatDexCard({ cat, onPress }: Props) {
       meta={formatCaptureTime(cat.discoveredAt)}
       dexLabel={dexLabel}
       badges={[cat.analysis.coat, cat.analysis.color].filter(Boolean)}
-      tint={themeSoft(theme, scheme)}
+      tint={themeSoft(theme)}
       accentColor={`${theme.hex}88`}
       badgeColor={theme.badge}
       badgeBackground={`${theme.hex}33`}
@@ -34,3 +34,5 @@ export function CatDexCard({ cat, onPress }: Props) {
     />
   );
 }
+
+export const CatDexCard = memo(CatDexCardComponent);

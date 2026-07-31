@@ -12,6 +12,7 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { Text } from '@/components/Text';
 import { CatMap } from '@/components/maps/CatMap';
+import { MapHudSpacer, MapSideButton } from '@/components/maps/MapSideButton';
 import { isInParis20e, PARIS_20E } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
 import { useAuthStore } from '@/store/auth';
@@ -184,8 +185,7 @@ export default function MapScreen() {
             </View>
           </View>
 
-          {/* Spacer matching avatar width so logo stays centered */}
-          <View style={{ width: spacing[48] }} />
+          <MapHudSpacer />
         </View>
 
         {/* Vertical side actions — top right */}
@@ -316,6 +316,7 @@ export default function MapScreen() {
               borderWidth: 1,
               borderColor: colors.border,
               padding: spacing[16],
+              gap: spacing[16],
               opacity: pressed ? 0.96 : 1,
               transform: [{ scale: pressed ? 0.99 : 1 }],
             },
@@ -327,7 +328,7 @@ export default function MapScreen() {
               width: spacing[64],
               height: spacing[64],
               borderRadius: radius.md,
-              backgroundColor: themeSoft(nearbyTheme, scheme),
+              backgroundColor: themeSoft(nearbyTheme),
             }}
           />
           <View style={{ flex: 1, gap: spacing[8] }}>
@@ -388,47 +389,6 @@ export default function MapScreen() {
   );
 }
 
-function MapSideButton({
-  icon,
-  onPress,
-  accessibilityLabel,
-  active,
-}: {
-  icon: React.ReactNode;
-  onPress: () => void;
-  accessibilityLabel: string;
-  active?: boolean;
-}) {
-  const { colors, spacing, radius } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ selected: !!active }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        {
-          width: spacing[48],
-          height: spacing[48],
-          borderRadius: radius.full,
-          backgroundColor: active ? colors.accentSoft : colors.surface,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: active ? colors.accent : colors.border,
-          opacity: pressed ? 0.88 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-          // Flat — no drop shadow (reference UI)
-          shadowOpacity: 0,
-          elevation: 0,
-        },
-      ]}
-    >
-      {icon}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1 },
   hud: {
@@ -478,6 +438,5 @@ const styles = StyleSheet.create({
     zIndex: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
   },
 });

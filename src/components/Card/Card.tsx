@@ -1,7 +1,5 @@
-import { BlurView } from 'expo-blur';
 import {
   Pressable,
-  StyleSheet,
   View,
   type StyleProp,
   type ViewStyle,
@@ -52,46 +50,4 @@ export function Card({ children, onPress, style, padded = true }: CardBaseProps)
   }
 
   return content;
-}
-
-/**
- * Glass surface — kept for atmospheric panels (blur + glassFill).
- * Prefer Card for dense content lists.
- */
-export function GlassCard({ children, onPress, style, padded = true }: CardBaseProps) {
-  const { colors, spacing, radius, shadow, motion } = useTheme();
-
-  const body = (
-    <View
-      style={[
-        {
-          borderRadius: radius.lg,
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: colors.border,
-        },
-        shadow.low,
-        style,
-      ]}
-    >
-      <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
-      <View style={{ padding: padded ? spacing[16] : 0, backgroundColor: colors.glassFill }}>
-        {children}
-      </View>
-    </View>
-  );
-
-  if (onPress) {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        style={({ pressed }) => [{ transform: [{ scale: pressed ? motion.cardPressScale : 1 }] }]}
-      >
-        {body}
-      </Pressable>
-    );
-  }
-
-  return body;
 }

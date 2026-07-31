@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { XPBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
+import { levelFromCatsCount, XP_MAX, xpFromProgress } from '@/lib/progression';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -17,9 +18,9 @@ export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
   const catsCount = useCatsStore((state) => state.cats.length);
-  const level = Math.max(1, Math.floor(catsCount / 3) + 1);
-  const xp = (catsCount % 3) * 40;
-  const xpMax = 120;
+  const level = levelFromCatsCount(catsCount);
+  const xp = xpFromProgress(catsCount);
+  const xpMax = XP_MAX;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>

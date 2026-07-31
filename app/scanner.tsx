@@ -1,12 +1,9 @@
-import { BlurView } from 'expo-blur';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Image,
   Linking,
   Platform,
   Pressable,
@@ -23,21 +20,21 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
-import { PageLoading, Skeleton } from '@/components/Loader';
+import { PageLoading } from '@/components/Loader';
 import { ScanFrame } from '@/components/ScanFrame';
+import { ScannerReveal } from '@/components/scanner/ScannerReveal';
+import { ScannerReview } from '@/components/scanner/ScannerReview';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { analyzeCatPhoto } from '@/lib/api';
 import {
   CATDEX_TARGET,
   formatCatDefaultName,
-  formatDexNumber,
   isInParis20e,
   PARIS_20E,
 } from '@/lib/constants';
-import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import { getCaptureLocation } from '@/lib/location';
 import { useCatsStore } from '@/store/cats';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -46,7 +43,7 @@ import type { CatAnalysis } from '@/types/cat';
 type Step = 'camera' | 'review' | 'reveal';
 
 export default function ScannerScreen() {
-  const { colors, fonts, spacing, radius, shadow, motion, scheme } = useTheme();
+  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const showToast = useToastStore((state) => state.show);
@@ -117,26 +114,8 @@ export default function ScannerScreen() {
     opacity: blurAmount.value,
   }));
 
-  const ensureLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        return Location.getCurrentPositionAsync({});
-      }
-    } catch {
-      // fallback
-    }
-    return {
-      coords: {
-        latitude: PARIS_20E.center.latitude,
-        longitude: PARIS_20E.center.longitude,
-      },
-    } as Location.LocationObject;
-  };
-
   const enterReveal = async (nextAnalysis: CatAnalysis, imageUri: string, mocked?: boolean) => {
-    const position = await ensureLocation();
-    const { latitude, longitude } = position.coords;
+    const { latitude, longitude } = await getCaptureLocation();
     setCoords({ latitude, longitude });
     setAnalysis(nextAnalysis);
     setPhotoUri(imageUri);
@@ -310,195 +289,31 @@ export default function ScannerScreen() {
   }
 
   if (step === 'reveal' && photoUri && analysis) {
-    const theme = themeFromColorLabel(analysis.color, nextNumber);
-    const dexLabel = formatDexNumber(nextNumber);
-    const displayName =
-      analysis.suggestedName?.trim() || formatCatDefaultName(nextNumber);
-
     return (
-      <View
-        style={[
-          styles.root,
-          {
-            backgroundColor: colors.background,
-            paddingTop: insets.top + spacing[24],
-            paddingHorizontal: spacing[24],
-          },
-        ]}
-      >
-        <View style={{ alignItems: 'center', gap: spacing[4], marginBottom: spacing[16] }}>
-          <Text variant="label" color="accent" align="center">
-            Nouveau CatDex
-          </Text>
-          <Text
-            variant="display"
-            align="center"
-            style={{ fontFamily: fonts.display, color: colors.text }}
-          >
-            {dexLabel}
-          </Text>
-        </View>
-
-        <Animated.View style={[revealCardStyle, { alignItems: 'center', width: '100%' }]}>
-          <View
-            style={[
-              {
-                padding: spacing[8],
-                borderRadius: radius['2xl'],
-                backgroundColor: themeSoft(theme, scheme),
-                overflow: 'hidden',
-              },
-              shadow.medium,
-            ]}
-          >
-            <View>
-              <Image
-                source={{ uri: photoUri }}
-                style={{
-                  width: spacing[96] * 2,
-                  height: spacing[96] * 2,
-                  borderRadius: radius.xl,
-                }}
-              />
-              <Animated.View
-                pointerEvents="none"
-                style={[StyleSheet.absoluteFill, blurOverlayStyle, { borderRadius: radius.xl }]}
-              >
-                {Platform.OS === 'web' ? (
-                  <View
-                    style={[
-                      StyleSheet.absoluteFill,
-                      { backgroundColor: colors.overlay, borderRadius: radius.xl },
-                    ]}
-                  />
-                ) : (
-                  <BlurView
-                    intensity={48}
-                    tint="dark"
-                    style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
-                  />
-                )}
-              </Animated.View>
-            </View>
-          </View>
-
-          <Text
-            variant="h2"
-            align="center"
-            style={{ marginTop: spacing[24], fontFamily: fonts.display }}
-          >
-            {displayName}
-          </Text>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: spacing[8],
-              marginTop: spacing[16],
-            }}
-          >
-            <Badge label={analysis.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-            <Badge label={analysis.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-            <Badge label={analysis.coat} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-          </View>
-
-          <Text
-            variant="body"
-            color="textBody"
-            align="center"
-            style={{
-              marginTop: spacing[16],
-              paddingHorizontal: spacing[8],
-              fontFamily: fonts.body,
-            }}
-          >
-            {analysis.description}
-          </Text>
-        </Animated.View>
-
-        <View
-          style={{
-            marginTop: 'auto',
-            paddingBottom: Math.max(insets.bottom, spacing[16]),
-            gap: spacing[8],
-          }}
-        >
-          <Button title="Ajouter au CatDex" onPress={handleAddToCatDex} />
-          <Button title="Reprendre la photo" variant="ghost" onPress={resetToCamera} />
-        </View>
-      </View>
+      <ScannerReveal
+        photoUri={photoUri}
+        analysis={analysis}
+        nextNumber={nextNumber}
+        insets={insets}
+        revealCardStyle={revealCardStyle}
+        blurOverlayStyle={blurOverlayStyle}
+        onAdd={() => void handleAddToCatDex()}
+        onRetake={resetToCamera}
+      />
     );
   }
 
   if (step === 'review' && photoUri) {
     return (
-      <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[16], gap: spacing[8] }}>
-          <Text variant="h2">{analyzing ? 'Préparation…' : 'Presque'}</Text>
-          <Text variant="bodySmall" color="textSecondary">
-            {analyzing
-              ? 'Ta Cat Card se prépare. Un instant.'
-              : 'Relance l’analyse ou reprends une photo.'}
-          </Text>
-        </View>
-
-        <View
-          style={{
-            marginHorizontal: spacing[24],
-            marginTop: spacing[24],
-            borderRadius: radius.xl,
-            overflow: 'hidden',
-            backgroundColor: colors.surfaceSecondary,
-          }}
-        >
-          <Image
-            source={{ uri: photoUri }}
-            style={{ width: '100%', height: spacing[96] * 2 + spacing[64] }}
-          />
-          {analyzing ? (
-            <View
-              style={{
-                position: 'absolute',
-                left: spacing[16],
-                right: spacing[16],
-                bottom: spacing[16],
-                gap: spacing[8],
-              }}
-            >
-              <Skeleton height={spacing[16]} width="55%" />
-              <Skeleton height={spacing[8]} width="80%" />
-              <Skeleton height={spacing[8]} width="40%" />
-            </View>
-          ) : null}
-        </View>
-
-        <View
-          style={{
-            marginTop: 'auto',
-            paddingHorizontal: spacing[24],
-            paddingBottom: insets.bottom + spacing[16],
-            gap: spacing[8],
-          }}
-        >
-          {analyzing ? (
-            <View style={{ alignItems: 'center', gap: spacing[16], paddingVertical: spacing[16] }}>
-              <Text variant="bodySmall" color="textSecondary">
-                Révélation en cours…
-              </Text>
-            </View>
-          ) : (
-            <>
-              <Button
-                title="Relancer l’analyse"
-                onPress={() => photoBase64 && photoUri && runAnalysis(photoBase64, photoUri)}
-              />
-              <Button title="Reprendre" variant="ghost" onPress={resetToCamera} />
-            </>
-          )}
-        </View>
-      </View>
+      <ScannerReview
+        photoUri={photoUri}
+        analyzing={analyzing}
+        insets={insets}
+        onRetry={() => {
+          if (photoBase64 && photoUri) void runAnalysis(photoBase64, photoUri);
+        }}
+        onRetake={resetToCamera}
+      />
     );
   }
 

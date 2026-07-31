@@ -7,6 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { formatDexNumber } from '@/lib/constants';
+import { themeFromColorLabel } from '@/lib/catTheme';
 import { useAuthStore, getPostAuthHref } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -23,27 +25,27 @@ const FLOATING_CARDS: {
 }[] = [
   {
     source: require('../../assets/welcome-cat.jpg'),
-    dex: '#003',
+    dex: formatDexNumber(3),
     name: 'Moka',
-    tint: '#E8F8F2',
+    tint: themeFromColorLabel('mint').soft,
     rotate: '-10deg',
     side: 'left',
     top: 'safe',
   },
   {
     source: require('../../assets/welcome-hero.jpg'),
-    dex: '#007',
+    dex: formatDexNumber(7),
     name: 'Nori',
-    tint: '#EAF6FC',
+    tint: themeFromColorLabel('siamois').soft,
     rotate: '8deg',
     side: 'right',
     top: 'safe',
   },
   {
     source: require('../../assets/welcome-cat.png'),
-    dex: '#012',
+    dex: formatDexNumber(12),
     name: 'Pacha',
-    tint: '#FFF3EC',
+    tint: themeFromColorLabel('roux').soft,
     rotate: '-6deg',
     side: 'left',
     top: 'mid',

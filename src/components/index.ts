@@ -1,16 +1,8 @@
 export { Text, type TextProps } from './Text';
-export {
-  Button,
-  PrimaryButton,
-  SecondaryButton,
-  GhostButton,
-  type ButtonProps,
-  type ButtonVariant,
-} from './Button';
-export { TextInput, SearchInput, Textarea, type AppTextInputProps } from './Input';
+export { Button, type ButtonProps, type ButtonVariant } from './Button';
+export { TextInput, SearchInput, type AppTextInputProps } from './Input';
 export {
   Card,
-  GlassCard,
   PhotoCard,
   StatCard,
   type PhotoCardProps,
@@ -24,9 +16,5 @@ export { BottomSheet, type BottomSheetProps } from './BottomSheet';
 export { Spinner, Skeleton, PageLoading } from './Loader';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { Toast, ToastHost, type ToastProps } from './Toast';
-export { Modal, type AppModalProps } from './Modal';
 export { ScanFrame } from './ScanFrame';
-export { GlassIconButton, type GlassIconButtonProps } from './GlassIconButton';
-/** @see CatCard thin alias — prefer CatDexCard */
-export { CatCard } from './CatCard';
 export { CatDexCard } from './CatDexCard';

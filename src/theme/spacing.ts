@@ -28,9 +28,3 @@ export const spacing = {
   '4xl': 64,
   '5xl': 96,
 } as const;
-
-export function assertSpacing(value: number): asserts value is SpacingValue {
-  if (!(spacingScale as readonly number[]).includes(value)) {
-    throw new Error(`Spacing ${value} is outside the 8pt grid`);
-  }
-}

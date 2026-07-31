@@ -5,6 +5,7 @@ import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
 import { ProgressBar, XPBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
+import { levelFromCatsCount, XP_MAX, xpFromProgress } from '@/lib/progression';
 import { useCatsStore } from '@/store/cats';
 import { useMissionsStore } from '@/store/missions';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -15,9 +16,9 @@ export default function MissionsScreen() {
   const missions = useMissionsStore((state) => state.missions);
   const catsCount = useCatsStore((state) => state.cats.length);
   const done = missions.filter((m) => m.completed).length;
-  const level = Math.max(1, Math.floor(catsCount / 3) + 1);
-  const xp = (catsCount % 3) * 40 + done * 20;
-  const xpMax = 120;
+  const level = levelFromCatsCount(catsCount);
+  const xp = xpFromProgress(catsCount, done);
+  const xpMax = XP_MAX;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
