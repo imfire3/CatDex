@@ -55,7 +55,7 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
+  const [loaded, error] = useFonts({
     Syne_600SemiBold,
     Syne_700Bold,
     Manrope_500Medium,
@@ -63,24 +63,26 @@ export default function RootLayout() {
     Manrope_700Bold,
     Manrope_800ExtraBold,
   });
+  // Don't block forever on font fetch failures (Expo Go / tunnels).
+  const fontsReady = loaded || !!error;
 
   useEffect(() => {
-    if (loaded) {
+    if (fontsReady) {
       SplashScreen.hideAsync().catch(() => undefined);
     }
-  }, [loaded]);
+  }, [fontsReady]);
 
-  if (!loaded) {
+  if (!fontsReady) {
     return (
       <View
         style={{
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: palette.dark.background,
+          backgroundColor: palette.light.background,
         }}
       >
-        <Spinner color={palette.dark.accent} />
+        <Spinner color={palette.light.accent} />
       </View>
     );
   }
