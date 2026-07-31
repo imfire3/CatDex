@@ -1,25 +1,47 @@
 import { router } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { XPBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
+import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function ProfileScreen() {
-  const { colors, fonts, spacing, radius, shadow, gradients } = useTheme();
+  const { colors, fonts, spacing, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
+  const showToast = useToastStore((state) => state.show);
   const catsCount = useCatsStore((state) => state.cats.length);
   const level = Math.max(1, Math.floor(catsCount / 3) + 1);
   const xp = (catsCount % 3) * 40;
   const xpMax = 120;
+
+  const handleSignOut = () => {
+    Alert.alert('Se déconnecter ?', 'Tu pourras te reconnecter pour retrouver ton CatDex.', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Se déconnecter',
+        style: 'destructive',
+        onPress: () => {
+          signOut();
+          showToast({
+            title: 'À bientôt',
+            description: 'Tu es déconnecté.',
+            tone: 'default',
+          });
+          router.replace('/(auth)/welcome');
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
@@ -40,35 +62,13 @@ export default function ProfileScreen() {
               gap: spacing[16],
             }}
           >
-            <View
-              style={[
-                {
-                  width: spacing[96],
-                  height: spacing[96],
-                  borderRadius: radius.full,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 3,
-                  borderColor: colors.accent,
-                  overflow: 'hidden',
-                },
-                shadow.glow,
-              ]}
-            >
-              <LinearGradient
-                colors={[gradients.primary[0], gradients.primary[1]]}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text variant="h1" color="onAccent">
-                  {(user?.displayName ?? 'E').slice(0, 1).toUpperCase()}
-                </Text>
-              </LinearGradient>
-            </View>
+            <Avatar
+              hero
+              gradient
+              accentBorder
+              initials={(user?.displayName ?? 'E').slice(0, 1).toUpperCase()}
+              accessibilityLabel={user?.displayName ?? 'Profil'}
+            />
             <Text variant="h2">{user?.displayName ?? 'Explorateur'}</Text>
             <Text variant="bodySmall" color="textSecondary">
               {user?.email}
@@ -112,10 +112,7 @@ export default function ProfileScreen() {
         <Button
           title="Se déconnecter"
           variant="secondary"
-          onPress={() => {
-            signOut();
-            router.replace('/(auth)/welcome');
-          }}
+          onPress={handleSignOut}
         />
       </ScrollView>
     </View>

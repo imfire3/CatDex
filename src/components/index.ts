@@ -11,13 +11,9 @@ export { TextInput, SearchInput, Textarea, type AppTextInputProps } from './Inpu
 export {
   Card,
   GlassCard,
-  ImageCard,
   PhotoCard,
-  GalleryCard,
   StatCard,
-  type ImageCardProps,
   type PhotoCardProps,
-  type GalleryCardProps,
   type StatCardProps,
 } from './Card';
 export { ProgressBar, XPBar, SectionHeader } from './Progress';
@@ -27,7 +23,10 @@ export { Chip, type ChipProps } from './Chip';
 export { BottomSheet, type BottomSheetProps } from './BottomSheet';
 export { Spinner, Skeleton, PageLoading } from './Loader';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
-export { Toast, type ToastProps } from './Toast';
+export { Toast, ToastHost, type ToastProps } from './Toast';
 export { Modal, type AppModalProps } from './Modal';
 export { ScanFrame } from './ScanFrame';
-export { StatBar } from './StatBar';
+export { GlassIconButton, type GlassIconButtonProps } from './GlassIconButton';
+/** @see CatCard thin alias — prefer CatDexCard */
+export { CatCard } from './CatCard';
+export { CatDexCard } from './CatDexCard';

@@ -14,8 +14,7 @@ export type BadgeProps = {
 };
 
 /**
- * Small pill badges — height 24, radius full, paddingH 12.
- * Color matches the card, slightly darker.
+ * Small pill badges — height 24, radius full, paddingH 8 (8pt grid).
  */
 export function Badge({ label, variant = 'default', color, backgroundColor }: BadgeProps) {
   const { colors, spacing, radius, fonts } = useTheme();
@@ -48,7 +47,7 @@ export function Badge({ label, variant = 'default', color, backgroundColor }: Ba
         height: spacing[24],
         backgroundColor: resolvedBg,
         borderRadius: radius.full,
-        paddingHorizontal: 12,
+        paddingHorizontal: spacing[8],
         justifyContent: 'center',
       }}
     >

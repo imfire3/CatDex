@@ -18,6 +18,9 @@ export const PARIS_20E = {
 
 export const SLOGAN = 'Explore ton quartier, capture les chats et construis ton CatDex.';
 
+/** Product-defined CatDex completion target (ghost slots + progress). */
+export const CATDEX_TARGET = 50;
+
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
 
@@ -32,8 +35,12 @@ export function isInParis20e(latitude: number, longitude: number): boolean {
   );
 }
 
+export function formatDexNumber(number: number): string {
+  return `#${String(number).padStart(3, '0')}`;
+}
+
 export function formatCatDefaultName(number: number): string {
-  return `Chat #${String(number).padStart(3, '0')}`;
+  return `Chat ${formatDexNumber(number)}`;
 }
 
 export function formatCaptureTime(iso: string): string {
@@ -45,4 +52,26 @@ export function formatCaptureTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+/** Haversine distance in meters between two WGS84 points. */
+export function distanceMeters(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const earth = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * earth * Math.asin(Math.sqrt(a));
+}
+
+export function formatDistanceMeters(meters: number): string {
+  if (meters < 1000) return `${Math.max(1, Math.round(meters))} m`;
+  return `${(meters / 1000).toFixed(1).replace('.', ',')} km`;
 }

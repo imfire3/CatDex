@@ -1,8 +1,7 @@
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -15,28 +14,87 @@ import Svg, { Path } from 'react-native-svg';
 import { Badge } from '@/components/Badge';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
-import { Chip } from '@/components/Chip';
+import { EmptyState } from '@/components/EmptyState';
 import { Text } from '@/components/Text';
 import { CatMap } from '@/components/maps/CatMap';
-import { isInParis20e } from '@/lib/constants';
+import {
+  distanceMeters,
+  formatCaptureTime,
+  formatDexNumber,
+  formatDistanceMeters,
+  isInParis20e,
+} from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
 import { useCatsStore } from '@/store/cats';
+import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-type FilterId = 'nearby' | 'rare' | 'seen';
+type UserCoords = { latitude: number; longitude: number };
 
 export default function MapScreen() {
   const { colors, fonts, scheme, spacing, radius, shadow, iconStroke, iconSize } = useTheme();
   const insets = useSafeAreaInsets();
   const cats = useCatsStore((state) => state.cats);
+  const showToast = useToastStore((state) => state.show);
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
-  const [filter, setFilter] = useState<FilterId>('nearby');
   const [query, setQuery] = useState('');
+  const [userCoords, setUserCoords] = useState<UserCoords | null>(null);
 
-  const nearby = cats[0] ?? null;
+  const filteredCats = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return cats;
+    return cats.filter((cat) => {
+      const haystack = [
+        cat.name,
+        cat.analysis.breed,
+        cat.analysis.color,
+        cat.analysis.coat,
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [cats, query]);
+
+  const nearby = useMemo(() => {
+    if (filteredCats.length === 0) return null;
+    if (!userCoords) {
+      return [...filteredCats].sort(
+        (a, b) => new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime(),
+      )[0];
+    }
+    return [...filteredCats].sort(
+      (a, b) =>
+        distanceMeters(userCoords.latitude, userCoords.longitude, a.latitude, a.longitude) -
+        distanceMeters(userCoords.latitude, userCoords.longitude, b.latitude, b.longitude),
+    )[0];
+  }, [filteredCats, userCoords]);
+
   const nearbyTheme = nearby ? themeFromColorLabel(nearby.analysis.color, nearby.number) : null;
+  const nearbyDistance =
+    nearby && userCoords
+      ? distanceMeters(
+          userCoords.latitude,
+          userCoords.longitude,
+          nearby.latitude,
+          nearby.longitude,
+        )
+      : null;
+
+  const selectedTheme = selected
+    ? themeFromColorLabel(selected.analysis.color, selected.number)
+    : null;
+  const selectedDistance =
+    selected && userCoords
+      ? distanceMeters(
+          userCoords.latitude,
+          userCoords.longitude,
+          selected.latitude,
+          selected.longitude,
+        )
+      : null;
 
   useEffect(() => {
     let mounted = true;
@@ -45,27 +103,44 @@ export default function MapScreen() {
       if (status !== 'granted' || !mounted) return;
       const position = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = position.coords;
-      if (!isInParis20e(latitude, longitude) && mounted && __DEV__) {
-        Alert.alert(
-          'Hors du 20e',
-          'Tu es hors de la zone de test (Paris 20e). En développement, les captures restent autorisées.',
-        );
+      if (!mounted) return;
+      setUserCoords({ latitude, longitude });
+      if (!isInParis20e(latitude, longitude) && __DEV__) {
+        showToast({
+          title: 'Hors du 20e',
+          description: 'Zone de test : les captures restent autorisées en développement.',
+          tone: 'warning',
+        });
       }
     })().catch(() => undefined);
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [showToast]);
+
+  const handleSelectCat = (item: Cat) => {
+    setSelected(item);
+    setSheetVisible(true);
+  };
+
+  const handleCloseSheet = () => {
+    setSheetVisible(false);
+    setSelected(null);
+  };
+
+  const handleOpenDetails = () => {
+    if (!selected) return;
+    setSheetVisible(false);
+    router.push(`/cat/${selected.id}`);
+  };
 
   return (
     <View style={styles.root}>
       <CatMap
-        cats={cats}
+        cats={filteredCats}
         scheme={scheme}
-        onSelectCat={(item) => {
-          setSelected(item);
-          setSheetVisible(true);
-        }}
+        selectedCatId={selected?.id ?? null}
+        onSelectCat={handleSelectCat}
       />
 
       <View
@@ -75,49 +150,25 @@ export default function MapScreen() {
           {
             paddingTop: insets.top + spacing[8],
             paddingHorizontal: spacing[24],
-            gap: spacing[16],
+            gap: spacing[8],
           },
         ]}
       >
-        <View style={styles.headerRow}>
-          <View style={{ gap: spacing[4], flex: 1 }}>
-            <Text variant="label" color="accent">
-              Exploring
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-              <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
-                  stroke={colors.text}
-                  strokeWidth={iconStroke.regular}
-                  strokeLinejoin="round"
-                />
-                <Path
-                  d="M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-                  stroke={colors.text}
-                  strokeWidth={iconStroke.regular}
-                />
-              </Svg>
-              <Text variant="h2">Paris 20e</Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: spacing[8] }}>
-            <GlassIconButton
-              onPress={() => undefined}
-              accessibilityLabel="Réglages"
-              icon={
-                <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M4 7h16M7 12h10M10 17h4"
-                    stroke={colors.text}
-                    strokeWidth={iconStroke.regular}
-                    strokeLinecap="round"
-                  />
-                </Svg>
-              }
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
+              stroke={colors.text}
+              strokeWidth={iconStroke.regular}
+              strokeLinejoin="round"
             />
-          </View>
+            <Path
+              d="M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+              stroke={colors.text}
+              strokeWidth={iconStroke.regular}
+            />
+          </Svg>
+          <Text variant="h3">Paris 20e</Text>
         </View>
 
         <View
@@ -126,7 +177,7 @@ export default function MapScreen() {
               flexDirection: 'row',
               alignItems: 'center',
               gap: spacing[8],
-              backgroundColor: colors.surface,
+              backgroundColor: colors.glassFill,
               borderRadius: radius.full,
               borderWidth: 1,
               borderColor: colors.border,
@@ -147,8 +198,9 @@ export default function MapScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search cats or areas"
+            placeholder="Rechercher un chat…"
             placeholderTextColor={colors.placeholder}
+            accessibilityLabel="Rechercher un chat"
             style={{
               flex: 1,
               color: colors.text,
@@ -158,24 +210,33 @@ export default function MapScreen() {
             }}
           />
         </View>
-
-        <View style={{ flexDirection: 'row', gap: spacing[8] }}>
-          <Chip
-            label="Nearby"
-            selected={filter === 'nearby'}
-            onPress={() => setFilter('nearby')}
-          />
-          <Chip label="Rare" selected={filter === 'rare'} onPress={() => setFilter('rare')} />
-          <Chip label="Seen" selected={filter === 'seen'} onPress={() => setFilter('seen')} />
-        </View>
       </View>
 
-      {!sheetVisible && nearby && nearbyTheme ? (
+      {cats.length === 0 && !sheetVisible ? (
+        <View
+          pointerEvents="box-none"
+          style={[
+            styles.emptyWrap,
+            {
+              bottom: insets.bottom + spacing[96],
+              paddingHorizontal: spacing[24],
+            },
+          ]}
+        >
+          <EmptyState
+            title="Aucun chat découvert ici"
+            description="Pars explorer ton quartier et capture ton premier chat."
+            actionLabel="Scanner un chat"
+            onAction={() => router.push('/scanner')}
+          />
+        </View>
+      ) : null}
+
+      {!sheetVisible && nearby && nearbyTheme && cats.length > 0 ? (
         <Pressable
-          onPress={() => {
-            setSelected(nearby);
-            setSheetVisible(true);
-          }}
+          accessibilityRole="button"
+          accessibilityLabel={`Chat à proximité, ${nearby.name}`}
+          onPress={() => handleSelectCat(nearby)}
           style={({ pressed }) => [
             styles.nearbyCard,
             {
@@ -195,94 +256,84 @@ export default function MapScreen() {
             style={{
               width: spacing[64],
               height: spacing[64],
-              borderRadius: radius.lg,
+              borderRadius: radius.full,
+              borderWidth: 2,
+              borderColor: nearbyTheme.hex,
               backgroundColor: themeSoft(nearbyTheme, scheme),
             }}
           />
-          <View style={{ flex: 1, gap: spacing[8] }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-              <Text variant="body" style={{ fontFamily: fonts.bodySemi }} numberOfLines={1}>
-                {nearby.name}
-              </Text>
-              <Badge
-                label={nearby.analysis.coat || 'Chat'}
-                color={nearbyTheme.badge}
-                backgroundColor={`${nearbyTheme.hex}33`}
-              />
-            </View>
+          <View style={{ flex: 1, gap: spacing[4] }}>
+            <Text variant="body" style={{ fontFamily: fonts.bodySemi }} numberOfLines={1}>
+              {nearby.name || 'Chat inconnu'}
+            </Text>
             <Text variant="caption" color="textSecondary" numberOfLines={1}>
-              {nearby.analysis.breed} · {nearby.analysis.color}
+              {formatDexNumber(nearby.number)} · {nearby.analysis.breed}
             </Text>
             <Text variant="caption" color="textSecondary">
-              Nouveau signalement à proximité
+              {nearbyDistance != null
+                ? `À ${formatDistanceMeters(nearbyDistance)}`
+                : 'Découverte récente'}
             </Text>
           </View>
         </Pressable>
       ) : null}
 
-      <BottomSheet
-        visible={sheetVisible}
-        onClose={() => {
-          setSheetVisible(false);
-          setSelected(null);
-        }}
-      >
-        {selected ? (
+      <BottomSheet visible={sheetVisible} onClose={handleCloseSheet}>
+        {selected && selectedTheme ? (
           <View style={{ gap: spacing[16] }}>
-            <Text variant="h2">{selected.name}</Text>
-            <Text variant="bodySmall" color="textSecondary">
-              {selected.analysis.breed} · {selected.analysis.color}
+            <View style={{ flexDirection: 'row', gap: spacing[16], alignItems: 'center' }}>
+              <Image
+                source={{ uri: selected.photoUri }}
+                style={{
+                  width: spacing[96],
+                  height: spacing[96],
+                  borderRadius: radius.full,
+                  borderWidth: 3,
+                  borderColor: selectedTheme.hex,
+                  backgroundColor: themeSoft(selectedTheme, scheme),
+                }}
+              />
+              <View style={{ flex: 1, gap: spacing[4] }}>
+                <Text variant="label" color="accent">
+                  CatDex {formatDexNumber(selected.number)}
+                </Text>
+                <Text variant="h2" numberOfLines={1}>
+                  {selected.name?.trim() || 'Chat inconnu'}
+                </Text>
+                <Text variant="bodySmall" color="textSecondary">
+                  {selected.analysis.breed} · {selected.analysis.color}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[8] }}>
+              <Badge
+                label={selected.analysis.coat || 'Chat'}
+                color={selectedTheme.badge}
+                backgroundColor={`${selectedTheme.hex}33`}
+              />
+              {selectedDistance != null ? (
+                <Badge
+                  label={formatDistanceMeters(selectedDistance)}
+                  color={colors.sky}
+                  backgroundColor={colors.skySoft}
+                />
+              ) : null}
+            </View>
+
+            <Text variant="caption" color="textSecondary">
+              Découvert le {formatCaptureTime(selected.discoveredAt)}
             </Text>
+
             <Text variant="body" color="textBody" numberOfLines={3}>
               {selected.analysis.description}
             </Text>
-            <Button
-              title="Voir la fiche"
-              onPress={() => {
-                setSheetVisible(false);
-                router.push(`/cat/${selected.id}`);
-              }}
-            />
+
+            <Button title="Voir la fiche" onPress={handleOpenDetails} />
           </View>
         ) : null}
       </BottomSheet>
     </View>
-  );
-}
-
-function GlassIconButton({
-  icon,
-  onPress,
-  accessibilityLabel,
-}: {
-  icon: React.ReactNode;
-  onPress: () => void;
-  accessibilityLabel: string;
-}) {
-  const { colors, spacing, radius, shadow } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      style={({ pressed }) => [
-        {
-          width: spacing[40],
-          height: spacing[40],
-          borderRadius: radius.full,
-          backgroundColor: colors.surface,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: colors.border,
-          opacity: pressed ? 0.9 : 1,
-          transform: [{ scale: pressed ? 0.96 : 1 }],
-        },
-        shadow.small,
-      ]}
-    >
-      {icon}
-    </Pressable>
   );
 }
 
@@ -295,10 +346,11 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+  emptyWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 15,
   },
   nearbyCard: {
     position: 'absolute',

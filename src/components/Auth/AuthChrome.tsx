@@ -79,26 +79,6 @@ export function AuthHeader({
   );
 }
 
-export function AuthDivider({ label = 'ou' }: { label?: string }) {
-  const { colors, spacing } = useTheme();
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing[8],
-        marginVertical: spacing[8],
-      }}
-    >
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-      <Text variant="caption" color="textSecondary">
-        {label}
-      </Text>
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-    </View>
-  );
-}
-
 export function TermsCheckbox({
   checked,
   onChange,

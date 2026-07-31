@@ -57,7 +57,7 @@ export default function MissionsScreen() {
               {done}/{missions.length}
             </Text>
           </View>
-          <ProgressBar progress={missions.length ? done / missions.length : 0} height={10} />
+          <ProgressBar progress={missions.length ? done / missions.length : 0} height={8} />
         </View>
 
         <View style={{ gap: spacing[16] }}>

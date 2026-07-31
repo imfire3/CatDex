@@ -104,15 +104,15 @@ export default function TabsLayout() {
             ),
           tabBarLabelStyle: {
             fontFamily: fonts.bodySemi,
-            fontSize: 11,
-            marginTop: 2,
+            fontSize: 12,
+            marginTop: spacing[4],
           },
         }}
       >
         <Tabs.Screen
           name="map"
           options={{
-            title: 'Explore',
+            title: 'Explorer',
             tabBarIcon: ({ color, focused }) => (
               <TabIcon name="map" color={String(color)} focused={focused} />
             ),

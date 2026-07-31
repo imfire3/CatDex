@@ -13,6 +13,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Spinner } from '@/components/Loader';
+import { ToastHost } from '@/components/Toast';
 import { useMissionSync } from '@/hooks/useMissionSync';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/colors';
@@ -24,36 +25,31 @@ function RootNavigator() {
   useMissionSync();
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
-        animation: 'slide_from_right',
-      }}
-    >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(auth)/welcome" />
-      <Stack.Screen name="(auth)/signup" />
-      <Stack.Screen name="(auth)/login" />
-      <Stack.Screen name="(auth)/intro" />
-      <Stack.Screen name="(auth)/permissions" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="scanner"
-        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
-      />
-      <Stack.Screen
-        name="discovery"
-        options={{ presentation: 'fullScreenModal', animation: 'fade' }}
-      />
-      <Stack.Screen
-        name="cat/[id]"
-        options={{
+    <>
+      <Stack
+        screenOptions={{
           headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
           animation: 'slide_from_right',
         }}
-      />
-    </Stack>
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="scanner"
+          options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="cat/[id]"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        />
+      </Stack>
+      <ToastHost />
+    </>
   );
 }
 

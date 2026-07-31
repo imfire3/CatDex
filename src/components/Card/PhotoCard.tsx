@@ -18,8 +18,12 @@ export type PhotoCardProps = {
   title: string;
   subtitle?: string;
   meta?: string;
+  /** CatDex index label, e.g. #042 */
+  dexLabel?: string;
   badges?: string[];
   tint?: string;
+  /** Coat / rarity accent for card border */
+  accentColor?: string;
   badgeColor?: string;
   badgeBackground?: string;
   onPress?: () => void;
@@ -33,8 +37,10 @@ export function PhotoCard({
   title,
   subtitle,
   meta,
+  dexLabel,
   badges,
   tint,
+  accentColor,
   badgeColor,
   badgeBackground,
   onPress,
@@ -55,8 +61,8 @@ export function PhotoCard({
           borderRadius: radius.xl,
           overflow: 'hidden',
           backgroundColor: surface,
-          borderWidth: 1,
-          borderColor: colors.border,
+          borderWidth: 2,
+          borderColor: accentColor ?? colors.border,
           transform: [{ scale: pressed ? motion.cardPressScale : 1 }],
         },
         shadow.medium,
@@ -66,9 +72,28 @@ export function PhotoCard({
       <View style={{ aspectRatio: 1, backgroundColor: colors.surfaceSecondary }}>
         <Image source={source} style={StyleSheet.absoluteFill} />
         <LinearGradient
-          colors={['transparent', 'rgba(6,8,22,0.75)']}
+          colors={['transparent', colors.overlay]}
           style={StyleSheet.absoluteFill}
         />
+        {dexLabel ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: spacing[8],
+              left: spacing[8],
+              paddingHorizontal: spacing[8],
+              paddingVertical: spacing[4],
+              borderRadius: radius.full,
+              backgroundColor: colors.glassFill,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text variant="caption" color="accent" style={{ fontFamily: fonts.bodySemi }}>
+              {dexLabel}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={{ padding: spacing[16], gap: spacing[8] }}>
