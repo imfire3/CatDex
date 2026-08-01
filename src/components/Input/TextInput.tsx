@@ -131,7 +131,7 @@ export function TextInput({
   onBlur,
   ...rest
 }: AppTextInputProps) {
-  const { colors, fonts, typography } = useTheme();
+  const { colors, fonts, typography, spacing } = useTheme();
   const [focused, setFocused] = useState(false);
   const filled = Boolean(rest.value != null && String(rest.value).length > 0);
 
@@ -151,6 +151,8 @@ export function TextInput({
       <RNTextInput
         editable={!disabled}
         placeholderTextColor={colors.placeholder}
+        selectionColor={colors.accent}
+        cursorColor={colors.accent}
         accessibilityState={{ disabled: !!disabled }}
         onFocus={(event) => {
           setFocused(true);
@@ -162,16 +164,17 @@ export function TextInput({
         }}
         style={[
           {
+            flex: 1,
             width: '100%',
+            minHeight: spacing[56] - 2,
             color: colors.text,
             fontFamily: fonts.body,
             fontSize: typography.body.fontSize,
-            lineHeight: typography.body.lineHeight,
-            paddingVertical: 0,
+            // Avoid lineHeight on iOS TextInput — it breaks the caret.
+            paddingVertical: spacing[16],
             margin: 0,
             textAlign: 'left',
             textAlignVertical: 'center',
-            includeFontPadding: false,
           },
           style,
         ]}
@@ -214,5 +217,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignSelf: 'stretch',
+    minHeight: 56,
   },
 });
