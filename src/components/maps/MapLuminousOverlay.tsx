@@ -1,31 +1,28 @@
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { useTheme } from '@/theme';
+import { mapPalette } from './mapPalette';
 
 /**
- * Soft luminous veil over map tiles — breaks the raw GPS look without
- * competing with markers.
+ * Soft cream luminous veil — breaks the raw GPS look without washing markers.
  */
 export function MapLuminousOverlay() {
-  const { colors } = useTheme();
-
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <LinearGradient
         colors={[
-          'rgba(248, 248, 246, 0.22)',
-          'rgba(255, 255, 255, 0.08)',
-          'rgba(46, 201, 195, 0.05)',
-          'rgba(248, 248, 246, 0.18)',
+          'rgba(248, 248, 245, 0.28)',
+          'rgba(255, 255, 255, 0.06)',
+          'rgba(46, 201, 195, 0.04)',
+          'rgba(248, 248, 245, 0.22)',
         ]}
-        locations={[0, 0.35, 0.7, 1]}
+        locations={[0, 0.32, 0.68, 1]}
         style={StyleSheet.absoluteFill}
       />
       <View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: colors.surface, opacity: 0.04 },
+          { backgroundColor: mapPalette.land, opacity: 0.05 },
         ]}
       />
     </View>

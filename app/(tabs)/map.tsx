@@ -8,6 +8,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { BottomSheet } from '@/components/BottomSheet';
+import { BrandLogo } from '@/components/BrandLogo';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { Text } from '@/components/Text';
@@ -168,14 +169,7 @@ export default function MapScreen() {
           </Pressable>
 
           <View style={styles.wordmark} pointerEvents="none">
-            <Text
-              variant="h2"
-              align="center"
-              color="textBrand"
-              style={{ fontFamily: fonts.display }}
-            >
-              CatDex
-            </Text>
+            <BrandLogo size={40} />
           </View>
 
           <View style={{ flexDirection: 'row', gap: spacing[8], zIndex: 2 }}>

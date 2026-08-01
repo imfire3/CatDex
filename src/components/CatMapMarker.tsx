@@ -23,31 +23,31 @@ type Props = {
 };
 
 /**
- * CatDex map marker — round avatar, white ring, soft halo,
- * float + pulse (Reanimated), bounce on appear.
+ * CatDex map marker — round avatar, white ring, luminous halo,
+ * bounce on appear + short float/pulse (then freeze for map FPS).
  */
 function CatMapMarkerComponent({ cat, onPress }: Props) {
   const { colors, spacing, shadow } = useTheme();
   const size = spacing[48];
-  const haloSize = size + spacing[16];
+  const haloSize = size + spacing[24];
 
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
   const appear = useSharedValue(0);
   const floatY = useSharedValue(0);
-  const pulse = useSharedValue(0.7);
+  const pulse = useSharedValue(0.65);
 
   useEffect(() => {
     appear.value = withSpring(1, motionEasing.bouncy);
     floatY.value = withDelay(
-      motionDuration.slow,
+      motionDuration.normal,
       withRepeat(
         withSequence(
-          withTiming(-3, {
-            duration: motionDuration.slow + 80,
+          withTiming(-4, {
+            duration: 260,
             easing: Easing.inOut(Easing.sin),
           }),
           withTiming(0, {
-            duration: motionDuration.slow + 80,
+            duration: 260,
             easing: Easing.inOut(Easing.sin),
           }),
         ),
@@ -56,10 +56,10 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
       ),
     );
     pulse.value = withDelay(
-      motionDuration.normal,
+      motionDuration.fast,
       withRepeat(
         withTiming(1, {
-          duration: motionDuration.slow + 40,
+          duration: 280,
           easing: Easing.inOut(Easing.ease),
         }),
         -1,
@@ -67,8 +67,8 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
       ),
     );
 
-    // Keep bitmap updates long enough for enter + a few float frames, then freeze for perf.
-    const freeze = setTimeout(() => setTracksViewChanges(false), 2200);
+    // Appear + a few float frames, then freeze bitmap for scroll FPS.
+    const freeze = setTimeout(() => setTracksViewChanges(false), 1400);
     return () => clearTimeout(freeze);
   }, [appear, floatY, pulse]);
 
@@ -76,13 +76,13 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
     opacity: appear.value,
     transform: [
       { translateY: floatY.value },
-      { scale: 0.72 + appear.value * 0.28 },
+      { scale: 0.68 + appear.value * 0.32 },
     ],
   }));
 
   const haloStyle = useAnimatedStyle(() => ({
-    opacity: 0.12 + pulse.value * 0.16,
-    transform: [{ scale: 0.9 + pulse.value * 0.18 }],
+    opacity: 0.18 + pulse.value * 0.22,
+    transform: [{ scale: 0.88 + pulse.value * 0.22 }],
   }));
 
   return (

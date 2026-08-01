@@ -1,16 +1,18 @@
 /**
- * CatDex Google Maps JSON style — soft game-world look.
+ * CatDex Google Maps JSON style v2 — soft luminous game world.
  * Applied via `customMapStyle` (Google provider only; ignored by Apple Maps).
- *
- * Artistic map palette (map tiles only — not app chrome tokens):
- * land #F8F8F6 · parks pastel green · water soft turquoise · muted roads/buildings
  */
 import type { MapStyleElement } from 'react-native-maps';
 
+import { mapPalette as p } from './mapPalette';
+
 export const catdexMapStyle: MapStyleElement[] = [
-  { elementType: 'geometry', stylers: [{ color: '#F8F8F6' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#B8BCC4' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#F8F8F6' }, { weight: 2 }] },
+  { elementType: 'geometry', stylers: [{ color: p.land }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: p.label }] },
+  {
+    elementType: 'labels.text.stroke',
+    stylers: [{ color: p.labelStroke }, { weight: 3 }],
+  },
   {
     featureType: 'administrative',
     elementType: 'geometry',
@@ -27,12 +29,22 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'landscape.man_made',
     elementType: 'geometry.fill',
-    stylers: [{ color: '#F1F1EE' }],
+    stylers: [{ color: p.building }],
   },
   {
     featureType: 'landscape.natural',
     elementType: 'geometry.fill',
-    stylers: [{ color: '#F8F8F6' }],
+    stylers: [{ color: p.land }],
+  },
+  {
+    featureType: 'landscape.natural.landcover',
+    elementType: 'geometry.fill',
+    stylers: [{ color: p.forest }],
+  },
+  {
+    featureType: 'landscape.natural.terrain',
+    elementType: 'geometry.fill',
+    stylers: [{ color: p.landSoft }],
   },
   {
     featureType: 'poi',
@@ -45,7 +57,12 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'poi.park',
     elementType: 'geometry.fill',
-    stylers: [{ color: '#C8E6C0' }],
+    stylers: [{ color: p.park }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: p.forest }, { weight: 0.6 }, { visibility: 'on' }],
   },
   {
     featureType: 'poi.park',
@@ -55,10 +72,23 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'poi.park',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#8AAF82' }],
+    stylers: [{ color: p.parkLabel }],
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'labels.icon',
+    stylers: [{ visibility: 'off' }],
+  },
+  {
+    featureType: 'poi.attraction',
+    stylers: [{ visibility: 'off' }],
   },
   {
     featureType: 'poi.business',
+    stylers: [{ visibility: 'off' }],
+  },
+  {
+    featureType: 'poi.government',
     stylers: [{ visibility: 'off' }],
   },
   {
@@ -80,12 +110,12 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'road',
     elementType: 'geometry.fill',
-    stylers: [{ color: '#E6E6E2' }],
+    stylers: [{ color: p.roadLocal }],
   },
   {
     featureType: 'road',
     elementType: 'geometry.stroke',
-    stylers: [{ color: '#DEDCD6' }, { weight: 1.2 }],
+    stylers: [{ color: p.roadStroke }, { weight: 1.35 }],
   },
   {
     featureType: 'road',
@@ -95,22 +125,22 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'road.arterial',
     elementType: 'geometry.fill',
-    stylers: [{ color: '#DDDDD8' }],
+    stylers: [{ color: p.roadArterial }],
   },
   {
     featureType: 'road.arterial',
     elementType: 'geometry.stroke',
-    stylers: [{ color: '#D2D0CA' }, { weight: 1.4 }],
+    stylers: [{ color: p.roadArterialStroke }, { weight: 1.55 }],
   },
   {
     featureType: 'road.highway',
     elementType: 'geometry.fill',
-    stylers: [{ color: '#D5D5D0' }],
+    stylers: [{ color: p.roadHighway }],
   },
   {
     featureType: 'road.highway',
     elementType: 'geometry.stroke',
-    stylers: [{ color: '#CAC8C2' }, { weight: 1.6 }],
+    stylers: [{ color: p.roadHighwayStroke }, { weight: 1.75 }],
   },
   {
     featureType: 'road.highway',
@@ -120,7 +150,12 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'road.local',
     elementType: 'geometry.fill',
-    stylers: [{ color: '#EDEDE9' }],
+    stylers: [{ color: p.roadLocal }],
+  },
+  {
+    featureType: 'road.local',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: p.land }, { weight: 0.8 }],
   },
   {
     featureType: 'road.local',
@@ -133,16 +168,21 @@ export const catdexMapStyle: MapStyleElement[] = [
   },
   {
     featureType: 'transit.station',
+    stylers: [{ visibility: 'simplified' }],
+  },
+  {
+    featureType: 'transit.station',
+    elementType: 'labels.icon',
     stylers: [{ visibility: 'off' }],
   },
   {
     featureType: 'water',
     elementType: 'geometry.fill',
-    stylers: [{ color: '#C8EFEA' }],
+    stylers: [{ color: p.water }],
   },
   {
     featureType: 'water',
     elementType: 'labels.text.fill',
-    stylers: [{ color: '#7BB8B2' }],
+    stylers: [{ color: p.waterLabel }],
   },
 ];
