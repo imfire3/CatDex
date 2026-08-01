@@ -9,10 +9,13 @@ import { MapWorldDecor } from '@/components/maps/MapWorldDecor';
 import { PlayerLocationMarker } from '@/components/maps/PlayerLocationMarker';
 import { catdexMapStyle } from '@/components/maps/catdexMapStyle';
 import {
+  buildFollowCamera,
   buildMapCamera,
   INITIAL_MAP_CAMERA,
   MAP_CAMERA_DURATION,
   MAP_FOLLOW_THRESHOLD_M,
+  MAP_MAX_ZOOM,
+  MAP_MIN_ZOOM,
 } from '@/components/maps/mapCamera';
 import { distanceMeters } from '@/lib/constants';
 import type { Cat } from '@/types/cat';
@@ -61,6 +64,7 @@ export function CatMap({
   const mapRef = useRef<MapView>(null);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
+  // Explicit recenter — restores game default zoom/pitch.
   useEffect(() => {
     if (!focusCoordinate) return;
     lastFollowRef.current = focusCoordinate;
@@ -69,7 +73,7 @@ export function CatMap({
     });
   }, [focusCoordinate]);
 
-  // Soft follow while walking — throttle by distance from last camera target.
+  // Soft follow while walking — pan only, never override pinch zoom.
   useEffect(() => {
     if (!userCoordinate) return;
 
@@ -82,12 +86,19 @@ export function CatMap({
         userCoordinate.longitude,
       );
       if (moved < MAP_FOLLOW_THRESHOLD_M) return;
+    } else {
+      // First GPS lock: remember position without stealing zoom control.
+      lastFollowRef.current = userCoordinate;
+      return;
     }
 
     lastFollowRef.current = userCoordinate;
-    mapRef.current?.animateCamera(buildMapCamera(userCoordinate), {
-      duration: MAP_CAMERA_DURATION,
-    });
+    void (async () => {
+      const current = await mapRef.current?.getCamera();
+      mapRef.current?.animateCamera(buildFollowCamera(userCoordinate, current), {
+        duration: MAP_CAMERA_DURATION,
+      });
+    })();
   }, [userCoordinate]);
 
   return (
@@ -110,6 +121,12 @@ export function CatMap({
         showsPointsOfInterest={false}
         pitchEnabled
         rotateEnabled={false}
+        scrollEnabled
+        zoomEnabled
+        zoomTapEnabled
+        zoomControlEnabled={false}
+        minZoomLevel={MAP_MIN_ZOOM}
+        maxZoomLevel={MAP_MAX_ZOOM}
         toolbarEnabled={false}
         mapPadding={{ top: 0, right: 0, bottom: 90, left: 0 }}
       >

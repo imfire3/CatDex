@@ -15,6 +15,10 @@ export const MAP_CAMERA_DURATION = Math.min(motionDuration.slow, 280);
 /** Approximate altitude (meters) for iOS when zoom is unavailable. */
 export const MAP_ALTITUDE = 780;
 
+/** How far the player may pinch out / in. */
+export const MAP_MIN_ZOOM = 12;
+export const MAP_MAX_ZOOM = 19;
+
 /** Min meters before soft follow re-centers on the player. */
 export const MAP_FOLLOW_THRESHOLD_M = 28;
 
@@ -29,6 +33,20 @@ export function buildMapCamera(
     zoom: MAP_ZOOM,
     altitude: MAP_ALTITUDE,
     ...overrides,
+  };
+}
+
+/** Pan-only follow — keeps the user's current zoom / pitch. */
+export function buildFollowCamera(
+  coordinate: { latitude: number; longitude: number },
+  current?: Camera | null,
+): Camera {
+  return {
+    center: coordinate,
+    pitch: current?.pitch ?? MAP_PITCH,
+    heading: current?.heading ?? 0,
+    zoom: current?.zoom ?? MAP_ZOOM,
+    altitude: current?.altitude ?? MAP_ALTITUDE,
   };
 }
 
