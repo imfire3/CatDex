@@ -3,14 +3,15 @@ import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
 
+import { BrandLogo } from '@/components/BrandLogo';
 import { CatDexCard } from '@/components/CatDexCard';
 import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/Input';
 import { ProgressBar, SectionHeader } from '@/components/Progress';
 import { Text } from '@/components/Text';
+import { DEMO_CATS } from '@/lib/demoCats';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
@@ -20,7 +21,9 @@ const TARGET = 50;
 export default function CatDexScreen() {
   const { colors, fonts, spacing, radius, shadow, gradients } = useTheme();
   const insets = useSafeAreaInsets();
-  const cats = useCatsStore((state) => state.cats);
+  const storedCats = useCatsStore((state) => state.cats);
+  /** Preview cards in empty __DEV__ so validated PhotoCards can be screenshotted. */
+  const cats = __DEV__ && storedCats.length === 0 ? DEMO_CATS : storedCats;
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -38,28 +41,13 @@ export default function CatDexScreen() {
         <View style={styles.headerRow}>
           <View style={{ gap: spacing[4], flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-              <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M12 18c3.5 0 6-2 6-5.5S15 7 12 7 6 9.5 6 12.5 8.5 18 12 18Z"
-                  stroke={colors.brand}
-                  strokeWidth={1.6}
-                />
-                <Path
-                  d="M8.2 8.2c.4-1.6 1.4-2.6 2.3-2.6.7 0 1.1.6 1.5 1.4M15.8 8.2c-.4-1.6-1.4-2.6-2.3-2.6-.7 0-1.1.6-1.5 1.4"
-                  stroke={colors.accent}
-                  strokeWidth={1.6}
-                  strokeLinecap="round"
-                />
-              </Svg>
+              <BrandLogo size={36} />
               <Text variant="h1" color="textBrand">
                 CatDex
               </Text>
-              <Text variant="h3" color="textSecondary" style={{ fontFamily: fonts.body }}>
-                — Sprites
-              </Text>
             </View>
             <Text variant="bodySmall" color="textSecondary">
-              Ta collection de sprites
+              Ta collection de chats
             </Text>
           </View>
           <View

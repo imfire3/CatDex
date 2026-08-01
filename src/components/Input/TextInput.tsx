@@ -7,6 +7,7 @@ import {
   type TextInputProps as RNTextInputProps,
   type ViewStyle,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -15,6 +16,8 @@ type FieldProps = {
   label?: string;
   helperText?: string;
   error?: string;
+  /** Show a green check when the field is valid (e.g. password). */
+  valid?: boolean;
   disabled?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
@@ -25,23 +28,49 @@ type FieldProps = {
 
 export type AppTextInputProps = RNTextInputProps & FieldProps;
 
+function ValidCheck() {
+  const { colors, iconStroke } = useTheme();
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" accessibilityLabel="Valide">
+      <Path
+        d="M20 6 9 17l-5-5"
+        stroke={colors.success}
+        strokeWidth={iconStroke.regular}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 function FieldShell({
   label,
   helperText,
   error,
+  valid,
   disabled,
   leftIcon,
   rightIcon,
   containerStyle,
   children,
   focused,
-}: FieldProps & { children: React.ReactNode; focused?: boolean }) {
-  const { colors, spacing, radius } = useTheme();
+  filled,
+}: FieldProps & {
+  children: React.ReactNode;
+  focused?: boolean;
+  filled?: boolean;
+}) {
+  const { colors, spacing, radius, shadow } = useTheme();
+  const showValid = Boolean(valid) && !error;
   const borderColor = error
     ? colors.borderError
     : focused
       ? colors.focusRing
-      : colors.border;
+      : showValid
+        ? colors.success
+        : colors.border;
+  const borderWidth = focused || error || showValid ? 2 : 1;
+  const elevated = focused || (filled && !disabled);
 
   return (
     <View style={[{ gap: spacing[8] }, containerStyle]}>
@@ -54,19 +83,25 @@ function FieldShell({
         style={[
           styles.field,
           {
-            backgroundColor: disabled ? colors.surfaceDisabled : colors.surfaceSecondary,
+            backgroundColor: disabled
+              ? colors.surfaceDisabled
+              : focused || filled
+                ? colors.surface
+                : colors.surfaceSecondary,
             borderColor,
-            borderRadius: radius.md,
+            borderWidth,
+            borderRadius: radius.xs,
             paddingHorizontal: spacing[16],
             minHeight: spacing[56],
             opacity: disabled ? 0.7 : 1,
             gap: spacing[8],
           },
+          elevated ? shadow.low : null,
         ]}
       >
         {leftIcon}
         <View style={styles.inputWrap}>{children}</View>
-        {rightIcon}
+        {showValid ? <ValidCheck /> : rightIcon}
       </View>
       {error ? (
         <Text variant="caption" color="danger">
@@ -85,6 +120,7 @@ export function TextInput({
   label,
   helperText,
   error,
+  valid,
   disabled,
   leftIcon,
   rightIcon,
@@ -97,17 +133,20 @@ export function TextInput({
 }: AppTextInputProps) {
   const { colors, fonts, typography } = useTheme();
   const [focused, setFocused] = useState(false);
+  const filled = Boolean(rest.value != null && String(rest.value).length > 0);
 
   return (
     <FieldShell
       label={label}
       helperText={helperText}
       error={error}
+      valid={valid}
       disabled={disabled}
       leftIcon={leftIcon}
       rightIcon={rightIcon}
       containerStyle={containerStyle}
       focused={focused}
+      filled={filled}
     >
       <RNTextInput
         editable={!disabled}
@@ -123,11 +162,16 @@ export function TextInput({
         }}
         style={[
           {
+            width: '100%',
             color: colors.text,
             fontFamily: fonts.body,
             fontSize: typography.body.fontSize,
             lineHeight: typography.body.lineHeight,
             paddingVertical: 0,
+            margin: 0,
+            textAlign: 'left',
+            textAlignVertical: 'center',
+            includeFontPadding: false,
           },
           style,
         ]}
@@ -165,10 +209,10 @@ const styles = StyleSheet.create({
   field: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
   },
   inputWrap: {
     flex: 1,
     justifyContent: 'center',
+    alignSelf: 'stretch',
   },
 });

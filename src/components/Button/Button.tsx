@@ -18,7 +18,9 @@ export type ButtonVariant =
   | 'secondary'
   | 'ghost'
   | 'destructive'
-  | 'icon';
+  | 'icon'
+  | 'google'
+  | 'apple';
 
 export type ButtonProps = {
   title?: string;
@@ -33,7 +35,10 @@ export type ButtonProps = {
   fullWidth?: boolean;
 };
 
-/** Primary = turquoise · Secondary = navy border · Ghost · Destructive · Icon */
+/**
+ * Primary = turquoise · Google / Apple = social auth · Secondary = gray · Ghost · Destructive · Icon
+ * CTA corners use radius.cta (16).
+ */
 export function Button({
   title,
   children,
@@ -73,16 +78,15 @@ export function Button({
         style={({ pressed }) => [
           styles.iconButton,
           {
-            backgroundColor: colors.surface,
-            borderRadius: radius.full,
-            borderWidth: 1,
-            borderColor: colors.border,
+            backgroundColor: colors.ctaSecondary,
+            borderRadius: radius[8],
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: colors.ctaSecondaryBorder,
             opacity: isDisabled ? 0.5 : pressed ? 0.88 : 1,
             width: spacing[48],
             height: spacing[48],
             transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           },
-          shadow.low,
           style,
         ]}
       >
@@ -94,9 +98,18 @@ export function Button({
   const labelColor =
     variant === 'primary'
       ? colors.onAccent
-      : variant === 'destructive'
-        ? colors.danger
-        : colors.brand;
+      : variant === 'google'
+        ? colors.authGoogleLabel
+        : variant === 'apple'
+          ? colors.authAppleLabel
+          : variant === 'secondary'
+            ? colors.ctaSecondaryLabel
+            : variant === 'destructive'
+              ? colors.danger
+              : colors.brand;
+
+  const labelWeight =
+    variant === 'secondary' ? fonts.body : fonts.bodySemi;
 
   const content = (
     <View style={[styles.content, { gap: spacing[8] }]}>
@@ -109,7 +122,7 @@ export function Button({
             <Text
               variant="body"
               style={{
-                fontFamily: fonts.bodySemi,
+                fontFamily: labelWeight,
                 color: labelColor,
               }}
             >
@@ -126,11 +139,35 @@ export function Button({
   const surfaceBg =
     variant === 'primary'
       ? colors.accent
-      : variant === 'secondary'
+      : variant === 'google'
         ? colors.surface
-        : variant === 'destructive'
-          ? colors.dangerSoft
-          : 'transparent';
+        : variant === 'apple'
+          ? colors.authAppleBg
+          : variant === 'secondary'
+            ? colors.ctaSecondary
+            : variant === 'ghost'
+              ? colors.surfaceSecondary
+              : variant === 'destructive'
+                ? colors.dangerSoft
+                : 'transparent';
+
+  const showBorder =
+    variant === 'secondary' || variant === 'destructive' || variant === 'google' || variant === 'ghost';
+
+  const borderRadius = radius.cta;
+
+  const pressedBg =
+    variant === 'primary'
+      ? colors.accentPressed
+      : variant === 'google'
+        ? colors.authGooglePressed
+        : variant === 'apple'
+          ? colors.authApplePressed
+          : variant === 'secondary'
+            ? colors.ctaSecondaryPressed
+            : variant === 'destructive'
+              ? colors.dangerSoft
+              : colors.surfaceTertiary;
 
   return (
     <Pressable
@@ -143,29 +180,23 @@ export function Button({
         styles.button,
         fullWidth && styles.fullWidth,
         {
-          borderRadius: radius.md,
+          borderRadius,
           minHeight: spacing[56],
-          opacity: isDisabled ? 0.5 : 1,
+          opacity: isDisabled ? 0.45 : 1,
           transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           overflow: 'hidden',
-          borderWidth: variant === 'secondary' || variant === 'destructive' ? 1 : 0,
+          borderWidth: variant === 'google' ? 1 : showBorder ? (variant === 'secondary' ? StyleSheet.hairlineWidth : 1) : 0,
           borderColor:
-            variant === 'destructive'
-              ? colors.danger
-              : variant === 'secondary'
-                ? colors.borderDefault
-                : 'transparent',
-          backgroundColor: pressed
-            ? variant === 'primary'
-              ? colors.accentPressed
-              : variant === 'secondary'
-                ? colors.brandSoft
-                : variant === 'destructive'
-                  ? colors.dangerSoft
-                  : colors.brandSoft
-            : surfaceBg,
+            variant === 'google'
+              ? colors.authGoogleBorder
+              : variant === 'destructive'
+                ? colors.danger
+                : variant === 'secondary'
+                  ? colors.ctaSecondaryBorder
+                  : colors.border,
+          backgroundColor: pressed && !isDisabled ? pressedBg : surfaceBg,
         },
-        variant === 'primary' ? shadow.low : null,
+        variant === 'primary' || variant === 'apple' ? shadow.low : null,
         style,
       ]}
     >

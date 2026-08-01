@@ -27,6 +27,7 @@ export { Toast, ToastHost, type ToastProps } from './Toast';
 export { Modal, type AppModalProps } from './Modal';
 export { ScanFrame } from './ScanFrame';
 export { GlassIconButton, type GlassIconButtonProps } from './GlassIconButton';
+export { BrandLogo } from './BrandLogo';
 /** @see CatCard thin alias — prefer CatDexCard */
 export { CatCard } from './CatCard';
 export { CatDexCard } from './CatDexCard';
