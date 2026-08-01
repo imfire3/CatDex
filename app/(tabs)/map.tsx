@@ -37,6 +37,10 @@ export default function MapScreen() {
     latitude: number;
     longitude: number;
   } | null>(null);
+  const [userCoordinate, setUserCoordinate] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const filteredCats = cats.filter((cat) => {
     if (filter === 'rare') {
@@ -63,6 +67,7 @@ export default function MapScreen() {
       if (status !== 'granted' || !mounted) return;
       const position = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = position.coords;
+      if (mounted) setUserCoordinate({ latitude, longitude });
       if (!isInParis20e(latitude, longitude) && mounted && __DEV__) {
         Alert.alert(
           'Hors du 20e',
@@ -80,10 +85,12 @@ export default function MapScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         const position = await Location.getCurrentPositionAsync({});
-        setFocusCoordinate({
+        const next = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-        });
+        };
+        setUserCoordinate(next);
+        setFocusCoordinate(next);
         return;
       }
     } catch {
@@ -98,6 +105,7 @@ export default function MapScreen() {
         cats={filteredCats}
         scheme="light"
         focusCoordinate={focusCoordinate}
+        userCoordinate={userCoordinate}
         onSelectCat={(item) => {
           setSelected(item);
           setSheetVisible(true);

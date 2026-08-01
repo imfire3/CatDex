@@ -1,9 +1,16 @@
 import { useEffect, useRef } from 'react';
-import { StyleSheet } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { Platform, StyleSheet, View } from 'react-native';
+import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { CatMapMarker } from '@/components/CatMapMarker';
-import { PARIS_20E } from '@/lib/constants';
+import { MapLuminousOverlay } from '@/components/maps/MapLuminousOverlay';
+import { PlayerLocationMarker } from '@/components/maps/PlayerLocationMarker';
+import { catdexMapStyle } from '@/components/maps/catdexMapStyle';
+import {
+  buildMapCamera,
+  INITIAL_MAP_CAMERA,
+  MAP_CAMERA_DURATION,
+} from '@/components/maps/mapCamera';
 import type { Cat } from '@/types/cat';
 
 type Props = {
@@ -12,41 +19,66 @@ type Props = {
   onSelectCat: (cat: Cat) => void;
   /** When set, camera animates to this coordinate (compass / recenter). */
   focusCoordinate?: { latitude: number; longitude: number } | null;
+  /** Player position for the custom CatDex location indicator. */
+  userCoordinate?: { latitude: number; longitude: number } | null;
 };
 
-export function CatMap({ cats, scheme, onSelectCat, focusCoordinate }: Props) {
+/**
+ * Google customMapStyle works on Android (and iOS when PROVIDER_GOOGLE + API key).
+ * Apple Maps ignores JSON styles but still gets POI suppression + pitch + overlay.
+ */
+const mapProvider =
+  Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT;
+
+export function CatMap({
+  cats,
+  scheme,
+  onSelectCat,
+  focusCoordinate,
+  userCoordinate,
+}: Props) {
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
     if (!focusCoordinate) return;
-    mapRef.current?.animateToRegion(
-      {
-        latitude: focusCoordinate.latitude,
-        longitude: focusCoordinate.longitude,
-        latitudeDelta: PARIS_20E.delta.latitudeDelta,
-        longitudeDelta: PARIS_20E.delta.longitudeDelta,
-      },
-      480,
+    mapRef.current?.animateCamera(
+      buildMapCamera(focusCoordinate),
+      { duration: MAP_CAMERA_DURATION },
     );
   }, [focusCoordinate]);
 
   return (
-    <MapView
-      ref={mapRef}
-      style={StyleSheet.absoluteFill}
-      provider={PROVIDER_DEFAULT}
-      initialRegion={{
-        ...PARIS_20E.center,
-        ...PARIS_20E.delta,
-      }}
-      userInterfaceStyle={scheme}
-      showsUserLocation
-      mapPadding={{ top: 0, right: 0, bottom: 90, left: 0 }}
-    >
-      {cats.map((cat) => (
-        <CatMapMarker key={cat.id} cat={cat} onPress={onSelectCat} />
-      ))}
-    </MapView>
+    <View style={StyleSheet.absoluteFill}>
+      <MapView
+        ref={mapRef}
+        style={StyleSheet.absoluteFill}
+        provider={mapProvider}
+        initialCamera={INITIAL_MAP_CAMERA}
+        customMapStyle={catdexMapStyle}
+        userInterfaceStyle={scheme}
+        mapType="standard"
+        showsUserLocation={false}
+        showsMyLocationButton={false}
+        showsCompass={false}
+        showsScale={false}
+        showsTraffic={false}
+        showsIndoors={false}
+        showsBuildings={false}
+        showsPointsOfInterest={false}
+        pitchEnabled
+        rotateEnabled={false}
+        toolbarEnabled={false}
+        mapPadding={{ top: 0, right: 0, bottom: 90, left: 0 }}
+      >
+        {cats.map((cat) => (
+          <CatMapMarker key={cat.id} cat={cat} onPress={onSelectCat} />
+        ))}
+        {userCoordinate ? (
+          <PlayerLocationMarker coordinate={userCoordinate} />
+        ) : null}
+      </MapView>
+      <MapLuminousOverlay />
+    </View>
   );
 }
 
@@ -61,12 +93,19 @@ export function MiniMap({
     <MapView
       style={styles.miniMap}
       pointerEvents="none"
-      initialRegion={{
-        latitude,
-        longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }}
+      provider={mapProvider}
+      customMapStyle={catdexMapStyle}
+      initialCamera={buildMapCamera(
+        { latitude, longitude },
+        { pitch: 0, zoom: 15, altitude: 1200 },
+      )}
+      showsPointsOfInterest={false}
+      showsBuildings={false}
+      showsUserLocation={false}
+      pitchEnabled={false}
+      scrollEnabled={false}
+      zoomEnabled={false}
+      rotateEnabled={false}
     >
       <Marker coordinate={{ latitude, longitude }} />
     </MapView>

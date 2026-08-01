@@ -13,6 +13,7 @@ type Props = {
   selectedCatId?: string | null;
   onSelectCat: (cat: Cat) => void;
   focusCoordinate?: { latitude: number; longitude: number } | null;
+  userCoordinate?: { latitude: number; longitude: number } | null;
 };
 
 function project(lat: number, lng: number) {
