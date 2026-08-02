@@ -21,22 +21,15 @@ const mapWebStyle = {
   objectPosition: 'center 40%',
 };
 
-export const authPrimaryNoShadow = {
-  shadowOpacity: 0,
-  shadowRadius: 0,
-  shadowOffset: { width: 0, height: 0 },
-  elevation: 0,
-  boxShadow: 'none',
-} as ViewStyle;
-
 type AuthShellProps = {
   children: ReactNode;
+  footer?: ReactNode;
   sheetStyle?: StyleProp<ViewStyle>;
   scroll?: boolean;
 };
 
 /** Shared auth chrome: map wallpaper + white bottom sheet. */
-export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProps) {
+export function AuthShell({ children, footer, sheetStyle, scroll = true }: AuthShellProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -70,6 +63,7 @@ export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProp
         }}
       />
       {children}
+      {footer}
     </View>
   );
 
@@ -116,26 +110,6 @@ export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProp
     </View>
   );
 }
-
-/** @deprecated Use theme colors — kept for secondary CTA styles during migration */
-export const AUTH_LIGHT = {
-  text: '#15172B',
-  textBody: 'rgba(21,23,43,0.78)',
-  textSecondary: '#667085',
-  sheet: '#FFFFFF',
-  field: '#F7F8FC',
-  secondaryBg: '#F7F8FC',
-  border: '#E8EAF0',
-  skySoft: '#EAF6FC',
-  orangeSoft: '#FFF3EC',
-  mintSoft: '#E8F8F2',
-} as const;
-
-export const authSecondaryOnLight = {
-  backgroundColor: '#F7F8FC',
-  borderColor: '#E8EAF0',
-  minHeight: 56,
-} as ViewStyle;
 
 const styles = StyleSheet.create({
   root: { flex: 1 },

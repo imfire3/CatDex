@@ -1,6 +1,7 @@
 /**
  * Sprite gallery tile — dense CatDex grid matching design mock.
  */
+import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { CatSprite } from '@/components/CatSprite';
@@ -15,7 +16,7 @@ type Props = {
   onPress: () => void;
 };
 
-export function CatDexCard({ cat, onPress }: Props) {
+function CatDexCardComponent({ cat, onPress }: Props) {
   const { colors, fonts, spacing, radius, shadow, scheme, motion } = useTheme();
   const theme = themeFromColorLabel(cat.analysis.color, cat.number);
   const dexLabel = formatDexNumber(cat.number);
@@ -64,3 +65,5 @@ export function CatDexCard({ cat, onPress }: Props) {
     </Pressable>
   );
 }
+
+export const CatDexCard = memo(CatDexCardComponent);

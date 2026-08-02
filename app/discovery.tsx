@@ -19,7 +19,7 @@ import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function DiscoveryScreen() {
-  const { colors, fonts, spacing, radius, motion, scheme, shadow } = useTheme();
+  const { colors, fonts, spacing, radius, motion, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     photoUri: string;
@@ -98,7 +98,7 @@ export default function DiscoveryScreen() {
             {
               padding: spacing[8],
               borderRadius: radius['2xl'],
-              backgroundColor: themeSoft(theme, scheme),
+              backgroundColor: themeSoft(theme),
             },
             shadow.medium,
           ]}

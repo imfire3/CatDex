@@ -1,8 +1,1 @@
-export {
-  Button,
-  PrimaryButton,
-  SecondaryButton,
-  GhostButton,
-  type ButtonProps,
-  type ButtonVariant,
-} from './Button';
+export { Button, type ButtonProps, type ButtonVariant } from './Button';

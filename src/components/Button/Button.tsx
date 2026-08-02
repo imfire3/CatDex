@@ -207,16 +207,6 @@ export function Button({
   );
 }
 
-export const PrimaryButton = (props: Omit<ButtonProps, 'variant'>) => (
-  <Button {...props} variant="primary" />
-);
-export const SecondaryButton = (props: Omit<ButtonProps, 'variant'>) => (
-  <Button {...props} variant="secondary" />
-);
-export const GhostButton = (props: Omit<ButtonProps, 'variant'>) => (
-  <Button {...props} variant="ghost" />
-);
-
 const styles = StyleSheet.create({
   button: {
     alignSelf: 'stretch',

@@ -16,8 +16,6 @@ export const PARIS_20E = {
   },
 } as const;
 
-export const SLOGAN = 'Explore ton quartier, capture les chats et construis ton CatDex.';
-
 /** Product-defined CatDex completion target (ghost slots + progress). */
 export const CATDEX_TARGET = 50;
 

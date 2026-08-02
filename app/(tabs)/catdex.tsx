@@ -11,19 +11,15 @@ import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/Input';
 import { ProgressBar, SectionHeader } from '@/components/Progress';
 import { Text } from '@/components/Text';
-import { DEMO_CATS } from '@/lib/demoCats';
+import { CATDEX_TARGET } from '@/lib/constants';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-const TARGET = 50;
-
 export default function CatDexScreen() {
   const { colors, fonts, spacing, radius, shadow, gradients } = useTheme();
   const insets = useSafeAreaInsets();
-  const storedCats = useCatsStore((state) => state.cats);
-  /** Preview cards in empty __DEV__ so validated PhotoCards can be screenshotted. */
-  const cats = __DEV__ && storedCats.length === 0 ? DEMO_CATS : storedCats;
+  const cats = useCatsStore((state) => state.cats);
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -33,7 +29,7 @@ export default function CatDexScreen() {
     });
   }, [cats, search]);
 
-  const progress = Math.min(1, cats.length / TARGET);
+  const progress = Math.min(1, cats.length / CATDEX_TARGET);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -63,7 +59,7 @@ export default function CatDexScreen() {
             ]}
           >
             <Text variant="caption" color="accent" style={{ fontFamily: fonts.bodySemi }}>
-              {cats.length} / {TARGET}
+              {cats.length} / {CATDEX_TARGET}
             </Text>
           </View>
         </View>

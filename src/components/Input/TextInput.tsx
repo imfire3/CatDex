@@ -193,18 +193,6 @@ export function SearchInput(props: AppTextInputProps) {
   );
 }
 
-export function Textarea(props: AppTextInputProps) {
-  const { spacing } = useTheme();
-  return (
-    <TextInput
-      multiline
-      textAlignVertical="top"
-      {...props}
-      style={[{ minHeight: spacing[96], paddingTop: spacing[16] }, props.style]}
-    />
-  );
-}
-
 const styles = StyleSheet.create({
   field: {
     flexDirection: 'row',

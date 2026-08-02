@@ -1,1 +1,1 @@
-export { TextInput, SearchInput, Textarea, type AppTextInputProps } from './TextInput';
+export { TextInput, SearchInput, type AppTextInputProps } from './TextInput';
