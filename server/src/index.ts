@@ -24,12 +24,16 @@ const analyzeSchema = z.object({
 });
 
 const fallbackAnalysis = {
-  color: 'Gris tigré',
+  color: 'Noir',
   breed: 'Européen',
-  coat: 'Poil court',
+  coat: 'Court',
   description:
-    'Chat observé en rue, allure urbaine et curieuse. Analyse de secours utilisée faute de réponse IA.',
-  suggestedName: 'Grisou',
+    'Un chat noir élégant avec des yeux ambre perçants. Observé près d’un café en fin d’après-midi.',
+  suggestedName: 'Nori',
+  gender: 'male' as const,
+  eyes: 'Ambre',
+  size: 'Moyenne',
+  tags: ['Ombre', 'Mystère'],
 };
 
 type AnalysisJson = {
@@ -38,7 +42,32 @@ type AnalysisJson = {
   coat?: string;
   description?: string;
   suggestedName?: string;
+  gender?: string;
+  eyes?: string;
+  size?: string;
+  tags?: string[] | string;
 };
+
+function normalizeGender(value?: string) {
+  const v = value?.trim().toLowerCase();
+  if (v === 'male' || v === 'm' || v === 'mâle') return 'male' as const;
+  if (v === 'female' || v === 'f' || v === 'femelle') return 'female' as const;
+  return 'unknown' as const;
+}
+
+function normalizeTags(tags?: string[] | string) {
+  if (Array.isArray(tags)) {
+    return tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 2);
+  }
+  if (typeof tags === 'string' && tags.trim()) {
+    return tags
+      .split(/[,;/]/)
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .slice(0, 2);
+  }
+  return undefined;
+}
 
 function normalizeAnalysis(json: AnalysisJson) {
   return {
@@ -47,6 +76,10 @@ function normalizeAnalysis(json: AnalysisJson) {
     coat: json.coat?.trim() || 'Indéterminée',
     description: json.description?.trim() || 'Chat découvert dans la rue.',
     suggestedName: json.suggestedName?.trim() || undefined,
+    gender: normalizeGender(json.gender),
+    eyes: json.eyes?.trim() || undefined,
+    size: json.size?.trim() || undefined,
+    tags: normalizeTags(json.tags),
   };
 }
 
@@ -77,9 +110,13 @@ app.post('/analyze-cat', async (c) => {
             'Tu es le naturaliste urbain de CatDex.',
             'Tu analyses UNIQUEMENT des photos de chats (ou clairement dominées par un chat).',
             'Réponds uniquement en JSON valide avec les clés:',
-            'color (couleur principale, ex: "Roux tigré"),',
+            'color (couleur principale, ex: "Noir", "Roux tigré"),',
             'breed (race ou type probable, ex: "Européen", "Siamois"),',
-            'coat (robe/poil, ex: "Poil court", "Écaille de tortue"),',
+            'coat (longueur/type de poil, ex: "Court", "Long"),',
+            'eyes (couleur des yeux, ex: "Ambre", "Verts"),',
+            'size (Petite | Moyenne | Grande),',
+            'gender (male | female | unknown),',
+            'tags (tableau de 2 mots d’ambiance, ex: ["Ombre","Mystère"]),',
             'description (2 phrases max, ton chaleureux, français, sans inventer de lieux),',
             'suggestedName (un seul prénom court et mignon adapté à l’apparence).',
             'Si la photo ne montre pas de chat, mets breed="Inconnu", color="Indéterminée",',

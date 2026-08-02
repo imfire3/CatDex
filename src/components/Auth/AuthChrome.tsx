@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { router } from 'expo-router';
@@ -31,7 +31,7 @@ export function AuthBackButton({
         {
           width: spacing[40],
           height: spacing[40],
-          borderRadius: radius.full,
+          borderRadius: radius[8],
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.border,
@@ -99,22 +99,28 @@ export function AuthHeader({
   );
 }
 
-export function AuthDivider({ label = 'ou' }: { label?: string; light?: boolean }) {
+export function AuthDivider({
+  label = 'Ou continuer avec',
+}: {
+  label?: string;
+  light?: boolean;
+}) {
   const { colors, spacing } = useTheme();
   return (
     <View
+      accessibilityRole="text"
+      accessibilityLabel={label}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing[8],
-        marginVertical: spacing[8],
       }}
     >
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+      <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
       <Text variant="caption" color="textMuted">
         {label}
       </Text>
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+      <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
     </View>
   );
 }
@@ -137,19 +143,18 @@ export function TermsCheckbox({
         accessibilityRole="checkbox"
         accessibilityState={{ checked }}
         onPress={() => onChange(!checked)}
-        style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing[8] }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}
       >
         <View
           style={{
             width: spacing[24],
             height: spacing[24],
-            borderRadius: radius.xs,
+            borderRadius: radius[8],
             borderWidth: 1.5,
             borderColor: error ? colors.danger : checked ? colors.accent : colors.border,
             backgroundColor: checked ? colors.accent : colors.surface,
             alignItems: 'center',
             justifyContent: 'center',
-            marginTop: spacing[4],
           }}
         >
           {checked ? (

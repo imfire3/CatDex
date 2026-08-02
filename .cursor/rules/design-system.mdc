@@ -17,12 +17,15 @@ const { colors, spacing, radius, typography, shadow, gradients, motion, iconSize
 
 | Token | Value | Role |
 |---|---|---|
-| `brand` / `textBrand` | `#11145A` | Headings, active nav, secondary CTAs |
+| `brand` / `textBrand` | `#11145A` | Headings, active nav |
 | `brandPressed` | `#0C0F42` | Pressed navy |
 | `brandSoft` | `rgba(17,20,90,0.08)` | Soft navy tint |
 | `accent` / `primary` | `#2EC9C3` | Primary buttons, FAB, progress |
 | `accentPressed` | `#24A8A3` | Pressed turquoise |
 | `accentSoft` | `rgba(46,201,195,0.14)` | Soft turquoise tint |
+| `ctaSecondary` | `#F5F5F5` | Secondary CTA fill |
+| `ctaSecondaryBorder` | `#D0D0D0` | Secondary CTA border |
+| `ctaSecondaryLabel` | `#8F8F8F` | Secondary CTA label |
 | `background` / `surface` | `#FFFFFF` | App canvas |
 | `surfaceSecondary` | `#F7F8FC` | Inputs, muted cards |
 | `surfaceTertiary` / `surfaceMuted` | `#F2F4F8` | Nested surfaces |
@@ -66,8 +69,9 @@ Screen padding `24` · card padding `16`/`24` · section gap `32` · button heig
 
 ## Radius
 
-`xs=8 · sm=12 · md=16 · lg=24 · xl/sheet=32 · pill/full`  
-Chips `12` · inputs/buttons `16` · cards `24` · sheets `32` · FAB/avatar `pill`.
+Surfaces / inputs / cards: `8` (`radius.xs` / `sm` / `md` / `lg` / `sheet` → 8).  
+Auth & primary CTAs: `16` (`radius.cta` / `radius[16]` / `xl`).  
+Circles only: `pill` / `full` (FAB, avatar, badge, progress).
 
 ## Elevation
 

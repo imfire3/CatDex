@@ -108,7 +108,7 @@ export function themeFromColorLabel(label: string, seed = 0): CatTheme {
   return THEME_PALETTE[hash % THEME_PALETTE.length];
 }
 
-/** Soft tint for coat-themed surfaces (light UI only). */
-export function themeSoft(theme: CatTheme): string {
+/** Soft tint for coat-themed surfaces (light UI only; scheme kept for API compat). */
+export function themeSoft(theme: CatTheme, _scheme: 'light' | 'dark' = 'light'): string {
   return theme.soft;
 }

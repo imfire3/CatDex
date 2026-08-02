@@ -1,9 +1,12 @@
+import { BlurView } from 'expo-blur';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Image,
   Linking,
   Platform,
   Pressable,
@@ -19,22 +22,25 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
-import { PageLoading } from '@/components/Loader';
+import { PageLoading, Skeleton } from '@/components/Loader';
+import { ProgressBar } from '@/components/Progress';
 import { ScanFrame } from '@/components/ScanFrame';
-import { ScannerReveal } from '@/components/scanner/ScannerReveal';
-import { ScannerReview } from '@/components/scanner/ScannerReview';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { analyzeCatPhoto } from '@/lib/api';
 import {
   CATDEX_TARGET,
   formatCatDefaultName,
+  formatDexNumber,
   isInParis20e,
   PARIS_20E,
 } from '@/lib/constants';
-import { getCaptureLocation } from '@/lib/location';
+import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import { enrichAnalysis } from '@/lib/catTraits';
 import { useCatsStore } from '@/store/cats';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -43,7 +49,7 @@ import type { CatAnalysis } from '@/types/cat';
 type Step = 'camera' | 'review' | 'reveal';
 
 export default function ScannerScreen() {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, fonts, spacing, radius, shadow, motion, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const showToast = useToastStore((state) => state.show);
@@ -114,8 +120,26 @@ export default function ScannerScreen() {
     opacity: blurAmount.value,
   }));
 
+  const ensureLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        return Location.getCurrentPositionAsync({});
+      }
+    } catch {
+      // fallback
+    }
+    return {
+      coords: {
+        latitude: PARIS_20E.center.latitude,
+        longitude: PARIS_20E.center.longitude,
+      },
+    } as Location.LocationObject;
+  };
+
   const enterReveal = async (nextAnalysis: CatAnalysis, imageUri: string, mocked?: boolean) => {
-    const { latitude, longitude } = await getCaptureLocation();
+    const position = await ensureLocation();
+    const { latitude, longitude } = position.coords;
     setCoords({ latitude, longitude });
     setAnalysis(nextAnalysis);
     setPhotoUri(imageUri);
@@ -223,7 +247,7 @@ export default function ScannerScreen() {
       latitude: coords.latitude,
       longitude: coords.longitude,
       name,
-      analysis,
+      analysis: enrichAnalysis(analysis, nextNumber),
     });
 
     if (Platform.OS !== 'web') {
@@ -289,31 +313,337 @@ export default function ScannerScreen() {
   }
 
   if (step === 'reveal' && photoUri && analysis) {
+    const theme = themeFromColorLabel(analysis.color, nextNumber);
+    const dexLabel = formatDexNumber(nextNumber);
+    const displayName =
+      analysis.suggestedName?.trim() || formatCatDefaultName(nextNumber);
+
     return (
-      <ScannerReveal
-        photoUri={photoUri}
-        analysis={analysis}
-        nextNumber={nextNumber}
-        insets={insets}
-        revealCardStyle={revealCardStyle}
-        blurOverlayStyle={blurOverlayStyle}
-        onAdd={() => void handleAddToCatDex()}
-        onRetake={resetToCamera}
-      />
+      <View
+        style={[
+          styles.root,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingHorizontal: spacing[24],
+          },
+        ]}
+      >
+        <View style={{ alignItems: 'center', gap: spacing[4], marginBottom: spacing[16] }}>
+          <Text variant="label" color="accent" align="center">
+            Nouveau CatDex
+          </Text>
+          <Text
+            variant="display"
+            align="center"
+            style={{ fontFamily: fonts.display, color: colors.text }}
+          >
+            {dexLabel}
+          </Text>
+        </View>
+
+        <Animated.View style={[revealCardStyle, { alignItems: 'center', width: '100%' }]}>
+          <View
+            style={[
+              {
+                padding: spacing[8],
+                borderRadius: radius['2xl'],
+                backgroundColor: themeSoft(theme, scheme),
+                overflow: 'hidden',
+              },
+              shadow.medium,
+            ]}
+          >
+            <View>
+              <Image
+                source={{ uri: photoUri }}
+                style={{
+                  width: spacing[96] * 2,
+                  height: spacing[96] * 2,
+                  borderRadius: radius.xl,
+                }}
+              />
+              <Animated.View
+                pointerEvents="none"
+                style={[StyleSheet.absoluteFill, blurOverlayStyle, { borderRadius: radius.xl }]}
+              >
+                {Platform.OS === 'web' ? (
+                  <View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      { backgroundColor: colors.overlay, borderRadius: radius.xl },
+                    ]}
+                  />
+                ) : (
+                  <BlurView
+                    intensity={48}
+                    tint="dark"
+                    style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
+                  />
+                )}
+              </Animated.View>
+            </View>
+          </View>
+
+          <Text
+            variant="h2"
+            align="center"
+            style={{ marginTop: spacing[24], fontFamily: fonts.display }}
+          >
+            {displayName}
+          </Text>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: spacing[8],
+              marginTop: spacing[16],
+            }}
+          >
+            <Badge label={analysis.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+            <Badge label={analysis.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+            <Badge label={analysis.coat} color={theme.badge} backgroundColor={`${theme.hex}33`} />
+          </View>
+
+          <Text
+            variant="body"
+            color="textBody"
+            align="center"
+            style={{
+              marginTop: spacing[16],
+              paddingHorizontal: spacing[8],
+              fontFamily: fonts.body,
+            }}
+          >
+            {analysis.description}
+          </Text>
+        </Animated.View>
+
+        <View
+          style={{
+            marginTop: 'auto',
+            paddingBottom: Math.max(insets.bottom, spacing[16]),
+            gap: spacing[8],
+          }}
+        >
+          <Button title="Ajouter à ma collection" onPress={handleAddToCatDex} />
+          <Button title="Reprendre la photo" variant="secondary" onPress={resetToCamera} />
+        </View>
+      </View>
     );
   }
 
   if (step === 'review' && photoUri) {
     return (
-      <ScannerReview
-        photoUri={photoUri}
-        analyzing={analyzing}
-        insets={insets}
-        onRetry={() => {
-          if (photoBase64 && photoUri) void runAnalysis(photoBase64, photoUri);
-        }}
-        onRetake={resetToCamera}
-      />
+      <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+        {/* Header: close · flash · frame (mock) */}
+        <View
+          style={{
+            paddingHorizontal: spacing[16],
+            paddingTop: spacing[8],
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Fermer"
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              {
+                width: spacing[48],
+                height: spacing[48],
+                borderRadius: radius.full,
+                backgroundColor: colors.surfaceSecondary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text color="textBrand" style={{ fontSize: 18, lineHeight: 20 }}>
+              ✕
+            </Text>
+          </Pressable>
+
+          <View
+            style={{
+              width: spacing[48],
+              height: spacing[48],
+              borderRadius: radius.full,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"
+                stroke={colors.brand}
+                strokeWidth={1.6}
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Galerie"
+            onPress={handlePickFromLibrary}
+            style={({ pressed }) => [
+              {
+                width: spacing[48],
+                height: spacing[48],
+                borderRadius: radius.full,
+                backgroundColor: colors.surfaceSecondary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+              <Rect
+                x="5"
+                y="5"
+                width="14"
+                height="14"
+                rx="2"
+                stroke={colors.brand}
+                strokeWidth={1.6}
+              />
+              <Path
+                d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"
+                stroke={colors.brand}
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </Pressable>
+        </View>
+
+        <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[16], gap: spacing[16] }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M12 7v5l3 2"
+                stroke={colors.textMuted}
+                strokeWidth={1.6}
+                strokeLinecap="round"
+              />
+              <Circle cx="12" cy="12" r="8" stroke={colors.textMuted} strokeWidth={1.6} />
+            </Svg>
+            <Text variant="caption" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
+              {analyzing ? 'Analyse' : 'Prêt'}
+            </Text>
+          </View>
+          {analyzing ? <ProgressBar progress={0.62} height={8} /> : <ProgressBar progress={1} height={8} />}
+
+          <View style={{ gap: spacing[8] }}>
+            <Text variant="h2" color="textBrand">
+              {analyzing ? 'Analyse…' : 'Presque !'}
+            </Text>
+            <Text variant="bodySmall" color="textSecondary">
+              {analyzing
+                ? 'Ta Cat Card se prépare. Un instant.'
+                : 'Relance l’analyse ou reprends une photo.'}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={[
+            {
+              marginHorizontal: spacing[24],
+              marginTop: spacing[24],
+              borderRadius: radius.lg,
+              overflow: 'hidden',
+              backgroundColor: colors.surfaceSecondary,
+              borderWidth: 1,
+              borderColor: colors.border,
+            },
+            shadow.low,
+          ]}
+        >
+          <Image
+            source={{ uri: photoUri }}
+            style={{ width: '100%', height: spacing[96] * 2 + spacing[64] }}
+          />
+          {analyzing ? (
+            <View
+              style={{
+                position: 'absolute',
+                left: spacing[16],
+                right: spacing[16],
+                bottom: spacing[16],
+                gap: spacing[8],
+              }}
+            >
+              <Skeleton height={spacing[16]} width="55%" />
+              <Skeleton height={spacing[8]} width="80%" />
+              <Skeleton height={spacing[8]} width="40%" />
+            </View>
+          ) : null}
+        </View>
+
+        <View
+          style={{
+            marginTop: 'auto',
+            paddingHorizontal: spacing[24],
+            paddingBottom: insets.bottom + spacing[16],
+            gap: spacing[8],
+          }}
+        >
+          {analyzing ? (
+            <View style={{ alignItems: 'center', gap: spacing[16], paddingVertical: spacing[16] }}>
+              <Text variant="bodySmall" color="textSecondary">
+                Révélation en cours…
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Button
+                title="Relancer l’analyse"
+                onPress={() => photoBase64 && photoUri && runAnalysis(photoBase64, photoUri)}
+                icon={
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3Z"
+                      fill={colors.onAccent}
+                    />
+                    <Path
+                      d="M18 13l.7 2.1L21 16l-2.3.8L18 19l-.7-2.2L15 16l2.3-.9L18 13Z"
+                      fill={colors.onAccent}
+                    />
+                  </Svg>
+                }
+              />
+              <Button
+                title="Reprendre la photo"
+                variant="secondary"
+                onPress={resetToCamera}
+                icon={
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"
+                      stroke={colors.brand}
+                      strokeWidth={1.6}
+                      strokeLinecap="round"
+                    />
+                    <Path
+                      d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                      stroke={colors.brand}
+                      strokeWidth={1.6}
+                    />
+                  </Svg>
+                }
+              />
+            </>
+          )}
+        </View>
+      </View>
     );
   }
 

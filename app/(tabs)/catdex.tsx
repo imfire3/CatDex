@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { BrandLogo } from '@/components/BrandLogo';
 import { CatDexCard } from '@/components/CatDexCard';
 import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
@@ -30,35 +31,17 @@ export default function CatDexScreen() {
 
   const progress = Math.min(1, cats.length / CATDEX_TARGET);
 
-  const keyExtractor = useCallback((item: Cat) => item.id, []);
-
-  const renderItem = useCallback(
-    ({ item }: { item: Cat }) => (
-      <CatDexCard cat={item} onPress={() => router.push(`/cat/${item.id}`)} />
-    ),
-    [],
-  );
-
-  const listEmpty = useMemo(
-    () => (
-      <EmptyState
-        title="Collection vide"
-        description="Scanne ton premier chat pour commencer ton CatDex."
-        actionLabel="Scanner"
-        onAction={() => router.push('/scanner')}
-      />
-    ),
-    [],
-  );
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[24], gap: spacing[16] }}>
-        <View style={[styles.headerRow, { gap: spacing[16] }]}>
-          <View style={{ gap: spacing[4] }}>
-            <Text variant="h1" color="textBrand">
-              CatDex
-            </Text>
+        <View style={styles.headerRow}>
+          <View style={{ gap: spacing[4], flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+              <BrandLogo size={36} />
+              <Text variant="h1" color="textBrand">
+                CatDex
+              </Text>
+            </View>
             <Text variant="bodySmall" color="textSecondary">
               Ta collection de chats
             </Text>
@@ -118,7 +101,7 @@ export default function CatDexScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={keyExtractor}
+        keyExtractor={(item: Cat) => item.id}
         numColumns={2}
         columnWrapperStyle={{ gap: spacing[16] }}
         contentContainerStyle={{
@@ -126,12 +109,17 @@ export default function CatDexScreen() {
           paddingBottom: spacing[96] + spacing[24],
           gap: spacing[16],
         }}
-        ListEmptyComponent={listEmpty}
-        renderItem={renderItem}
-        removeClippedSubviews
-        initialNumToRender={8}
-        windowSize={7}
-        maxToRenderPerBatch={8}
+        ListEmptyComponent={
+          <EmptyState
+            title="Collection vide"
+            description="Scanne ton premier chat pour commencer ton CatDex."
+            actionLabel="Scanner"
+            onAction={() => router.push('/scanner')}
+          />
+        }
+        renderItem={({ item }) => (
+          <CatDexCard cat={item} onPress={() => router.push(`/cat/${item.id}`)} />
+        )}
       />
     </View>
   );
@@ -143,5 +131,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+    gap: 16,
   },
 });

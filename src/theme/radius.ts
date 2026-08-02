@@ -1,26 +1,28 @@
 /**
- * Corner radius — compact, consistent.
- * chips 12 · inputs/buttons 16 · cards 24 · sheets 32 · FAB pill
+ * Corner radius — surfaces/inputs at 8; CTAs (auth buttons) use 16.
+ * Circles (FAB, avatar, badge, progress) keep pill/full.
  */
-export const radiusScale = [8, 12, 16, 20, 24, 28, 32] as const;
+export const radiusScale = [8, 16] as const;
 
 export type RadiusValue = (typeof radiusScale)[number];
 
 export const radius = {
   8: 8,
-  12: 12,
+  12: 8,
   16: 16,
-  20: 20,
-  24: 24,
-  28: 28,
-  32: 32,
+  20: 8,
+  24: 8,
+  28: 8,
+  32: 8,
   xs: 8,
-  sm: 12,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  sheet: 32,
-  '2xl': 32,
+  sm: 8,
+  md: 8,
+  lg: 8,
+  xl: 16,
+  sheet: 8,
+  '2xl': 16,
+  /** Auth / primary CTA corners (brief). */
+  cta: 16,
   pill: 9999,
   full: 9999,
 } as const;

@@ -23,12 +23,13 @@ const mapWebStyle = {
 
 type AuthShellProps = {
   children: ReactNode;
+  footer?: ReactNode;
   sheetStyle?: StyleProp<ViewStyle>;
   scroll?: boolean;
 };
 
 /** Shared auth chrome: map wallpaper + white bottom sheet. */
-export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProps) {
+export function AuthShell({ children, footer, sheetStyle, scroll = true }: AuthShellProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -62,6 +63,7 @@ export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProp
         }}
       />
       {children}
+      {footer}
     </View>
   );
 

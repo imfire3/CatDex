@@ -54,7 +54,7 @@ export function FloatingActionButton({
             borderColor: colors.background,
             backgroundColor: pressed ? colors.accentPressed : colors.accent,
           },
-          shadow.medium,
+          shadow.glow,
         ]}
       >
         <LinearGradient

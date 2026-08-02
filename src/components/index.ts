@@ -17,4 +17,5 @@ export { Spinner, Skeleton, PageLoading } from './Loader';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { Toast, ToastHost, type ToastProps } from './Toast';
 export { ScanFrame } from './ScanFrame';
+export { BrandLogo } from './BrandLogo';
 export { CatDexCard } from './CatDexCard';

@@ -26,6 +26,21 @@ const light = {
   surfaceMuted: '#F2F4F8',
   surfaceDisabled: '#ECEFF3',
 
+  /** Secondary CTA — light gray fill */
+  ctaSecondary: '#F5F5F5',
+  ctaSecondaryPressed: '#EEEEEE',
+  ctaSecondaryBorder: '#D0D0D0',
+  ctaSecondaryLabel: '#8F8F8F',
+
+  /** Social auth — Google (official-adjacent) */
+  authGoogleBorder: '#ECEEF5',
+  authGoogleLabel: '#202124',
+  authGooglePressed: '#F7F8FC',
+  /** Social auth — Apple HIG */
+  authAppleBg: '#000000',
+  authApplePressed: '#1A1A1A',
+  authAppleLabel: '#FFFFFF',
+
   text: '#15172B',
   textBrand: '#11145A',
   textBody: 'rgba(21, 23, 43, 0.78)',
@@ -100,6 +115,16 @@ export type ThemeColors = {
   surfaceTertiary: string;
   surfaceMuted: string;
   surfaceDisabled: string;
+  ctaSecondary: string;
+  ctaSecondaryPressed: string;
+  ctaSecondaryBorder: string;
+  ctaSecondaryLabel: string;
+  authGoogleBorder: string;
+  authGoogleLabel: string;
+  authGooglePressed: string;
+  authAppleBg: string;
+  authApplePressed: string;
+  authAppleLabel: string;
   /** @deprecated use surfaceSecondary */
   surface2: string;
   text: string;

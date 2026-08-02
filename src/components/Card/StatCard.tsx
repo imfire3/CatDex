@@ -7,10 +7,11 @@ export type StatCardProps = {
   label: string;
   value: string;
   hint?: string;
+  icon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
-export function StatCard({ label, value, hint, style }: StatCardProps) {
+export function StatCard({ label, value, hint, icon, style }: StatCardProps) {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
 
   return (
@@ -22,20 +23,36 @@ export function StatCard({ label, value, hint, style }: StatCardProps) {
           flex: 1,
           minWidth: '40%',
           padding: spacing[16],
-          borderRadius: radius.xl,
+          borderRadius: radius.lg,
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.border,
-          gap: spacing[4],
+          gap: spacing[8],
         },
-        shadow.small,
+        shadow.low,
         style,
       ]}
     >
-      <Text variant="label" color="textSecondary">
-        {label}
-      </Text>
-      <Text variant="h3" style={{ fontFamily: fonts.bodySemi }} numberOfLines={2}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+        {icon ? (
+          <View
+            style={{
+              width: spacing[32],
+              height: spacing[32],
+              borderRadius: radius.sm,
+              backgroundColor: colors.surfaceSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {icon}
+          </View>
+        ) : null}
+        <Text variant="label" color="textSecondary">
+          {label}
+        </Text>
+      </View>
+      <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.bodySemi }} numberOfLines={2}>
         {value}
       </Text>
       {hint ? (
