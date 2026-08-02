@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Platform,
   TextInput as RNTextInput,
   StyleSheet,
   View,
@@ -69,7 +70,8 @@ function FieldShell({
       : showValid
         ? colors.success
         : colors.border;
-  const borderWidth = focused || error || showValid ? 2 : 1;
+  // Keep borderWidth constant — changing it on focus shifts layout mid-tap and
+  // dismisses the keyboard on iOS/Android.
   const elevated = focused || (filled && !disabled);
 
   return (
@@ -89,14 +91,14 @@ function FieldShell({
                 ? colors.surface
                 : colors.surfaceSecondary,
             borderColor,
-            borderWidth,
+            borderWidth: 2,
             borderRadius: radius.xs,
             paddingHorizontal: spacing[16],
             minHeight: spacing[56],
             opacity: disabled ? 0.7 : 1,
             gap: spacing[8],
           },
-          elevated ? shadow.low : null,
+          elevated ? shadow.low : shadow.none,
         ]}
       >
         {leftIcon}
@@ -131,7 +133,7 @@ export function TextInput({
   onBlur,
   ...rest
 }: AppTextInputProps) {
-  const { colors, fonts, typography } = useTheme();
+  const { colors, fonts, typography, spacing } = useTheme();
   const [focused, setFocused] = useState(false);
   const filled = Boolean(rest.value != null && String(rest.value).length > 0);
 
@@ -151,6 +153,8 @@ export function TextInput({
       <RNTextInput
         editable={!disabled}
         placeholderTextColor={colors.placeholder}
+        selectionColor={colors.accent}
+        cursorColor={colors.accent}
         accessibilityState={{ disabled: !!disabled }}
         onFocus={(event) => {
           setFocused(true);
@@ -162,16 +166,19 @@ export function TextInput({
         }}
         style={[
           {
+            flex: 1,
             width: '100%',
+            minHeight: spacing[56] - 4,
             color: colors.text,
             fontFamily: fonts.body,
             fontSize: typography.body.fontSize,
-            lineHeight: typography.body.lineHeight,
-            paddingVertical: 0,
+            // Avoid lineHeight on TextInput — it breaks the iOS caret and can
+            // cause the keyboard to open then immediately dismiss.
+            paddingVertical: spacing[16],
             margin: 0,
             textAlign: 'left',
             textAlignVertical: 'center',
-            includeFontPadding: false,
+            ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
           },
           style,
         ]}
@@ -214,5 +221,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignSelf: 'stretch',
+    minHeight: 56,
   },
 });
