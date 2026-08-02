@@ -37,6 +37,7 @@
     },
     "android": {
       "package": "com.catdex.app",
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "CAMERA",
         "ACCESS_COARSE_LOCATION",

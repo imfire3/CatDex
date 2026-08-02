@@ -31,27 +31,114 @@ export const authPrimaryNoShadow = {
 
 type AuthShellProps = {
   children: ReactNode;
+  /** Sticky top bar (e.g. back button) — stays pinned while content scrolls. */
+  header?: ReactNode;
+  /** Sticky bottom CTAs — stay pinned while the form scrolls. */
+  footer?: ReactNode;
+  /**
+   * `sheet` = map wallpaper + white bottom sheet (welcome-style).
+   * `plain` = full white screen (signup / form screens).
+   */
+  variant?: 'sheet' | 'plain';
   sheetStyle?: StyleProp<ViewStyle>;
   scroll?: boolean;
 };
 
-/** Shared auth chrome: map wallpaper + white bottom sheet. */
-export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProps) {
+/** Shared auth chrome. */
+export function AuthShell({
+  children,
+  header,
+  footer,
+  variant = 'sheet',
+  sheetStyle,
+  scroll = true,
+}: AuthShellProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, spacing[24]) + spacing[8];
+
+  if (variant === 'plain') {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.surface }]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={0}
+        >
+          {header ? (
+            <View
+              style={{
+                paddingTop: insets.top + spacing[8],
+                paddingHorizontal: spacing[24],
+                paddingBottom: spacing[8],
+                backgroundColor: colors.surface,
+                zIndex: 2,
+              }}
+            >
+              {header}
+            </View>
+          ) : null}
+
+          {scroll ? (
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{
+                paddingHorizontal: spacing[24],
+                paddingTop: header ? spacing[8] : insets.top + spacing[16],
+                paddingBottom: footer ? spacing[16] : bottomPad,
+                gap: spacing[24],
+                flexGrow: 1,
+              }}
+              keyboardShouldPersistTaps="always"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+            >
+              {children}
+            </ScrollView>
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                paddingHorizontal: spacing[24],
+                paddingTop: header ? spacing[8] : insets.top + spacing[16],
+                paddingBottom: footer ? spacing[16] : bottomPad,
+                gap: spacing[24],
+              }}
+            >
+              {children}
+            </View>
+          )}
+
+          {footer ? (
+            <View
+              style={{
+                paddingHorizontal: spacing[24],
+                paddingTop: spacing[8],
+                paddingBottom: bottomPad,
+                gap: spacing[8],
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+                backgroundColor: colors.surface,
+              }}
+            >
+              {footer}
+            </View>
+          ) : null}
+        </KeyboardAvoidingView>
+      </View>
+    );
+  }
 
   const sheet = (
     <View
       style={[
         styles.sheet,
         {
-          paddingHorizontal: spacing[24],
+          maxHeight: '100%',
           paddingTop: spacing[8],
-          paddingBottom: Math.max(insets.bottom, spacing[24]) + spacing[8],
           borderTopLeftRadius: radius.sheet,
           borderTopRightRadius: radius.sheet,
           backgroundColor: colors.surface,
-          gap: spacing[24],
           borderTopWidth: 1,
           borderColor: colors.border,
         },
@@ -67,9 +154,54 @@ export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProp
           borderRadius: radius.full,
           backgroundColor: colors.borderDefault,
           marginTop: spacing[8],
+          marginBottom: spacing[8],
         }}
       />
-      {children}
+
+      {scroll ? (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={{
+            paddingHorizontal: spacing[24],
+            paddingBottom: footer ? spacing[16] : bottomPad,
+            gap: spacing[24],
+            flexGrow: 1,
+          }}
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View
+          style={{
+            paddingHorizontal: spacing[24],
+            paddingBottom: footer ? spacing[16] : bottomPad,
+            gap: spacing[24],
+            flex: 1,
+          }}
+        >
+          {children}
+        </View>
+      )}
+
+      {footer ? (
+        <View
+          style={{
+            paddingHorizontal: spacing[24],
+            paddingTop: spacing[8],
+            paddingBottom: bottomPad,
+            gap: spacing[8],
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            backgroundColor: colors.surface,
+          }}
+        >
+          {footer}
+        </View>
+      ) : null}
     </View>
   );
 
@@ -94,24 +226,22 @@ export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProp
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
       >
-        {scroll ? (
-          <ScrollView
-            contentContainerStyle={{
-              flexGrow: 1,
-              justifyContent: 'flex-end',
-              paddingTop: spacing[16],
-            }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {sheet}
-          </ScrollView>
-        ) : (
-          <View style={{ flex: 1, justifyContent: 'flex-end', paddingTop: spacing[16] }}>
-            {sheet}
-          </View>
-        )}
+        {/*
+          Position the sheet with a plain flex-end View — wrapping it in a
+          ScrollView + flex-end inside KeyboardAvoidingView causes a layout
+          thrash that opens then immediately dismisses the keyboard.
+        */}
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'flex-end',
+            paddingTop: spacing[16],
+          }}
+        >
+          {sheet}
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -163,5 +293,10 @@ const styles = StyleSheet.create({
   },
   sheet: {
     width: '100%',
+    flexShrink: 1,
+  },
+  scroll: {
+    flexGrow: 0,
+    flexShrink: 1,
   },
 });
