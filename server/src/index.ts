@@ -1,4 +1,6 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
@@ -6,8 +8,26 @@ import { cors } from 'hono/cors';
 import OpenAI from 'openai';
 import { z } from 'zod';
 
+import {
+  CAT_ANALYSIS_SYSTEM_PROMPT,
+  CAT_ANALYSIS_USER_PROMPT,
+} from './prompt.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+loadEnv({ path: path.join(__dirname, '../.env') });
+
 const app = new Hono();
 const port = Number(process.env.PORT ?? 8787);
+
+function openaiApiKey() {
+  const key = process.env.OPENAI_API_KEY?.trim() ?? '';
+  if (!key || key === 'sk-your-key-here') return '';
+  return key;
+}
+
+function openaiModel() {
+  return process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
+}
 
 app.use(
   '*',
@@ -16,7 +36,14 @@ app.use(
   }),
 );
 
-app.get('/health', (c) => c.json({ ok: true, service: 'catdex-api' }));
+app.get('/health', (c) =>
+  c.json({
+    ok: true,
+    service: 'catdex-api',
+    openaiConfigured: Boolean(openaiApiKey()),
+    model: openaiModel(),
+  }),
+);
 
 const analyzeSchema = z.object({
   imageBase64: z.string().min(32),
@@ -91,49 +118,38 @@ app.post('/analyze-cat', async (c) => {
     return c.json({ error: 'Payload invalide' }, 400);
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = openaiApiKey();
   if (!apiKey) {
+    console.warn('[analyze-cat] OPENAI_API_KEY manquante — réponse mock');
     return c.json({ analysis: fallbackAnalysis, mocked: true });
   }
 
   const openai = new OpenAI({ apiKey });
   const { imageBase64, mimeType } = parsed.data;
+  const dataUrl = `data:${mimeType};base64,${imageBase64}`;
 
   try {
     const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+      model: openaiModel(),
       response_format: { type: 'json_object' },
+      temperature: 0.4,
       messages: [
         {
           role: 'system',
-          content: [
-            'Tu es le naturaliste urbain de CatDex.',
-            'Tu analyses UNIQUEMENT des photos de chats (ou clairement dominées par un chat).',
-            'Réponds uniquement en JSON valide avec les clés:',
-            'color (couleur principale, ex: "Noir", "Roux tigré"),',
-            'breed (race ou type probable, ex: "Européen", "Siamois"),',
-            'coat (longueur/type de poil, ex: "Court", "Long"),',
-            'eyes (couleur des yeux, ex: "Ambre", "Verts"),',
-            'size (Petite | Moyenne | Grande),',
-            'gender (male | female | unknown),',
-            'tags (tableau de 2 mots d’ambiance, ex: ["Ombre","Mystère"]),',
-            'description (2 phrases max, ton chaleureux, français, sans inventer de lieux),',
-            'suggestedName (un seul prénom court et mignon adapté à l’apparence).',
-            'Si la photo ne montre pas de chat, mets breed="Inconnu", color="Indéterminée",',
-            'description="Aucun chat clairement visible sur cette photo.", suggestedName="".',
-          ].join(' '),
+          content: CAT_ANALYSIS_SYSTEM_PROMPT,
         },
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: 'Analyse ce chat pour le CatDex.',
+              text: CAT_ANALYSIS_USER_PROMPT,
             },
             {
               type: 'image_url',
               image_url: {
-                url: `data:${mimeType};base64,${imageBase64}`,
+                url: dataUrl,
+                detail: 'high',
               },
             },
           ],
@@ -147,6 +163,7 @@ app.post('/analyze-cat', async (c) => {
     return c.json({
       analysis: normalizeAnalysis(json),
       mocked: false,
+      model: openaiModel(),
     });
   } catch (error) {
     console.error('[analyze-cat]', error);
@@ -162,5 +179,11 @@ app.post('/analyze-cat', async (c) => {
 });
 
 serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, () => {
+  const configured = Boolean(openaiApiKey());
   console.log(`CatDex API ready on http://0.0.0.0:${port}`);
+  console.log(
+    configured
+      ? `OpenAI Vision ON · model=${openaiModel()}`
+      : 'OpenAI Vision OFF · set OPENAI_API_KEY in server/.env (mock mode)',
+  );
 });

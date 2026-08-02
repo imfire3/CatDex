@@ -85,76 +85,7 @@ export default function LoginScreen() {
   const primaryDisabled = loading || !email.trim() || !password;
 
   return (
-    <AuthShell
-      sheetStyle={{ paddingTop: spacing[48] }}
-      footer={
-        <View>
-          <Button
-            title="Se connecter"
-            loading={loading}
-            disabled={primaryDisabled && !loading}
-            onPress={() => enter('email')}
-          />
-
-          <View style={{ height: spacing[32] }} />
-          <AuthDivider />
-          <View style={{ height: spacing[32] }} />
-
-          <Button
-            variant="google"
-            title="Continuer avec Google"
-            disabled={loading}
-            onPress={() => enter('google')}
-            icon={<GoogleGlyph />}
-          />
-          <View style={{ height: spacing[16] }} />
-          <Button
-            variant="apple"
-            title="Continuer avec Apple"
-            disabled={loading}
-            onPress={() => enter('apple')}
-            icon={<AppleGlyph color={colors.authAppleLabel} />}
-          />
-
-          <View style={{ height: spacing[32] }} />
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: spacing[4],
-              minHeight: spacing[48],
-            }}
-          >
-            <Text variant="bodySmall" color="textSecondary">
-              Pas encore de compte ?
-            </Text>
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel="Créer un compte"
-              hitSlop={8}
-              onPress={() => router.push('/(auth)/signup')}
-              style={({ pressed }) => ({
-                opacity: pressed ? 0.7 : 1,
-                transform: [{ scale: pressed ? motion.pressScale : 1 }],
-                paddingVertical: spacing[8],
-                minHeight: 44,
-                justifyContent: 'center',
-              })}
-            >
-              <Text
-                variant="bodySmall"
-                color="textBrand"
-                style={{ fontFamily: fonts.bodySemi }}
-              >
-                Créer un compte →
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      }
-    >
+    <AuthShell sheetStyle={{ paddingTop: spacing[48] }}>
       <AuthHeader
         embedded
         title="Connexion"
@@ -183,6 +114,72 @@ export default function LoginScreen() {
           placeholder="••••••••"
           error={errors.password ?? undefined}
         />
+      </View>
+
+      <View>
+        <Button
+          title="Se connecter"
+          loading={loading}
+          disabled={primaryDisabled && !loading}
+          onPress={() => enter('email')}
+        />
+
+        <View style={{ height: spacing[32] }} />
+        <AuthDivider />
+        <View style={{ height: spacing[32] }} />
+
+        <Button
+          variant="google"
+          title="Continuer avec Google"
+          disabled={loading}
+          onPress={() => enter('google')}
+          icon={<GoogleGlyph />}
+        />
+        <View style={{ height: spacing[16] }} />
+        <Button
+          variant="apple"
+          title="Continuer avec Apple"
+          disabled={loading}
+          onPress={() => enter('apple')}
+          icon={<AppleGlyph color={colors.authAppleLabel} />}
+        />
+
+        <View style={{ height: spacing[32] }} />
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: spacing[4],
+            minHeight: spacing[48],
+          }}
+        >
+          <Text variant="bodySmall" color="textSecondary">
+            Pas encore de compte ?
+          </Text>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Créer un compte"
+            hitSlop={8}
+            onPress={() => router.push('/(auth)/signup')}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.7 : 1,
+              transform: [{ scale: pressed ? motion.pressScale : 1 }],
+              paddingVertical: spacing[8],
+              minHeight: 44,
+              justifyContent: 'center',
+            })}
+          >
+            <Text
+              variant="bodySmall"
+              color="textBrand"
+              style={{ fontFamily: fonts.bodySemi }}
+            >
+              Créer un compte →
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </AuthShell>
   );
