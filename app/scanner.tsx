@@ -27,6 +27,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { PageLoading, Skeleton } from '@/components/Loader';
+import { ProblemState } from '@/components/ProblemState';
 import { ProgressBar } from '@/components/Progress';
 import { ScanFrame } from '@/components/ScanFrame';
 import { Text } from '@/components/Text';
@@ -40,13 +41,13 @@ import {
   PARIS_20E,
 } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
-import { enrichAnalysis } from '@/lib/catTraits';
+import { enrichAnalysis, isNoCatFound } from '@/lib/catTraits';
 import { useCatsStore } from '@/store/cats';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { CatAnalysis } from '@/types/cat';
 
-type Step = 'camera' | 'review' | 'reveal';
+type Step = 'camera' | 'review' | 'reveal' | 'problem';
 
 export default function ScannerScreen() {
   const { colors, fonts, spacing, radius, shadow, motion, scheme } = useTheme();
@@ -162,10 +163,20 @@ export default function ScannerScreen() {
     }
   };
 
-  const runAnalysis = async (base64: string, imageUri: string) => {
+  const runAnalysis = async (
+    base64: string,
+    imageUri: string,
+    mimeType = 'image/jpeg',
+  ) => {
     setAnalyzing(true);
     try {
-      const { analysis: nextAnalysis, mocked } = await analyzeCatPhoto(base64);
+      const { analysis: nextAnalysis, mocked } = await analyzeCatPhoto(base64, mimeType);
+      if (isNoCatFound(nextAnalysis)) {
+        setPhotoUri(imageUri);
+        setAnalysis(nextAnalysis);
+        setStep('problem');
+        return;
+      }
       await enterReveal(nextAnalysis, imageUri, mocked);
     } catch (error) {
       showToast({
@@ -185,8 +196,10 @@ export default function ScannerScreen() {
 
   const handleTakePicture = async () => {
     const photo = await cameraRef.current?.takePictureAsync({
-      quality: 0.7,
+      quality: 0.55,
       base64: true,
+      exif: false,
+      shutterSound: false,
     });
     if (!photo?.uri || !photo.base64) {
       showToast({
@@ -199,14 +212,17 @@ export default function ScannerScreen() {
     setPhotoUri(photo.uri);
     setPhotoBase64(photo.base64);
     setStep('review');
-    void runAnalysis(photo.base64, photo.uri);
+    void runAnalysis(photo.base64, photo.uri, 'image/jpeg');
   };
 
   const handlePickFromLibrary = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.7,
+      quality: 0.55,
       base64: true,
+      exif: false,
+      preferredAssetRepresentationMode:
+        ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
     });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
@@ -218,10 +234,14 @@ export default function ScannerScreen() {
       });
       return;
     }
+    const mimeType =
+      asset.mimeType && !/heic|heif/i.test(asset.mimeType)
+        ? asset.mimeType
+        : 'image/jpeg';
     setPhotoUri(asset.uri);
     setPhotoBase64(asset.base64);
     setStep('review');
-    void runAnalysis(asset.base64, asset.uri);
+    void runAnalysis(asset.base64, asset.uri, mimeType);
   };
 
   const handleOpenSettings = () => {
@@ -273,6 +293,20 @@ export default function ScannerScreen() {
       params: { justAdded: cat.id },
     });
   };
+
+  if (step === 'problem') {
+    return (
+      <ProblemState
+        title="Oups"
+        description="Il y a un problème — aucun chat n'a été trouvé sur cette photo."
+        actionLabel="Retour"
+        onAction={() => {
+          if (router.canGoBack()) router.back();
+          else resetToCamera();
+        }}
+      />
+    );
+  }
 
   if (Platform.OS !== 'web' && !permission) {
     return (

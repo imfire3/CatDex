@@ -97,7 +97,9 @@ export function Button({
 
   const labelColor =
     variant === 'primary'
-      ? colors.onAccent
+      ? isDisabled
+        ? colors.ctaSecondaryLabel
+        : colors.onAccent
       : variant === 'google'
         ? colors.authGoogleLabel
         : variant === 'apple'
@@ -136,8 +138,11 @@ export function Button({
     </View>
   );
 
-  const surfaceBg =
-    variant === 'primary'
+  const primaryDisabled = variant === 'primary' && isDisabled;
+
+  const surfaceBg = primaryDisabled
+    ? colors.ctaSecondary
+    : variant === 'primary'
       ? colors.accent
       : variant === 'google'
         ? colors.surface
@@ -152,7 +157,11 @@ export function Button({
                 : 'transparent';
 
   const showBorder =
-    variant === 'secondary' || variant === 'destructive' || variant === 'google' || variant === 'ghost';
+    primaryDisabled ||
+    variant === 'secondary' ||
+    variant === 'destructive' ||
+    variant === 'google' ||
+    variant === 'ghost';
 
   const borderRadius = radius.cta;
 
@@ -182,21 +191,21 @@ export function Button({
         {
           borderRadius,
           minHeight: spacing[56],
-          opacity: isDisabled ? 0.45 : 1,
+          opacity: isDisabled && !primaryDisabled ? 0.45 : 1,
           transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           overflow: 'hidden',
-          borderWidth: variant === 'google' ? 1 : showBorder ? (variant === 'secondary' ? StyleSheet.hairlineWidth : 1) : 0,
+          borderWidth: variant === 'google' ? 1 : showBorder ? (variant === 'secondary' || primaryDisabled ? StyleSheet.hairlineWidth : 1) : 0,
           borderColor:
             variant === 'google'
               ? colors.authGoogleBorder
               : variant === 'destructive'
                 ? colors.danger
-                : variant === 'secondary'
+                : variant === 'secondary' || primaryDisabled
                   ? colors.ctaSecondaryBorder
                   : colors.border,
           backgroundColor: pressed && !isDisabled ? pressedBg : surfaceBg,
         },
-        variant === 'primary' || variant === 'apple' ? shadow.low : null,
+        (variant === 'primary' && !isDisabled) || variant === 'apple' ? shadow.low : null,
         style,
       ]}
     >

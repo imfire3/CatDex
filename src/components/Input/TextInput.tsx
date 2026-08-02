@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
+  Platform,
   TextInput as RNTextInput,
   StyleSheet,
   View,
+  type NativeSyntheticEvent,
   type StyleProp,
+  type TextInputFocusEventData,
   type TextInputProps as RNTextInputProps,
+  type TextInput as RNTextInputType,
   type ViewStyle,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -129,11 +133,23 @@ export function TextInput({
   style,
   onFocus,
   onBlur,
+  multiline,
   ...rest
 }: AppTextInputProps) {
-  const { colors, fonts, typography } = useTheme();
+  const { colors, fonts, typography, spacing } = useTheme();
   const [focused, setFocused] = useState(false);
+  const inputRef = useRef<RNTextInputType>(null);
   const filled = Boolean(rest.value != null && String(rest.value).length > 0);
+
+  const handleFocus = (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(true);
+    onFocus?.(event);
+  };
+
+  const handleBlur = (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(false);
+    onBlur?.(event);
+  };
 
   return (
     <FieldShell
@@ -149,33 +165,36 @@ export function TextInput({
       filled={filled}
     >
       <RNTextInput
+        {...rest}
+        ref={inputRef}
         editable={!disabled}
+        multiline={multiline}
+        showSoftInputOnFocus
         placeholderTextColor={colors.placeholder}
         accessibilityState={{ disabled: !!disabled }}
-        onFocus={(event) => {
-          setFocused(true);
-          onFocus?.(event);
-        }}
-        onBlur={(event) => {
-          setFocused(false);
-          onBlur?.(event);
-        }}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         style={[
           {
+            flex: 1,
             width: '100%',
+            alignSelf: 'stretch',
+            minHeight: multiline ? spacing[96] : spacing[48],
             color: colors.text,
             fontFamily: fonts.body,
             fontSize: typography.body.fontSize,
-            lineHeight: typography.body.lineHeight,
-            paddingVertical: 0,
+            // lineHeight on single-line TextInput breaks iOS caret / focus metrics
+            ...(multiline
+              ? { lineHeight: typography.body.lineHeight }
+              : Platform.OS === 'android'
+                ? { textAlignVertical: 'center' as const, includeFontPadding: false }
+                : null),
+            paddingVertical: multiline ? spacing[16] : 0,
             margin: 0,
             textAlign: 'left',
-            textAlignVertical: 'center',
-            includeFontPadding: false,
           },
           style,
         ]}
-        {...rest}
       />
     </FieldShell>
   );
@@ -194,15 +213,7 @@ export function SearchInput(props: AppTextInputProps) {
 }
 
 export function Textarea(props: AppTextInputProps) {
-  const { spacing } = useTheme();
-  return (
-    <TextInput
-      multiline
-      textAlignVertical="top"
-      {...props}
-      style={[{ minHeight: spacing[96], paddingTop: spacing[16] }, props.style]}
-    />
-  );
+  return <TextInput multiline textAlignVertical="top" {...props} />;
 }
 
 const styles = StyleSheet.create({
@@ -212,7 +223,7 @@ const styles = StyleSheet.create({
   },
   inputWrap: {
     flex: 1,
-    justifyContent: 'center',
     alignSelf: 'stretch',
+    justifyContent: 'center',
   },
 });

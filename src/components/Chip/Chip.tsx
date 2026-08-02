@@ -12,18 +12,18 @@ export type ChipProps = {
   icon?: React.ReactNode;
 };
 
+/** Filter chip — selected uses primary CTA colors (solid accent + white label). */
 export function Chip({ label, selected, onPress, static: isStatic, disabled, icon }: ChipProps) {
   const { colors, fonts, spacing, radius, motion } = useTheme();
 
-  const backgroundColor = selected ? colors.accentSoft : colors.surface;
-  const textColor = selected ? colors.accentPressed : colors.textSecondary;
-  const borderColor = selected ? colors.accent : colors.border;
+  const backgroundColor = selected ? colors.accent : colors.surface;
+  const borderColor = selected ? colors.accent : colors.borderDefault;
 
   const body = (
     <View
       style={{
         backgroundColor,
-        borderRadius: radius.pill,
+        borderRadius: radius[8],
         paddingHorizontal: spacing[16],
         paddingVertical: spacing[8],
         borderWidth: 1,
@@ -36,7 +36,11 @@ export function Chip({ label, selected, onPress, static: isStatic, disabled, ico
       }}
     >
       {icon}
-      <Text variant="bodySmall" style={{ fontFamily: fonts.bodySemi, color: textColor }}>
+      <Text
+        variant="bodySmall"
+        color={selected ? 'onAccent' : 'textSecondary'}
+        style={{ fontFamily: fonts.bodySemi }}
+      >
         {label}
       </Text>
     </View>
@@ -51,7 +55,10 @@ export function Chip({ label, selected, onPress, static: isStatic, disabled, ico
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
-        { transform: [{ scale: pressed ? motion.pressScale : 1 }] },
+        {
+          transform: [{ scale: pressed && !disabled ? motion.pressScale : 1 }],
+          opacity: pressed && !disabled ? 0.92 : 1,
+        },
       ]}
     >
       {body}

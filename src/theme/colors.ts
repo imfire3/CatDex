@@ -1,48 +1,53 @@
 /**
- * CatDex Design System — white-first, navy brand, turquoise accent
+ * CatDex Design System — white-first, indigo brand (#6A69F8), soft gray (#EEF0F2)
  *
- * brand (navy) → headings, active nav, secondary CTAs
- * accent/primary (turquoise) → primary buttons, scanner, progress
+ * brand / accent → primary actions, headings, active nav
+ * soft gray → muted surfaces, soft fills, nested cards
  * Coat/rarity colors live in src/lib/catTheme.ts — not here.
  */
 
+const BRAND = '#6A69F8';
+const BRAND_PRESSED = '#5554E0';
+const BRAND_SOFT = 'rgba(106, 105, 248, 0.12)';
+const SOFT_GRAY = '#EEF0F2';
+
 const light = {
-  brand: '#11145A',
-  brandPressed: '#0C0F42',
-  brandSoft: 'rgba(17, 20, 90, 0.08)',
-  accent: '#2EC9C3',
-  accentPressed: '#24A8A3',
-  accentSoft: 'rgba(46, 201, 195, 0.14)',
-  accentStrong: '#24A8A3',
-  primary: '#2EC9C3',
-  primarySoft: 'rgba(46, 201, 195, 0.14)',
-  violet: '#11145A',
-  violetSoft: 'rgba(17, 20, 90, 0.08)',
+  brand: BRAND,
+  brandPressed: BRAND_PRESSED,
+  brandSoft: BRAND_SOFT,
+  accent: BRAND,
+  accentPressed: BRAND_PRESSED,
+  accentSoft: BRAND_SOFT,
+  accentStrong: BRAND_PRESSED,
+  primary: BRAND,
+  primarySoft: BRAND_SOFT,
+  violet: BRAND,
+  violetSoft: BRAND_SOFT,
 
   background: '#FFFFFF',
   surface: '#FFFFFF',
-  surfaceSecondary: '#F7F8FC',
-  surfaceTertiary: '#F2F4F8',
-  surfaceMuted: '#F2F4F8',
-  surfaceDisabled: '#ECEFF3',
+  surfaceSecondary: SOFT_GRAY,
+  surfaceTertiary: SOFT_GRAY,
+  surfaceMuted: SOFT_GRAY,
+  surfaceDisabled: SOFT_GRAY,
 
-  /** Secondary CTA — light gray fill */
-  ctaSecondary: '#F5F5F5',
-  ctaSecondaryPressed: '#EEEEEE',
-  ctaSecondaryBorder: '#D0D0D0',
+  /** Secondary CTA — soft gray fill */
+  ctaSecondary: SOFT_GRAY,
+  ctaSecondaryPressed: '#E4E6E9',
+  ctaSecondaryBorder: '#D8DBDF',
   ctaSecondaryLabel: '#8F8F8F',
 
   /** Social auth — Google (official-adjacent) */
-  authGoogleBorder: '#ECEEF5',
+  authGoogleBorder: SOFT_GRAY,
   authGoogleLabel: '#202124',
-  authGooglePressed: '#F7F8FC',
+  authGooglePressed: SOFT_GRAY,
   /** Social auth — Apple HIG */
   authAppleBg: '#000000',
   authApplePressed: '#1A1A1A',
   authAppleLabel: '#FFFFFF',
 
   text: '#15172B',
-  textBrand: '#11145A',
+  textBrand: BRAND,
   textBody: 'rgba(21, 23, 43, 0.78)',
   textSecondary: '#667085',
   textMuted: '#98A2B3',
@@ -50,10 +55,10 @@ const light = {
   textInverse: '#FFFFFF',
   textDisabled: '#B7BDC8',
 
-  border: '#E8EAF0',
-  borderDefault: '#D9DDE6',
+  border: SOFT_GRAY,
+  borderDefault: '#D8DBDF',
   borderStrong: '#BCC3D0',
-  focusRing: '#2EC9C3',
+  focusRing: BRAND,
   borderError: '#E5484D',
 
   mint: '#12B76A',
@@ -62,8 +67,8 @@ const light = {
   yellowSoft: 'rgba(247, 144, 9, 0.12)',
   orange: '#F79009',
   orangeSoft: 'rgba(247, 144, 9, 0.12)',
-  sky: '#2E90FA',
-  skySoft: 'rgba(46, 144, 250, 0.12)',
+  sky: BRAND,
+  skySoft: BRAND_SOFT,
   rose: '#F63D68',
   roseSoft: 'rgba(246, 61, 104, 0.12)',
   success: '#12B76A',
@@ -72,22 +77,22 @@ const light = {
   warningSoft: 'rgba(247, 144, 9, 0.12)',
   danger: '#E5484D',
   dangerSoft: 'rgba(229, 72, 77, 0.12)',
-  info: '#2E90FA',
-  infoSoft: 'rgba(46, 144, 250, 0.12)',
+  info: BRAND,
+  infoSoft: BRAND_SOFT,
 
-  overlay: 'rgba(17, 20, 90, 0.4)',
+  overlay: 'rgba(106, 105, 248, 0.4)',
   onAccent: '#FFFFFF',
   onPrimary: '#FFFFFF',
   onBrand: '#FFFFFF',
   onSurface: '#15172B',
-  skeleton: '#EBEEF5',
-  skeletonHighlight: '#F7F8FC',
+  skeleton: SOFT_GRAY,
+  skeletonHighlight: '#F7F8FA',
   glassFill: 'rgba(255, 255, 255, 0.9)',
-  shadowColor: '#11145A',
+  shadowColor: BRAND,
   mapPinRing: '#FFFFFF',
-  tabBar: 'rgba(255, 255, 255, 0.96)',
-  gradientStart: '#2EC9C3',
-  gradientEnd: '#24A8A3',
+  tabBar: 'rgba(255,255,255,0.96)',
+  gradientStart: BRAND,
+  gradientEnd: BRAND_PRESSED,
 } as const;
 
 export const palette = {

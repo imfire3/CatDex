@@ -23,7 +23,7 @@ const NONE: ShadowStyle = {
  * Prefer elevation.low/medium/floating; small/medium/large kept as aliases.
  */
 export function createShadows(colors: ThemeColors): Record<ShadowToken, ShadowStyle> {
-  const ink = colors.shadowColor || '#11145A';
+  const ink = colors.shadowColor || '#6A69F8';
 
   if (Platform.OS === 'web') {
     return {
@@ -89,11 +89,11 @@ export function createAccentShadow(colors: ThemeColors): ShadowStyle {
 }
 
 export const shadow = createShadows({
-  shadowColor: '#11145A',
-  accent: '#2EC9C3',
+  shadowColor: '#6A69F8',
+  accent: '#6A69F8',
 } as ThemeColors);
 
 export const accentShadow = createAccentShadow({
-  shadowColor: '#11145A',
-  accent: '#2EC9C3',
+  shadowColor: '#6A69F8',
+  accent: '#6A69F8',
 } as ThemeColors);

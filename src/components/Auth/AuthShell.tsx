@@ -33,43 +33,71 @@ type AuthShellProps = {
   children: ReactNode;
   sheetStyle?: StyleProp<ViewStyle>;
   scroll?: boolean;
+  /** Sticky top chrome (e.g. back button) — stays above the scroll area. */
+  header?: ReactNode;
+  /** Sticky bottom actions (always visible above the keyboard / home indicator). */
+  footer?: ReactNode;
+  /** Stretch the white sheet to fill the screen (login / form screens). */
+  fullHeight?: boolean;
 };
 
 /** Shared auth chrome: map wallpaper + white bottom sheet. */
-export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProps) {
+export function AuthShell({
+  children,
+  sheetStyle,
+  scroll = true,
+  header,
+  footer,
+  fullHeight = false,
+}: AuthShellProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
+
+  const sheetPadding = {
+    paddingHorizontal: spacing[24],
+    paddingTop: fullHeight ? insets.top + spacing[8] : spacing[16],
+    paddingBottom: Math.max(insets.bottom, spacing[24]),
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderColor: colors.border,
+  };
+
+  const body = scroll ? (
+    <ScrollView
+      style={fullHeight || footer || header ? { flex: 1 } : undefined}
+      contentContainerStyle={{
+        flexGrow: fullHeight ? 1 : undefined,
+        gap: spacing[24],
+        paddingBottom: footer ? spacing[16] : 0,
+      }}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      automaticallyAdjustKeyboardInsets
+      showsVerticalScrollIndicator={false}
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View style={[{ gap: spacing[24] }, fullHeight || footer || header ? { flex: 1 } : null]}>
+      {children}
+    </View>
+  );
 
   const sheet = (
     <View
       style={[
         styles.sheet,
-        {
-          paddingHorizontal: spacing[24],
-          paddingTop: spacing[8],
-          paddingBottom: Math.max(insets.bottom, spacing[24]) + spacing[8],
-          borderTopLeftRadius: radius.sheet,
-          borderTopRightRadius: radius.sheet,
-          backgroundColor: colors.surface,
-          gap: spacing[24],
-          borderTopWidth: 1,
-          borderColor: colors.border,
-        },
+        sheetPadding,
         shadow.floating,
+        fullHeight ? styles.sheetFill : null,
         sheetStyle,
       ]}
     >
-      <View
-        style={{
-          alignSelf: 'center',
-          width: spacing[40],
-          height: spacing[4],
-          borderRadius: radius.full,
-          backgroundColor: colors.borderDefault,
-          marginTop: spacing[8],
-        }}
-      />
-      {children}
+      {header ? <View style={{ paddingBottom: spacing[16] }}>{header}</View> : null}
+      {body}
+      {footer ? <View style={{ gap: spacing[16], paddingTop: spacing[8] }}>{footer}</View> : null}
     </View>
   );
 
@@ -94,24 +122,17 @@ export function AuthShell({ children, sheetStyle, scroll = true }: AuthShellProp
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
       >
-        {scroll ? (
-          <ScrollView
-            contentContainerStyle={{
-              flexGrow: 1,
-              justifyContent: 'flex-end',
-              paddingTop: spacing[16],
-            }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {sheet}
-          </ScrollView>
-        ) : (
-          <View style={{ flex: 1, justifyContent: 'flex-end', paddingTop: spacing[16] }}>
-            {sheet}
-          </View>
-        )}
+        <View
+          style={[
+            styles.shellInner,
+            fullHeight ? styles.shellFill : styles.shellEnd,
+            { paddingTop: fullHeight ? 0 : spacing[16] },
+          ]}
+        >
+          {sheet}
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -123,17 +144,17 @@ export const AUTH_LIGHT = {
   textBody: 'rgba(21,23,43,0.78)',
   textSecondary: '#667085',
   sheet: '#FFFFFF',
-  field: '#F7F8FC',
-  secondaryBg: '#F7F8FC',
-  border: '#E8EAF0',
-  skySoft: '#EAF6FC',
+  field: '#EEF0F2',
+  secondaryBg: '#EEF0F2',
+  border: '#EEF0F2',
+  skySoft: 'rgba(106,105,248,0.12)',
   orangeSoft: '#FFF3EC',
   mintSoft: '#E8F8F2',
 } as const;
 
 export const authSecondaryOnLight = {
-  backgroundColor: '#F7F8FC',
-  borderColor: '#E8EAF0',
+  backgroundColor: '#EEF0F2',
+  borderColor: '#D8DBDF',
   minHeight: 56,
 } as ViewStyle;
 
@@ -161,7 +182,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: '55%',
   },
+  shellInner: {
+    flex: 1,
+  },
+  shellFill: {
+    justifyContent: 'flex-start',
+  },
+  shellEnd: {
+    justifyContent: 'flex-end',
+  },
   sheet: {
     width: '100%',
+  },
+  sheetFill: {
+    flex: 1,
   },
 });

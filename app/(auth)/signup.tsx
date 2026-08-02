@@ -1,8 +1,8 @@
 import { Redirect, router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
-import { AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
+import { AuthBackButton, AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
 import { TextInput } from '@/components/Input';
@@ -17,7 +17,7 @@ import { useAuthStore, getPostAuthHref } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SignupScreen() {
-  const { colors, fonts, spacing } = useTheme();
+  const { fonts, spacing, motion } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const signUp = useAuthStore((state) => state.signUp);
@@ -48,6 +48,13 @@ export default function SignupScreen() {
     };
   }, [accepted, confirm, email, password, pseudo, submitted]);
 
+  const formFilled =
+    Boolean(pseudo.trim()) &&
+    Boolean(email.trim()) &&
+    Boolean(password) &&
+    Boolean(confirm) &&
+    accepted;
+
   if (user) {
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
   }
@@ -72,12 +79,49 @@ export default function SignupScreen() {
   };
 
   return (
-    <AuthShell>
+    <AuthShell
+      fullHeight
+      header={
+        <AuthBackButton onPress={() => router.replace('/(auth)/welcome')} />
+      }
+      footer={
+        <View style={{ gap: spacing[16], alignItems: 'center' }}>
+          <View style={{ alignSelf: 'stretch' }}>
+            <Button
+              title="Créer mon compte"
+              disabled={!formFilled}
+              onPress={onSubmit}
+            />
+          </View>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="J’ai déjà un compte"
+            hitSlop={8}
+            onPress={() => router.push('/(auth)/login')}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.7 : 1,
+              transform: [{ scale: pressed ? motion.pressScale : 1 }],
+              paddingVertical: spacing[8],
+              minHeight: 44,
+              justifyContent: 'center',
+            })}
+          >
+            <Text
+              variant="bodySmall"
+              color="textBrand"
+              style={{ fontFamily: fonts.bodySemi }}
+            >
+              J’ai déjà un compte
+            </Text>
+          </Pressable>
+        </View>
+      }
+    >
       <AuthHeader
         embedded
+        showBack={false}
         title="Créer un compte"
         subtitle="Sauvegarde ta collection et retrouve ton CatDex partout."
-        onBack={() => router.replace('/(auth)/welcome')}
       />
 
       <View style={{ gap: spacing[16] }}>
@@ -124,19 +168,6 @@ export default function SignupScreen() {
         />
 
         <TermsCheckbox checked={accepted} onChange={setAccepted} error={errors.terms} />
-      </View>
-
-      <View style={{ gap: spacing[8] }}>
-        <Button title="Créer mon compte" onPress={onSubmit} />
-        <Button
-          variant="secondary"
-          onPress={() => router.push('/(auth)/login')}
-          accessibilityLabel="J’ai déjà un compte"
-        >
-          <Text variant="body" style={{ fontFamily: fonts.bodySemi, color: colors.brand }}>
-            J’ai déjà un compte
-          </Text>
-        </Button>
       </View>
     </AuthShell>
   );

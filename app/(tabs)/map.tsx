@@ -219,7 +219,7 @@ export default function MapScreen() {
                   width: spacing[48],
                   height: spacing[48],
                   borderRadius: radius.full,
-                  backgroundColor: filtersOpen ? colors.accentSoft : colors.surface,
+                  backgroundColor: filtersOpen ? colors.accent : colors.surface,
                   borderWidth: 1,
                   borderColor: filtersOpen ? colors.accent : colors.border,
                   alignItems: 'center',
@@ -232,7 +232,7 @@ export default function MapScreen() {
               <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
                 <Path
                   d="M4 6h16M7 12h10M10 18h4"
-                  stroke={filtersOpen ? colors.accent : colors.brand}
+                  stroke={filtersOpen ? colors.onAccent : colors.brand}
                   strokeWidth={iconStroke.regular}
                   strokeLinecap="round"
                 />
@@ -257,8 +257,8 @@ export default function MapScreen() {
                 gap: spacing[8],
                 paddingHorizontal: spacing[16],
                 paddingVertical: spacing[8],
-                borderRadius: radius.sm,
-                backgroundColor: colors.surface,
+                borderRadius: radius[8],
+                backgroundColor: filter === 'nearby' ? colors.accent : colors.surface,
                 borderWidth: 1,
                 borderColor: filter === 'nearby' ? colors.accent : colors.border,
                 opacity: pressed ? 0.92 : 1,
@@ -269,19 +269,28 @@ export default function MapScreen() {
             <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
               <Path
                 d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
-                stroke={colors.accent}
+                stroke={filter === 'nearby' ? colors.onAccent : colors.accent}
                 strokeWidth={iconStroke.regular}
                 strokeLinejoin="round"
               />
-              <Circle cx="12" cy="10" r="2.5" fill={colors.accent} />
+              <Circle
+                cx="12"
+                cy="10"
+                r="2.5"
+                fill={filter === 'nearby' ? colors.onAccent : colors.accent}
+              />
             </Svg>
-            <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+            <Text
+              variant="bodySmall"
+              color={filter === 'nearby' ? 'onAccent' : 'textBrand'}
+              style={{ fontFamily: fonts.bodySemi }}
+            >
               À proximité
             </Text>
             <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
               <Path
                 d="M6 9l6 6 6-6"
-                stroke={colors.textMuted}
+                stroke={filter === 'nearby' ? colors.onAccent : colors.textMuted}
                 strokeWidth={iconStroke.regular}
                 strokeLinecap="round"
                 strokeLinejoin="round"

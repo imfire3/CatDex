@@ -76,15 +76,11 @@ export function AuthHeader({
   return (
     <View
       style={{
-        paddingTop: embedded ? spacing[8] : insets.top + spacing[16],
+        paddingTop: embedded ? 0 : insets.top + spacing[16],
         gap: spacing[24],
       }}
     >
-      {showBack ? (
-        <AuthBackButton onPress={onBack} />
-      ) : (
-        <View style={{ height: spacing[40] }} />
-      )}
+      {showBack ? <AuthBackButton onPress={onBack} /> : null}
       <View style={{ gap: spacing[8] }}>
         <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
           {title}

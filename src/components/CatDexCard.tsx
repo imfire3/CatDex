@@ -1,7 +1,7 @@
 /**
- * Sprite gallery tile — dense CatDex grid matching design mock.
+ * Collection tile — photo when available, sprite fallback.
  */
-import { Pressable, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
@@ -19,6 +19,7 @@ export function CatDexCard({ cat, onPress }: Props) {
   const { colors, fonts, spacing, radius, shadow, scheme, motion } = useTheme();
   const theme = themeFromColorLabel(cat.analysis.color, cat.number);
   const dexLabel = formatDexNumber(cat.number);
+  const hasPhoto = Boolean(cat.photoUri);
 
   return (
     <Pressable
@@ -43,12 +44,24 @@ export function CatDexCard({ cat, onPress }: Props) {
           aspectRatio: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          padding: spacing[8],
+          backgroundColor: colors.surfaceSecondary,
+          overflow: 'hidden',
         }}
       >
-        <CatSprite colorLabel={cat.analysis.color} seed={cat.number} size={112} />
+        {hasPhoto ? (
+          <Image
+            source={{ uri: cat.photoUri }}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+          />
+        ) : (
+          <View style={{ padding: spacing[8] }}>
+            <CatSprite colorLabel={cat.analysis.color} seed={cat.number} size={112} />
+          </View>
+        )}
       </View>
-      <View style={{ paddingHorizontal: spacing[16], paddingBottom: spacing[16], gap: spacing[4] }}>
+      <View style={{ paddingHorizontal: spacing[16], paddingBottom: spacing[16], paddingTop: spacing[8], gap: spacing[4] }}>
         <Text variant="caption" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
           {dexLabel}
         </Text>

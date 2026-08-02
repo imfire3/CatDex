@@ -32,7 +32,11 @@
       "bundleIdentifier": "com.catdex.app",
       "infoPlist": {
         "NSCameraUsageDescription": "CatDex a besoin de la caméra pour scanner les chats.",
-        "NSLocationWhenInUseUsageDescription": "CatDex utilise ta position pour placer les chats sur la carte."
+        "NSLocationWhenInUseUsageDescription": "CatDex utilise ta position pour placer les chats sur la carte.",
+        "NSLocalNetworkUsageDescription": "CatDex contacte l’API d’analyse sur ton réseau local.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {
@@ -47,7 +51,7 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
         "adaptiveIcon": {
-        "backgroundColor": "#0B1A3A",
+        "backgroundColor": "#6A69F8",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

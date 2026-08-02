@@ -97,7 +97,31 @@ app.post('/analyze-cat', async (c) => {
   }
 
   const openai = new OpenAI({ apiKey });
-  const { imageBase64, mimeType } = parsed.data;
+  let { imageBase64, mimeType } = parsed.data;
+
+  // Clients may send a full data URL by mistake
+  const dataUrl = /^data:([^;]+);base64,(.+)$/s.exec(imageBase64);
+  if (dataUrl) {
+    mimeType = dataUrl[1] || mimeType;
+    imageBase64 = dataUrl[2];
+  }
+
+  // HEIC from iOS library is unsupported by OpenAI vision — ask for JPEG
+  const normalizedMime = mimeType.toLowerCase();
+  if (
+    normalizedMime.includes('heic') ||
+    normalizedMime.includes('heif') ||
+    normalizedMime.includes('tiff')
+  ) {
+    return c.json(
+      {
+        error: 'Format image non supporté. Utilise JPEG ou PNG.',
+        analysis: fallbackAnalysis,
+        mocked: true,
+      },
+      415,
+    );
+  }
 
   try {
     const completion = await openai.chat.completions.create({

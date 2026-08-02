@@ -62,3 +62,18 @@ export function genderSymbol(gender?: CatGender): string {
   if (gender === 'female') return '♀';
   return '';
 }
+
+/** True when Vision says the photo has no clearly visible cat. */
+export function isNoCatFound(analysis: CatAnalysis): boolean {
+  const description = (analysis.description ?? '').toLowerCase();
+  const breed = (analysis.breed ?? '').toLowerCase();
+  const color = (analysis.color ?? '').toLowerCase();
+  const suggestedName = (analysis.suggestedName ?? '').trim();
+
+  if (description.includes('aucun chat')) return true;
+  if (breed === 'inconnu' && suggestedName === '') return true;
+  if (breed === 'inconnu' && (color.includes('indétermin') || color.includes('indetermin'))) {
+    return true;
+  }
+  return false;
+}
