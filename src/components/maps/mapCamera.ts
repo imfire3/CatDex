@@ -4,16 +4,16 @@ import { PARIS_20E } from '@/lib/constants';
 import { motionDuration } from '@/theme/motion';
 
 /** Street-level framing for the 3D explorer. */
-export const MAP_ZOOM = 17;
+export const MAP_ZOOM = 16.4;
 
-/** Strong game-world tilt (degrees) — Apple/Google 3D buildings. */
-export const MAP_PITCH = 58;
+/** Apple Maps–style tilt (degrees). */
+export const MAP_PITCH = 52;
 
 /** Camera animation duration — within 150–300 ms. */
 export const MAP_CAMERA_DURATION = Math.min(motionDuration.slow, 280);
 
 /** Approximate altitude (meters) for iOS when zoom is unavailable. */
-export const MAP_ALTITUDE = 520;
+export const MAP_ALTITUDE = 640;
 
 /** How far the player may pinch out / in. */
 export const MAP_MIN_ZOOM = 13;

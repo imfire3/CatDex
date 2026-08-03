@@ -23,13 +23,12 @@ function TabIcon({
     return (
       <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
         <Path
-          d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
+          d="M12 3.2 13.9 9h6.1l-4.9 3.7 1.9 5.9L12 15.4 7 18.6l1.9-5.9L4 9h6.1L12 3.2Z"
           stroke={color}
           strokeWidth={focused ? 0 : 1.6}
           fill={fill}
           strokeLinejoin="round"
         />
-        {!focused ? <Circle cx="12" cy="10" r="2.5" stroke={color} strokeWidth={1.6} /> : null}
       </Svg>
     );
   }
