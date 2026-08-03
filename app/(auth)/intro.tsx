@@ -10,28 +10,28 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 const STEPS = [
   {
-    key: 'explore',
-    title: 'Explore ton quartier',
-    body: 'La carte montre les chats autour de toi. Filtre par proximité, rareté ou déjà vus.',
+    key: 'location',
+    title: 'Localisation',
+    body: 'Voir les chats autour de toi et les quartiers à explorer.',
     softKey: 'skySoft' as const,
     tintKey: 'sky' as const,
-    icon: 'map' as const,
+    icon: 'location' as const,
   },
   {
-    key: 'capture',
-    title: 'Capture avec la caméra',
-    body: 'Photographie un chat : l’IA le décrit (couleur, race, robe) et te propose un nom.',
-    softKey: 'orangeSoft' as const,
-    tintKey: 'orange' as const,
+    key: 'camera',
+    title: 'Caméra',
+    body: 'Photographie et analyse les chats que tu rencontres.',
+    softKey: 'skySoft' as const,
+    tintKey: 'sky' as const,
     icon: 'camera' as const,
   },
   {
-    key: 'collect',
-    title: 'Remplis ton CatDex',
-    body: 'Chaque capture rejoint ta collection. Relis les fiches, gagne des missions, progresse.',
-    softKey: 'mintSoft' as const,
-    tintKey: 'mint' as const,
-    icon: 'book' as const,
+    key: 'notifications',
+    title: 'Notifications',
+    body: 'Ne manque aucun chat rare ni tes récompenses.',
+    softKey: 'roseSoft' as const,
+    tintKey: 'rose' as const,
+    icon: 'bell' as const,
   },
 ];
 
@@ -43,7 +43,8 @@ function StepIcon({
   color: string;
 }) {
   const { iconStroke } = useTheme();
-  if (name === 'map') {
+
+  if (name === 'location') {
     return (
       <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
         <Path
@@ -56,32 +57,41 @@ function StepIcon({
       </Svg>
     );
   }
+
   if (name === 'camera') {
     return (
       <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
         <Path
-          d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"
+          d="M4 9.5V8a2 2 0 0 1 2-2h1.5l1-1.5h7L16.5 6H18a2 2 0 0 1 2 2v1.5"
           stroke={color}
           strokeWidth={iconStroke.regular}
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={iconStroke.regular} />
+        <Rect
+          x="4"
+          y="9.5"
+          width="16"
+          height="10.5"
+          rx="2"
+          stroke={color}
+          strokeWidth={iconStroke.regular}
+        />
+        <Circle cx="12" cy="14.5" r="2.75" stroke={color} strokeWidth={iconStroke.regular} />
       </Svg>
     );
   }
+
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Rect
-        x="4"
-        y="3.5"
-        width="16"
-        height="17"
-        rx="2.5"
+      <Path
+        d="M12 3.5a1.75 1.75 0 0 1 1.75 1.58V6.5h2.5A2.25 2.25 0 0 1 18.25 8.75v8.5A2.25 2.25 0 0 1 16 19.5H8A2.25 2.25 0 0 1 5.75 17.25v-8.5A2.25 2.25 0 0 1 8 6.5h2.5V5.08A1.75 1.75 0 0 1 12 3.5Z"
         stroke={color}
         strokeWidth={iconStroke.regular}
+        strokeLinejoin="round"
       />
       <Path
-        d="M8 9h8M8 13h5"
+        d="M10.25 17.25h3.5"
         stroke={color}
         strokeWidth={iconStroke.regular}
         strokeLinecap="round"
@@ -90,8 +100,22 @@ function StepIcon({
   );
 }
 
+function ChevronRight({ color }: { color: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M7.5 5 12.5 10 7.5 15"
+        stroke={color}
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 export default function IntroScreen() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
 
@@ -103,12 +127,19 @@ export default function IntroScreen() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell
+      fullHeight
+      footer={
+        <View style={{ alignSelf: 'stretch' }}>
+          <Button title="Continuer" onPress={() => router.push('/(auth)/permissions')} />
+        </View>
+      }
+    >
       <View style={{ gap: spacing[8] }}>
         <Text variant="label" color="textMuted">
           Comment ça marche
         </Text>
-        <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
+        <Text variant="h1" color="textBrand">
           CatDex en 3 gestes
         </Text>
         <Text variant="body" color="textSecondary">
@@ -117,18 +148,17 @@ export default function IntroScreen() {
       </View>
 
       <View style={{ gap: spacing[16] }}>
-        {STEPS.map((step, index) => (
+        {STEPS.map((step) => (
           <View
             key={step.key}
             style={[
               {
                 flexDirection: 'row',
+                alignItems: 'center',
                 gap: spacing[16],
                 padding: spacing[16],
                 borderRadius: radius.lg,
-                backgroundColor: colors.surfaceSecondary,
-                borderWidth: 1,
-                borderColor: colors.border,
+                backgroundColor: colors.surfaceElevated,
               },
               shadow.low,
             ]}
@@ -137,7 +167,7 @@ export default function IntroScreen() {
               style={{
                 width: spacing[48],
                 height: spacing[48],
-                borderRadius: radius.md,
+                borderRadius: radius.full,
                 backgroundColor: colors[step.softKey],
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -145,26 +175,20 @@ export default function IntroScreen() {
             >
               <StepIcon name={step.icon} color={colors[step.tintKey]} />
             </View>
+
             <View style={{ flex: 1, gap: spacing[4] }}>
-              <Text
-                variant="caption"
-                color="textMuted"
-                style={{ fontFamily: fonts.bodySemi }}
-              >
-                {index + 1} / {STEPS.length}
-              </Text>
-              <Text variant="h3" color="textBrand">
+              <Text variant="h3" color="text">
                 {step.title}
               </Text>
               <Text variant="bodySmall" color="textSecondary">
                 {step.body}
               </Text>
             </View>
+
+            <ChevronRight color={colors.textMuted} />
           </View>
         ))}
       </View>
-
-      <Button title="Continuer" onPress={() => router.push('/(auth)/permissions')} />
     </AuthShell>
   );
 }

@@ -50,7 +50,7 @@ export default function WelcomeScreen() {
           pointerEvents="none"
         />
         <LinearGradient
-          colors={['transparent', 'rgba(255,255,255,0.45)', '#FFFFFF']}
+          colors={['transparent', 'rgba(255,255,255,0.45)', colors.surface]}
           style={styles.bottomVeil}
           pointerEvents="none"
         />

@@ -2,7 +2,7 @@ import { Redirect, router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AuthBackButton, AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
+import { AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
 import { TextInput } from '@/components/Input';
@@ -82,7 +82,13 @@ export default function SignupScreen() {
     <AuthShell
       fullHeight
       header={
-        <AuthBackButton onPress={() => router.replace('/(auth)/welcome')} />
+        <AuthHeader
+          inline
+          showBack
+          onBack={() => router.replace('/(auth)/welcome')}
+          title="Créer un compte"
+          subtitle="Sauvegarde ta collection et retrouve ton CatDex partout."
+        />
       }
       footer={
         <View style={{ gap: spacing[16], alignItems: 'center' }}>
@@ -117,13 +123,6 @@ export default function SignupScreen() {
         </View>
       }
     >
-      <AuthHeader
-        embedded
-        showBack={false}
-        title="Créer un compte"
-        subtitle="Sauvegarde ta collection et retrouve ton CatDex partout."
-      />
-
       <View style={{ gap: spacing[16] }}>
         <TextInput
           label="Pseudo"

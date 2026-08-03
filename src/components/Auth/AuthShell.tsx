@@ -1,14 +1,15 @@
 import type { ReactNode } from 'react';
 import {
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -73,8 +74,9 @@ export function AuthShell({
         paddingBottom: footer ? spacing[16] : 0,
       }}
       keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
+      keyboardDismissMode="on-drag"
       automaticallyAdjustKeyboardInsets
+      onScrollBeginDrag={Keyboard.dismiss}
       showsVerticalScrollIndicator={false}
     >
       {children}
@@ -120,8 +122,9 @@ export function AuthShell({
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? undefined : 'height'}
         style={{ flex: 1 }}
+        enabled={Platform.OS !== 'ios'}
         keyboardVerticalOffset={0}
       >
         <View

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import {
   Platform,
+  Pressable,
   TextInput as RNTextInput,
   StyleSheet,
   View,
@@ -59,10 +60,12 @@ function FieldShell({
   children,
   focused,
   filled,
+  onPressField,
 }: FieldProps & {
   children: React.ReactNode;
   focused?: boolean;
   filled?: boolean;
+  onPressField?: () => void;
 }) {
   const { colors, spacing, radius, shadow } = useTheme();
   const showValid = Boolean(valid) && !error;
@@ -83,7 +86,10 @@ function FieldShell({
           {label}
         </Text>
       ) : null}
-      <View
+      <Pressable
+        accessibilityRole="none"
+        disabled={disabled}
+        onPress={onPressField}
         style={[
           styles.field,
           {
@@ -104,9 +110,11 @@ function FieldShell({
         ]}
       >
         {leftIcon}
-        <View style={styles.inputWrap}>{children}</View>
+        <View style={styles.inputWrap} pointerEvents="box-none">
+          {children}
+        </View>
         {showValid ? <ValidCheck /> : rightIcon}
-      </View>
+      </Pressable>
       {error ? (
         <Text variant="caption" color="danger">
           {error}
@@ -151,6 +159,11 @@ export function TextInput({
     onBlur?.(event);
   };
 
+  const focusInput = () => {
+    if (disabled) return;
+    inputRef.current?.focus();
+  };
+
   return (
     <FieldShell
       label={label}
@@ -163,6 +176,7 @@ export function TextInput({
       containerStyle={containerStyle}
       focused={focused}
       filled={filled}
+      onPressField={focusInput}
     >
       <RNTextInput
         {...rest}
@@ -183,13 +197,12 @@ export function TextInput({
             color: colors.text,
             fontFamily: fonts.body,
             fontSize: typography.body.fontSize,
-            // lineHeight on single-line TextInput breaks iOS caret / focus metrics
             ...(multiline
               ? { lineHeight: typography.body.lineHeight }
               : Platform.OS === 'android'
                 ? { textAlignVertical: 'center' as const, includeFontPadding: false }
                 : null),
-            paddingVertical: multiline ? spacing[16] : 0,
+            paddingVertical: multiline ? spacing[16] : Platform.OS === 'ios' ? spacing[16] : 0,
             margin: 0,
             textAlign: 'left',
           },
@@ -219,11 +232,12 @@ export function Textarea(props: AppTextInputProps) {
 const styles = StyleSheet.create({
   field: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
   inputWrap: {
     flex: 1,
     alignSelf: 'stretch',
     justifyContent: 'center',
+    minHeight: 48,
   },
 });

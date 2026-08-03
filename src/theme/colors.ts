@@ -10,6 +10,7 @@ const BRAND = '#6A69F8';
 const BRAND_PRESSED = '#5554E0';
 const BRAND_SOFT = 'rgba(106, 105, 248, 0.12)';
 const SOFT_GRAY = '#EEF0F2';
+const APP_BG = '#FCFCFE';
 
 const light = {
   brand: BRAND,
@@ -24,8 +25,10 @@ const light = {
   violet: BRAND,
   violetSoft: BRAND_SOFT,
 
-  background: '#FFFFFF',
-  surface: '#FFFFFF',
+  background: APP_BG,
+  surface: APP_BG,
+  /** White cards and sheets on the app canvas (#FCFCFE). */
+  surfaceElevated: '#FFFFFF',
   surfaceSecondary: SOFT_GRAY,
   surfaceTertiary: SOFT_GRAY,
   surfaceMuted: SOFT_GRAY,
@@ -90,7 +93,7 @@ const light = {
   glassFill: 'rgba(255, 255, 255, 0.9)',
   shadowColor: BRAND,
   mapPinRing: '#FFFFFF',
-  tabBar: 'rgba(255,255,255,0.96)',
+  tabBar: 'rgba(252,252,254,0.96)',
   gradientStart: BRAND,
   gradientEnd: BRAND_PRESSED,
 } as const;
@@ -116,6 +119,7 @@ export type ThemeColors = {
   violetSoft: string;
   background: string;
   surface: string;
+  surfaceElevated: string;
   surfaceSecondary: string;
   surfaceTertiary: string;
   surfaceMuted: string;
