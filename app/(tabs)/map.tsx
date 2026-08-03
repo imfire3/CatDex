@@ -109,13 +109,23 @@ export default function MapScreen() {
           longitude: position.coords.longitude,
         };
         setUserCoordinate(next);
-        setFocusCoordinate(next);
+        const nearest = sortByDistance(filteredCats.length ? filteredCats : cats, next)[0];
+        setFocusCoordinate(
+          nearest
+            ? { latitude: nearest.latitude, longitude: nearest.longitude }
+            : next,
+        );
         return;
       }
     } catch {
       // fallback below
     }
-    setFocusCoordinate({ ...PARIS_20E.center });
+    const nearest = sortByDistance(filteredCats.length ? filteredCats : cats, PARIS_20E.center)[0];
+    setFocusCoordinate(
+      nearest
+        ? { latitude: nearest.latitude, longitude: nearest.longitude }
+        : { ...PARIS_20E.center },
+    );
   };
 
   return (

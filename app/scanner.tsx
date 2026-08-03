@@ -59,6 +59,9 @@ export default function ScannerScreen() {
   const cameraRef = useRef<CameraView>(null);
   const addingRef = useRef(false);
   const [permission, requestPermission] = useCameraPermissions();
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
   const [step, setStep] = useState<Step>('camera');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -72,6 +75,20 @@ export default function ScannerScreen() {
   const revealScale = useSharedValue(0.88);
   const revealOpacity = useSharedValue(0);
   const blurAmount = useSharedValue(1);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    if (permission && !permission.granted && permission.canAskAgain !== false) {
+      void requestPermission();
+    }
+  }, [permission, requestPermission]);
+
+  useEffect(() => {
+    if (step !== 'camera') {
+      setCameraReady(false);
+      setCameraError(null);
+    }
+  }, [step]);
 
   useEffect(() => {
     if (reduceMotion || step !== 'camera') return;
@@ -195,24 +212,48 @@ export default function ScannerScreen() {
   };
 
   const handleTakePicture = async () => {
-    const photo = await cameraRef.current?.takePictureAsync({
-      quality: 0.55,
-      base64: true,
-      exif: false,
-      shutterSound: false,
-    });
-    if (!photo?.uri || !photo.base64) {
+    if (capturing) return;
+    if (!cameraReady || !cameraRef.current) {
       showToast({
-        title: 'Capture impossible',
-        description: 'Réessaie ou choisis une photo dans la galerie.',
-        tone: 'danger',
+        title: 'Caméra pas prête',
+        description: 'Attends le flux vidéo, ou choisis une photo dans la galerie.',
+        tone: 'warning',
       });
       return;
     }
-    setPhotoUri(photo.uri);
-    setPhotoBase64(photo.base64);
-    setStep('review');
-    void runAnalysis(photo.base64, photo.uri, 'image/jpeg');
+
+    setCapturing(true);
+    try {
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.45,
+        base64: true,
+        exif: false,
+        shutterSound: false,
+      });
+      if (!photo?.uri || !photo.base64) {
+        showToast({
+          title: 'Capture impossible',
+          description: 'Réessaie ou choisis une photo dans la galerie.',
+          tone: 'danger',
+        });
+        return;
+      }
+      setPhotoUri(photo.uri);
+      setPhotoBase64(photo.base64);
+      setStep('review');
+      void runAnalysis(photo.base64, photo.uri, 'image/jpeg');
+    } catch (error) {
+      showToast({
+        title: 'Capture impossible',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Réessaie ou choisis une photo dans la galerie.',
+        tone: 'danger',
+      });
+    } finally {
+      setCapturing(false);
+    }
   };
 
   const handlePickFromLibrary = async () => {
@@ -684,12 +725,68 @@ export default function ScannerScreen() {
   const isWebCamera = Platform.OS === 'web';
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <View style={[styles.root, { backgroundColor: colors.text }]}>
       {!isWebCamera ? (
-        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          mode="picture"
+          onCameraReady={() => {
+            setCameraReady(true);
+            setCameraError(null);
+          }}
+          onMountError={(event) => {
+            setCameraReady(false);
+            setCameraError(
+              event.nativeEvent?.message ||
+                'Impossible d’ouvrir la caméra sur cet appareil.',
+            );
+          }}
+        />
       ) : (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surface }]} />
       )}
+
+      {!isWebCamera && !cameraReady && !cameraError ? (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.overlay,
+            },
+          ]}
+        >
+          <PageLoading label="Ouverture de la caméra…" />
+        </View>
+      ) : null}
+
+      {!isWebCamera && cameraError ? (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: spacing[24],
+              gap: spacing[16],
+              backgroundColor: colors.background,
+            },
+          ]}
+        >
+          <Text variant="h3" align="center" color="textBrand">
+            Caméra indisponible
+          </Text>
+          <Text variant="bodySmall" color="textSecondary" align="center">
+            {cameraError}
+          </Text>
+          <Button title="Choisir une photo" onPress={handlePickFromLibrary} />
+          <Button title="Fermer" variant="ghost" onPress={() => router.back()} />
+        </View>
+      ) : null}
 
       <View
         style={{
@@ -751,7 +848,7 @@ export default function ScannerScreen() {
             align="center"
             style={{ fontFamily: fonts.bodySemi }}
           >
-            Cadre un chat
+            {cameraReady || isWebCamera ? 'Cadre un chat' : 'Préparation…'}
           </Text>
           {isWebCamera ? (
             <Text variant="caption" color="textSecondary" align="center">
@@ -791,6 +888,7 @@ export default function ScannerScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Prendre la photo"
+              disabled={!cameraReady || capturing}
               onPress={handleTakePicture}
               style={({ pressed }) => [
                 {
@@ -800,6 +898,7 @@ export default function ScannerScreen() {
                   backgroundColor: colors.accent,
                   alignItems: 'center',
                   justifyContent: 'center',
+                  opacity: !cameraReady || capturing ? 0.45 : pressed ? 0.9 : 1,
                   transform: [{ scale: pressed ? 0.94 : 1 }],
                 },
                 shadow.medium,

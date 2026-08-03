@@ -91,8 +91,14 @@ app.post('/analyze-cat', async (c) => {
     return c.json({ error: 'Payload invalide' }, 400);
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const keyLooksPlaceholder =
+    !apiKey ||
+    /your[-_]?key|sk-your|changeme|example/i.test(apiKey) ||
+    apiKey.length < 20;
+
+  // Always 200 + analysis when mocking — Cloudflare quick tunnels strip non-200 bodies.
+  if (keyLooksPlaceholder) {
     return c.json({ analysis: fallbackAnalysis, mocked: true });
   }
 
@@ -113,14 +119,11 @@ app.post('/analyze-cat', async (c) => {
     normalizedMime.includes('heif') ||
     normalizedMime.includes('tiff')
   ) {
-    return c.json(
-      {
-        error: 'Format image non supporté. Utilise JPEG ou PNG.',
-        analysis: fallbackAnalysis,
-        mocked: true,
-      },
-      415,
-    );
+    return c.json({
+      error: 'Format image non supporté. Utilise JPEG ou PNG.',
+      analysis: fallbackAnalysis,
+      mocked: true,
+    });
   }
 
   try {
@@ -174,14 +177,12 @@ app.post('/analyze-cat', async (c) => {
     });
   } catch (error) {
     console.error('[analyze-cat]', error);
-    return c.json(
-      {
-        error: 'Échec analyse OpenAI',
-        analysis: fallbackAnalysis,
-        mocked: true,
-      },
-      502,
-    );
+    // Prefer 200 so public tunnels (Cloudflare) do not replace the JSON body.
+    return c.json({
+      error: 'Échec analyse OpenAI',
+      analysis: fallbackAnalysis,
+      mocked: true,
+    });
   }
 });
 
