@@ -1,106 +1,145 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 
-import { BrandLogo } from '@/components/BrandLogo';
 import { CatDexCard } from '@/components/CatDexCard';
-import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
 import { SearchInput } from '@/components/Input';
-import { ProgressBar, SectionHeader } from '@/components/Progress';
 import { Text } from '@/components/Text';
+import { getTabBarTotalHeight } from '@/layout/MainTabBar';
+import { CATDEX_TARGET } from '@/lib/constants';
 import { DEMO_CATS } from '@/lib/demoCats';
+import { type CatDexRarityFilter, matchesCatDexRarityFilter } from '@/lib/catTheme';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-const TARGET = 50;
+const RARITY_FILTERS: { id: CatDexRarityFilter; label: string }[] = [
+  { id: 'all', label: 'Tous' },
+  { id: 'common', label: 'Commun' },
+  { id: 'uncommon', label: 'Rare' },
+  { id: 'rare', label: 'Épique' },
+  { id: 'exceptional', label: 'Légendaire' },
+];
 
 export default function CatDexScreen() {
-  const { colors, fonts, spacing, radius, shadow, gradients } = useTheme();
+  const { colors, fonts, spacing, radius, shadow, iconStroke, iconSize } = useTheme();
   const insets = useSafeAreaInsets();
   const storedCats = useCatsStore((state) => state.cats);
-  /** Preview cards in empty __DEV__ so validated PhotoCards can be screenshotted. */
   const cats = __DEV__ && storedCats.length === 0 ? DEMO_CATS : storedCats;
   const [search, setSearch] = useState('');
+  const [rarityFilter, setRarityFilter] = useState<CatDexRarityFilter>('all');
+  const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
 
   const filtered = useMemo(() => {
     return cats.filter((cat) => {
-      if (!search.trim()) return true;
-      return cat.name.toLowerCase().includes(search.toLowerCase());
+      if (search.trim()) {
+        const query = search.trim().toLowerCase();
+        const haystack = `${cat.name} ${cat.analysis.breed} ${cat.analysis.color}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      return matchesCatDexRarityFilter(cat.analysis, cat.number, rarityFilter);
     });
-  }, [cats, search]);
+  }, [cats, rarityFilter, search]);
 
-  const progress = Math.min(1, cats.length / TARGET);
+  const toggleFavorite = (catId: string) => {
+    setFavorites((current) => {
+      const next = new Set(current);
+      if (next.has(catId)) next.delete(catId);
+      else next.add(catId);
+      return next;
+    });
+  };
+
+  const listBottom = getTabBarTotalHeight(insets.bottom, spacing) + spacing[16];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[24], gap: spacing[16] }}>
-        <View style={styles.headerRow}>
-          <View style={{ gap: spacing[4], flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-              <BrandLogo size={36} />
-              <Text variant="h1" color="textBrand">
-                CatDex
-              </Text>
-            </View>
-            <Text variant="bodySmall" color="textSecondary">
-              Ta collection de chats
-            </Text>
+        <View style={{ gap: spacing[4] }}>
+          <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
+            CatDex
+          </Text>
+          <Text variant="bodySmall" color="brand" style={{ fontFamily: fonts.bodySemi }}>
+            {cats.length} / {CATDEX_TARGET} chats
+          </Text>
+          <Text variant="caption" color="textSecondary">
+            Espèces découvertes
+          </Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+          <View style={{ flex: 1 }}>
+            <SearchInput
+              placeholder="Rechercher un chat…"
+              value={search}
+              onChangeText={setSearch}
+            />
           </View>
-          <View
-            style={[
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Filtres"
+            style={({ pressed }) => [
               {
-                paddingHorizontal: spacing[16],
-                paddingVertical: spacing[8],
+                width: spacing[48],
+                height: spacing[48],
                 borderRadius: radius.full,
-                backgroundColor: colors.accentSoft,
-                borderWidth: 1,
-                borderColor: colors.border,
+                backgroundColor: colors.surfaceElevated,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.96 : 1 }],
               },
+              shadow.low,
             ]}
           >
-            <Text variant="caption" color="accent" style={{ fontFamily: fonts.bodySemi }}>
-              {cats.length} / {TARGET}
-            </Text>
-          </View>
+            <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M4 7h16M6 12h12M9 17h6"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </Pressable>
         </View>
 
-        <View
-          style={[
-            {
-              borderRadius: radius.xl,
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: colors.border,
-              padding: spacing[16],
-              gap: spacing[8],
-            },
-            shadow.small,
-          ]}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: spacing[8], paddingRight: spacing[8] }}
         >
-          <LinearGradient
-            colors={[gradients.primarySoft[0], 'transparent']}
-            style={StyleSheet.absoluteFill}
-          />
-          <Text variant="label" color="textSecondary">
-            Progression
-          </Text>
-          <Text variant="h3">{Math.round(progress * 100)}% complété</Text>
-          <ProgressBar progress={progress} height={10} />
-        </View>
-
-        <SearchInput placeholder="Rechercher un chat…" value={search} onChangeText={setSearch} />
-
-        <View style={{ flexDirection: 'row', gap: spacing[8] }}>
-          <Chip label="Tous" selected />
-          <Chip label="Récents" />
-          <Chip label="Rares" />
-        </View>
-
-        <SectionHeader title="Collection" />
+          {RARITY_FILTERS.map((filter) => {
+            const selected = rarityFilter === filter.id;
+            return (
+              <Pressable
+                key={filter.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => setRarityFilter(filter.id)}
+                style={({ pressed }) => ({
+                  height: spacing[40],
+                  paddingHorizontal: spacing[16],
+                  borderRadius: radius.full,
+                  backgroundColor: selected ? colors.brand : colors.surfaceElevated,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.9 : 1,
+                })}
+              >
+                <Text
+                  variant="bodySmall"
+                  color={selected ? 'onAccent' : 'textBrand'}
+                  style={{ fontFamily: fonts.bodySemi }}
+                >
+                  {filter.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <FlatList
@@ -110,8 +149,10 @@ export default function CatDexScreen() {
         columnWrapperStyle={{ gap: spacing[16] }}
         contentContainerStyle={{
           paddingHorizontal: spacing[24],
-          paddingBottom: spacing[96] + spacing[24],
+          paddingTop: spacing[16],
+          paddingBottom: listBottom,
           gap: spacing[16],
+          flexGrow: 1,
         }}
         ListEmptyComponent={
           <EmptyState
@@ -122,7 +163,12 @@ export default function CatDexScreen() {
           />
         }
         renderItem={({ item }) => (
-          <CatDexCard cat={item} onPress={() => router.push(`/cat/${item.id}`)} />
+          <CatDexCard
+            cat={item}
+            isFavorite={favorites.has(item.id)}
+            onToggleFavorite={() => toggleFavorite(item.id)}
+            onPress={() => router.push(`/cat/${item.id}`)}
+          />
         )}
       />
     </View>
@@ -131,10 +177,4 @@ export default function CatDexScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
 });

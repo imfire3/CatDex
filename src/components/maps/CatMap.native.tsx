@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { CatMapMarker } from '@/components/CatMapMarker';
+import { DiscoveryRadius } from '@/components/maps/DiscoveryRadius';
 import { MapLuminousOverlay } from '@/components/maps/MapLuminousOverlay';
 import { MapWorldDecor } from '@/components/maps/MapWorldDecor';
 import { PlayerLocationMarker } from '@/components/maps/PlayerLocationMarker';
@@ -28,6 +29,7 @@ type Props = {
   focusCoordinate?: { latitude: number; longitude: number } | null;
   /** Player position for the custom CatDex location indicator. */
   userCoordinate?: { latitude: number; longitude: number } | null;
+  nearbyCatIds?: string[];
 };
 
 type ExtraMaps = {
@@ -60,6 +62,7 @@ export function CatMap({
   onSelectCat,
   focusCoordinate,
   userCoordinate,
+  nearbyCatIds,
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
@@ -128,11 +131,17 @@ export function CatMap({
         minZoomLevel={MAP_MIN_ZOOM}
         maxZoomLevel={MAP_MAX_ZOOM}
         toolbarEnabled={false}
-        mapPadding={{ top: 0, right: 0, bottom: 90, left: 0 }}
+        mapPadding={{ top: 0, right: 0, bottom: 0, left: 0 }}
       >
         <MapWorldDecor cats={cats} />
+        {userCoordinate ? <DiscoveryRadius coordinate={userCoordinate} /> : null}
         {cats.map((cat) => (
-          <CatMapMarker key={cat.id} cat={cat} onPress={onSelectCat} />
+          <CatMapMarker
+            key={cat.id}
+            cat={cat}
+            onPress={onSelectCat}
+            isNearby={nearbyCatIds?.includes(cat.id) ?? false}
+          />
         ))}
         {userCoordinate ? (
           <PlayerLocationMarker coordinate={userCoordinate} />

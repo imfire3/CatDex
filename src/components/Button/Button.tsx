@@ -105,13 +105,14 @@ export function Button({
         : variant === 'apple'
           ? colors.authAppleLabel
           : variant === 'secondary'
-            ? colors.ctaSecondaryLabel
+            ? isDisabled
+              ? colors.textMuted
+              : colors.brand
             : variant === 'destructive'
               ? colors.danger
               : colors.brand;
 
-  const labelWeight =
-    variant === 'secondary' ? fonts.body : fonts.bodySemi;
+  const labelWeight = fonts.bodySemi;
 
   const content = (
     <View style={[styles.content, { gap: spacing[8] }]}>

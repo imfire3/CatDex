@@ -6,14 +6,14 @@ import { motionDuration } from '@/theme/motion';
 /** Street-level framing — slightly pulled back so the quartier breathes. */
 export const MAP_ZOOM = 16.2;
 
-/** Soft game tilt (degrees). */
-export const MAP_PITCH = 38;
+/** Game tilt (degrees) — street-level depth like Pokémon GO. */
+export const MAP_PITCH = 62;
 
 /** Camera animation duration — within 150–300 ms. */
 export const MAP_CAMERA_DURATION = Math.min(motionDuration.slow, 280);
 
 /** Approximate altitude (meters) for iOS when zoom is unavailable. */
-export const MAP_ALTITUDE = 780;
+export const MAP_ALTITUDE = 620;
 
 /** How far the player may pinch out / in. */
 export const MAP_MIN_ZOOM = 12;

@@ -10,12 +10,13 @@ const BRAND = '#6A69F8';
 const BRAND_PRESSED = '#5554E0';
 const BRAND_SOFT = 'rgba(106, 105, 248, 0.12)';
 const SOFT_GRAY = '#EEF0F2';
-const APP_BG = '#FCFCFE';
+const APP_BG = '#F9F9FB';
 
 const light = {
   brand: BRAND,
   brandPressed: BRAND_PRESSED,
   brandSoft: BRAND_SOFT,
+  captureFabHalo: 'rgba(106, 105, 248, 0.28)',
   accent: BRAND,
   accentPressed: BRAND_PRESSED,
   accentSoft: BRAND_SOFT,
@@ -27,18 +28,18 @@ const light = {
 
   background: APP_BG,
   surface: APP_BG,
-  /** White cards and sheets on the app canvas (#FCFCFE). */
+  /** White cards and sheets on the app canvas (#F9F9FB). */
   surfaceElevated: '#FFFFFF',
   surfaceSecondary: SOFT_GRAY,
   surfaceTertiary: SOFT_GRAY,
   surfaceMuted: SOFT_GRAY,
   surfaceDisabled: SOFT_GRAY,
 
-  /** Secondary CTA — soft gray fill */
-  ctaSecondary: SOFT_GRAY,
-  ctaSecondaryPressed: '#E4E6E9',
+  /** Secondary CTA — white fill, brand label */
+  ctaSecondary: '#FFFFFF',
+  ctaSecondaryPressed: '#F3F3F7',
   ctaSecondaryBorder: '#D8DBDF',
-  ctaSecondaryLabel: '#8F8F8F',
+  ctaSecondaryLabel: BRAND,
 
   /** Social auth — Google (official-adjacent) */
   authGoogleBorder: SOFT_GRAY,
@@ -83,6 +84,11 @@ const light = {
   info: BRAND,
   infoSoft: BRAND_SOFT,
 
+  /** Map player dot — Google Maps–style blue */
+  mapPlayer: '#4285F4',
+  mapPlayerSoft: 'rgba(66, 133, 244, 0.32)',
+  mapPlayerRing: '#FFFFFF',
+
   overlay: 'rgba(106, 105, 248, 0.4)',
   onAccent: '#FFFFFF',
   onPrimary: '#FFFFFF',
@@ -93,7 +99,7 @@ const light = {
   glassFill: 'rgba(255, 255, 255, 0.9)',
   shadowColor: BRAND,
   mapPinRing: '#FFFFFF',
-  tabBar: 'rgba(252,252,254,0.96)',
+  tabBar: '#FFFFFF',
   gradientStart: BRAND,
   gradientEnd: BRAND_PRESSED,
 } as const;
@@ -109,6 +115,7 @@ export type ThemeColors = {
   brand: string;
   brandPressed: string;
   brandSoft: string;
+  captureFabHalo: string;
   accent: string;
   accentPressed: string;
   accentSoft: string;
@@ -167,6 +174,9 @@ export type ThemeColors = {
   dangerSoft: string;
   info: string;
   infoSoft: string;
+  mapPlayer: string;
+  mapPlayerSoft: string;
+  mapPlayerRing: string;
   overlay: string;
   onAccent: string;
   onPrimary: string;

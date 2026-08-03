@@ -100,22 +100,8 @@ function StepIcon({
   );
 }
 
-function ChevronRight({ color }: { color: string }) {
-  return (
-    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M7.5 5 12.5 10 7.5 15"
-        stroke={color}
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
 export default function IntroScreen() {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
 
@@ -131,7 +117,11 @@ export default function IntroScreen() {
       fullHeight
       footer={
         <View style={{ alignSelf: 'stretch' }}>
-          <Button title="Continuer" onPress={() => router.push('/(auth)/permissions')} />
+          <Button
+            variant="secondary"
+            title="Continuer"
+            onPress={() => router.push('/(auth)/permissions')}
+          />
         </View>
       }
     >
@@ -151,17 +141,14 @@ export default function IntroScreen() {
         {STEPS.map((step) => (
           <View
             key={step.key}
-            style={[
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing[16],
-                padding: spacing[16],
-                borderRadius: radius.lg,
-                backgroundColor: colors.surfaceElevated,
-              },
-              shadow.low,
-            ]}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing[16],
+              padding: spacing[16],
+              borderRadius: radius.cta,
+              backgroundColor: colors.surfaceElevated,
+            }}
           >
             <View
               style={{
@@ -184,8 +171,6 @@ export default function IntroScreen() {
                 {step.body}
               </Text>
             </View>
-
-            <ChevronRight color={colors.textMuted} />
           </View>
         ))}
       </View>

@@ -20,13 +20,14 @@ import type { Cat } from '@/types/cat';
 type Props = {
   cat: Cat;
   onPress: (cat: Cat) => void;
+  isNearby?: boolean;
 };
 
 /**
  * CatDex map marker — round avatar, white ring, luminous halo,
  * bounce on appear + short float/pulse (then freeze for map FPS).
  */
-function CatMapMarkerComponent({ cat, onPress }: Props) {
+function CatMapMarkerComponent({ cat, onPress, isNearby = false }: Props) {
   const { colors, spacing, shadow } = useTheme();
   const size = spacing[48];
   const haloSize = size + spacing[24];
@@ -59,7 +60,7 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
       motionDuration.fast,
       withRepeat(
         withTiming(1, {
-          duration: 280,
+          duration: isNearby ? 180 : 280,
           easing: Easing.inOut(Easing.ease),
         }),
         -1,
@@ -70,7 +71,7 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
     // Appear + a few float frames, then freeze bitmap for scroll FPS.
     const freeze = setTimeout(() => setTracksViewChanges(false), 1400);
     return () => clearTimeout(freeze);
-  }, [appear, floatY, pulse]);
+  }, [appear, floatY, isNearby, pulse]);
 
   const bodyStyle = useAnimatedStyle(() => ({
     opacity: appear.value,
@@ -81,8 +82,8 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
   }));
 
   const haloStyle = useAnimatedStyle(() => ({
-    opacity: 0.18 + pulse.value * 0.22,
-    transform: [{ scale: 0.88 + pulse.value * 0.22 }],
+    opacity: isNearby ? 0.28 + pulse.value * 0.35 : 0.12 + pulse.value * 0.18,
+    transform: [{ scale: isNearby ? 0.82 + pulse.value * 0.38 : 0.88 + pulse.value * 0.22 }],
   }));
 
   return (
@@ -119,9 +120,7 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
               width: size,
               height: size,
               borderRadius: size / 2,
-              borderWidth: 3,
-              borderColor: colors.mapPinRing,
-              backgroundColor: colors.accentSoft,
+              backgroundColor: colors.surfaceElevated,
             },
             shadow.low,
           ]}
