@@ -250,7 +250,10 @@ export function CatCardDetail({
           </Svg>
         </Pressable>
 
-        <Text variant="bodySmall" color="onBrand" style={{ fontFamily: fonts.bodySemi }}>
+        <Text
+          variant="bodySmall"
+          style={{ fontFamily: fonts.bodySemi, color: colors.onBrand }}
+        >
           CatDex
         </Text>
 
