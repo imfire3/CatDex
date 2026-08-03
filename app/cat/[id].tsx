@@ -1,5 +1,5 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { CatCardDetail } from '@/components/CatCardDetail';
 import { ProblemState } from '@/components/ProblemState';
@@ -9,7 +9,6 @@ export default function CatDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const cat = useCatsStore((state) => state.cats.find((item) => item.id === id));
   const incrementViews = useCatsStore((state) => state.incrementViews);
-  const [favorited, setFavorited] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -39,11 +38,8 @@ export default function CatDetailScreen() {
         photoUri={cat.photoUri}
         analysis={cat.analysis}
         discoveredAt={cat.discoveredAt}
-        favorited={favorited}
-        onToggleFavorite={() => setFavorited((v) => !v)}
+        views={cat.views}
         onBack={() => router.back()}
-        primaryLabel="Retour au CatDex"
-        onPrimaryAction={() => router.replace('/(tabs)/catdex')}
       />
     </>
   );

@@ -358,6 +358,7 @@ export default function ScannerScreen() {
         photoUri={photoUri}
         analysis={enriched}
         discoveredAt={new Date().toISOString()}
+        views={0}
         onBack={() => {
           if (router.canGoBack()) router.back();
           else resetToCamera();
