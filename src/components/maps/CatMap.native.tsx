@@ -63,6 +63,7 @@ export function CatMap({
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const didFitCatsRef = useRef(false);
 
   // Explicit recenter — restores game default zoom/pitch.
   useEffect(() => {
@@ -100,6 +101,34 @@ export function CatMap({
       });
     })();
   }, [userCoordinate]);
+
+  // Frame the first batch of cat pins so they are not off-screen (e.g. captures
+  // taken outside Paris while the default camera stays on the 20e).
+  useEffect(() => {
+    if (didFitCatsRef.current || cats.length === 0) return;
+    didFitCatsRef.current = true;
+
+    const timer = setTimeout(() => {
+      if (cats.length === 1) {
+        mapRef.current?.animateCamera(buildMapCamera(cats[0]), {
+          duration: MAP_CAMERA_DURATION,
+        });
+        return;
+      }
+      mapRef.current?.fitToCoordinates(
+        cats.map((cat) => ({
+          latitude: cat.latitude,
+          longitude: cat.longitude,
+        })),
+        {
+          edgePadding: { top: 120, right: 48, bottom: 180, left: 48 },
+          animated: true,
+        },
+      );
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [cats]);
 
   return (
     <View style={StyleSheet.absoluteFill}>

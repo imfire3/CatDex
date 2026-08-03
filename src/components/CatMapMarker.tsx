@@ -67,8 +67,9 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
       ),
     );
 
-    // Appear + a few float frames, then freeze bitmap for scroll FPS.
-    const freeze = setTimeout(() => setTracksViewChanges(false), 1400);
+    // Appear + float frames, then freeze bitmap for scroll FPS.
+    // Keep tracking long enough for iOS MapKit to snapshot custom views.
+    const freeze = setTimeout(() => setTracksViewChanges(false), 2200);
     return () => clearTimeout(freeze);
   }, [appear, floatY, pulse]);
 

@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
@@ -11,6 +11,8 @@ import { MAP_DECOR_SEEDS, type MapDecorKind, type MapDecorSeed } from './mapDeco
 import { mapPalette } from './mapPalette';
 
 const MIN_DISTANCE_FROM_CAT_M = 45;
+/** iOS custom markers stay blank if tracksViewChanges is false from frame 0. */
+const DECOR_TRACK_MS = 900;
 
 type Props = {
   cats: Cat[];
@@ -56,11 +58,18 @@ function DecorGlyph({ kind }: { kind: MapDecorKind }) {
 }
 
 function DecorMarker({ seed }: { seed: MapDecorSeed }) {
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+  useEffect(() => {
+    const freeze = setTimeout(() => setTracksViewChanges(false), DECOR_TRACK_MS);
+    return () => clearTimeout(freeze);
+  }, []);
+
   return (
     <Marker
       coordinate={{ latitude: seed.latitude, longitude: seed.longitude }}
       anchor={{ x: 0.5, y: 0.85 }}
-      tracksViewChanges={false}
+      tracksViewChanges={tracksViewChanges}
       tappable={false}
       zIndex={1}
     >

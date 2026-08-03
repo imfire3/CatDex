@@ -13,14 +13,26 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { Text } from '@/components/Text';
 import { CatMap } from '@/components/maps/CatMap';
-import { isInParis20e, PARIS_20E } from '@/lib/constants';
+import { distanceMeters, isInParis20e, PARIS_20E } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import { DEMO_CATS } from '@/lib/demoCats';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
 type FilterId = 'nearby' | 'rare' | 'seen';
+
+function sortByDistance(
+  list: Cat[],
+  origin: { latitude: number; longitude: number },
+): Cat[] {
+  return [...list].sort(
+    (a, b) =>
+      distanceMeters(origin.latitude, origin.longitude, a.latitude, a.longitude) -
+      distanceMeters(origin.latitude, origin.longitude, b.latitude, b.longitude),
+  );
+}
 
 /**
  * Explorer — HUD from design: avatar · CatDex · bell, then À proximité + filters.
@@ -29,7 +41,9 @@ export default function MapScreen() {
   const { colors, fonts, spacing, radius, iconStroke, iconSize, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
-  const cats = useCatsStore((state) => state.cats);
+  const storedCats = useCatsStore((state) => state.cats);
+  /** Same preview pins as CatDex in __DEV__ so Explorer shows markers without captures. */
+  const cats = __DEV__ && storedCats.length === 0 ? DEMO_CATS : storedCats;
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [filter, setFilter] = useState<FilterId>('nearby');
@@ -43,21 +57,25 @@ export default function MapScreen() {
     longitude: number;
   } | null>(null);
 
-  const filteredCats = cats.filter((cat) => {
-    if (filter === 'rare') {
-      const coat = cat.analysis.coat?.toLowerCase() ?? '';
-      const color = cat.analysis.color?.toLowerCase() ?? '';
-      return (
-        coat.includes('long') ||
-        color.includes('siamois') ||
-        color.includes('écaille') ||
-        color.includes('bengal')
-      );
-    }
-    if (filter === 'seen') return cat.views > 0;
-    return true;
-  });
-  const nearby = filteredCats[0] ?? cats[0] ?? null;
+  const origin = userCoordinate ?? PARIS_20E.center;
+  const filteredCats = sortByDistance(
+    cats.filter((cat) => {
+      if (filter === 'rare') {
+        const coat = cat.analysis.coat?.toLowerCase() ?? '';
+        const color = cat.analysis.color?.toLowerCase() ?? '';
+        return (
+          coat.includes('long') ||
+          color.includes('siamois') ||
+          color.includes('écaille') ||
+          color.includes('bengal')
+        );
+      }
+      if (filter === 'seen') return cat.views > 0;
+      return true;
+    }),
+    origin,
+  );
+  const nearby = filteredCats[0] ?? null
   const nearbyTheme = nearby ? themeFromColorLabel(nearby.analysis.color, nearby.number) : null;
   const initials = (user?.displayName ?? 'C').slice(0, 2).toUpperCase();
 
@@ -139,7 +157,7 @@ export default function MapScreen() {
             ]}
           >
             <Avatar size="L" initials={initials} />
-            {cats.length > 0 ? (
+            {storedCats.length > 0 ? (
               <View
                 style={[
                   styles.badge,
@@ -162,7 +180,7 @@ export default function MapScreen() {
                     lineHeight: 12,
                   }}
                 >
-                  {cats.length > 99 ? '99+' : String(cats.length)}
+                  {storedCats.length > 99 ? '99+' : String(storedCats.length)}
                 </Text>
               </View>
             ) : null}
