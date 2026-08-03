@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Button } from '@/components/Button';
-import { CatCardDetail } from '@/components/CatCardDetail';
+import { CaptureReveal } from '@/components/CaptureReveal';
 import { PageLoading, Skeleton } from '@/components/Loader';
 import { ProblemState } from '@/components/ProblemState';
 import { ProgressBar } from '@/components/Progress';
@@ -352,23 +352,15 @@ export default function ScannerScreen() {
     const enriched = enrichAnalysis(analysis, nextNumber);
 
     return (
-      <CatCardDetail
+      <CaptureReveal
         name={displayName}
         number={nextNumber}
         photoUri={photoUri}
         analysis={enriched}
-        discoveredAt={new Date().toISOString()}
-        views={0}
-        onBack={() => {
-          if (router.canGoBack()) router.back();
-          else resetToCamera();
-        }}
-        primaryLabel="Ajouter à ma collection"
-        onPrimaryAction={() => {
+        onAdd={() => {
           void handleAddToCatDex();
         }}
-        secondaryLabel="Reprendre la photo"
-        onSecondaryAction={resetToCamera}
+        onRetake={resetToCamera}
       />
     );
   }
