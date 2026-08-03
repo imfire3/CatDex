@@ -408,6 +408,7 @@ export default function ScannerScreen() {
             <Image
               source={{ uri: photoUri }}
               style={{ width: '100%', height: spacing[96] * 2 + spacing[32] }}
+              resizeMode="contain"
             />
           </View>
 

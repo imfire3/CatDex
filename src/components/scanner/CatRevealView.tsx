@@ -169,28 +169,34 @@ export function CatRevealView({ photoUri, analysis, dexNumber, onAdd, onBack }: 
   const mutedIcon = colors.textMuted;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.text }]}>
-      <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <View style={[styles.photoStage, { backgroundColor: colors.text }]}>
+        <Image
+          source={{ uri: photoUri }}
+          style={styles.photo}
+          resizeMode="contain"
+          accessibilityLabel="Photo capturée du chat"
+        />
 
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(249,249,251,0.08)', 'rgba(249,249,251,0.35)', colors.surfaceElevated]}
-        locations={[0.35, 0.62, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(249,249,251,0.08)', 'rgba(249,249,251,0.35)', colors.surfaceElevated]}
+          locations={[0.35, 0.62, 1]}
+          style={StyleSheet.absoluteFill}
+        />
 
-      <View
-        pointerEvents="box-none"
-        style={{
-          position: 'absolute',
-          top: insets.top + spacing[8],
-          left: spacing[16],
-          right: spacing[16],
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: 'absolute',
+            top: insets.top + spacing[8],
+            left: spacing[16],
+            right: spacing[16],
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
         <AuthBackButton onPress={onBack} />
         <View style={{ flexDirection: 'row', gap: spacing[8] }}>
           <OverlayIconButton accessibilityLabel="Favori" onPress={() => undefined}>
@@ -214,6 +220,7 @@ export function CatRevealView({ photoUri, analysis, dexNumber, onAdd, onBack }: 
               />
             </Svg>
           </OverlayIconButton>
+        </View>
         </View>
       </View>
 
@@ -331,10 +338,15 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+  photoStage: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
+  photo: {
+    width: '100%',
+    height: '100%',
+  },
+  sheet: {},
 });

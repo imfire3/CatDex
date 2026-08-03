@@ -110,7 +110,7 @@ export function AnalysisLoadingView({ photoUri }: Props) {
                 backgroundColor: colors.surfaceElevated,
               }}
             >
-              <Image source={{ uri: photoUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              <Image source={{ uri: photoUri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
             </View>
 
             <View

@@ -1,16 +1,22 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Text } from '@/components/Text';
+import { useMapExploreStore } from '@/store/mapExplore';
 import { useTheme } from '@/theme/ThemeProvider';
+import { SCANNER_TAB_LIFT, SCANNER_TAB_SIZE } from '@/layout/tabBarMetrics';
 
 type TabKey = 'map' | 'catdex' | 'missions' | 'profile';
 
-const TABS: { route: TabKey; label: string }[] = [
+const LEFT_TABS: { route: TabKey; label: string }[] = [
   { route: 'map', label: 'Explorer' },
   { route: 'catdex', label: 'CatDex' },
+];
+
+const RIGHT_TABS: { route: TabKey; label: string }[] = [
   { route: 'missions', label: 'Missions' },
   { route: 'profile', label: 'Profil' },
 ];
@@ -87,6 +93,22 @@ function TabGlyph({
   );
 }
 
+function CrosshairIcon({ color, size }: { color: string; size: number }) {
+  const { iconStroke } = useTheme();
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="7.5" stroke={color} strokeWidth={iconStroke.regular} />
+      <Path
+        d="M12 4.5v15M4.5 12h15"
+        stroke={color}
+        strokeWidth={iconStroke.regular}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 function TabItem({
   route,
   label,
@@ -112,7 +134,6 @@ function TabItem({
         alignItems: 'center',
         justifyContent: 'flex-end',
         gap: spacing[4],
-        paddingTop: spacing[8],
         minHeight: spacing[56],
       }}
     >
@@ -141,10 +162,54 @@ function TabItem({
   );
 }
 
+function ScannerTabItem({ proximityActive }: { proximityActive: boolean }) {
+  const { colors, spacing, radius, fonts, shadow, iconSize } = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Scanner"
+      onPress={() => router.push('/scanner')}
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: spacing[4],
+        minHeight: spacing[56],
+      }}
+    >
+      <View
+        style={{
+          marginTop: -SCANNER_TAB_LIFT,
+          width: SCANNER_TAB_SIZE,
+          height: SCANNER_TAB_SIZE,
+          borderRadius: radius.full,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: proximityActive ? colors.brandPressed : colors.brand,
+          ...shadow.medium,
+        }}
+      >
+        <CrosshairIcon color={colors.onBrand} size={iconSize.md} />
+      </View>
+      <Text
+        variant="caption"
+        style={{
+          fontFamily: fonts.bodySemi,
+          color: colors.textSecondary,
+        }}
+      >
+        Scanner
+      </Text>
+    </Pressable>
+  );
+}
+
 export function MainTabBar({ state, navigation }: BottomTabBarProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const focusedRoute = state.routes[state.index]?.name as TabKey;
+  const hasNearbyCat = useMapExploreStore((s) => s.hasNearbyCat);
 
   const handlePress = (routeName: TabKey) => {
     const route = state.routes.find((item) => item.name === routeName);
@@ -174,15 +239,26 @@ export function MainTabBar({ state, navigation }: BottomTabBarProps) {
           {
             backgroundColor: colors.surfaceElevated,
             borderRadius: radius.cta,
-            paddingTop: spacing[8],
+            paddingTop: SCANNER_TAB_LIFT + spacing[8],
             paddingBottom: spacing[8],
-            paddingHorizontal: spacing[8],
+            paddingHorizontal: spacing[4],
+            overflow: 'visible',
           },
           shadow.floating,
         ]}
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-          {TABS.map((tab) => (
+          {LEFT_TABS.map((tab) => (
+            <TabItem
+              key={tab.route}
+              route={tab.route}
+              label={tab.label}
+              focused={focusedRoute === tab.route}
+              onPress={() => handlePress(tab.route)}
+            />
+          ))}
+          <ScannerTabItem proximityActive={hasNearbyCat} />
+          {RIGHT_TABS.map((tab) => (
             <TabItem
               key={tab.route}
               route={tab.route}
@@ -197,12 +273,12 @@ export function MainTabBar({ state, navigation }: BottomTabBarProps) {
   );
 }
 
-/** Tab bar card height (vertical padding + row), excluding safe-area / float margin. */
-export const TAB_BAR_BODY_HEIGHT = 72;
-
-export function getTabBarTotalHeight(
-  bottomInset: number,
-  spacing: { 8: number; 16: number; 56: number },
-) {
-  return bottomInset + spacing[16] + spacing[8] + spacing[56] + spacing[8];
-}
+export {
+  CAPTURE_FAB_OUTER_SIZE,
+  getMapHudBottom,
+  getScannerAnchorBottom,
+  getTabBarTotalHeight,
+  SCANNER_TAB_LIFT,
+  SCANNER_TAB_SIZE,
+  TAB_BAR_BODY_HEIGHT,
+} from '@/layout/tabBarMetrics';

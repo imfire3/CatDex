@@ -12,8 +12,8 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
-export const CAPTURE_FAB_OUTER_SIZE = 96;
-const CAPTURE_FAB_CORE_SIZE = 64;
+export const CAPTURE_FAB_OUTER_SIZE = 56;
+const CAPTURE_FAB_CORE_SIZE = 56;
 
 export type FloatingActionButtonProps = {
   onPress: () => void;

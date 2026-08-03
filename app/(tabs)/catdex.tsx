@@ -2,13 +2,12 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
 import { CatDexCard } from '@/components/CatDexCard';
 import { EmptyState } from '@/components/EmptyState';
-import { SearchInput } from '@/components/Input';
+import { AuthBackButton } from '@/components/Auth/AuthChrome';
 import { Text } from '@/components/Text';
-import { getTabBarTotalHeight } from '@/layout/MainTabBar';
+import { getTabBarTotalHeight } from '@/layout/tabBarMetrics';
 import { CATDEX_TARGET } from '@/lib/constants';
 import { DEMO_CATS } from '@/lib/demoCats';
 import { type CatDexRarityFilter, matchesCatDexRarityFilter } from '@/lib/catTheme';
@@ -25,24 +24,18 @@ const RARITY_FILTERS: { id: CatDexRarityFilter; label: string }[] = [
 ];
 
 export default function CatDexScreen() {
-  const { colors, fonts, spacing, radius, shadow, iconStroke, iconSize } = useTheme();
+  const { colors, fonts, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const storedCats = useCatsStore((state) => state.cats);
   const cats = __DEV__ && storedCats.length === 0 ? DEMO_CATS : storedCats;
-  const [search, setSearch] = useState('');
   const [rarityFilter, setRarityFilter] = useState<CatDexRarityFilter>('all');
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
 
   const filtered = useMemo(() => {
-    return cats.filter((cat) => {
-      if (search.trim()) {
-        const query = search.trim().toLowerCase();
-        const haystack = `${cat.name} ${cat.analysis.breed} ${cat.analysis.color}`.toLowerCase();
-        if (!haystack.includes(query)) return false;
-      }
-      return matchesCatDexRarityFilter(cat.analysis, cat.number, rarityFilter);
-    });
-  }, [cats, rarityFilter, search]);
+    return cats.filter((cat) =>
+      matchesCatDexRarityFilter(cat.analysis, cat.number, rarityFilter),
+    );
+  }, [cats, rarityFilter]);
 
   const toggleFavorite = (catId: string) => {
     setFavorites((current) => {
@@ -55,55 +48,26 @@ export default function CatDexScreen() {
 
   const listBottom = getTabBarTotalHeight(insets.bottom, spacing) + spacing[16];
 
+  const handleBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)/map');
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[24], gap: spacing[16] }}>
-        <View style={{ gap: spacing[4] }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1, alignItems: 'flex-start' }}>
+            <AuthBackButton onPress={handleBack} />
+          </View>
           <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
             CatDex
           </Text>
-          <Text variant="bodySmall" color="brand" style={{ fontFamily: fonts.bodySemi }}>
-            {cats.length} / {CATDEX_TARGET} chats
-          </Text>
-          <Text variant="caption" color="textSecondary">
-            Espèces découvertes
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-          <View style={{ flex: 1 }}>
-            <SearchInput
-              placeholder="Rechercher un chat…"
-              value={search}
-              onChangeText={setSearch}
-            />
+          <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
+            <Text variant="bodySmall" color="brand" style={{ fontFamily: fonts.bodySemi }}>
+              {cats.length} / {CATDEX_TARGET}
+            </Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Filtres"
-            style={({ pressed }) => [
-              {
-                width: spacing[48],
-                height: spacing[48],
-                borderRadius: radius.full,
-                backgroundColor: colors.surfaceElevated,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.96 : 1 }],
-              },
-              shadow.low,
-            ]}
-          >
-            <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M4 7h16M6 12h12M9 17h6"
-                stroke={colors.brand}
-                strokeWidth={iconStroke.regular}
-                strokeLinecap="round"
-              />
-            </Svg>
-          </Pressable>
         </View>
 
         <ScrollView

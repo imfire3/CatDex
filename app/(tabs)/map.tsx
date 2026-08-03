@@ -13,8 +13,7 @@ import { Chip } from '@/components/Chip';
 import { ProgressBar } from '@/components/Progress/ProgressBar';
 import { Text } from '@/components/Text';
 import { CatMap } from '@/components/maps/CatMap';
-import { getTabBarTotalHeight } from '@/layout/MainTabBar';
-import { CAPTURE_FAB_OUTER_SIZE } from '@/layout/FloatingActionButton';
+import { getMapHudBottom } from '@/layout/tabBarMetrics';
 import { DEMO_CATS } from '@/lib/demoCats';
 import {
   CATDEX_TARGET,
@@ -144,7 +143,7 @@ export default function MapScreen() {
     justifyContent: 'center' as const,
   };
 
-  const fabAnchorBottom = getTabBarTotalHeight(insets.bottom, spacing) + spacing[16];
+  const recenterBottom = getMapHudBottom(insets.bottom, spacing);
 
   return (
     <View style={styles.root}>
@@ -249,43 +248,34 @@ export default function MapScreen() {
         ) : null}
       </View>
 
-      <View
-        pointerEvents="box-none"
-        style={[
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Recentrer la carte"
+        onPress={() => void recenter()}
+        style={({ pressed }) => [
+          hudControlStyle,
           styles.recenterButton,
+          shadow.low,
           {
             right: spacing[16],
-            bottom: fabAnchorBottom,
-            height: CAPTURE_FAB_OUTER_SIZE,
+            bottom: recenterBottom,
+            backgroundColor: colors.surface,
+            opacity: pressed ? 0.88 : 1,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
           },
         ]}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Recentrer la carte"
-          onPress={() => void recenter()}
-          style={({ pressed }) => [
-            hudControlStyle,
-            shadow.low,
-            {
-              backgroundColor: colors.surface,
-              opacity: pressed ? 0.88 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-            },
-          ]}
-        >
-          <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 2l7 19-7-4-7 4 7-19z"
-              stroke={colors.brand}
-              strokeWidth={iconStroke.regular}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              transform="rotate(45 12 12)"
-            />
-          </Svg>
-        </Pressable>
-      </View>
+        <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 2l7 19-7-4-7 4 7-19z"
+            stroke={colors.brand}
+            strokeWidth={iconStroke.regular}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            transform="rotate(45 12 12)"
+          />
+        </Svg>
+      </Pressable>
 
       <BottomSheet
         visible={nearbySheetVisible}
@@ -426,6 +416,5 @@ const styles = StyleSheet.create({
   recenterButton: {
     position: 'absolute',
     zIndex: 15,
-    justifyContent: 'center',
   },
 });

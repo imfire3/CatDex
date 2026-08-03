@@ -186,14 +186,13 @@ export default function CatDetailScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      <ScrollView
-        contentContainerStyle={{
+      <View
+        style={{
           paddingTop: insets.top + spacing[8],
           paddingHorizontal: spacing[24],
-          paddingBottom: insets.bottom + spacing[32],
-          gap: spacing[24],
+          paddingBottom: spacing[8],
+          zIndex: 1,
         }}
-        showsVerticalScrollIndicator={false}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Pressable
@@ -256,13 +255,23 @@ export default function CatDetailScreen() {
             </Svg>
           </Pressable>
         </View>
+      </View>
 
-        <View style={{ alignItems: 'center', justifyContent: 'center', height: 200 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: spacing[24],
+          paddingBottom: insets.bottom + spacing[32],
+          gap: spacing[24],
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%', height: 280 }}>
           {showPhoto ? (
             <Image
               source={{ uri: cat.photoUri }}
               resizeMode="contain"
-              style={{ width: '100%', height: 200 }}
+              style={{ width: '100%', height: '100%' }}
               accessibilityLabel={`Photo de ${cat.name}`}
             />
           ) : (

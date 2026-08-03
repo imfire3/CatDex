@@ -1,17 +1,11 @@
-import { Tabs, router } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FloatingActionButton } from '@/layout/FloatingActionButton';
-import { getTabBarTotalHeight, MainTabBar } from '@/layout/MainTabBar';
-import { useMapExploreStore } from '@/store/mapExplore';
+import { MainTabBar } from '@/layout/MainTabBar';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function TabsLayout() {
-  const { colors, spacing } = useTheme();
-  const insets = useSafeAreaInsets();
-  const tabBarTop = getTabBarTotalHeight(insets.bottom, spacing);
-  const hasNearbyCat = useMapExploreStore((state) => state.hasNearbyCat);
+  const { colors } = useTheme();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -35,24 +29,6 @@ export default function TabsLayout() {
         <Tabs.Screen name="missions" options={{ title: 'Missions' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
       </Tabs>
-
-      <View
-        pointerEvents="box-none"
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: tabBarTop + spacing[16],
-          alignItems: 'center',
-          zIndex: 20,
-        }}
-      >
-        <FloatingActionButton
-          embedded={false}
-          proximityActive={hasNearbyCat}
-          onPress={() => router.push('/scanner')}
-        />
-      </View>
     </View>
   );
 }

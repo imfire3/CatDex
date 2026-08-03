@@ -59,8 +59,8 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
         {hasPhoto ? (
           <Image
             source={{ uri: cat.photoUri }}
-            style={StyleSheet.absoluteFillObject}
-            resizeMode="cover"
+            style={styles.photo}
+            resizeMode="contain"
             accessibilityIgnoresInvertColors
           />
         ) : (
@@ -145,3 +145,11 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  photo: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+});

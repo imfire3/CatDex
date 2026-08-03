@@ -6,7 +6,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Avatar } from '@/components/Avatar';
 import { Text } from '@/components/Text';
-import { getTabBarTotalHeight } from '@/layout/MainTabBar';
+import { getTabBarTotalHeight } from '@/layout/tabBarMetrics';
 import { playerLevel } from '@/lib/mapExplore';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
