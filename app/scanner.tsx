@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,14 +17,13 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { CatCardDetail } from '@/components/CatCardDetail';
 import { PageLoading, Skeleton } from '@/components/Loader';
 import { ProblemState } from '@/components/ProblemState';
 import { ProgressBar } from '@/components/Progress';
@@ -36,11 +34,9 @@ import { analyzeCatPhoto } from '@/lib/api';
 import {
   CATDEX_TARGET,
   formatCatDefaultName,
-  formatDexNumber,
   isInParis20e,
   PARIS_20E,
 } from '@/lib/constants';
-import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
 import { enrichAnalysis, isNoCatFound } from '@/lib/catTraits';
 import { useCatsStore } from '@/store/cats';
 import { useToastStore } from '@/store/toast';
@@ -50,7 +46,7 @@ import type { CatAnalysis } from '@/types/cat';
 type Step = 'camera' | 'review' | 'reveal' | 'problem';
 
 export default function ScannerScreen() {
-  const { colors, fonts, spacing, radius, shadow, motion, scheme } = useTheme();
+  const { colors, fonts, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const showToast = useToastStore((state) => state.show);
@@ -72,9 +68,6 @@ export default function ScannerScreen() {
     longitude: PARIS_20E.center.longitude,
   });
   const scanLine = useSharedValue(0);
-  const revealScale = useSharedValue(0.88);
-  const revealOpacity = useSharedValue(0);
-  const blurAmount = useSharedValue(1);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -99,43 +92,9 @@ export default function ScannerScreen() {
     );
   }, [reduceMotion, scanLine, step]);
 
-  useEffect(() => {
-    if (step !== 'reveal') return;
-    if (reduceMotion) {
-      revealScale.value = 1;
-      revealOpacity.value = 1;
-      blurAmount.value = 0;
-      return;
-    }
-    revealScale.value = 0.88;
-    revealOpacity.value = 0;
-    blurAmount.value = 1;
-    revealOpacity.value = withTiming(1, { duration: motion.duration.normal });
-    revealScale.value = withSpring(1, motion.easing.spring);
-    blurAmount.value = withTiming(0, { duration: motion.duration.reveal });
-  }, [
-    blurAmount,
-    motion.duration.normal,
-    motion.duration.reveal,
-    motion.easing.spring,
-    reduceMotion,
-    revealOpacity,
-    revealScale,
-    step,
-  ]);
-
   const scanStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: scanLine.value * 200 }],
     opacity: 0.7,
-  }));
-
-  const revealCardStyle = useAnimatedStyle(() => ({
-    opacity: revealOpacity.value,
-    transform: [{ scale: revealScale.value }],
-  }));
-
-  const blurOverlayStyle = useAnimatedStyle(() => ({
-    opacity: blurAmount.value,
   }));
 
   const ensureLocation = async () => {
@@ -388,125 +347,28 @@ export default function ScannerScreen() {
   }
 
   if (step === 'reveal' && photoUri && analysis) {
-    const theme = themeFromColorLabel(analysis.color, nextNumber);
-    const dexLabel = formatDexNumber(nextNumber);
     const displayName =
       analysis.suggestedName?.trim() || formatCatDefaultName(nextNumber);
+    const enriched = enrichAnalysis(analysis, nextNumber);
 
     return (
-      <View
-        style={[
-          styles.root,
-          {
-            backgroundColor: colors.background,
-            paddingTop: insets.top + spacing[24],
-            paddingHorizontal: spacing[24],
-          },
-        ]}
-      >
-        <View style={{ alignItems: 'center', gap: spacing[4], marginBottom: spacing[16] }}>
-          <Text variant="label" color="accent" align="center">
-            Nouveau CatDex
-          </Text>
-          <Text
-            variant="display"
-            align="center"
-            style={{ fontFamily: fonts.display, color: colors.text }}
-          >
-            {dexLabel}
-          </Text>
-        </View>
-
-        <Animated.View style={[revealCardStyle, { alignItems: 'center', width: '100%' }]}>
-          <View
-            style={[
-              {
-                padding: spacing[8],
-                borderRadius: radius['2xl'],
-                backgroundColor: themeSoft(theme, scheme),
-                overflow: 'hidden',
-              },
-              shadow.medium,
-            ]}
-          >
-            <View>
-              <Image
-                source={{ uri: photoUri }}
-                style={{
-                  width: spacing[96] * 2,
-                  height: spacing[96] * 2,
-                  borderRadius: radius.xl,
-                }}
-              />
-              <Animated.View
-                pointerEvents="none"
-                style={[StyleSheet.absoluteFill, blurOverlayStyle, { borderRadius: radius.xl }]}
-              >
-                {Platform.OS === 'web' ? (
-                  <View
-                    style={[
-                      StyleSheet.absoluteFill,
-                      { backgroundColor: colors.overlay, borderRadius: radius.xl },
-                    ]}
-                  />
-                ) : (
-                  <BlurView
-                    intensity={48}
-                    tint="dark"
-                    style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
-                  />
-                )}
-              </Animated.View>
-            </View>
-          </View>
-
-          <Text
-            variant="h2"
-            align="center"
-            style={{ marginTop: spacing[24], fontFamily: fonts.display }}
-          >
-            {displayName}
-          </Text>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: spacing[8],
-              marginTop: spacing[16],
-            }}
-          >
-            <Badge label={analysis.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-            <Badge label={analysis.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-            <Badge label={analysis.coat} color={theme.badge} backgroundColor={`${theme.hex}33`} />
-          </View>
-
-          <Text
-            variant="body"
-            color="textBody"
-            align="center"
-            style={{
-              marginTop: spacing[16],
-              paddingHorizontal: spacing[8],
-              fontFamily: fonts.body,
-            }}
-          >
-            {analysis.description}
-          </Text>
-        </Animated.View>
-
-        <View
-          style={{
-            marginTop: 'auto',
-            paddingBottom: Math.max(insets.bottom, spacing[16]),
-            gap: spacing[8],
-          }}
-        >
-          <Button title="Ajouter à ma collection" onPress={handleAddToCatDex} />
-          <Button title="Reprendre la photo" variant="secondary" onPress={resetToCamera} />
-        </View>
-      </View>
+      <CatCardDetail
+        name={displayName}
+        number={nextNumber}
+        photoUri={photoUri}
+        analysis={enriched}
+        discoveredAt={new Date().toISOString()}
+        onBack={() => {
+          if (router.canGoBack()) router.back();
+          else resetToCamera();
+        }}
+        primaryLabel="Ajouter à ma collection"
+        onPrimaryAction={() => {
+          void handleAddToCatDex();
+        }}
+        secondaryLabel="Reprendre la photo"
+        onSecondaryAction={resetToCamera}
+      />
     );
   }
 
@@ -738,9 +600,12 @@ export default function ScannerScreen() {
           }}
           onMountError={(event) => {
             setCameraReady(false);
+            const message =
+              typeof event === 'object' && event && 'message' in event
+                ? String((event as { message?: string }).message ?? '')
+                : '';
             setCameraError(
-              event.nativeEvent?.message ||
-                'Impossible d’ouvrir la caméra sur cet appareil.',
+              message || 'Impossible d’ouvrir la caméra sur cet appareil.',
             );
           }}
         />
