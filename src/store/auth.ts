@@ -52,6 +52,13 @@ export const useAuthStore = create<AuthState>()(
       setHydrated: (value) => set({ hydrated: value }),
 
       initialize: async () => {
+        // Skip Supabase initialization if not configured
+        if (!supabase) {
+          console.log('📝 Using mock authentication (Supabase not configured)');
+          set({ loading: false, hydrated: true });
+          return;
+        }
+
         try {
           set({ loading: true, error: null });
 
@@ -137,6 +144,20 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithEmail: async (email, password) => {
+        // Fallback to mock if Supabase not configured
+        if (!supabase) {
+          set({
+            user: {
+              id: `user_email_${Date.now()}`,
+              email: email.trim(),
+              displayName: email.split('@')[0],
+              provider: 'email',
+            },
+            loading: false,
+          });
+          return;
+        }
+
         try {
           set({ loading: true, error: null });
 
@@ -174,6 +195,21 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signUp: async ({ email, password, displayName }) => {
+        // Fallback to mock if Supabase not configured
+        if (!supabase) {
+          set({
+            user: {
+              id: `user_email_${Date.now()}`,
+              email: email.trim(),
+              displayName: displayName.trim(),
+              provider: 'email',
+            },
+            onboardingCompleted: false,
+            loading: false,
+          });
+          return;
+        }
+
         try {
           set({ loading: true, error: null });
 
@@ -221,6 +257,20 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithGoogle: async () => {
+        // Fallback to mock if Supabase not configured
+        if (!supabase) {
+          set({
+            user: {
+              id: `user_google_${Date.now()}`,
+              email: 'google@catdex.app',
+              displayName: 'Google User',
+              provider: 'google',
+            },
+            loading: false,
+          });
+          return;
+        }
+
         try {
           set({ loading: true, error: null });
 
@@ -242,6 +292,20 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithApple: async () => {
+        // Fallback to mock if Supabase not configured
+        if (!supabase) {
+          set({
+            user: {
+              id: `user_apple_${Date.now()}`,
+              email: 'apple@catdex.app',
+              displayName: 'Apple User',
+              provider: 'apple',
+            },
+            loading: false,
+          });
+          return;
+        }
+
         try {
           set({ loading: true, error: null });
 
@@ -267,7 +331,9 @@ export const useAuthStore = create<AuthState>()(
       signOut: async () => {
         try {
           set({ loading: true, error: null });
-          await supabase.auth.signOut();
+          if (supabase) {
+            await supabase.auth.signOut();
+          }
           set({ user: null, session: null, onboardingCompleted: false, loading: false });
         } catch (error) {
           console.error('Sign out error:', error);
