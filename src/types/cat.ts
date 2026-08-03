@@ -32,6 +32,7 @@ export type User = {
   email: string;
   displayName: string;
   provider: 'apple' | 'google' | 'email';
+  avatarUrl?: string;
 };
 
 export type Mission = {
