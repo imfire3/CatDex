@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import Animated, {
   Easing,
@@ -23,13 +23,13 @@ type Props = {
 };
 
 /**
- * CatDex map marker — round avatar, white ring, luminous halo,
- * bounce on appear + short float/pulse (then freeze for map FPS).
+ * CatDex map marker — round photo/avatar pin with luminous halo.
  */
 function CatMapMarkerComponent({ cat, onPress }: Props) {
   const { colors, spacing, shadow } = useTheme();
   const size = spacing[48];
   const haloSize = size + spacing[24];
+  const showPhoto = Boolean(cat.photoUri) && !cat.photoUri.startsWith('demo');
 
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
   const appear = useSharedValue(0);
@@ -67,8 +67,6 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
       ),
     );
 
-    // Appear + float frames, then freeze bitmap for scroll FPS.
-    // Keep tracking long enough for iOS MapKit to snapshot custom views.
     const freeze = setTimeout(() => setTracksViewChanges(false), 2200);
     return () => clearTimeout(freeze);
   }, [appear, floatY, pulse]);
@@ -108,7 +106,7 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
               width: haloSize,
               height: haloSize,
               borderRadius: haloSize / 2,
-              backgroundColor: colors.accent,
+              backgroundColor: colors.brand,
             },
             haloStyle,
           ]}
@@ -127,12 +125,19 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
             shadow.low,
           ]}
         >
-          <CatSprite
-            colorLabel={cat.analysis.color}
-            seed={cat.number}
-            size={size - 6}
-            faceOnly
-          />
+          {showPhoto ? (
+            <Image
+              source={{ uri: cat.photoUri }}
+              style={{ width: size - 6, height: size - 6, borderRadius: (size - 6) / 2 }}
+            />
+          ) : (
+            <CatSprite
+              colorLabel={cat.analysis.color}
+              seed={cat.number}
+              size={size - 6}
+              faceOnly
+            />
+          )}
         </View>
       </Animated.View>
     </Marker>

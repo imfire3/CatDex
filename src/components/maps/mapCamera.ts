@@ -3,20 +3,20 @@ import type { Camera } from 'react-native-maps';
 import { PARIS_20E } from '@/lib/constants';
 import { motionDuration } from '@/theme/motion';
 
-/** Street-level framing — slightly pulled back so the quartier breathes. */
-export const MAP_ZOOM = 16.2;
+/** Street-level framing for the 3D explorer. */
+export const MAP_ZOOM = 17;
 
-/** Soft game tilt (degrees). */
-export const MAP_PITCH = 38;
+/** Strong game-world tilt (degrees) — Apple/Google 3D buildings. */
+export const MAP_PITCH = 58;
 
 /** Camera animation duration — within 150–300 ms. */
 export const MAP_CAMERA_DURATION = Math.min(motionDuration.slow, 280);
 
 /** Approximate altitude (meters) for iOS when zoom is unavailable. */
-export const MAP_ALTITUDE = 780;
+export const MAP_ALTITUDE = 520;
 
 /** How far the player may pinch out / in. */
-export const MAP_MIN_ZOOM = 12;
+export const MAP_MIN_ZOOM = 13;
 export const MAP_MAX_ZOOM = 19;
 
 /** Min meters before soft follow re-centers on the player. */

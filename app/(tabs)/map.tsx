@@ -1,20 +1,18 @@
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Avatar } from '@/components/Avatar';
-import { Badge } from '@/components/Badge';
 import { BottomSheet } from '@/components/BottomSheet';
-import { BrandLogo } from '@/components/BrandLogo';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { ProgressBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
 import { CatMap } from '@/components/maps/CatMap';
-import { distanceMeters, isInParis20e, PARIS_20E } from '@/lib/constants';
-import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
+import { CATDEX_TARGET, distanceMeters, isInParis20e, PARIS_20E } from '@/lib/constants';
 import { DEMO_CATS } from '@/lib/demoCats';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
@@ -34,15 +32,20 @@ function sortByDistance(
   );
 }
 
+function deriveLevel(catCount: number) {
+  const level = Math.max(1, Math.floor(catCount / 2) + 1);
+  const xpInLevel = (catCount % 2) * 125;
+  return { level, xp: xpInLevel || (catCount === 0 ? 0 : 125), xpMax: 250 };
+}
+
 /**
- * Explorer — HUD from design: avatar · CatDex · bell, then À proximité + filters.
+ * Explorer — 3D map HUD: level/XP, filters, collection progress, weather, locate.
  */
 export default function MapScreen() {
   const { colors, fonts, spacing, radius, iconStroke, iconSize, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const storedCats = useCatsStore((state) => state.cats);
-  /** Same preview pins as CatDex in __DEV__ so Explorer shows markers without captures. */
   const cats = __DEV__ && storedCats.length === 0 ? DEMO_CATS : storedCats;
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -75,9 +78,14 @@ export default function MapScreen() {
     }),
     origin,
   );
-  const nearby = filteredCats[0] ?? null
-  const nearbyTheme = nearby ? themeFromColorLabel(nearby.analysis.color, nearby.number) : null;
+
   const initials = (user?.displayName ?? 'C').slice(0, 2).toUpperCase();
+  const collectionCount = storedCats.length || (__DEV__ ? cats.length : 0);
+  const { level, xp, xpMax } = useMemo(
+    () => deriveLevel(Math.max(storedCats.length, 1) * 2 + 11),
+    [storedCats.length],
+  );
+  const collectionProgress = Math.min(1, collectionCount / CATDEX_TARGET);
 
   useEffect(() => {
     let mounted = true;
@@ -99,7 +107,27 @@ export default function MapScreen() {
     };
   }, []);
 
-  const recenter = async () => {
+  const recenterOnPlayer = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const position = await Location.getCurrentPositionAsync({});
+        const next = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setUserCoordinate(next);
+        setFocusCoordinate(next);
+        return;
+      }
+    } catch {
+      // fallback
+    }
+    setFocusCoordinate({ ...PARIS_20E.center });
+  };
+
+  const recenterNearby = async () => {
+    setFilter('nearby');
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
@@ -118,7 +146,7 @@ export default function MapScreen() {
         return;
       }
     } catch {
-      // fallback below
+      // fallback
     }
     const nearest = sortByDistance(filteredCats.length ? filteredCats : cats, PARIS_20E.center)[0];
     setFocusCoordinate(
@@ -134,7 +162,7 @@ export default function MapScreen() {
         cats={filteredCats}
         scheme="light"
         focusCoordinate={focusCoordinate}
-        userCoordinate={userCoordinate}
+        userCoordinate={userCoordinate ?? PARIS_20E.center}
         onSelectCat={(item) => {
           setSelected(item);
           setSheetVisible(true);
@@ -152,74 +180,45 @@ export default function MapScreen() {
           },
         ]}
       >
-        {/* Top bar: avatar · CatDex · notifications */}
+        {/* Top: avatar + level/XP · bell + filter */}
         <View style={styles.topBar} pointerEvents="box-none">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Profil"
             onPress={() => router.push('/(tabs)/profile')}
             style={({ pressed }) => [
-              styles.avatarWrap,
               {
-                opacity: pressed ? 0.9 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing[8],
+                paddingRight: spacing[16],
+                paddingVertical: spacing[8],
+                paddingLeft: spacing[8],
+                borderRadius: radius.full,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                opacity: pressed ? 0.92 : 1,
               },
+              shadow.low,
             ]}
           >
-            <Avatar size="L" initials={initials} />
-            {storedCats.length > 0 ? (
-              <View
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor: colors.accent,
-                    borderColor: colors.surface,
-                    minWidth: spacing[24],
-                    height: spacing[24],
-                    borderRadius: radius.full,
-                    paddingHorizontal: spacing[4],
-                  },
-                ]}
-              >
-                <Text
-                  variant="caption"
-                  style={{
-                    color: colors.onAccent,
-                    fontFamily: fonts.bodySemi,
-                    fontSize: 10,
-                    lineHeight: 12,
-                  }}
-                >
-                  {storedCats.length > 99 ? '99+' : String(storedCats.length)}
-                </Text>
-              </View>
-            ) : null}
+            <Avatar size="M" initials={initials} />
+            <View style={{ gap: spacing[4], minWidth: spacing[96] }}>
+              <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+                Niveau {level}
+              </Text>
+              <ProgressBar progress={xp / xpMax} height={6} />
+              <Text variant="caption" color="textMuted">
+                {xp} / {xpMax} XP
+              </Text>
+            </View>
           </Pressable>
 
-          <View style={styles.wordmark} pointerEvents="none">
-            <BrandLogo size={40} />
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: spacing[8], zIndex: 2 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Notifications"
-              onPress={() => void recenter()}
-              style={({ pressed }) => [
-                {
-                  width: spacing[48],
-                  height: spacing[48],
-                  borderRadius: radius.full,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: pressed ? 0.88 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                },
-                shadow.low,
-              ]}
+          <View style={{ flexDirection: 'row', gap: spacing[8] }}>
+            <HudIconButton
+              label="Notifications"
+              onPress={() => void recenterOnPlayer()}
             >
               <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
                 <Path
@@ -235,49 +234,31 @@ export default function MapScreen() {
                   strokeLinecap="round"
                 />
               </Svg>
-            </Pressable>
+            </HudIconButton>
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Filtres"
-              accessibilityState={{ selected: filtersOpen }}
+            <HudIconButton
+              label="Filtres"
+              selected={filtersOpen}
               onPress={() => setFiltersOpen((open) => !open)}
-              style={({ pressed }) => [
-                {
-                  width: spacing[48],
-                  height: spacing[48],
-                  borderRadius: radius.full,
-                  backgroundColor: filtersOpen ? colors.accent : colors.surface,
-                  borderWidth: 1,
-                  borderColor: filtersOpen ? colors.accent : colors.border,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: pressed ? 0.88 : 1,
-                },
-                shadow.low,
-              ]}
             >
               <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
                 <Path
-                  d="M4 6h16M7 12h10M10 18h4"
+                  d="M4 7h16M7 12h10M10 17h4"
                   stroke={filtersOpen ? colors.onAccent : colors.brand}
                   strokeWidth={iconStroke.regular}
                   strokeLinecap="round"
                 />
               </Svg>
-            </Pressable>
+            </HudIconButton>
           </View>
         </View>
 
-        {/* Secondary: À proximité chip (mock layout) */}
-        <View style={styles.filterRow} pointerEvents="box-none">
+        {/* Secondary: nearby · collection · weather */}
+        <View style={styles.secondaryRow} pointerEvents="box-none">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="À proximité"
-            onPress={() => {
-              setFilter('nearby');
-              void recenter();
-            }}
+            onPress={() => void recenterNearby()}
             style={({ pressed }) => [
               {
                 flexDirection: 'row',
@@ -285,46 +266,73 @@ export default function MapScreen() {
                 gap: spacing[8],
                 paddingHorizontal: spacing[16],
                 paddingVertical: spacing[8],
-                borderRadius: radius[8],
-                backgroundColor: filter === 'nearby' ? colors.accent : colors.surface,
+                borderRadius: radius.full,
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: filter === 'nearby' ? colors.accent : colors.border,
+                borderColor: colors.border,
                 opacity: pressed ? 0.92 : 1,
               },
               shadow.low,
             ]}
           >
-            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
-                stroke={filter === 'nearby' ? colors.onAccent : colors.accent}
-                strokeWidth={iconStroke.regular}
-                strokeLinejoin="round"
-              />
-              <Circle
-                cx="12"
-                cy="10"
-                r="2.5"
-                fill={filter === 'nearby' ? colors.onAccent : colors.accent}
-              />
-            </Svg>
-            <Text
-              variant="bodySmall"
-              color={filter === 'nearby' ? 'onAccent' : 'textBrand'}
-              style={{ fontFamily: fonts.bodySemi }}
-            >
+            <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
               À proximité
             </Text>
-            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+          </Pressable>
+
+          <View
+            style={[
+              {
+                flex: 1,
+                paddingHorizontal: spacing[16],
+                paddingVertical: spacing[8],
+                borderRadius: radius.full,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                gap: spacing[4],
+                alignItems: 'center',
+              },
+              shadow.low,
+            ]}
+          >
+            <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+              {collectionCount} / {CATDEX_TARGET} chats
+            </Text>
+            <View style={{ width: '100%' }}>
+              <ProgressBar progress={collectionProgress} height={4} />
+            </View>
+          </View>
+
+          <View
+            style={[
+              {
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing[8],
+                paddingHorizontal: spacing[16],
+                paddingVertical: spacing[8],
+                borderRadius: radius.full,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+              },
+              shadow.low,
+            ]}
+          >
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+              <Circle cx="12" cy="12" r="4" fill={colors.yellow} />
               <Path
-                d="M6 9l6 6 6-6"
-                stroke={filter === 'nearby' ? colors.onAccent : colors.textMuted}
-                strokeWidth={iconStroke.regular}
+                d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"
+                stroke={colors.yellow}
+                strokeWidth={1.4}
                 strokeLinecap="round"
-                strokeLinejoin="round"
               />
             </Svg>
-          </Pressable>
+            <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+              22°
+            </Text>
+          </View>
         </View>
 
         {filtersOpen ? (
@@ -340,62 +348,38 @@ export default function MapScreen() {
         ) : null}
       </View>
 
-      {!sheetVisible && nearby && nearbyTheme ? (
-        <Pressable
-          onPress={() => {
-            setSelected(nearby);
-            setSheetVisible(true);
-          }}
-          style={({ pressed }) => [
-            styles.nearbyCard,
-            {
-              bottom: insets.bottom + spacing[96],
-              marginHorizontal: spacing[24],
-              backgroundColor: colors.surface,
-              borderRadius: radius.lg,
-              borderWidth: 1,
-              borderColor: colors.border,
-              padding: spacing[16],
-              opacity: pressed ? 0.96 : 1,
-              transform: [{ scale: pressed ? 0.99 : 1 }],
-            },
-            shadow.low,
-          ]}
-        >
-          <Image
-            source={{ uri: nearby.photoUri }}
-            style={{
-              width: spacing[64],
-              height: spacing[64],
-              borderRadius: radius.md,
-              backgroundColor: themeSoft(nearbyTheme, 'light'),
-            }}
+      {/* Locate control */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Recentrer sur ma position"
+        onPress={() => void recenterOnPlayer()}
+        style={({ pressed }) => [
+          styles.locateBtn,
+          {
+            bottom: insets.bottom + spacing[96] + spacing[16],
+            right: spacing[16],
+            width: spacing[48],
+            height: spacing[48],
+            borderRadius: radius.full,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            opacity: pressed ? 0.88 : 1,
+          },
+          shadow.medium,
+        ]}
+      >
+        <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 3v3M12 18v3M3 12h3M18 12h3"
+            stroke={colors.brand}
+            strokeWidth={iconStroke.regular}
+            strokeLinecap="round"
           />
-          <View style={{ flex: 1, gap: spacing[8] }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-              <Text
-                variant="body"
-                color="textBrand"
-                style={{ fontFamily: fonts.bodySemi }}
-                numberOfLines={1}
-              >
-                {nearby.name}
-              </Text>
-              <Badge
-                label={nearby.analysis.coat || 'Chat'}
-                color={nearbyTheme.badge}
-                backgroundColor={`${nearbyTheme.hex}22`}
-              />
-            </View>
-            <Text variant="caption" color="textSecondary" numberOfLines={1}>
-              {nearby.analysis.breed} · {nearby.analysis.color}
-            </Text>
-            <Text variant="caption" color="textMuted">
-              Nouveau signalement à proximité
-            </Text>
-          </View>
-        </Pressable>
-      ) : null}
+          <Circle cx="12" cy="12" r="4" stroke={colors.brand} strokeWidth={iconStroke.regular} />
+          <Circle cx="12" cy="12" r="1.5" fill={colors.brand} />
+        </Svg>
+      </Pressable>
 
       <BottomSheet
         visible={sheetVisible}
@@ -429,6 +413,43 @@ export default function MapScreen() {
   );
 }
 
+function HudIconButton({
+  label,
+  onPress,
+  selected,
+  children,
+}: {
+  label: string;
+  onPress: () => void;
+  selected?: boolean;
+  children: ReactNode;
+}) {
+  const { colors, spacing, radius, shadow } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [
+        {
+          width: spacing[48],
+          height: spacing[48],
+          borderRadius: radius.full,
+          backgroundColor: selected ? colors.accent : colors.surface,
+          borderWidth: 1,
+          borderColor: selected ? colors.accent : colors.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: pressed ? 0.88 : 1,
+        },
+        shadow.low,
+      ]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   hud: {
@@ -443,41 +464,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  avatarWrap: {
-    position: 'relative',
-    zIndex: 2,
-  },
-  badge: {
-    position: 'absolute',
-    right: -2,
-    bottom: -2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  wordmark: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  filterRow: {
+  secondaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    gap: 8,
   },
   filterPanel: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  nearbyCard: {
+  locateBtn: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 15,
-    flexDirection: 'row',
+    zIndex: 12,
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'center',
   },
 });

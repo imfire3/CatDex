@@ -17,26 +17,25 @@ type Props = {
 };
 
 /**
- * Premium player indicator — white ring, turquoise core, breathing halo.
- * Single marker: `tracksViewChanges` stays on so the pulse renders on the map bitmap.
+ * Player pin + wide radar pulse (explorer mock).
  */
 export function PlayerLocationMarker({ coordinate }: Props) {
   const { colors, spacing, shadow } = useTheme();
-  const pulse = useSharedValue(0.45);
+  const pulse = useSharedValue(0.35);
   const breath = useSharedValue(1);
 
   useEffect(() => {
     pulse.value = withRepeat(
       withTiming(1, {
-        duration: 280,
+        duration: 900,
         easing: Easing.inOut(Easing.sin),
       }),
       -1,
       true,
     );
     breath.value = withRepeat(
-      withTiming(1.08, {
-        duration: motionDuration.slow + 80,
+      withTiming(1.06, {
+        duration: motionDuration.slow + 120,
         easing: Easing.inOut(Easing.ease),
       }),
       -1,
@@ -44,9 +43,9 @@ export function PlayerLocationMarker({ coordinate }: Props) {
     );
   }, [breath, pulse]);
 
-  const haloStyle = useAnimatedStyle(() => ({
-    opacity: 0.16 + pulse.value * 0.28,
-    transform: [{ scale: (0.82 + pulse.value * 0.42) * breath.value }],
+  const radarStyle = useAnimatedStyle(() => ({
+    opacity: 0.12 + pulse.value * 0.22,
+    transform: [{ scale: 0.55 + pulse.value * 0.7 }],
   }));
 
   const ringStyle = useAnimatedStyle(() => ({
@@ -55,7 +54,7 @@ export function PlayerLocationMarker({ coordinate }: Props) {
 
   const coreSize = spacing[16];
   const ringSize = spacing[24];
-  const haloSize = spacing[48];
+  const radarSize = spacing[96];
 
   return (
     <Marker
@@ -65,17 +64,30 @@ export function PlayerLocationMarker({ coordinate }: Props) {
       flat={false}
       zIndex={999}
     >
-      <View style={[styles.wrap, { width: haloSize, height: haloSize }]}>
+      <View style={[styles.wrap, { width: radarSize, height: radarSize }]}>
         <Animated.View
           style={[
             styles.halo,
             {
-              width: haloSize,
-              height: haloSize,
-              borderRadius: haloSize / 2,
-              backgroundColor: colors.accent,
+              width: radarSize,
+              height: radarSize,
+              borderRadius: radarSize / 2,
+              backgroundColor: colors.brand,
             },
-            haloStyle,
+            radarStyle,
+          ]}
+        />
+        <Animated.View
+          style={[
+            styles.halo,
+            {
+              width: spacing[64],
+              height: spacing[64],
+              borderRadius: spacing[64] / 2,
+              backgroundColor: colors.brandSoft,
+              opacity: 0.85,
+            },
+            radarStyle,
           ]}
         />
         <Animated.View
@@ -97,7 +109,7 @@ export function PlayerLocationMarker({ coordinate }: Props) {
               width: coreSize,
               height: coreSize,
               borderRadius: coreSize / 2,
-              backgroundColor: colors.accent,
+              backgroundColor: colors.brand,
             }}
           />
         </Animated.View>

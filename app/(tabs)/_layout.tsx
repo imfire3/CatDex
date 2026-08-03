@@ -151,7 +151,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="catdex"
           options={{
-            title: 'CatDex',
+            title: 'Cartes',
             tabBarIcon: ({ color, focused }) => (
               <TabIconWithDot name="catdex" color={String(color)} focused={focused} />
             ),
