@@ -114,11 +114,11 @@ export default function IntroScreen() {
 
   return (
     <AuthShell
+      plain
       fullHeight
       footer={
         <View style={{ alignSelf: 'stretch' }}>
           <Button
-            variant="secondary"
             title="Continuer"
             onPress={() => router.push('/(auth)/permissions')}
           />
@@ -137,7 +137,7 @@ export default function IntroScreen() {
         </Text>
       </View>
 
-      <View style={{ gap: spacing[16] }}>
+      <View style={{ gap: spacing[8] }}>
         {STEPS.map((step) => (
           <View
             key={step.key}
@@ -148,6 +148,8 @@ export default function IntroScreen() {
               padding: spacing[16],
               borderRadius: radius.cta,
               backgroundColor: colors.surfaceElevated,
+              borderWidth: 1,
+              borderColor: colors.ctaSecondaryBorder,
             }}
           >
             <View

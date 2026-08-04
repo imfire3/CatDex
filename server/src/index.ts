@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 const app = new Hono();
 const port = Number(process.env.PORT ?? 8787);
+const apiSecret = process.env.API_SECRET?.trim();
 
 app.use(
   '*',
@@ -18,6 +19,24 @@ app.use(
 );
 
 app.get('/health', (c) => c.json({ ok: true, service: 'catdex-api' }));
+
+/** Lightweight shared-secret gate for /analyze-cat (optional in local dev). */
+app.use('/analyze-cat', async (c, next) => {
+  if (!apiSecret) {
+    await next();
+    return;
+  }
+
+  const header =
+    c.req.header('x-api-key')?.trim() ||
+    c.req.header('authorization')?.replace(/^Bearer\s+/i, '').trim();
+
+  if (header !== apiSecret) {
+    return c.json({ error: 'Non autorisé' }, 401);
+  }
+
+  await next();
+});
 
 const analyzeSchema = z.object({
   imageBase64: z.string().min(32),

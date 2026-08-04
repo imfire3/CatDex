@@ -208,7 +208,7 @@ function CaptureTabItem({ proximityActive }: { proximityActive: boolean }) {
             position: 'absolute',
             width: glowSize,
             height: glowSize,
-            borderRadius: 8px,
+            borderRadius: radius.full,
             backgroundColor: colors.captureFabHalo,
           }}
         />

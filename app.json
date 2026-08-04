@@ -20,6 +20,12 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "CatDex accède à tes photos pour analyser un chat déjà capturé."
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "CatDex utilise ta position pour placer les chats sur la carte."
@@ -31,7 +37,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.catdex.app",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "CatDex a besoin de la caméra pour scanner les chats.",
+        "NSPhotoLibraryUsageDescription": "CatDex accède à tes photos pour analyser un chat déjà capturé.",
         "NSLocationWhenInUseUsageDescription": "CatDex utilise ta position pour placer les chats sur la carte.",
         "NSLocalNetworkUsageDescription": "CatDex contacte l’API d’analyse sur ton réseau local.",
         "NSAppTransportSecurity": {

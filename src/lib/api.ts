@@ -1,4 +1,4 @@
-import { getApiCandidateUrls } from '@/lib/apiUrl';
+import { getApiCandidateUrls, getApiSecret } from '@/lib/apiUrl';
 import { OFFLINE_CAT_ANALYSIS } from '@/lib/mockAnalysis';
 import type { CatAnalysis } from '@/types/cat';
 
@@ -32,9 +32,17 @@ async function requestAnalyze(
   mimeType: string,
   signal: AbortSignal,
 ): Promise<AnalyzeResponse> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  const apiSecret = getApiSecret();
+  if (apiSecret) {
+    headers['x-api-key'] = apiSecret;
+  }
+
   const response = await fetch(`${apiBase}/analyze-cat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       imageBase64: base64,
       mimeType,
@@ -83,6 +91,13 @@ export async function analyzeCatPhoto(
   const stripped = stripDataUrl(base64Image);
   const resolvedMime = stripped.mimeType ?? mimeType;
   const candidates = getApiCandidateUrls();
+
+  if (!__DEV__ && candidates.length === 0) {
+    throw new Error(
+      'EXPO_PUBLIC_API_URL manquant. Configure l’URL HTTPS de l’API pour les builds store.',
+    );
+  }
+
   let lastError: Error | null = null;
 
   for (const apiBase of candidates) {
@@ -122,7 +137,7 @@ export async function analyzeCatPhoto(
   throw (
     lastError ??
     new Error(
-      `Impossible de joindre l’API. Lance \`npm run server\` puis vérifie ${candidates[0]}.`,
+      `Impossible de joindre l’API. Vérifie EXPO_PUBLIC_API_URL (${candidates[0] ?? 'non défini'}).`,
     )
   );
 }

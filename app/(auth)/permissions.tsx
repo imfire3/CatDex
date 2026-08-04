@@ -127,6 +127,7 @@ export default function PermissionsScreen() {
 
   return (
     <AuthShell
+      plain
       fullHeight
       footer={
         <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
@@ -152,7 +153,7 @@ export default function PermissionsScreen() {
         </Text>
       </View>
 
-      <View style={{ gap: spacing[16] }}>
+      <View style={{ gap: spacing[8] }}>
         {ROWS.map((row) => (
           <View
             key={row.key}
@@ -163,6 +164,8 @@ export default function PermissionsScreen() {
               padding: spacing[16],
               borderRadius: radius.cta,
               backgroundColor: colors.surfaceElevated,
+              borderWidth: 1,
+              borderColor: colors.ctaSecondaryBorder,
             }}
           >
             <View

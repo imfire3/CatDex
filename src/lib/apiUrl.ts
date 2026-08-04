@@ -39,6 +39,11 @@ export function getApiCandidateUrls(): string[] {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (fromEnv) push(fromEnv);
 
+  // Production / store builds must only hit the configured HTTPS API.
+  if (!__DEV__) {
+    return candidates;
+  }
+
   const devHost = getExpoDevHost();
   if (devHost) push(`http://${devHost}:${API_PORT}`);
 
@@ -50,4 +55,9 @@ export function getApiCandidateUrls(): string[] {
 
 export function getPrimaryApiUrl(): string {
   return getApiCandidateUrls()[0] ?? `http://localhost:${API_PORT}`;
+}
+
+export function getApiSecret(): string | undefined {
+  const secret = process.env.EXPO_PUBLIC_API_SECRET?.trim();
+  return secret || undefined;
 }
