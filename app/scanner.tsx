@@ -33,6 +33,7 @@ import {
   PARIS_20E,
 } from '@/lib/constants';
 import { enrichAnalysis, isNoCatFound } from '@/lib/catTraits';
+import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import { useCatsStore } from '@/store/cats';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -114,6 +115,7 @@ export default function ScannerScreen() {
   const [step, setStep] = useState<Step>('camera');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+  const [photoMimeType, setPhotoMimeType] = useState('image/jpeg');
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<CatAnalysis | null>(null);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number }>({
@@ -257,10 +259,13 @@ export default function ScannerScreen() {
         (typeof photo?.uri === 'string' && photo.uri.includes('base64,')
           ? photo.uri.split('base64,')[1]
           : null);
-      const photoUri =
-        photo?.uri ??
-        (rawBase64 ? `data:image/jpeg;base64,${rawBase64}` : null);
-      if (!photoUri || !rawBase64) {
+      // Persist as data URI — blob/file camera URIs die on web reload / AsyncStorage.
+      const durableUri = resolvePersistentPhotoUri({
+        uri: photo?.uri,
+        base64: rawBase64,
+        mimeType: 'image/jpeg',
+      });
+      if (!durableUri || !rawBase64) {
         showToast({
           title: 'Capture impossible',
           description: 'Réessaie ou choisis une photo dans la galerie.',
@@ -268,11 +273,12 @@ export default function ScannerScreen() {
         });
         return;
       }
-      setPhotoUri(photoUri);
+      setPhotoUri(durableUri);
       setPhotoBase64(rawBase64);
+      setPhotoMimeType('image/jpeg');
       setStep('analyzing');
       setAnalyzing(true);
-      void runAnalysis(rawBase64, photoUri, 'image/jpeg');
+      void runAnalysis(rawBase64, durableUri, 'image/jpeg');
     } catch (error) {
       showToast({
         title: 'Capture impossible',
@@ -310,11 +316,25 @@ export default function ScannerScreen() {
       asset.mimeType && !/heic|heif/i.test(asset.mimeType)
         ? asset.mimeType
         : 'image/jpeg';
-    setPhotoUri(asset.uri);
+    const durableUri = resolvePersistentPhotoUri({
+      uri: asset.uri,
+      base64: asset.base64,
+      mimeType,
+    });
+    if (!durableUri) {
+      showToast({
+        title: 'Image illisible',
+        description: 'Choisis une autre photo (JPEG ou PNG).',
+        tone: 'danger',
+      });
+      return;
+    }
+    setPhotoUri(durableUri);
     setPhotoBase64(asset.base64);
+    setPhotoMimeType(mimeType);
     setStep('analyzing');
     setAnalyzing(true);
-    void runAnalysis(asset.base64, asset.uri, mimeType);
+    void runAnalysis(asset.base64, durableUri, mimeType);
   };
 
   const handleOpenSettings = () => {
@@ -326,6 +346,7 @@ export default function ScannerScreen() {
     setStep('camera');
     setPhotoUri(null);
     setPhotoBase64(null);
+    setPhotoMimeType('image/jpeg');
     setAnalysis(null);
   };
 
@@ -333,10 +354,17 @@ export default function ScannerScreen() {
     if (!photoUri || !analysis || addingRef.current) return;
     addingRef.current = true;
 
+    const durablePhoto =
+      resolvePersistentPhotoUri({
+        uri: photoUri,
+        base64: photoBase64,
+        mimeType: photoMimeType,
+      }) ?? photoUri;
+
     const name =
       analysis.suggestedName?.trim() || formatCatDefaultName(nextNumber);
     const cat = addCat({
-      photoUri,
+      photoUri: durablePhoto,
       latitude: coords.latitude,
       longitude: coords.longitude,
       name,
