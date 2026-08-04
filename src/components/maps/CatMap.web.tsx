@@ -1,5 +1,4 @@
-import maplibregl, { type Map as MapLibreMap, type Marker } from 'maplibre-gl';
-import { createElement, useEffect, useRef } from 'react';
+import { createElement, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import {
@@ -22,8 +21,43 @@ type Props = {
 
 /** Free style with building footprints — extruded for 3D when pitched. */
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
-
 const BUILDINGS_LAYER_ID = 'catdex-3d-buildings';
+const MAPLIBRE_JS = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+const MAPLIBRE_CSS = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';
+
+type LngLatLike = [number, number];
+
+type MapLibreMap = {
+  addControl: (control: unknown, position?: string) => void;
+  addLayer: (layer: Record<string, unknown>, beforeId?: string) => void;
+  easeTo: (opts: Record<string, unknown>) => void;
+  getLayer: (id: string) => unknown;
+  getStyle: () => { layers?: Array<Record<string, unknown>>; sources?: Record<string, unknown> } | undefined;
+  getZoom: () => number;
+  on: (event: string, cb: () => void) => void;
+  remove: () => void;
+};
+
+type MapLibreMarker = {
+  addTo: (map: MapLibreMap) => MapLibreMarker;
+  remove: () => void;
+  setLngLat: (lngLat: LngLatLike) => MapLibreMarker;
+};
+
+type MapLibreNS = {
+  Map: new (opts: Record<string, unknown>) => MapLibreMap;
+  Marker: new (opts?: Record<string, unknown>) => MapLibreMarker & {
+    setLngLat: (lngLat: LngLatLike) => MapLibreMarker;
+    addTo: (map: MapLibreMap) => MapLibreMarker;
+  };
+  NavigationControl: new (opts?: Record<string, unknown>) => unknown;
+};
+
+declare global {
+  interface Window {
+    maplibregl?: MapLibreNS;
+  }
+}
 
 function ensureCss() {
   if (typeof document === 'undefined') return;
@@ -31,24 +65,58 @@ function ensureCss() {
   const link = document.createElement('link');
   link.id = 'maplibre-css';
   link.rel = 'stylesheet';
-  link.href = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';
+  link.href = MAPLIBRE_CSS;
   document.head.appendChild(link);
+}
+
+function loadMapLibre(): Promise<MapLibreNS> {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('MapLibre requires a browser'));
+  }
+  if (window.maplibregl?.Map) return Promise.resolve(window.maplibregl);
+
+  ensureCss();
+
+  const existing = document.getElementById('maplibre-js') as HTMLScriptElement | null;
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      existing.addEventListener('load', () => {
+        if (window.maplibregl?.Map) resolve(window.maplibregl);
+        else reject(new Error('MapLibre failed to load'));
+      });
+      existing.addEventListener('error', () => reject(new Error('MapLibre script error')));
+      if (window.maplibregl?.Map) resolve(window.maplibregl);
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.id = 'maplibre-js';
+    script.src = MAPLIBRE_JS;
+    script.async = true;
+    script.onload = () => {
+      if (window.maplibregl?.Map) resolve(window.maplibregl);
+      else reject(new Error('MapLibre global missing after load'));
+    };
+    script.onerror = () => reject(new Error('Failed to load MapLibre'));
+    document.head.appendChild(script);
+  });
 }
 
 function add3dBuildings(map: MapLibreMap) {
   if (map.getLayer(BUILDINGS_LAYER_ID)) return;
 
   const layers = map.getStyle()?.layers ?? [];
-  const labelLayerId = layers.find(
-    (layer) => layer.type === 'symbol' && (layer.layout as { 'text-field'?: unknown })?.['text-field'],
-  )?.id;
+  const labelLayerId = layers.find((layer) => {
+    const layout = layer.layout as { 'text-field'?: unknown } | undefined;
+    return layer.type === 'symbol' && layout?.['text-field'];
+  })?.id as string | undefined;
 
-  // Prefer a vector source that already has building data.
   const style = map.getStyle();
   const sourceId =
     Object.keys(style?.sources ?? {}).find((id) => {
-      const source = style?.sources?.[id];
-      return source && 'type' in source && source.type === 'vector';
+      const source = style?.sources?.[id] as { type?: string } | undefined;
+      return source?.type === 'vector';
     }) ?? 'openmaptiles';
 
   try {
@@ -83,7 +151,7 @@ function add3dBuildings(map: MapLibreMap) {
       labelLayerId,
     );
   } catch {
-    // Style may already include extrusions or lack a building layer — pitch alone still reads 3D.
+    // Style may already include extrusions — pitch alone still reads 3D.
   }
 }
 
@@ -130,7 +198,8 @@ function makePinElement(opts: {
 }
 
 /**
- * Web Explorer map — MapLibre with pitch + extruded buildings (native uses Apple/Google 3D).
+ * Web Explorer map — MapLibre (CDN) with pitch + extruded buildings.
+ * Loaded from CDN to avoid Metro ESM/CJS interop issues with maplibre-gl.
  */
 export function CatMap({
   cats,
@@ -142,83 +211,90 @@ export function CatMap({
 }: Props) {
   const { colors, spacing } = useTheme();
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const maplibreRef = useRef<MapLibreNS | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const catMarkersRef = useRef<Marker[]>([]);
-  const playerMarkerRef = useRef<Marker | null>(null);
+  const catMarkersRef = useRef<MapLibreMarker[]>([]);
+  const playerMarkerRef = useRef<MapLibreMarker | null>(null);
   const onSelectRef = useRef(onSelectCat);
+  const [mapReady, setMapReady] = useState(false);
   onSelectRef.current = onSelectCat;
 
-  // Init map once.
   useEffect(() => {
-    ensureCss();
-    const host = hostRef.current;
-    if (!host || mapRef.current) return;
+    let cancelled = false;
 
-    const center = INITIAL_MAP_CAMERA.center;
-    const map = new maplibregl.Map({
-      container: host,
-      style: MAP_STYLE,
-      center: [center.longitude, center.latitude],
-      zoom: MAP_ZOOM,
-      pitch: MAP_PITCH,
-      bearing: -18,
-      maxPitch: 75,
-      minZoom: 13,
-      maxZoom: 19,
-      attributionControl: { compact: true },
-    });
+    void (async () => {
+      const host = hostRef.current;
+      if (!host || mapRef.current) return;
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+      try {
+        const maplibregl = await loadMapLibre();
+        if (cancelled || !hostRef.current) return;
+        maplibreRef.current = maplibregl;
 
-    map.on('load', () => {
-      add3dBuildings(map);
-      // Keep a clear 3D framing after style settles.
-      map.easeTo({
-        pitch: MAP_PITCH,
-        bearing: -18,
-        duration: 600,
-      });
-    });
+        const center = INITIAL_MAP_CAMERA.center;
+        const map = new maplibregl.Map({
+          container: hostRef.current,
+          style: MAP_STYLE,
+          center: [center.longitude, center.latitude],
+          zoom: MAP_ZOOM,
+          pitch: MAP_PITCH,
+          bearing: -18,
+          maxPitch: 75,
+          minZoom: 13,
+          maxZoom: 19,
+          attributionControl: { compact: true },
+        });
 
-    mapRef.current = map;
+        map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+        map.on('load', () => {
+          add3dBuildings(map);
+          map.easeTo({ pitch: MAP_PITCH, bearing: -18, duration: 600 });
+          if (!cancelled) setMapReady(true);
+        });
+
+        mapRef.current = map;
+      } catch (error) {
+        console.error('[CatMap.web] MapLibre init failed', error);
+      }
+    })();
 
     return () => {
+      cancelled = true;
+      setMapReady(false);
       catMarkersRef.current.forEach((marker) => marker.remove());
       catMarkersRef.current = [];
       playerMarkerRef.current?.remove();
       playerMarkerRef.current = null;
-      map.remove();
+      mapRef.current?.remove();
       mapRef.current = null;
     };
   }, []);
 
-  // Camera focus (locate / go there).
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !focusCoordinate) return;
+    if (!mapReady || !map || !focusCoordinate) return;
     map.easeTo({
       center: [focusCoordinate.longitude, focusCoordinate.latitude],
       zoom: Math.max(map.getZoom(), MAP_ZOOM),
       pitch: MAP_PITCH,
       duration: 450,
     });
-  }, [focusCoordinate]);
+  }, [focusCoordinate, mapReady]);
 
-  // Soft follow player.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !userCoordinate) return;
+    if (!mapReady || !map || !userCoordinate) return;
     map.easeTo({
       center: [userCoordinate.longitude, userCoordinate.latitude],
       pitch: MAP_PITCH,
       duration: 280,
     });
-  }, [userCoordinate]);
+  }, [userCoordinate, mapReady]);
 
-  // Cat markers.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    const maplibregl = maplibreRef.current;
+    if (!mapReady || !map || !maplibregl) return;
 
     catMarkersRef.current.forEach((marker) => marker.remove());
     catMarkersRef.current = [];
@@ -229,7 +305,7 @@ export function CatMap({
       const el = makePinElement({
         label: cat.name,
         color: nearby ? colors.accent : colors.brand,
-        border: colors.surfaceElevated ?? colors.surface,
+        border: colors.surfaceElevated,
         size: nearby ? spacing[56] : spacing[48],
         dimmed: !captured,
       });
@@ -243,12 +319,12 @@ export function CatMap({
         .addTo(map);
       catMarkersRef.current.push(marker);
     });
-  }, [cats, nearbyCatIds, capturedCatIds, colors, spacing]);
+  }, [cats, nearbyCatIds, capturedCatIds, colors, spacing, mapReady]);
 
-  // Player marker.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    const maplibregl = maplibreRef.current;
+    if (!mapReady || !map || !maplibregl) return;
 
     if (!userCoordinate) {
       playerMarkerRef.current?.remove();
@@ -262,8 +338,8 @@ export function CatMap({
         `width:${spacing[24]}px`,
         `height:${spacing[24]}px`,
         'border-radius:999px',
-        `background:${colors.mapPlayer ?? colors.accent}`,
-        `border:3px solid ${colors.mapPlayerRing ?? '#fff'}`,
+        `background:${colors.mapPlayer}`,
+        `border:3px solid ${colors.mapPlayerRing}`,
         'box-shadow:0 0 0 8px rgba(46,201,195,0.25)',
       ].join(';');
       playerMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' })
@@ -275,7 +351,7 @@ export function CatMap({
         userCoordinate.latitude,
       ]);
     }
-  }, [userCoordinate, colors, spacing]);
+  }, [userCoordinate, colors, spacing, mapReady]);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.surfaceSecondary }]}>
@@ -305,26 +381,40 @@ export function MiniMap({
   const hostRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    ensureCss();
-    const host = hostRef.current;
-    if (!host) return;
+    let cancelled = false;
+    let map: MapLibreMap | null = null;
 
-    const map = new maplibregl.Map({
-      container: host,
-      style: MAP_STYLE,
-      center: [longitude, latitude],
-      zoom: 15,
-      pitch: 48,
-      bearing: -12,
-      interactive: false,
-      attributionControl: false,
-    });
-    map.on('load', () => add3dBuildings(map));
-    new maplibregl.Marker({ color: colors.brand })
-      .setLngLat([longitude, latitude])
-      .addTo(map);
+    void (async () => {
+      const host = hostRef.current;
+      if (!host) return;
+      try {
+        const maplibregl = await loadMapLibre();
+        if (cancelled || !hostRef.current) return;
+        map = new maplibregl.Map({
+          container: hostRef.current,
+          style: MAP_STYLE,
+          center: [longitude, latitude],
+          zoom: 15,
+          pitch: 48,
+          bearing: -12,
+          interactive: false,
+          attributionControl: false,
+        });
+        map.on('load', () => {
+          if (map) add3dBuildings(map);
+        });
+        new maplibregl.Marker({ color: colors.brand })
+          .setLngLat([longitude, latitude])
+          .addTo(map);
+      } catch (error) {
+        console.error('[MiniMap.web] MapLibre init failed', error);
+      }
+    })();
 
-    return () => map.remove();
+    return () => {
+      cancelled = true;
+      map?.remove();
+    };
   }, [latitude, longitude, colors.brand]);
 
   return (
@@ -343,7 +433,6 @@ export function MiniMap({
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   root: {
