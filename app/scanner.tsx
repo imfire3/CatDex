@@ -483,7 +483,15 @@ export default function ScannerScreen() {
   }
 
   if ((step === 'analyzing' || analyzing) && photoUri) {
-    return <AnalysisLoadingView photoUri={photoUri} />;
+    return (
+      <AnalysisLoadingView
+        photoUri={photoUri}
+        onBack={() => {
+          setAnalyzing(false);
+          setStep('camera');
+        }}
+      />
+    );
   }
 
   if (step === 'review' && photoUri) {
