@@ -31,7 +31,7 @@ export function CaptureReveal({
   onAdd,
   onRetake,
 }: Props) {
-  const { colors, fonts, spacing, radius, shadow, scheme } = useTheme();
+  const { colors, fonts, spacing, radius, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const analysis = enrichAnalysis(rawAnalysis, number);
   const theme = themeFromColorLabel(analysis.color, number);
