@@ -1,6 +1,7 @@
 /**
  * Collection tile — photo, favorite, rarity badge.
  */
+import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -26,7 +27,10 @@ type Props = {
 export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite }: Props) {
   const { colors, fonts, spacing, radius, shadow, iconStroke, motion } = useTheme();
   const theme = themeFromColorLabel(cat.analysis.color, cat.number);
-  const hasPhoto = Boolean(cat.photoUri);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  // blob: URIs die after web reload — skip and show sprite until the cat is re-scanned.
+  const canShowPhoto =
+    Boolean(cat.photoUri) && !photoFailed && !cat.photoUri.startsWith('blob:');
   const rarityId = resolveRevealRarity(cat.analysis, cat.number);
   const rarity = rarityTokens[rarityId];
   const gender = genderSymbol(cat.analysis.gender);
@@ -56,12 +60,13 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
           overflow: 'hidden',
         }}
       >
-        {hasPhoto ? (
+        {canShowPhoto ? (
           <Image
             source={{ uri: cat.photoUri }}
             style={styles.photo}
-            resizeMode="contain"
+            resizeMode="cover"
             accessibilityIgnoresInvertColors
+            onError={() => setPhotoFailed(true)}
           />
         ) : (
           <CatSprite colorLabel={cat.analysis.color} seed={cat.number} size={112} />
