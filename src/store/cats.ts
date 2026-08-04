@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 
 import { formatCatDefaultName } from '@/lib/constants';
 import {
@@ -30,6 +30,48 @@ type CatsState = {
   updateCat: (id: string, patch: Partial<Pick<Cat, 'name' | 'notes'>>) => void;
   removeCat: (id: string) => void;
   getCat: (id: string) => Cat | undefined;
+};
+
+function isQuotaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const name = 'name' in error ? String(error.name) : '';
+  const message = 'message' in error ? String(error.message) : String(error);
+  return (
+    name === 'QuotaExceededError' ||
+    /quota/i.test(message) ||
+    /exceeded/i.test(message)
+  );
+}
+
+const safeCatsStorage: StateStorage = {
+  getItem: (name) => AsyncStorage.getItem(name),
+  setItem: async (name, value) => {
+    try {
+      await AsyncStorage.setItem(name, value);
+    } catch (error) {
+      if (!isQuotaError(error)) throw error;
+      await reclaimPhotoQuotaFromLocalStorage();
+      // Strip any remaining inline data: URIs from the payload before retry.
+      try {
+        const parsed = JSON.parse(value) as {
+          state?: { cats?: Array<{ photoUri?: string }> };
+        };
+        if (parsed.state?.cats) {
+          parsed.state.cats = parsed.state.cats.map((cat) =>
+            typeof cat.photoUri === 'string' && cat.photoUri.startsWith('data:')
+              ? { ...cat, photoUri: '' }
+              : cat,
+          );
+          await AsyncStorage.setItem(name, JSON.stringify(parsed));
+          return;
+        }
+      } catch {
+        // fall through
+      }
+      console.warn('[cats] storage quota exceeded — could not persist');
+    }
+  },
+  removeItem: (name) => AsyncStorage.removeItem(name),
 };
 
 // Best-effort reclaim before Zustand rehydrates (web localStorage quota).
@@ -100,7 +142,7 @@ export const useCatsStore = create<CatsState>()(
     }),
     {
       name: 'catdex-cats',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => safeCatsStorage),
       partialize: (state) => ({
         cats: state.cats,
         nextNumber: state.nextNumber,
