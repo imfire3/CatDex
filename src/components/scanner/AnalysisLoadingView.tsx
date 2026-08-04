@@ -8,10 +8,10 @@ import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const ANALYSIS_STEPS = [
-  'Forme du visage',
-  'Couleurs et motifs',
-  'Analyse du pelage',
-  'Correspondance base de données',
+  'Détection du chat',
+  'Couleur du pelage',
+  'Race probable',
+  'Traits & prénom',
 ] as const;
 
 type Props = {
@@ -27,7 +27,7 @@ function StepCheck({ done }: { done: boolean }) {
         width: 22,
         height: 22,
         borderRadius: radius.full,
-        backgroundColor: done ? colors.success : colors.surfaceSecondary,
+        backgroundColor: done ? colors.success : 'rgba(255,255,255,0.22)',
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -48,7 +48,7 @@ function StepCheck({ done }: { done: boolean }) {
             width: 6,
             height: 6,
             borderRadius: radius.full,
-            backgroundColor: colors.borderDefault,
+            backgroundColor: 'rgba(255,255,255,0.55)',
           }}
         />
       )}
@@ -56,114 +56,80 @@ function StepCheck({ done }: { done: boolean }) {
   );
 }
 
-/** Full-screen analysis loader — white app chrome, scan ring, checklist. */
+/**
+ * Analysis screen — captured photo full-bleed in the background,
+ * checklist + progress overlaid so the user can read each step.
+ */
 export function AnalysisLoadingView({ photoUri }: Props) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, fonts, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
-  const [progress, setProgress] = useState(0.08);
+  const [progress, setProgress] = useState(0.06);
 
   useEffect(() => {
+    // Slow enough that each checklist line is readable (~4–5s to ~96%).
     const timer = setInterval(() => {
       setProgress((value) => {
         if (value >= 0.96) return value;
-        const step = value < 0.45 ? 0.07 : value < 0.75 ? 0.045 : 0.028;
+        const step = value < 0.35 ? 0.035 : value < 0.7 ? 0.028 : 0.018;
         return Math.min(0.96, value + step);
       });
-    }, 160);
+    }, 180);
 
     return () => clearInterval(timer);
   }, []);
 
   const completedSteps = useMemo(() => {
-    const thresholds = [0.2, 0.42, 0.65, 0.88];
+    const thresholds = [0.18, 0.4, 0.62, 0.84];
     return ANALYSIS_STEPS.map((_, index) => progress >= thresholds[index]);
   }, [progress]);
 
-  const ringSize = spacing[96] + spacing[32];
+  const activeStep =
+    ANALYSIS_STEPS[
+      Math.min(
+        ANALYSIS_STEPS.length - 1,
+        completedSteps.lastIndexOf(true) + 1,
+      )
+    ] ?? ANALYSIS_STEPS[0];
+
   const percentLabel = `${Math.round(progress * 100)}%`;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top + spacing[24] }]}>
-      <View style={{ flex: 1, paddingHorizontal: spacing[24], gap: spacing[32] }}>
-        <View style={{ alignItems: 'center', paddingTop: spacing[16] }}>
-          <View
-            style={[
-              {
-                width: ringSize + spacing[24],
-                height: ringSize + spacing[24],
-                borderRadius: radius.full,
-                backgroundColor: colors.brandSoft,
-                alignItems: 'center',
-                justifyContent: 'center',
-              },
-              shadow.low,
-            ]}
+    <View style={[styles.root, { backgroundColor: colors.text }]}>
+      <Image
+        source={{ uri: photoUri }}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+        accessibilityLabel="Photo en cours d’analyse"
+      />
+
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFillObject,
+          { backgroundColor: colors.overlay },
+        ]}
+      />
+
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top + spacing[24],
+          paddingBottom: insets.bottom + spacing[24],
+          paddingHorizontal: spacing[24],
+          justifyContent: 'flex-end',
+          gap: spacing[24],
+        }}
+      >
+        <View style={{ gap: spacing[8] }}>
+          <Text
+            variant="h2"
+            color="onAccent"
+            style={{ fontFamily: fonts.display }}
           >
-            <View
-              style={{
-                width: ringSize,
-                height: ringSize,
-                borderRadius: radius.full,
-                borderWidth: 3,
-                borderColor: colors.brand,
-                overflow: 'hidden',
-                backgroundColor: colors.surfaceElevated,
-              }}
-            >
-              <Image source={{ uri: photoUri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
-            </View>
-
-            <View
-              pointerEvents="none"
-              style={[
-                StyleSheet.absoluteFill,
-                { alignItems: 'center', justifyContent: 'center' },
-              ]}
-            >
-              <View
-                style={{
-                  width: ringSize + spacing[8],
-                  height: ringSize + spacing[8],
-                  borderRadius: radius.full,
-                  borderWidth: 2,
-                  borderColor: colors.accentSoft,
-                }}
-              />
-            </View>
-
-            <View
-              style={{
-                position: 'absolute',
-                right: spacing[8],
-                top: '50%',
-                marginTop: -5,
-                width: 10,
-                height: 10,
-                borderRadius: radius.full,
-                backgroundColor: colors.brand,
-              }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                left: spacing[8],
-                top: '50%',
-                marginTop: -5,
-                width: 10,
-                height: 10,
-                borderRadius: radius.full,
-                backgroundColor: colors.brand,
-              }}
-            />
-          </View>
-        </View>
-
-        <View style={{ alignItems: 'center', gap: spacing[8] }}>
-          <Text variant="h2" color="textBrand" align="center" style={{ fontFamily: fonts.display }}>
             Analyse en cours…
           </Text>
-          <Text variant="bodySmall" color="textSecondary" align="center">
-            IA à l'œuvre
+          <Text variant="body" color="onAccent" style={{ opacity: 0.9 }}>
+            {activeStep}
           </Text>
         </View>
 
@@ -172,7 +138,11 @@ export function AnalysisLoadingView({ photoUri }: Props) {
             <View style={{ flex: 1 }}>
               <ProgressBar progress={progress} height={8} />
             </View>
-            <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi, minWidth: 36 }}>
+            <Text
+              variant="caption"
+              color="onAccent"
+              style={{ fontFamily: fonts.bodySemi, minWidth: 36 }}
+            >
               {percentLabel}
             </Text>
           </View>
@@ -180,19 +150,26 @@ export function AnalysisLoadingView({ photoUri }: Props) {
 
         <View
           style={{
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.cta,
+            backgroundColor: colors.glassFill,
+            borderRadius: radius[8],
+            borderWidth: 1,
+            borderColor: colors.border,
             padding: spacing[16],
             gap: spacing[16],
           }}
         >
           {ANALYSIS_STEPS.map((label, index) => (
-            <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+            <View
+              key={label}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}
+            >
               <StepCheck done={completedSteps[index]} />
               <Text
                 variant="bodySmall"
-                color={completedSteps[index] ? 'text' : 'textMuted'}
-                style={{ fontFamily: completedSteps[index] ? fonts.bodySemi : fonts.body }}
+                color={completedSteps[index] ? 'textBrand' : 'textSecondary'}
+                style={{
+                  fontFamily: completedSteps[index] ? fonts.bodySemi : fonts.body,
+                }}
               >
                 {label}
               </Text>
