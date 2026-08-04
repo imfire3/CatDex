@@ -1,9 +1,10 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { BlurView } from 'expo-blur';
+import { CameraView, useCameraPermissions, type CameraType, type FlashMode } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Image,
   Linking,
@@ -12,24 +13,18 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Button } from '@/components/Button';
+import { AnalysisLoadingView } from '@/components/scanner/AnalysisLoadingView';
 import { CaptureReveal } from '@/components/CaptureReveal';
-import { PageLoading, Skeleton } from '@/components/Loader';
+import { AuthBackButton } from '@/components/Auth/AuthChrome';
+import { Button } from '@/components/Button';
+import { PageLoading } from '@/components/Loader';
 import { ProblemState } from '@/components/ProblemState';
 import { ProgressBar } from '@/components/Progress';
 import { ScanFrame } from '@/components/ScanFrame';
 import { Text } from '@/components/Text';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { analyzeCatPhoto } from '@/lib/api';
 import {
   CATDEX_TARGET,
@@ -43,12 +38,70 @@ import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { CatAnalysis } from '@/types/cat';
 
-type Step = 'camera' | 'review' | 'reveal' | 'problem';
+type Step = 'camera' | 'analyzing' | 'review' | 'reveal' | 'problem';
+
+/** Keep the analysis loading screen visible long enough to read the checklist. */
+const MIN_ANALYSIS_MS = 2800;
+
+const FLASH_CYCLE: FlashMode[] = ['auto', 'on', 'off'];
+const FLASH_LABELS: Record<FlashMode, string> = {
+  auto: 'Auto',
+  on: 'Marche',
+  off: 'Arrêt',
+};
+
+function CameraCircleButton({
+  onPress,
+  accessibilityLabel,
+  children,
+  size,
+  colors,
+  radius,
+}: {
+  onPress: () => void;
+  accessibilityLabel: string;
+  children: ReactNode;
+  size: number;
+  colors: ReturnType<typeof useTheme>['colors'];
+  radius: ReturnType<typeof useTheme>['radius'];
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: size,
+        height: size,
+        borderRadius: radius.full,
+        overflow: 'hidden',
+        opacity: pressed ? 0.88 : 1,
+        transform: [{ scale: pressed ? 0.96 : 1 }],
+      })}
+    >
+      {Platform.OS === 'web' ? (
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: colors.overlay,
+          }}
+        >
+          {children}
+        </View>
+      ) : (
+        <BlurView intensity={48} tint="dark" style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          {children}
+        </BlurView>
+      )}
+    </Pressable>
+  );
+}
 
 export default function ScannerScreen() {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
-  const reduceMotion = useReducedMotion();
   const showToast = useToastStore((state) => state.show);
   const nextNumber = useCatsStore((state) => state.nextNumber);
   const addCat = useCatsStore((state) => state.addCat);
@@ -67,7 +120,8 @@ export default function ScannerScreen() {
     latitude: PARIS_20E.center.latitude,
     longitude: PARIS_20E.center.longitude,
   });
-  const scanLine = useSharedValue(0);
+  const [facing, setFacing] = useState<CameraType>('back');
+  const [flash, setFlash] = useState<FlashMode>('auto');
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -82,20 +136,6 @@ export default function ScannerScreen() {
       setCameraError(null);
     }
   }, [step]);
-
-  useEffect(() => {
-    if (reduceMotion || step !== 'camera') return;
-    scanLine.value = withRepeat(
-      withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.quad) }),
-      -1,
-      true,
-    );
-  }, [reduceMotion, scanLine, step]);
-
-  const scanStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: scanLine.value * 200 }],
-    opacity: 0.7,
-  }));
 
   const ensureLocation = async () => {
     try {
@@ -114,7 +154,11 @@ export default function ScannerScreen() {
     } as Location.LocationObject;
   };
 
-  const enterReveal = async (nextAnalysis: CatAnalysis, imageUri: string, mocked?: boolean) => {
+  const enterReveal = async (
+    nextAnalysis: CatAnalysis,
+    imageUri: string,
+    mocked?: boolean,
+  ) => {
     const position = await ensureLocation();
     const { latitude, longitude } = position.coords;
     setCoords({ latitude, longitude });
@@ -145,16 +189,36 @@ export default function ScannerScreen() {
     mimeType = 'image/jpeg',
   ) => {
     setAnalyzing(true);
+    setStep('analyzing');
+    const startedAt = Date.now();
+
+    const waitMinDuration = async () => {
+      const elapsed = Date.now() - startedAt;
+      const remaining = MIN_ANALYSIS_MS - elapsed;
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
+    };
+
     try {
-      const { analysis: nextAnalysis, mocked } = await analyzeCatPhoto(base64, mimeType);
+      const { analysis: nextAnalysis, mocked, cutoutUri } = await analyzeCatPhoto(
+        base64,
+        mimeType,
+      );
+      await waitMinDuration();
       if (isNoCatFound(nextAnalysis)) {
         setPhotoUri(imageUri);
         setAnalysis(nextAnalysis);
         setStep('problem');
         return;
       }
-      await enterReveal(nextAnalysis, imageUri, mocked);
+      await enterReveal(
+        enrichAnalysis(nextAnalysis, nextNumber),
+        cutoutUri ?? imageUri,
+        mocked,
+      );
     } catch (error) {
+      await waitMinDuration();
       showToast({
         title: 'Analyse indisponible',
         description:
@@ -184,7 +248,7 @@ export default function ScannerScreen() {
     setCapturing(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.45,
+        quality: 0.55,
         base64: true,
         exif: false,
         shutterSound: false,
@@ -199,7 +263,8 @@ export default function ScannerScreen() {
       }
       setPhotoUri(photo.uri);
       setPhotoBase64(photo.base64);
-      setStep('review');
+      setStep('analyzing');
+      setAnalyzing(true);
       void runAnalysis(photo.base64, photo.uri, 'image/jpeg');
     } catch (error) {
       showToast({
@@ -240,7 +305,8 @@ export default function ScannerScreen() {
         : 'image/jpeg';
     setPhotoUri(asset.uri);
     setPhotoBase64(asset.base64);
-    setStep('review');
+    setStep('analyzing');
+    setAnalyzing(true);
     void runAnalysis(asset.base64, asset.uri, mimeType);
   };
 
@@ -349,14 +415,13 @@ export default function ScannerScreen() {
   if (step === 'reveal' && photoUri && analysis) {
     const displayName =
       analysis.suggestedName?.trim() || formatCatDefaultName(nextNumber);
-    const enriched = enrichAnalysis(analysis, nextNumber);
 
     return (
       <CaptureReveal
         name={displayName}
         number={nextNumber}
         photoUri={photoUri}
-        analysis={enriched}
+        analysis={analysis}
         onAdd={() => {
           void handleAddToCatDex();
         }}
@@ -365,227 +430,113 @@ export default function ScannerScreen() {
     );
   }
 
+  if ((step === 'analyzing' || analyzing) && photoUri) {
+    return <AnalysisLoadingView photoUri={photoUri} />;
+  }
+
   if (step === 'review' && photoUri) {
     return (
-      <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        {/* Header: close · flash · frame (mock) */}
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
         <View
           style={{
-            paddingHorizontal: spacing[16],
-            paddingTop: spacing[8],
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            flex: 1,
+            paddingTop: insets.top + spacing[8],
+            paddingHorizontal: spacing[24],
           }}
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Fermer"
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              {
-                width: spacing[48],
-                height: spacing[48],
-                borderRadius: radius.full,
-                backgroundColor: colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: spacing[24],
+            }}
           >
-            <Text color="textBrand" style={{ fontSize: 18, lineHeight: 20 }}>
-              ✕
-            </Text>
-          </Pressable>
+            <AuthBackButton onPress={() => router.back()} />
+            <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: spacing[8] }}>
+              <Text variant="h3" color="textBrand" align="center">
+                Analyse
+              </Text>
+            </View>
+            <View style={{ width: spacing[40] }} />
+          </View>
 
           <View
             style={{
-              width: spacing[48],
-              height: spacing[48],
-              borderRadius: radius.full,
-              alignItems: 'center',
-              justifyContent: 'center',
+              backgroundColor: colors.surfaceElevated,
+              borderRadius: radius.cta,
+              padding: spacing[16],
+              gap: spacing[16],
             }}
           >
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"
-                stroke={colors.brand}
-                strokeWidth={1.6}
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Galerie"
-            onPress={handlePickFromLibrary}
-            style={({ pressed }) => [
-              {
-                width: spacing[48],
-                height: spacing[48],
-                borderRadius: radius.full,
-                backgroundColor: colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Rect
-                x="5"
-                y="5"
-                width="14"
-                height="14"
-                rx="2"
-                stroke={colors.brand}
-                strokeWidth={1.6}
-              />
-              <Path
-                d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"
-                stroke={colors.brand}
-                strokeWidth={2}
-                strokeLinecap="round"
-              />
-            </Svg>
-          </Pressable>
-        </View>
-
-        <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[16], gap: spacing[16] }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 7v5l3 2"
-                stroke={colors.textMuted}
-                strokeWidth={1.6}
-                strokeLinecap="round"
-              />
-              <Circle cx="12" cy="12" r="8" stroke={colors.textMuted} strokeWidth={1.6} />
-            </Svg>
-            <Text variant="caption" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
-              {analyzing ? 'Analyse' : 'Prêt'}
-            </Text>
-          </View>
-          {analyzing ? <ProgressBar progress={0.62} height={8} /> : <ProgressBar progress={1} height={8} />}
-
-          <View style={{ gap: spacing[8] }}>
-            <Text variant="h2" color="textBrand">
-              {analyzing ? 'Analyse…' : 'Presque !'}
-            </Text>
-            <Text variant="bodySmall" color="textSecondary">
-              {analyzing
-                ? 'Ta Cat Card se prépare. Un instant.'
-                : 'Relance l’analyse ou reprends une photo.'}
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={[
-            {
-              marginHorizontal: spacing[24],
-              marginTop: spacing[24],
-              borderRadius: radius.lg,
-              overflow: 'hidden',
-              backgroundColor: colors.surfaceSecondary,
-              borderWidth: 1,
-              borderColor: colors.border,
-            },
-            shadow.low,
-          ]}
-        >
-          <Image
-            source={{ uri: photoUri }}
-            style={{ width: '100%', height: spacing[96] * 2 + spacing[64] }}
-          />
-          {analyzing ? (
-            <View
-              style={{
-                position: 'absolute',
-                left: spacing[16],
-                right: spacing[16],
-                bottom: spacing[16],
-                gap: spacing[8],
-              }}
-            >
-              <Skeleton height={spacing[16]} width="55%" />
-              <Skeleton height={spacing[8]} width="80%" />
-              <Skeleton height={spacing[8]} width="40%" />
-            </View>
-          ) : null}
-        </View>
-
-        <View
-          style={{
-            marginTop: 'auto',
-            paddingHorizontal: spacing[24],
-            paddingBottom: insets.bottom + spacing[16],
-            gap: spacing[8],
-          }}
-        >
-          {analyzing ? (
-            <View style={{ alignItems: 'center', gap: spacing[16], paddingVertical: spacing[16] }}>
+            <ProgressBar progress={1} height={8} />
+            <View style={{ gap: spacing[8] }}>
+              <Text variant="h2" color="textBrand">
+                Presque !
+              </Text>
               <Text variant="bodySmall" color="textSecondary">
-                Révélation en cours…
+                Relance l’analyse ou reprends une photo.
               </Text>
             </View>
-          ) : (
-            <>
-              <Button
-                title="Relancer l’analyse"
-                onPress={() => photoBase64 && photoUri && runAnalysis(photoBase64, photoUri)}
-                icon={
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                    <Path
-                      d="M12 3l1.2 3.6L17 8l-3.8 1.4L12 13l-1.2-3.6L7 8l3.8-1.4L12 3Z"
-                      fill={colors.onAccent}
-                    />
-                    <Path
-                      d="M18 13l.7 2.1L21 16l-2.3.8L18 19l-.7-2.2L15 16l2.3-.9L18 13Z"
-                      fill={colors.onAccent}
-                    />
-                  </Svg>
-                }
-              />
-              <Button
-                title="Reprendre la photo"
-                variant="secondary"
-                onPress={resetToCamera}
-                icon={
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                    <Path
-                      d="M4 8V6.5A1.5 1.5 0 0 1 5.5 5H8M16 5h2.5A1.5 1.5 0 0 1 20 6.5V8M20 16v1.5a1.5 1.5 0 0 1-1.5 1.5H16M8 19H5.5A1.5 1.5 0 0 1 4 17.5V16"
-                      stroke={colors.brand}
-                      strokeWidth={1.6}
-                      strokeLinecap="round"
-                    />
-                    <Path
-                      d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
-                      stroke={colors.brand}
-                      strokeWidth={1.6}
-                    />
-                  </Svg>
-                }
-              />
-            </>
-          )}
+          </View>
+
+          <View
+            style={{
+              marginTop: spacing[16],
+              borderRadius: radius.cta,
+              overflow: 'hidden',
+              backgroundColor: colors.surfaceElevated,
+            }}
+          >
+            <Image
+              source={{ uri: photoUri }}
+              style={{ width: '100%', height: spacing[96] * 2 + spacing[32] }}
+              resizeMode="contain"
+            />
+          </View>
+
+          <View
+            style={{
+              marginTop: 'auto',
+              gap: spacing[8],
+              paddingBottom: Math.max(insets.bottom, spacing[16]),
+            }}
+          >
+            <Button
+              title="Relancer l’analyse"
+              onPress={() => photoBase64 && photoUri && runAnalysis(photoBase64, photoUri)}
+            />
+            <Button title="Reprendre la photo" variant="secondary" onPress={resetToCamera} />
+          </View>
         </View>
       </View>
     );
   }
 
+  const handleToggleFlash = () => {
+    setFlash((current) => {
+      const index = FLASH_CYCLE.indexOf(current);
+      return FLASH_CYCLE[(index + 1) % FLASH_CYCLE.length];
+    });
+  };
+
+  const handleFlipCamera = () => {
+    setFacing((current) => (current === 'back' ? 'front' : 'back'));
+  };
+
   const isWebCamera = Platform.OS === 'web';
+  const scanFrameSize = spacing[96] * 2 + spacing[32];
+  const cameraControlSize = spacing[48];
+  const shutterOuterSize = spacing[64] + spacing[16];
+  const shutterInnerSize = spacing[64];
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.text }]}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       {!isWebCamera ? (
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
-          facing="back"
+          facing={facing}
+          flash={flash}
           mode="picture"
           onCameraReady={() => {
             setCameraReady(true);
@@ -603,7 +554,7 @@ export default function ScannerScreen() {
           }}
         />
       ) : (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surface }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceSecondary }]} />
       )}
 
       {!isWebCamera && !cameraReady && !cameraError ? (
@@ -646,137 +597,229 @@ export default function ScannerScreen() {
         </View>
       ) : null}
 
-      <View
-        style={{
-          flex: 1,
-          paddingTop: insets.top + spacing[8],
-          paddingBottom: insets.bottom + spacing[32],
-          paddingHorizontal: spacing[24],
-          justifyContent: 'space-between',
-        }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer"
-          onPress={() => router.back()}
-          style={({ pressed }) => [
+      {!cameraError ? (
+        <View
+          pointerEvents="box-none"
+          style={[
+            StyleSheet.absoluteFill,
             {
-              width: spacing[40],
-              height: spacing[40],
-              borderRadius: radius.full,
-              backgroundColor: colors.overlay,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 0.85 : 1,
+              paddingTop: insets.top + spacing[8],
+              paddingBottom: insets.bottom + spacing[24],
+              paddingHorizontal: spacing[24],
             },
           ]}
         >
-          <Text color="onAccent">✕</Text>
-        </Pressable>
-
-        <View style={{ alignItems: 'center', gap: spacing[24] }}>
           <View
+            pointerEvents="box-none"
             style={{
-              width: spacing[96] * 2 + spacing[64],
-              height: spacing[96] * 2 + spacing[64],
-              alignItems: 'center',
-              justifyContent: 'center',
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
             }}
           >
-            <ScanFrame size={spacing[96] * 2 + spacing[64]} color={colors.accent} />
-            {!reduceMotion ? (
-              <Animated.View
-                style={[
-                  {
-                    position: 'absolute',
-                    top: spacing[24],
-                    left: spacing[24],
-                    right: spacing[24],
-                    height: spacing[4],
-                    backgroundColor: colors.accent,
-                  },
-                  scanStyle,
-                ]}
-              />
-            ) : null}
-          </View>
-          <Text
-            variant="body"
-            color={isWebCamera ? 'text' : 'onAccent'}
-            align="center"
-            style={{ fontFamily: fonts.bodySemi }}
-          >
-            {cameraReady || isWebCamera ? 'Cadre un chat' : 'Préparation…'}
-          </Text>
-          {isWebCamera ? (
-            <Text variant="caption" color="textSecondary" align="center">
-              Sur le web, choisis une photo
-            </Text>
-          ) : null}
-        </View>
+            <View style={{ alignItems: 'center', gap: spacing[4] }}>
+              {!isWebCamera ? (
+                <>
+                  <CameraCircleButton
+                    accessibilityLabel="Flash"
+                    onPress={handleToggleFlash}
+                    size={cameraControlSize}
+                    colors={colors}
+                    radius={radius}
+                  >
+                    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"
+                        stroke={colors.onAccent}
+                        strokeWidth={1.6}
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </CameraCircleButton>
+                  <Text variant="caption" color="onAccent" style={{ fontFamily: fonts.bodySemi }}>
+                    {FLASH_LABELS[flash]}
+                  </Text>
+                </>
+              ) : (
+                <View style={{ width: cameraControlSize }} />
+              )}
+            </View>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: spacing[48],
-          }}
-        >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Galerie"
-            onPress={handlePickFromLibrary}
-            style={({ pressed }) => ({
-              width: spacing[48],
-              height: spacing[48],
-              borderRadius: radius.lg,
-              backgroundColor: colors.overlay,
+            <CameraCircleButton
+              accessibilityLabel="Fermer"
+              onPress={() => router.back()}
+              size={cameraControlSize}
+              colors={colors}
+              radius={radius}
+            >
+              <Text color="onAccent" style={{ fontSize: 18, lineHeight: 20 }}>
+                ✕
+              </Text>
+            </CameraCircleButton>
+          </View>
+
+          <View
+            pointerEvents="box-none"
+            style={{
+              flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: pressed ? 0.85 : 1,
-            })}
+              gap: spacing[24],
+            }}
           >
-            <Text color="onAccent">🖼</Text>
-          </Pressable>
+            {!isWebCamera ? (
+              <>
+                <ScanFrame size={scanFrameSize} color={colors.onAccent} rounded />
+                <View
+                  style={{
+                    borderRadius: radius.full,
+                    overflow: 'hidden',
+                    maxWidth: '92%',
+                  }}
+                >
+                  {Platform.OS === 'web' ? (
+                    <View
+                      style={{
+                        backgroundColor: colors.overlay,
+                        paddingHorizontal: spacing[16],
+                        paddingVertical: spacing[8],
+                      }}
+                    >
+                      <Text variant="bodySmall" color="onAccent" align="center">
+                        {cameraReady ? 'Place le chat au centre' : 'Préparation…'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <BlurView intensity={56} tint="dark" style={{ paddingHorizontal: spacing[16], paddingVertical: spacing[8] }}>
+                      <Text variant="bodySmall" color="onAccent" align="center" style={{ fontFamily: fonts.bodySemi }}>
+                        {cameraReady ? 'Place le chat au centre' : 'Préparation…'}
+                      </Text>
+                    </BlurView>
+                  )}
+                </View>
+              </>
+            ) : (
+              <View style={{ alignItems: 'center', gap: spacing[8] }}>
+                <Text variant="body" color="text" align="center" style={{ fontFamily: fonts.bodySemi }}>
+                  Cadre un chat
+                </Text>
+                <Text variant="caption" color="textSecondary" align="center">
+                  Sur le web, choisis une photo dans la galerie
+                </Text>
+              </View>
+            )}
+          </View>
 
-          {isWebCamera ? (
-            <Button title="Choisir une photo" onPress={handlePickFromLibrary} fullWidth={false} />
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Prendre la photo"
-              disabled={!cameraReady || capturing}
-              onPress={handleTakePicture}
-              style={({ pressed }) => [
-                {
-                  width: spacing[64] + spacing[16],
-                  height: spacing[64] + spacing[16],
-                  borderRadius: radius['2xl'],
-                  backgroundColor: colors.accent,
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <CameraCircleButton
+              accessibilityLabel="Galerie"
+              onPress={handlePickFromLibrary}
+              size={cameraControlSize}
+              colors={colors}
+              radius={radius}
+            >
+              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z"
+                  stroke={colors.onAccent}
+                  strokeWidth={1.6}
+                />
+                <Path
+                  d="M8 14l2.5-2.5L13 14l2-2 3 3"
+                  stroke={colors.onAccent}
+                  strokeWidth={1.6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <Circle cx="9" cy="9" r="1.2" fill={colors.onAccent} />
+              </Svg>
+            </CameraCircleButton>
+
+            {isWebCamera ? (
+              <Button title="Choisir une photo" onPress={handlePickFromLibrary} fullWidth={false} />
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Prendre la photo"
+                disabled={!cameraReady || capturing}
+                onPress={handleTakePicture}
+                style={({ pressed }) => ({
+                  width: shutterOuterSize,
+                  height: shutterOuterSize,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: !cameraReady || capturing ? 0.45 : pressed ? 0.9 : 1,
+                  opacity: !cameraReady || capturing ? 0.45 : 1,
                   transform: [{ scale: pressed ? 0.94 : 1 }],
-                },
-                shadow.medium,
-              ]}
-            >
-              <View
-                style={{
-                  width: spacing[64],
-                  height: spacing[64],
-                  borderRadius: radius.xl,
-                  borderWidth: spacing[4],
-                  borderColor: colors.onAccent,
-                }}
-              />
-            </Pressable>
-          )}
+                })}
+              >
+                <Svg
+                  width={shutterOuterSize}
+                  height={shutterOuterSize}
+                  viewBox={`0 0 ${shutterOuterSize} ${shutterOuterSize}`}
+                  style={StyleSheet.absoluteFill}
+                >
+                  <Circle
+                    cx={shutterOuterSize / 2}
+                    cy={shutterOuterSize / 2}
+                    r={shutterOuterSize / 2 - 2}
+                    stroke={colors.onAccent}
+                    strokeWidth={3}
+                    fill="none"
+                    opacity={0.45}
+                  />
+                  <Circle
+                    cx={shutterOuterSize / 2}
+                    cy={shutterOuterSize / 2}
+                    r={shutterOuterSize / 2 - 2}
+                    stroke={colors.brand}
+                    strokeWidth={3}
+                    fill="none"
+                    strokeDasharray="56 200"
+                    strokeLinecap="round"
+                    transform={`rotate(-38 ${shutterOuterSize / 2} ${shutterOuterSize / 2})`}
+                  />
+                </Svg>
+                <View
+                  style={{
+                    width: shutterInnerSize,
+                    height: shutterInnerSize,
+                    borderRadius: radius.full,
+                    backgroundColor: colors.onAccent,
+                  }}
+                />
+              </Pressable>
+            )}
 
-          <View style={{ width: spacing[48] }} />
+            {!isWebCamera ? (
+              <CameraCircleButton
+                accessibilityLabel="Retourner la caméra"
+                onPress={handleFlipCamera}
+                size={cameraControlSize}
+                colors={colors}
+                radius={radius}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M7 7h4V3M17 17h-4v4M7 7l-3 3a5 5 0 0 0 8 4M17 17l3-3a5 5 0 0 0-8-4"
+                    stroke={colors.onAccent}
+                    strokeWidth={1.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </CameraCircleButton>
+            ) : (
+              <View style={{ width: cameraControlSize }} />
+            )}
+          </View>
         </View>
-      </View>
+      ) : null}
     </View>
   );
 }

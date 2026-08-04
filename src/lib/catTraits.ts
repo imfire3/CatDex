@@ -43,8 +43,8 @@ export function enrichAnalysis(analysis: CatAnalysis, seed = 0): CatAnalysis {
 
   const tags =
     analysis.tags && analysis.tags.length > 0
-      ? analysis.tags.slice(0, 2)
-      : [...TAG_SETS[Math.abs(seed) % TAG_SETS.length]];
+      ? analysis.tags.slice(0, 3)
+      : [...TAG_SETS[Math.abs(seed) % TAG_SETS.length], 'Gourmand'].slice(0, 3);
 
   return {
     ...analysis,

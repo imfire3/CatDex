@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { AuthBackButton, AuthDivider, AuthHeader } from '@/components/Auth/AuthChrome';
+import { AuthDivider, AuthHeader } from '@/components/Auth/AuthChrome';
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
@@ -88,7 +88,13 @@ export default function LoginScreen() {
     <AuthShell
       fullHeight
       header={
-        <AuthBackButton onPress={() => router.replace('/(auth)/welcome')} />
+        <AuthHeader
+          inline
+          showBack
+          onBack={() => router.replace('/(auth)/welcome')}
+          title="Connexion"
+          subtitle="Content de te revoir. Connecte-toi pour retrouver ton CatDex."
+        />
       }
       footer={
         <View style={{ gap: spacing[16], alignItems: 'center' }}>
@@ -124,13 +130,6 @@ export default function LoginScreen() {
         </View>
       }
     >
-      <AuthHeader
-        embedded
-        showBack={false}
-        title="Connexion"
-        subtitle="Content de te revoir. Connecte-toi pour retrouver ton CatDex."
-      />
-
       <View style={{ gap: spacing[24] }}>
         <TextInput
           label="E-mail"

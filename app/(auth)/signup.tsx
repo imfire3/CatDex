@@ -1,12 +1,11 @@
 import { Redirect, router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
-import { AuthBackButton, AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
+import { AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
 import { TextInput } from '@/components/Input';
-import { Text } from '@/components/Text';
 import {
   validateEmail,
   validatePassword,
@@ -17,7 +16,7 @@ import { useAuthStore, getPostAuthHref } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SignupScreen() {
-  const { fonts, spacing, motion } = useTheme();
+  const { spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const signUp = useAuthStore((state) => state.signUp);
@@ -48,12 +47,15 @@ export default function SignupScreen() {
     };
   }, [accepted, confirm, email, password, pseudo, submitted]);
 
-  const formFilled =
-    Boolean(pseudo.trim()) &&
-    Boolean(email.trim()) &&
-    Boolean(password) &&
-    Boolean(confirm) &&
-    accepted;
+  const canSubmit = useMemo(
+    () =>
+      !validatePseudo(pseudo) &&
+      !validateEmail(email) &&
+      !validatePassword(password) &&
+      !validatePasswordConfirm(password, confirm) &&
+      accepted,
+    [accepted, confirm, email, password, pseudo],
+  );
 
   if (user) {
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
@@ -80,50 +82,32 @@ export default function SignupScreen() {
 
   return (
     <AuthShell
+      plain
       fullHeight
       header={
-        <AuthBackButton onPress={() => router.replace('/(auth)/welcome')} />
+        <AuthHeader
+          inline
+          showBack
+          onBack={() => router.replace('/(auth)/welcome')}
+          title="Créer un compte"
+          subtitle="Sauvegarde ta collection et retrouve ton CatDex partout."
+        />
       }
       footer={
-        <View style={{ gap: spacing[16], alignItems: 'center' }}>
-          <View style={{ alignSelf: 'stretch' }}>
-            <Button
-              title="Créer mon compte"
-              disabled={!formFilled}
-              onPress={onSubmit}
-            />
-          </View>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel="J’ai déjà un compte"
-            hitSlop={8}
+        <View style={{ gap: spacing[8] }}>
+          <Button
+            title="Créer mon compte"
+            disabled={!canSubmit}
+            onPress={onSubmit}
+          />
+          <Button
+            variant="secondary"
+            title="J’ai déjà un compte"
             onPress={() => router.push('/(auth)/login')}
-            style={({ pressed }) => ({
-              opacity: pressed ? 0.7 : 1,
-              transform: [{ scale: pressed ? motion.pressScale : 1 }],
-              paddingVertical: spacing[8],
-              minHeight: 44,
-              justifyContent: 'center',
-            })}
-          >
-            <Text
-              variant="bodySmall"
-              color="textBrand"
-              style={{ fontFamily: fonts.bodySemi }}
-            >
-              J’ai déjà un compte
-            </Text>
-          </Pressable>
+          />
         </View>
       }
     >
-      <AuthHeader
-        embedded
-        showBack={false}
-        title="Créer un compte"
-        subtitle="Sauvegarde ta collection et retrouve ton CatDex partout."
-      />
-
       <View style={{ gap: spacing[16] }}>
         <TextInput
           label="Pseudo"

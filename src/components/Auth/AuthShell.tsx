@@ -1,14 +1,15 @@
 import type { ReactNode } from 'react';
 import {
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -39,9 +40,11 @@ type AuthShellProps = {
   footer?: ReactNode;
   /** Stretch the white sheet to fill the screen (login / form screens). */
   fullHeight?: boolean;
+  /** Flat app canvas (#F9F9FB) without map wallpaper. */
+  plain?: boolean;
 };
 
-/** Shared auth chrome: map wallpaper + white bottom sheet. */
+/** Shared auth chrome: map wallpaper + sheet, or plain canvas for forms. */
 export function AuthShell({
   children,
   sheetStyle,
@@ -49,6 +52,7 @@ export function AuthShell({
   header,
   footer,
   fullHeight = false,
+  plain = false,
 }: AuthShellProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
@@ -56,11 +60,11 @@ export function AuthShell({
   const sheetPadding = {
     paddingHorizontal: spacing[24],
     paddingTop: fullHeight ? insets.top + spacing[8] : spacing[16],
-    paddingBottom: Math.max(insets.bottom, spacing[24]),
-    borderTopLeftRadius: radius.sheet,
-    borderTopRightRadius: radius.sheet,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
+    paddingBottom: footer ? spacing[16] : Math.max(insets.bottom, spacing[24]),
+    borderTopLeftRadius: plain || fullHeight ? 0 : radius.sheet,
+    borderTopRightRadius: plain || fullHeight ? 0 : radius.sheet,
+    backgroundColor: plain ? colors.background : colors.surfaceElevated,
+    borderTopWidth: plain || fullHeight ? 0 : 1,
     borderColor: colors.border,
   };
 
@@ -73,8 +77,9 @@ export function AuthShell({
         paddingBottom: footer ? spacing[16] : 0,
       }}
       keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
+      keyboardDismissMode="on-drag"
       automaticallyAdjustKeyboardInsets
+      onScrollBeginDrag={Keyboard.dismiss}
       showsVerticalScrollIndicator={false}
     >
       {children}
@@ -90,45 +95,68 @@ export function AuthShell({
       style={[
         styles.sheet,
         sheetPadding,
-        shadow.floating,
+        plain || fullHeight ? null : shadow.floating,
         fullHeight ? styles.sheetFill : null,
         sheetStyle,
       ]}
     >
-      {header ? <View style={{ paddingBottom: spacing[16] }}>{header}</View> : null}
+      {header ? (
+        <View
+          style={{
+            paddingBottom: spacing[16],
+            backgroundColor: plain ? colors.background : colors.surfaceElevated,
+          }}
+        >
+          {header}
+        </View>
+      ) : null}
       {body}
-      {footer ? <View style={{ gap: spacing[16], paddingTop: spacing[8] }}>{footer}</View> : null}
+      {footer ? (
+        <View
+          style={{
+            gap: spacing[8],
+            paddingTop: spacing[8],
+            paddingBottom: Math.max(insets.bottom, spacing[16]),
+            backgroundColor: plain ? colors.background : colors.surfaceElevated,
+          }}
+        >
+          {footer}
+        </View>
+      ) : null}
     </View>
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.sky }]}>
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Image
-          source={WELCOME_MAP}
-          resizeMode="cover"
-          style={[styles.map, mapWebStyle as object]}
-        />
-        <LinearGradient
-          colors={['rgba(255,255,255,0.55)', 'transparent']}
-          style={[styles.topVeil, { height: insets.top + spacing[64] }]}
-        />
-        <LinearGradient
-          colors={['transparent', 'rgba(255,255,255,0.75)', colors.surface]}
-          style={styles.bottomVeil}
-        />
-      </View>
+    <View style={[styles.root, { backgroundColor: plain ? colors.background : colors.sky }]}>
+      {plain ? null : (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Image
+            source={WELCOME_MAP}
+            resizeMode="cover"
+            style={[styles.map, mapWebStyle as object]}
+          />
+          <LinearGradient
+            colors={['rgba(255,255,255,0.55)', 'transparent']}
+            style={[styles.topVeil, { height: insets.top + spacing[64] }]}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(255,255,255,0.75)', colors.surface]}
+            style={styles.bottomVeil}
+          />
+        </View>
+      )}
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? undefined : 'height'}
         style={{ flex: 1 }}
+        enabled={Platform.OS !== 'ios'}
         keyboardVerticalOffset={0}
       >
         <View
           style={[
             styles.shellInner,
             fullHeight ? styles.shellFill : styles.shellEnd,
-            { paddingTop: fullHeight ? 0 : spacing[16] },
+            { paddingTop: fullHeight || plain ? 0 : spacing[16] },
           ]}
         >
           {sheet}

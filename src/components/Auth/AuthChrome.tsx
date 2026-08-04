@@ -61,6 +61,7 @@ export function AuthHeader({
   subtitle,
   showBack = true,
   onBack,
+  inline = false,
   embedded = false,
 }: {
   title: string;
@@ -69,9 +70,46 @@ export function AuthHeader({
   onBack?: () => void;
   light?: boolean;
   embedded?: boolean;
+  /** Back button and centered title on one row. */
+  inline?: boolean;
 }) {
   const { fonts, spacing } = useTheme();
   const insets = useSafeAreaInsets();
+
+  if (inline) {
+    const side = spacing[40];
+    return (
+      <View style={{ gap: spacing[16] }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            minHeight: side,
+          }}
+        >
+          {showBack ? (
+            <AuthBackButton onPress={onBack} />
+          ) : (
+            <View style={{ width: side, height: side }} />
+          )}
+          <Text
+            variant="h2"
+            color="textBrand"
+            align="center"
+            style={{ flex: 1, fontFamily: fonts.display }}
+          >
+            {title}
+          </Text>
+          <View style={{ width: side, height: side }} accessibilityElementsHidden />
+        </View>
+        {subtitle ? (
+          <Text variant="body" color="textSecondary">
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+    );
+  }
 
   return (
     <View

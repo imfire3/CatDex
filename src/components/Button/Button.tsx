@@ -98,20 +98,21 @@ export function Button({
   const labelColor =
     variant === 'primary'
       ? isDisabled
-        ? colors.ctaSecondaryLabel
+        ? colors.textMuted
         : colors.onAccent
       : variant === 'google'
         ? colors.authGoogleLabel
         : variant === 'apple'
           ? colors.authAppleLabel
           : variant === 'secondary'
-            ? colors.ctaSecondaryLabel
+            ? isDisabled
+              ? colors.textMuted
+              : colors.brand
             : variant === 'destructive'
               ? colors.danger
               : colors.brand;
 
-  const labelWeight =
-    variant === 'secondary' ? fonts.body : fonts.bodySemi;
+  const labelWeight = fonts.bodySemi;
 
   const content = (
     <View style={[styles.content, { gap: spacing[8] }]}>
@@ -141,7 +142,7 @@ export function Button({
   const primaryDisabled = variant === 'primary' && isDisabled;
 
   const surfaceBg = primaryDisabled
-    ? colors.ctaSecondary
+    ? colors.surfaceDisabled
     : variant === 'primary'
       ? colors.accent
       : variant === 'google'

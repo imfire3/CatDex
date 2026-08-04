@@ -12,24 +12,32 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { CatSprite } from '@/components/CatSprite';
 import { useTheme } from '@/theme';
 import { motionDuration, motionEasing } from '@/theme/motion';
 import type { Cat } from '@/types/cat';
 
+const POLITE_CAT_PIN = require('../../assets/models/paws-polite-cat/pin.png');
+
 type Props = {
   cat: Cat;
   onPress: (cat: Cat) => void;
+  isNearby?: boolean;
+  /** Dim / mystery look for not-yet-captured world cats. */
+  captured?: boolean;
 };
 
 /**
- * CatDex map marker — round photo/avatar pin with luminous halo.
+ * Map pin — 3D polite-cat sprite with soft halo and appear bounce.
  */
-function CatMapMarkerComponent({ cat, onPress }: Props) {
+function CatMapMarkerComponent({
+  cat,
+  onPress,
+  isNearby = false,
+  captured = true,
+}: Props) {
   const { colors, spacing, shadow } = useTheme();
-  const size = spacing[48];
+  const size = spacing[56];
   const haloSize = size + spacing[24];
-  const showPhoto = Boolean(cat.photoUri) && !cat.photoUri.startsWith('demo');
 
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
   const appear = useSharedValue(0);
@@ -59,7 +67,7 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
       motionDuration.fast,
       withRepeat(
         withTiming(1, {
-          duration: 280,
+          duration: isNearby ? 180 : 280,
           easing: Easing.inOut(Easing.ease),
         }),
         -1,
@@ -67,9 +75,10 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
       ),
     );
 
+    // Keep tracking long enough for iOS MapKit to snapshot the custom view.
     const freeze = setTimeout(() => setTracksViewChanges(false), 2200);
     return () => clearTimeout(freeze);
-  }, [appear, floatY, pulse]);
+  }, [appear, floatY, isNearby, pulse]);
 
   const bodyStyle = useAnimatedStyle(() => ({
     opacity: appear.value,
@@ -80,8 +89,8 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
   }));
 
   const haloStyle = useAnimatedStyle(() => ({
-    opacity: 0.18 + pulse.value * 0.22,
-    transform: [{ scale: 0.88 + pulse.value * 0.22 }],
+    opacity: isNearby ? 0.28 + pulse.value * 0.35 : 0.12 + pulse.value * 0.18,
+    transform: [{ scale: isNearby ? 0.82 + pulse.value * 0.38 : 0.88 + pulse.value * 0.22 }],
   }));
 
   return (
@@ -89,8 +98,8 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
       coordinate={{ latitude: cat.latitude, longitude: cat.longitude }}
       onPress={() => onPress(cat)}
       tracksViewChanges={tracksViewChanges}
-      anchor={{ x: 0.5, y: 0.5 }}
-      zIndex={10}
+      anchor={{ x: 0.5, y: 0.92 }}
+      zIndex={captured ? 12 : 10}
     >
       <Animated.View
         style={[
@@ -117,27 +126,19 @@ function CatMapMarkerComponent({ cat, onPress }: Props) {
             {
               width: size,
               height: size,
-              borderRadius: size / 2,
-              borderWidth: 3,
-              borderColor: colors.mapPinRing,
-              backgroundColor: colors.accentSoft,
             },
             shadow.low,
           ]}
         >
-          {showPhoto ? (
-            <Image
-              source={{ uri: cat.photoUri }}
-              style={{ width: size - 6, height: size - 6, borderRadius: (size - 6) / 2 }}
-            />
-          ) : (
-            <CatSprite
-              colorLabel={cat.analysis.color}
-              seed={cat.number}
-              size={size - 6}
-              faceOnly
-            />
-          )}
+          <Image
+            source={POLITE_CAT_PIN}
+            style={{
+              width: size,
+              height: size,
+              opacity: captured ? 1 : 0.72,
+            }}
+            resizeMode="contain"
+          />
         </View>
       </Animated.View>
     </Marker>
@@ -156,7 +157,6 @@ const styles = StyleSheet.create({
   },
   pin: {
     alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    justifyContent: 'flex-end',
   },
 });

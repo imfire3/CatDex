@@ -1,42 +1,48 @@
+import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { BottomSheet } from '@/components/BottomSheet';
-import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
-import { Text } from '@/components/Text';
 import { CatMap } from '@/components/maps/CatMap';
-import { distanceMeters, isInParis20e, PARIS_20E } from '@/lib/constants';
+import { MapCatModal } from '@/components/maps/MapCatModal';
+import { getMapHudBottom } from '@/layout/tabBarMetrics';
+import { PARIS_20E } from '@/lib/constants';
 import { DEMO_CATS } from '@/lib/demoCats';
+import {
+  DISCOVERY_RADIUS_M,
+  isRareCat,
+  PROXIMITY_ALERT_M,
+  sortCatsByDistance,
+} from '@/lib/mapExplore';
 import { useCatsStore } from '@/store/cats';
+import { useMapExploreStore } from '@/store/mapExplore';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
 type FilterId = 'nearby' | 'rare' | 'seen' | 'all';
 
-function sortByDistance(
-  list: Cat[],
-  origin: { latitude: number; longitude: number },
-): Cat[] {
-  return [...list].sort(
-    (a, b) =>
-      distanceMeters(origin.latitude, origin.longitude, a.latitude, a.longitude) -
-      distanceMeters(origin.latitude, origin.longitude, b.latitude, b.longitude),
-  );
-}
-
 /**
- * Explorer — clean 3D map: search, filter, locate (mock style).
+ * Explorer — Apple Maps-style HUD (search, filter, locate) with production
+ * discovery radius, proximity haptics, and MapCatModal.
  */
 export default function MapScreen() {
   const { colors, fonts, spacing, radius, iconStroke, iconSize, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const storedCats = useCatsStore((state) => state.cats);
-  const cats = __DEV__ && storedCats.length === 0 ? DEMO_CATS : storedCats;
+  const setHasNearbyCat = useMapExploreStore((state) => state.setHasNearbyCat);
+
+  const capturedIds = useMemo(() => new Set(storedCats.map((cat) => cat.id)), [storedCats]);
+
+  /** Captured cats + world spawns (demo) not yet in the CatDex. */
+  const mapCats = useMemo(() => {
+    const world = __DEV__ ? DEMO_CATS.filter((cat) => !capturedIds.has(cat.id)) : [];
+    return [...storedCats, ...world];
+  }, [capturedIds, storedCats]);
+
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [filter, setFilter] = useState<FilterId>('all');
@@ -51,29 +57,42 @@ export default function MapScreen() {
     longitude: number;
   } | null>(null);
 
-  const origin = userCoordinate ?? PARIS_20E.center;
-  const filteredCats = sortByDistance(
-    cats.filter((cat) => {
+  const lastHapticCatRef = useRef<string | null>(null);
+  const selectedCaptured = selected ? capturedIds.has(selected.id) : false;
+
+  const sortedCats = useMemo(
+    () => sortCatsByDistance(mapCats, userCoordinate),
+    [mapCats, userCoordinate],
+  );
+
+  const selectedDistance = useMemo(() => {
+    if (!selected) return null;
+    const match = sortedCats.find((item) => item.cat.id === selected.id);
+    return match?.distanceM ?? null;
+  }, [selected, sortedCats]);
+
+  const visibleCats = useMemo(() => {
+    return sortedCats.filter(({ cat, distanceM }) => {
       if (query.trim()) {
         const q = query.trim().toLowerCase();
         const hay = `${cat.name} ${cat.analysis.color} ${cat.analysis.breed}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
-      if (filter === 'rare') {
-        const coat = cat.analysis.coat?.toLowerCase() ?? '';
-        const color = cat.analysis.color?.toLowerCase() ?? '';
-        return (
-          coat.includes('long') ||
-          color.includes('siamois') ||
-          color.includes('écaille') ||
-          color.includes('bengal')
-        );
-      }
+      if (filter === 'rare') return isRareCat(cat);
       if (filter === 'seen') return cat.views > 0;
-      if (filter === 'nearby') return true;
+      if (filter === 'nearby') return distanceM <= DISCOVERY_RADIUS_M;
       return true;
-    }),
-    origin,
+    });
+  }, [filter, query, sortedCats]);
+
+  /** Proximity uses all cats — independent of search/filter UI state. */
+  const nearestForProximity = sortedCats[0] ?? null;
+  const nearbyCatIds = useMemo(
+    () =>
+      sortedCats
+        .filter(({ distanceM }) => distanceM <= PROXIMITY_ALERT_M)
+        .map(({ cat }) => cat.id),
+    [sortedCats],
   );
 
   useEffect(() => {
@@ -84,17 +103,23 @@ export default function MapScreen() {
       const position = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = position.coords;
       if (mounted) setUserCoordinate({ latitude, longitude });
-      if (!isInParis20e(latitude, longitude) && mounted && __DEV__) {
-        Alert.alert(
-          'Hors du 20e',
-          'Tu es hors de la zone de test (Paris 20e). En développement, les captures restent autorisées.',
-        );
-      }
     })().catch(() => undefined);
     return () => {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!nearestForProximity || nearestForProximity.distanceM > PROXIMITY_ALERT_M) {
+      setHasNearbyCat(false);
+      return;
+    }
+    setHasNearbyCat(true);
+    if (lastHapticCatRef.current !== nearestForProximity.cat.id) {
+      lastHapticCatRef.current = nearestForProximity.cat.id;
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [nearestForProximity, setHasNearbyCat]);
 
   const recenterOnPlayer = async () => {
     try {
@@ -110,23 +135,29 @@ export default function MapScreen() {
         return;
       }
     } catch {
-      // fallback
+      // fallback below
     }
     setFocusCoordinate({ ...PARIS_20E.center });
   };
 
+  const recenterBottom = getMapHudBottom(insets.bottom, spacing);
+
   return (
     <View style={styles.root}>
-      <CatMap
-        cats={filteredCats}
-        scheme="light"
-        focusCoordinate={focusCoordinate}
-        userCoordinate={userCoordinate ?? PARIS_20E.center}
-        onSelectCat={(item) => {
-          setSelected(item);
-          setSheetVisible(true);
-        }}
-      />
+      <View style={StyleSheet.absoluteFill}>
+        <CatMap
+          cats={visibleCats.map(({ cat }) => cat)}
+          scheme="light"
+          focusCoordinate={focusCoordinate}
+          userCoordinate={userCoordinate}
+          nearbyCatIds={nearbyCatIds}
+          capturedCatIds={[...capturedIds]}
+          onSelectCat={(item) => {
+            setSelected(item);
+            setSheetVisible(true);
+          }}
+        />
+      </View>
 
       {/* Top HUD: Recherche + Filtre */}
       <View
@@ -245,7 +276,7 @@ export default function MapScreen() {
         style={({ pressed }) => [
           styles.locateBtn,
           {
-            bottom: insets.bottom + spacing[96] + spacing[8],
+            bottom: recenterBottom,
             right: spacing[16],
             width: spacing[48],
             height: spacing[48],
@@ -266,40 +297,39 @@ export default function MapScreen() {
         </Svg>
       </Pressable>
 
-      <BottomSheet
+      <MapCatModal
         visible={sheetVisible}
+        cat={selected}
+        captured={selectedCaptured}
+        distanceM={selectedDistance}
         onClose={() => {
           setSheetVisible(false);
           setSelected(null);
         }}
-      >
-        {selected ? (
-          <View style={{ gap: spacing[16] }}>
-            <Text variant="h2" color="textBrand">
-              {selected.name}
-            </Text>
-            <Text variant="bodySmall" color="textSecondary">
-              {selected.analysis.breed} · {selected.analysis.color}
-            </Text>
-            <Text variant="body" color="textBody" numberOfLines={3}>
-              {selected.analysis.description}
-            </Text>
-            <Button
-              title="Voir la fiche"
-              onPress={() => {
-                setSheetVisible(false);
-                router.push(`/cat/${selected.id}`);
-              }}
-            />
-          </View>
-        ) : null}
-      </BottomSheet>
+        onViewCard={() => {
+          if (!selected) return;
+          setSheetVisible(false);
+          router.push(`/cat/${selected.id}`);
+        }}
+        onGoThere={() => {
+          if (!selected) return;
+          setFocusCoordinate({
+            latitude: selected.latitude,
+            longitude: selected.longitude,
+          });
+          setSheetVisible(false);
+          setSelected(null);
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   hud: {
     position: 'absolute',
     top: 0,
@@ -318,7 +348,7 @@ const styles = StyleSheet.create({
   },
   locateBtn: {
     position: 'absolute',
-    zIndex: 12,
+    zIndex: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },

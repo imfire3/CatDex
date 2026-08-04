@@ -18,7 +18,10 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://REPLACE_WITH_RENDER_OR_RAILWAY_URL"
+      }
     }
   },
   "submit": {

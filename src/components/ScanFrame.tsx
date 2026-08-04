@@ -5,15 +5,17 @@ import { useTheme } from '@/theme/ThemeProvider';
 type Props = {
   size?: number;
   color?: string;
+  rounded?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-/** L-shaped scan corners — inspired by premium card scanners. */
-export function ScanFrame({ size = 240, color, style }: Props) {
-  const { colors, spacing } = useTheme();
-  const stroke = color ?? colors.primary;
+/** L-shaped scan corners — camera viewfinder overlay. */
+export function ScanFrame({ size = 240, color, rounded = false, style }: Props) {
+  const { colors, spacing, radius } = useTheme();
+  const stroke = color ?? colors.onAccent;
   const arm = spacing[32];
   const thickness = spacing[4];
+  const cornerRadius = rounded ? radius.sm : 0;
 
   const corner = (rotation: 'tl' | 'tr' | 'bl' | 'br') => {
     const common = {
@@ -23,15 +25,43 @@ export function ScanFrame({ size = 240, color, style }: Props) {
       borderColor: stroke,
     };
     if (rotation === 'tl') {
-      return { ...common, top: 0, left: 0, borderTopWidth: thickness, borderLeftWidth: thickness };
+      return {
+        ...common,
+        top: 0,
+        left: 0,
+        borderTopWidth: thickness,
+        borderLeftWidth: thickness,
+        borderTopLeftRadius: cornerRadius,
+      };
     }
     if (rotation === 'tr') {
-      return { ...common, top: 0, right: 0, borderTopWidth: thickness, borderRightWidth: thickness };
+      return {
+        ...common,
+        top: 0,
+        right: 0,
+        borderTopWidth: thickness,
+        borderRightWidth: thickness,
+        borderTopRightRadius: cornerRadius,
+      };
     }
     if (rotation === 'bl') {
-      return { ...common, bottom: 0, left: 0, borderBottomWidth: thickness, borderLeftWidth: thickness };
+      return {
+        ...common,
+        bottom: 0,
+        left: 0,
+        borderBottomWidth: thickness,
+        borderLeftWidth: thickness,
+        borderBottomLeftRadius: cornerRadius,
+      };
     }
-    return { ...common, bottom: 0, right: 0, borderBottomWidth: thickness, borderRightWidth: thickness };
+    return {
+      ...common,
+      bottom: 0,
+      right: 0,
+      borderBottomWidth: thickness,
+      borderRightWidth: thickness,
+      borderBottomRightRadius: cornerRadius,
+    };
   };
 
   return (
