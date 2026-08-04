@@ -1,6 +1,7 @@
 /**
- * CatDex Google Maps JSON style v2 — soft luminous game world.
+ * CatDex Google Maps JSON style — pale isometric quartier.
  * Applied via `customMapStyle` (Google provider only; ignored by Apple Maps).
+ * No labels / POI / transit — soft land, white buildings, lavender roads.
  */
 import type { MapStyleElement } from 'react-native-maps';
 
@@ -8,11 +9,8 @@ import { mapPalette as p } from './mapPalette';
 
 export const catdexMapStyle: MapStyleElement[] = [
   { elementType: 'geometry', stylers: [{ color: p.land }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: p.label }] },
-  {
-    elementType: 'labels.text.stroke',
-    stylers: [{ color: p.labelStroke }, { weight: 3 }],
-  },
+  { elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
   {
     featureType: 'administrative',
     elementType: 'geometry',
@@ -62,49 +60,16 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'poi.park',
     elementType: 'geometry.stroke',
-    stylers: [{ color: p.forest }, { weight: 0.6 }, { visibility: 'on' }],
+    stylers: [{ color: p.parkDeep }, { weight: 0.4 }, { visibility: 'on' }],
   },
   {
     featureType: 'poi.park',
     elementType: 'labels',
-    stylers: [{ visibility: 'simplified' }],
-  },
-  {
-    featureType: 'poi.park',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: p.parkLabel }],
+    stylers: [{ visibility: 'off' }],
   },
   {
     featureType: 'poi.park',
     elementType: 'labels.icon',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'poi.attraction',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'poi.business',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'poi.government',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'poi.medical',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'poi.place_of_worship',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'poi.school',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'poi.sports_complex',
     stylers: [{ visibility: 'off' }],
   },
   {
@@ -115,7 +80,12 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'road',
     elementType: 'geometry.stroke',
-    stylers: [{ color: p.roadStroke }, { weight: 1.35 }],
+    stylers: [{ color: p.roadStroke }, { weight: 0.6 }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels',
+    stylers: [{ visibility: 'off' }],
   },
   {
     featureType: 'road',
@@ -130,7 +100,7 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'road.arterial',
     elementType: 'geometry.stroke',
-    stylers: [{ color: p.roadArterialStroke }, { weight: 1.55 }],
+    stylers: [{ color: p.roadArterialStroke }, { weight: 0.7 }],
   },
   {
     featureType: 'road.highway',
@@ -140,12 +110,12 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'road.highway',
     elementType: 'geometry.stroke',
-    stylers: [{ color: p.roadHighwayStroke }, { weight: 1.75 }],
+    stylers: [{ color: p.roadHighwayStroke }, { weight: 0.8 }],
   },
   {
     featureType: 'road.highway',
     elementType: 'labels',
-    stylers: [{ visibility: 'simplified' }],
+    stylers: [{ visibility: 'off' }],
   },
   {
     featureType: 'road.local',
@@ -155,7 +125,7 @@ export const catdexMapStyle: MapStyleElement[] = [
   {
     featureType: 'road.local',
     elementType: 'geometry.stroke',
-    stylers: [{ color: p.land }, { weight: 0.8 }],
+    stylers: [{ color: p.land }, { weight: 0.4 }],
   },
   {
     featureType: 'road.local',
@@ -168,11 +138,6 @@ export const catdexMapStyle: MapStyleElement[] = [
   },
   {
     featureType: 'transit.station',
-    stylers: [{ visibility: 'simplified' }],
-  },
-  {
-    featureType: 'transit.station',
-    elementType: 'labels.icon',
     stylers: [{ visibility: 'off' }],
   },
   {
@@ -182,7 +147,7 @@ export const catdexMapStyle: MapStyleElement[] = [
   },
   {
     featureType: 'water',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: p.waterLabel }],
+    elementType: 'labels',
+    stylers: [{ visibility: 'off' }],
   },
 ];

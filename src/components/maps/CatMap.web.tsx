@@ -1,12 +1,14 @@
 import { createElement, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { loadPaleIsometricStyle } from '@/components/maps/applyPaleIsometricStyle';
 import {
   INITIAL_MAP_CAMERA,
   MAP_PITCH,
   MAP_ZOOM,
 } from '@/components/maps/mapCamera';
 import { PAW_SVG_MARKUP } from '@/components/maps/CatPinVisual';
+import { mapPalette } from '@/components/maps/mapPalette';
 import { isCatPhotoRef, resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
@@ -21,8 +23,7 @@ type Props = {
   capturedCatIds?: string[];
 };
 
-/** Free style with building footprints — extruded for 3D when pitched. */
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+/** OpenFreeMap liberty — fetched + restyled to pale isometric before Map init. */
 const BUILDINGS_LAYER_ID = 'catdex-3d-buildings';
 const MAPLIBRE_JS = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
 const MAPLIBRE_CSS = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';
@@ -38,6 +39,8 @@ type MapLibreMap = {
   getZoom: () => number;
   on: (event: string, cb: () => void) => void;
   remove: () => void;
+  setLayoutProperty: (id: string, name: string, value: unknown) => void;
+  setPaintProperty: (id: string, name: string, value: unknown) => void;
 };
 
 type MapLibreMarker = {
@@ -105,14 +108,9 @@ function loadMapLibre(): Promise<MapLibreNS> {
   });
 }
 
-function add3dBuildings(map: MapLibreMap) {
-  if (map.getLayer(BUILDINGS_LAYER_ID)) return;
-
-  const layers = map.getStyle()?.layers ?? [];
-  const labelLayerId = layers.find((layer) => {
-    const layout = layer.layout as { 'text-field'?: unknown } | undefined;
-    return layer.type === 'symbol' && layout?.['text-field'];
-  })?.id as string | undefined;
+function ensure3dBuildings(map: MapLibreMap) {
+  // Liberty already ships `building-3d` after pale transform — restyle only.
+  if (map.getLayer('building-3d') || map.getLayer(BUILDINGS_LAYER_ID)) return;
 
   const style = map.getStyle();
   const sourceId =
@@ -122,36 +120,34 @@ function add3dBuildings(map: MapLibreMap) {
     }) ?? 'openmaptiles';
 
   try {
-    map.addLayer(
-      {
-        id: BUILDINGS_LAYER_ID,
-        source: sourceId,
-        'source-layer': 'building',
-        type: 'fill-extrusion',
-        minzoom: 14,
-        filter: ['!=', ['get', 'hide_3d'], true],
-        paint: {
-          'fill-extrusion-color': '#E8EAF0',
-          'fill-extrusion-height': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            14,
-            0,
-            15,
-            ['coalesce', ['get', 'render_height'], ['get', 'height'], 12],
-          ],
-          'fill-extrusion-base': [
-            'coalesce',
-            ['get', 'render_min_height'],
-            ['get', 'min_height'],
-            0,
-          ],
-          'fill-extrusion-opacity': 0.88,
-        },
+    map.addLayer({
+      id: BUILDINGS_LAYER_ID,
+      source: sourceId,
+      'source-layer': 'building',
+      type: 'fill-extrusion',
+      minzoom: 14,
+      filter: ['!=', ['get', 'hide_3d'], true],
+      paint: {
+        'fill-extrusion-color': mapPalette.building,
+        'fill-extrusion-height': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          14,
+          0,
+          15,
+          ['coalesce', ['get', 'render_height'], ['get', 'height'], 12],
+        ],
+        'fill-extrusion-base': [
+          'coalesce',
+          ['get', 'render_min_height'],
+          ['get', 'min_height'],
+          0,
+        ],
+        'fill-extrusion-opacity': 0.96,
+        'fill-extrusion-vertical-gradient': true,
       },
-      labelLayerId,
-    );
+    });
   } catch {
     // Style may already include extrusions — pitch alone still reads 3D.
   }
@@ -359,10 +355,13 @@ export function CatMap({
         if (cancelled || !hostRef.current) return;
         maplibreRef.current = maplibregl;
 
+        const paleStyle = await loadPaleIsometricStyle();
+        if (cancelled || !hostRef.current) return;
+
         const center = INITIAL_MAP_CAMERA.center;
         const map = new maplibregl.Map({
           container: hostRef.current,
-          style: MAP_STYLE,
+          style: paleStyle,
           center: [center.longitude, center.latitude],
           zoom: MAP_ZOOM,
           pitch: MAP_PITCH,
@@ -375,7 +374,7 @@ export function CatMap({
 
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
         map.on('load', () => {
-          add3dBuildings(map);
+          ensure3dBuildings(map);
           map.easeTo({ pitch: MAP_PITCH, bearing: -18, duration: 600 });
           if (!cancelled) setMapReady(true);
         });
@@ -485,7 +484,7 @@ export function CatMap({
   }, [userCoordinate, colors, spacing, mapReady]);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.surfaceSecondary }]}>
+    <View style={[styles.root, { backgroundColor: mapPalette.land }]}>
       {createElement('div', {
         ref: (node: HTMLDivElement | null) => {
           hostRef.current = node;
@@ -497,6 +496,8 @@ export function CatMap({
           height: '100%',
         },
       })}
+      {/* High-key veil matching the pale isometric reference */}
+      <View pointerEvents="none" style={styles.veil} />
     </View>
   );
 }
@@ -521,9 +522,11 @@ export function MiniMap({
       try {
         const maplibregl = await loadMapLibre();
         if (cancelled || !hostRef.current) return;
+        const paleStyle = await loadPaleIsometricStyle();
+        if (cancelled || !hostRef.current) return;
         map = new maplibregl.Map({
           container: hostRef.current,
-          style: MAP_STYLE,
+          style: paleStyle,
           center: [longitude, latitude],
           zoom: 15,
           pitch: 48,
@@ -532,7 +535,7 @@ export function MiniMap({
           attributionControl: false,
         });
         map.on('load', () => {
-          if (map) add3dBuildings(map);
+          if (map) ensure3dBuildings(map);
         });
         new maplibregl.Marker({ color: colors.brand })
           .setLngLat([longitude, latitude])
@@ -568,6 +571,10 @@ export function MiniMap({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  veil: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(244, 243, 248, 0.08)',
   },
   miniWrap: {
     overflow: 'hidden',
