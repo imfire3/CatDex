@@ -119,7 +119,7 @@ function HudPill({
         >
           <Text
             variant="caption"
-            color="onBrand"
+            color="onAccent"
             style={{ fontFamily: fonts.bodySemi, lineHeight: 14 }}
           >
             {badge > 99 ? '99+' : String(badge)}
