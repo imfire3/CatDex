@@ -129,7 +129,12 @@ export default function CatDexScreen() {
             cat={item}
             isFavorite={favorites.has(item.id)}
             onToggleFavorite={() => toggleFavorite(item.id)}
-            onPress={() => router.push(`/cat/${item.id}`)}
+            onPress={() =>
+              router.push({
+                pathname: '/cat/[id]',
+                params: { id: item.id },
+              })
+            }
           />
         )}
       />

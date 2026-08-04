@@ -16,8 +16,20 @@ const TAG_SETS = [
  * Fills optional analysis traits so UI screens always have mockup-ready fields,
  * including breed, color, random traits and a suggested name when missing.
  */
-export function enrichAnalysis(analysis: CatAnalysis, seed = 0): CatAnalysis {
-  const seeded = ensureCatIdentity(analysis, `${analysis.color}:${analysis.breed}:${seed}`);
+export function enrichAnalysis(
+  analysis: CatAnalysis | null | undefined,
+  seed = 0,
+): CatAnalysis {
+  const base: CatAnalysis = analysis ?? {
+    color: 'Inconnue',
+    breed: 'Indéterminée',
+    coat: 'Indéterminée',
+    description: 'Chat repéré dans le quartier.',
+  };
+  const seeded = ensureCatIdentity(
+    base,
+    `${base.color ?? ''}:${base.breed ?? ''}:${seed}`,
+  );
   const color = seeded.color || 'Inconnue';
   const coat = seeded.coat || 'Indéterminée';
   const lower = `${color} ${coat}`.toLowerCase();
