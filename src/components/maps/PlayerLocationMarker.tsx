@@ -80,6 +80,7 @@ export function PlayerLocationMarker({ coordinate }: Props) {
         <Animated.View
           style={[
             styles.halo,
+            radarStyle,
             {
               width: spacing[64],
               height: spacing[64],
@@ -87,7 +88,6 @@ export function PlayerLocationMarker({ coordinate }: Props) {
               backgroundColor: colors.brandSoft,
               opacity: 0.85,
             },
-            radarStyle,
           ]}
         />
         <Animated.View
