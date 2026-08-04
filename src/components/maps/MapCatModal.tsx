@@ -9,7 +9,7 @@ import { formatDistanceMeters } from '@/lib/constants';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-const POLITE_CAT_PIN = require('../../../assets/models/paws-polite-cat/pin.png');
+import { LOWPOLY_CAT_PIN } from '@/components/maps/CatPinVisual';
 
 type Props = {
   visible: boolean;
@@ -127,8 +127,8 @@ export function MapCatModal({
               />
             ) : (
               <Image
-                source={POLITE_CAT_PIN}
-                style={{ width: '100%', height: '100%' }}
+                source={LOWPOLY_CAT_PIN}
+                style={{ width: '72%', height: '72%' }}
                 resizeMode="contain"
                 accessibilityLabel="Chat mystère"
               />

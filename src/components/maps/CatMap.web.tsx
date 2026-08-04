@@ -6,8 +6,10 @@ import {
   MAP_PITCH,
   MAP_ZOOM,
 } from '@/components/maps/mapCamera';
-import { PAW_SVG_MARKUP } from '@/components/maps/CatPinVisual';
-import { isCatPhotoRef, resolveCatPhotoUri } from '@/lib/photoStorage';
+import {
+  LOWPOLY_CAT_PIN,
+  resolveBundledImageUri,
+} from '@/components/maps/CatPinVisual';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -161,18 +163,16 @@ function makePinElement(opts: {
   label: string;
   brand: string;
   brandSoft: string;
-  surface: string;
   size: number;
-  photoUri?: string;
+  pinSrc: string;
   dimmed?: boolean;
   nearby?: boolean;
 }): HTMLButtonElement {
   const size = opts.size;
-  const tipH = 10;
+  const tipH = 8;
   const tipW = 16;
-  const badge = 20;
-  const border = 4;
-  const wrapW = size + 32;
+  const spriteW = Math.round(size * 0.92);
+  const wrapW = spriteW + 32;
   const wrapH = size + tipH + 16;
 
   const btn = document.createElement('button');
@@ -189,34 +189,34 @@ function makePinElement(opts: {
     'align-items:flex-end',
     'justify-content:center',
     'position:relative',
-    opts.dimmed ? 'opacity:0.78' : 'opacity:1',
+    opts.dimmed ? 'opacity:0.72' : 'opacity:1',
   ].join(';');
 
   const pulseOuter = document.createElement('span');
   pulseOuter.style.cssText = [
     'position:absolute',
-    `width:${size + 24}px`,
-    `height:${size + 24}px`,
+    `width:${spriteW + 16}px`,
+    'height:24px',
     'border-radius:999px',
     `border:2px solid ${opts.brandSoft}`,
-    'bottom:2px',
+    'bottom:6px',
     'left:50%',
     'transform:translateX(-50%)',
-    opts.nearby ? 'opacity:1' : 'opacity:0.7',
+    opts.nearby ? 'opacity:0.95' : 'opacity:0.65',
     'pointer-events:none',
   ].join(';');
 
   const pulseInner = document.createElement('span');
   pulseInner.style.cssText = [
     'position:absolute',
-    `width:${size + 8}px`,
-    `height:${size + 8}px`,
+    `width:${Math.round(spriteW * 0.72)}px`,
+    'height:8px',
     'border-radius:999px',
     `background:${opts.brandSoft}`,
-    'bottom:8px',
+    'bottom:10px',
     'left:50%',
     'transform:translateX(-50%)',
-    opts.nearby ? 'opacity:0.9' : 'opacity:0.55',
+    opts.nearby ? 'opacity:0.85' : 'opacity:0.5',
     'pointer-events:none',
   ].join(';');
 
@@ -229,95 +229,30 @@ function makePinElement(opts: {
     'z-index:1',
   ].join(';');
 
-  const avatar = document.createElement('span');
-  avatar.style.cssText = [
-    `width:${size}px`,
+  const img = document.createElement('img');
+  img.alt = opts.label;
+  img.draggable = false;
+  img.src = opts.pinSrc;
+  img.style.cssText = [
+    `width:${spriteW}px`,
     `height:${size}px`,
-    'border-radius:999px',
-    `border:${border}px solid ${opts.brand}`,
-    `background:${opts.surface}`,
-    'overflow:hidden',
-    'position:relative',
-    'box-shadow:0 4px 14px rgba(106,105,248,0.28)',
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
+    'object-fit:contain',
+    'display:block',
+    'pointer-events:none',
+    'user-select:none',
   ].join(';');
-
-  const placeholder = document.createElement('span');
-  placeholder.textContent = '🐱';
-  placeholder.style.cssText =
-    'font-size:22px;line-height:1;user-select:none;pointer-events:none';
-  avatar.appendChild(placeholder);
-
-  if (opts.photoUri && !opts.photoUri.startsWith('blob:')) {
-    const img = document.createElement('img');
-    img.alt = opts.label;
-    img.draggable = false;
-    img.style.cssText = [
-      'position:absolute',
-      'inset:0',
-      'width:100%',
-      'height:100%',
-      'object-fit:cover',
-      'border-radius:999px',
-    ].join(';');
-    img.onerror = () => {
-      img.remove();
-    };
-    img.onload = () => {
-      placeholder.style.display = 'none';
-    };
-
-    const applySrc = (src: string) => {
-      img.src = src;
-      if (!img.parentElement) avatar.appendChild(img);
-    };
-
-    if (isCatPhotoRef(opts.photoUri)) {
-      void resolveCatPhotoUri(opts.photoUri).then((resolved) => {
-        if (resolved) applySrc(resolved);
-      });
-    } else {
-      applySrc(opts.photoUri);
-    }
-  }
-
-  const badgeEl = document.createElement('span');
-  badgeEl.style.cssText = [
-    'position:absolute',
-    `width:${badge}px`,
-    `height:${badge}px`,
-    'border-radius:999px',
-    `background:${opts.brand}`,
-    `border:2px solid ${opts.surface}`,
-    'top:-4px',
-    'right:-4px',
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
-    'box-shadow:0 2px 6px rgba(17,20,90,0.16)',
-    'z-index:2',
-  ].join(';');
-  badgeEl.innerHTML = PAW_SVG_MARKUP;
-
-  // Badge sits on the avatar ring — attach to a relative wrapper
-  const avatarWrap = document.createElement('span');
-  avatarWrap.style.cssText = 'position:relative;display:inline-flex;overflow:visible';
-  avatarWrap.appendChild(avatar);
-  avatarWrap.appendChild(badgeEl);
 
   const tip = document.createElement('span');
   tip.style.cssText = [
     'width:0',
     'height:0',
-    'margin-top:-2px',
+    'margin-top:-4px',
     `border-left:${tipW / 2}px solid transparent`,
     `border-right:${tipW / 2}px solid transparent`,
     `border-top:${tipH}px solid ${opts.brand}`,
   ].join(';');
 
-  column.appendChild(avatarWrap);
+  column.appendChild(img);
   column.appendChild(tip);
   btn.appendChild(pulseOuter);
   btn.appendChild(pulseInner);
@@ -427,6 +362,7 @@ export function CatMap({
     catMarkersRef.current.forEach((marker) => marker.remove());
     catMarkersRef.current = [];
 
+    const pinSrc = resolveBundledImageUri(LOWPOLY_CAT_PIN);
     cats.forEach((cat) => {
       const nearby = nearbyCatIds?.includes(cat.id) ?? false;
       const captured = capturedCatIds?.includes(cat.id) ?? true;
@@ -434,9 +370,8 @@ export function CatMap({
         label: cat.name,
         brand: colors.brand,
         brandSoft: colors.brandSoft,
-        surface: colors.surfaceElevated,
-        size: nearby ? spacing[56] : spacing[48],
-        photoUri: cat.photoUri,
+        size: nearby ? spacing[64] : spacing[56],
+        pinSrc,
         dimmed: !captured,
         nearby,
       });

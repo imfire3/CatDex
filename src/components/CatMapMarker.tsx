@@ -30,7 +30,7 @@ type Props = {
 };
 
 /**
- * Map pin — photo circle + brand tip + paw badge (Explorer mock).
+ * Map pin — low-poly 3D cat sprite + brand tip.
  */
 function CatMapMarkerComponent({
   cat,
@@ -39,7 +39,7 @@ function CatMapMarkerComponent({
   captured = true,
 }: Props) {
   const { spacing } = useTheme();
-  const size = isNearby ? spacing[56] : CAT_PIN_AVATAR;
+  const size = isNearby ? spacing[64] : CAT_PIN_AVATAR;
   const wrapW = size + spacing[32];
   const wrapH = size + CAT_PIN_TIP_H + spacing[16];
 
