@@ -1,4 +1,5 @@
 import type { CatAnalysis, CatGender } from '@/types/cat';
+import { ensureCatIdentity } from '@/lib/mockAnalysis';
 
 const TAG_SETS = [
   ['Ombre', 'Mystère'],
@@ -12,19 +13,21 @@ const TAG_SETS = [
 ] as const;
 
 /**
- * Fills optional analysis traits so UI screens always have mockup-ready fields.
+ * Fills optional analysis traits so UI screens always have mockup-ready fields,
+ * including breed, color, random traits and a suggested name when missing.
  */
 export function enrichAnalysis(analysis: CatAnalysis, seed = 0): CatAnalysis {
-  const color = analysis.color || 'Inconnue';
-  const coat = analysis.coat || 'Indéterminée';
+  const seeded = ensureCatIdentity(analysis, `${analysis.color}:${analysis.breed}:${seed}`);
+  const color = seeded.color || 'Inconnue';
+  const coat = seeded.coat || 'Indéterminée';
   const lower = `${color} ${coat}`.toLowerCase();
 
   const gender: CatGender =
-    analysis.gender ??
+    seeded.gender ??
     (seed % 3 === 0 ? 'female' : seed % 3 === 1 ? 'male' : 'unknown');
 
   const eyes =
-    analysis.eyes ??
+    seeded.eyes ??
     (lower.includes('noir')
       ? 'Ambre'
       : lower.includes('siamois') || lower.includes('blanc')
@@ -34,7 +37,7 @@ export function enrichAnalysis(analysis: CatAnalysis, seed = 0): CatAnalysis {
           : 'Dorés');
 
   const size =
-    analysis.size ??
+    seeded.size ??
     (lower.includes('chaton') || lower.includes('petit')
       ? 'Petite'
       : lower.includes('gros') || lower.includes('grand')
@@ -42,18 +45,19 @@ export function enrichAnalysis(analysis: CatAnalysis, seed = 0): CatAnalysis {
         : 'Moyenne');
 
   const tags =
-    analysis.tags && analysis.tags.length > 0
-      ? analysis.tags.slice(0, 3)
+    seeded.tags && seeded.tags.length > 0
+      ? seeded.tags.slice(0, 3)
       : [...TAG_SETS[Math.abs(seed) % TAG_SETS.length], 'Gourmand'].slice(0, 3);
 
   return {
-    ...analysis,
+    ...seeded,
     color,
     coat,
     gender,
     eyes,
     size,
     tags,
+    suggestedName: seeded.suggestedName,
   };
 }
 

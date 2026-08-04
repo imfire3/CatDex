@@ -1,5 +1,5 @@
 import { getApiCandidateUrls, getApiSecret } from '@/lib/apiUrl';
-import { OFFLINE_CAT_ANALYSIS } from '@/lib/mockAnalysis';
+import { ensureCatIdentity, generateCatAnalysis } from '@/lib/mockAnalysis';
 import type { CatAnalysis } from '@/types/cat';
 
 type AnalyzeResponse = {
@@ -24,6 +24,10 @@ function stripDataUrl(imageBase64: string): { base64: string; mimeType?: string 
   const match = /^data:([^;]+);base64,(.+)$/s.exec(imageBase64.trim());
   if (!match) return { base64: imageBase64.trim() };
   return { mimeType: match[1], base64: match[2] };
+}
+
+function seedFromImage(base64: string): string {
+  return base64.slice(0, 1200);
 }
 
 async function requestAnalyze(
@@ -59,7 +63,7 @@ async function requestAnalyze(
 
   if (data?.analysis) {
     return {
-      analysis: data.analysis,
+      analysis: ensureCatIdentity(data.analysis, seedFromImage(base64)),
       mocked: data.mocked,
       error: data.error,
       cutoutUri: data.cutoutBase64
@@ -91,6 +95,7 @@ export async function analyzeCatPhoto(
   const stripped = stripDataUrl(base64Image);
   const resolvedMime = stripped.mimeType ?? mimeType;
   const candidates = getApiCandidateUrls();
+  const seed = seedFromImage(stripped.base64);
 
   if (!__DEV__ && candidates.length === 0) {
     throw new Error(
@@ -128,7 +133,7 @@ export async function analyzeCatPhoto(
 
   if (__DEV__) {
     return {
-      analysis: OFFLINE_CAT_ANALYSIS,
+      analysis: generateCatAnalysis(seed),
       mocked: true,
       error: lastError?.message,
     };

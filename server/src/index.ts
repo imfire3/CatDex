@@ -43,18 +43,105 @@ const analyzeSchema = z.object({
   mimeType: z.string().default('image/jpeg'),
 });
 
-const fallbackAnalysis = {
-  color: 'Noir',
-  breed: 'Européen',
-  coat: 'Court',
-  description:
-    'Un chat noir élégant avec des yeux ambre perçants. Observé près d’un café en fin d’après-midi.',
-  suggestedName: 'Nori',
-  gender: 'male' as const,
-  eyes: 'Ambre',
-  size: 'Moyenne',
-  tags: ['Ombre', 'Mystère'],
-};
+const COLORS = [
+  'Noir',
+  'Roux',
+  'Roux tigré',
+  'Gris',
+  'Gris tigré',
+  'Blanc',
+  'Écaille de tortue',
+  'Bicolore',
+  'Crème',
+  'Siamois',
+] as const;
+
+const BREEDS = [
+  'Européen',
+  'Chartreux',
+  'Siamois',
+  'Maine Coon',
+  'Persan',
+  'British Shorthair',
+  'Bengal',
+  'Ragdoll',
+  'Norvégien',
+  'Sphynx',
+] as const;
+
+const COATS = ['Court', 'Mi-long', 'Long', 'Bouclé'] as const;
+const EYES = ['Ambre', 'Verts', 'Bleus', 'Dorés', 'Noisette', 'Cuivre'] as const;
+const SIZES = ['Petite', 'Moyenne', 'Grande'] as const;
+const GENDERS = ['male', 'female', 'unknown'] as const;
+const NAMES = [
+  'Nori',
+  'Caramel',
+  'Mistral',
+  'Suki',
+  'Olive',
+  'Pixel',
+  'Moka',
+  'Luna',
+  'Tigrou',
+  'Cendre',
+  'Wasabi',
+  'Praline',
+  'Ziggy',
+  'Félix',
+  'Mina',
+  'Gus',
+  'Nala',
+  'Biscuit',
+  'Shadow',
+  'Pêche',
+] as const;
+const TAG_SETS = [
+  ['Ombre', 'Mystère', 'Discret'],
+  ['Soleil', 'Curieux', 'Vif'],
+  ['Velours', 'Doux', 'Câlin'],
+  ['Éclair', 'Audacieux', 'Joueur'],
+  ['Nuit', 'Furtif', 'Calme'],
+  ['Miel', 'Gourmand', 'Affectueux'],
+  ['Brume', 'Poète', 'Observateur'],
+  ['Flamme', 'Têtu', 'Explorateur'],
+] as const;
+
+function hashSeed(input: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash >>> 0);
+}
+
+function pick<T>(items: readonly T[], seed: number, salt: number): T {
+  return items[(seed + salt * 97) % items.length]!;
+}
+
+/** Varied mock analysis when OpenAI is unavailable — always has breed/color/name/traits. */
+function buildFallbackAnalysis(seedInput: string) {
+  const seed = hashSeed(seedInput || 'fallback');
+  const color = pick(COLORS, seed, 1);
+  const breed = pick(BREEDS, seed, 2);
+  const coat = pick(COATS, seed, 3);
+  const eyes = pick(EYES, seed, 4);
+  const size = pick(SIZES, seed, 5);
+  const gender = pick(GENDERS, seed, 6);
+  const suggestedName = pick(NAMES, seed, 7);
+  const tags = [...pick(TAG_SETS, seed, 8)];
+  return {
+    color,
+    breed,
+    coat,
+    eyes,
+    size,
+    gender,
+    tags,
+    suggestedName,
+    description: `Un chat ${color.toLowerCase()} de type ${breed}, air ${tags[0]!.toLowerCase()}. ${suggestedName} a été repéré dans le quartier — prêt à rejoindre ton CatDex.`,
+  };
+}
 
 type AnalysisJson = {
   color?: string;
@@ -89,17 +176,45 @@ function normalizeTags(tags?: string[] | string) {
   return undefined;
 }
 
-function normalizeAnalysis(json: AnalysisJson) {
+function normalizeAnalysis(json: AnalysisJson, seedInput: string) {
+  const description = json.description?.trim() || '';
+  const breedRaw = json.breed?.trim() || '';
+  const noCat =
+    /aucun chat/i.test(description) ||
+    (breedRaw.toLowerCase() === 'inconnu' && !(json.suggestedName ?? '').trim());
+
+  if (noCat) {
+    return {
+      color: json.color?.trim() || 'Indéterminée',
+      breed: 'Inconnu',
+      coat: json.coat?.trim() || 'Indéterminée',
+      description: description || 'Aucun chat clairement visible sur cette photo.',
+      suggestedName: '',
+      gender: 'unknown' as const,
+      eyes: json.eyes?.trim() || undefined,
+      size: json.size?.trim() || undefined,
+      tags: [] as string[],
+    };
+  }
+
+  const fallback = buildFallbackAnalysis(seedInput);
+  const color = json.color?.trim() || fallback.color;
+  const breed = json.breed?.trim() || fallback.breed;
+  const coat = json.coat?.trim() || fallback.coat;
+  const suggestedName = json.suggestedName?.trim() || fallback.suggestedName;
+  const tags = normalizeTags(json.tags) ?? fallback.tags;
   return {
-    color: json.color?.trim() || 'Inconnue',
-    breed: json.breed?.trim() || 'Indéterminée',
-    coat: json.coat?.trim() || 'Indéterminée',
-    description: json.description?.trim() || 'Chat découvert dans la rue.',
-    suggestedName: json.suggestedName?.trim() || undefined,
+    color,
+    breed,
+    coat,
+    description:
+      description ||
+      `Un chat ${color.toLowerCase()} de type ${breed}. ${suggestedName} rejoint ton CatDex.`,
+    suggestedName,
     gender: normalizeGender(json.gender),
-    eyes: json.eyes?.trim() || undefined,
-    size: json.size?.trim() || undefined,
-    tags: normalizeTags(json.tags),
+    eyes: json.eyes?.trim() || fallback.eyes,
+    size: json.size?.trim() || fallback.size,
+    tags,
   };
 }
 
@@ -145,6 +260,7 @@ app.post('/analyze-cat', async (c) => {
   }
 
   let { imageBase64, mimeType } = stripDataUrl(parsed.data.imageBase64, parsed.data.mimeType);
+  const analysisSeed = imageBase64.slice(0, 1200);
 
   const normalizedMime = mimeType.toLowerCase();
   if (
@@ -155,7 +271,7 @@ app.post('/analyze-cat', async (c) => {
     // Always 200 + analysis when mocking — Cloudflare quick tunnels strip non-200 bodies.
     return c.json({
       error: 'Format image non supporté. Utilise JPEG ou PNG.',
-      analysis: fallbackAnalysis,
+      analysis: buildFallbackAnalysis(analysisSeed),
       mocked: true,
     });
   }
@@ -166,7 +282,7 @@ app.post('/analyze-cat', async (c) => {
   if (keyLooksPlaceholder(apiKey)) {
     const cutoutBase64 = await cutoutPromise;
     return c.json({
-      analysis: fallbackAnalysis,
+      analysis: buildFallbackAnalysis(analysisSeed),
       mocked: true,
       cutoutBase64: cutoutBase64 ?? undefined,
       cutoutMimeType: cutoutBase64 ? 'image/png' : undefined,
@@ -186,18 +302,18 @@ app.post('/analyze-cat', async (c) => {
             content: [
               'Tu es le naturaliste urbain de CatDex.',
               'Tu analyses UNIQUEMENT des photos de chats (ou clairement dominées par un chat).',
-              'Réponds uniquement en JSON valide avec les clés:',
-              'color (couleur principale, ex: "Noir", "Roux tigré"),',
-              'breed (race ou type probable, ex: "Européen", "Siamois"),',
+              'Réponds uniquement en JSON valide avec TOUTES les clés suivantes (aucune ne doit être vide si un chat est visible):',
+              'color (couleur principale OBLIGATOIRE, ex: "Noir", "Roux tigré", "Gris"),',
+              'breed (race ou type probable OBLIGATOIRE, ex: "Européen", "Siamois", "Maine Coon"),',
               'coat (longueur/type de poil, ex: "Court", "Long"),',
               'eyes (couleur des yeux, ex: "Ambre", "Verts"),',
               'size (Petite | Moyenne | Grande),',
               'gender (male | female | unknown),',
-              'tags (tableau de 2 à 3 mots d’ambiance, ex: ["Ombre","Mystère"]),',
+              'tags (tableau de 2 à 3 mots d’ambiance OBLIGATOIRE, ex: ["Ombre","Mystère","Vif"]),',
               'description (2 phrases max, ton chaleureux, français, sans inventer de lieux),',
-              'suggestedName (un seul prénom court et mignon adapté à l’apparence).',
+              'suggestedName (OBLIGATOIRE: un seul prénom court et mignon adapté à l’apparence, ex: "Nori", "Caramel").',
               'Si la photo ne montre pas de chat, mets breed="Inconnu", color="Indéterminée",',
-              'description="Aucun chat clairement visible sur cette photo.", suggestedName="".',
+              'description="Aucun chat clairement visible sur cette photo.", suggestedName="", tags=[].',
             ].join(' '),
           },
           {
@@ -205,7 +321,7 @@ app.post('/analyze-cat', async (c) => {
             content: [
               {
                 type: 'text',
-                text: 'Analyse ce chat pour le CatDex.',
+                text: 'Analyse ce chat pour le CatDex. Donne couleur, race, traits et un prénom.',
               },
               {
                 type: 'image_url',
@@ -224,7 +340,7 @@ app.post('/analyze-cat', async (c) => {
     const json = JSON.parse(raw) as AnalysisJson;
 
     return c.json({
-      analysis: normalizeAnalysis(json),
+      analysis: normalizeAnalysis(json, analysisSeed),
       mocked: false,
       cutoutBase64: cutoutBase64 ?? undefined,
       cutoutMimeType: cutoutBase64 ? 'image/png' : undefined,
@@ -235,7 +351,7 @@ app.post('/analyze-cat', async (c) => {
     // Prefer 200 so public tunnels (Cloudflare) do not replace the JSON body.
     return c.json({
       error: 'Échec analyse OpenAI',
-      analysis: fallbackAnalysis,
+      analysis: buildFallbackAnalysis(analysisSeed),
       mocked: true,
       cutoutBase64: cutoutBase64 ?? undefined,
       cutoutMimeType: cutoutBase64 ? 'image/png' : undefined,
