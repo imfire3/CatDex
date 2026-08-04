@@ -1,4 +1,4 @@
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Badge } from '@/components/Badge';
@@ -21,7 +21,7 @@ type Props = {
 
 /**
  * Post-capture reveal — white centered layout from CatDex mock.
- * "NOUVEAU CATDEX" · #NNN · photo · name · trait pills · description · CTAs
+ * "NOUVEAU CATDEX" · #NNN · photo · name · trait pills · description · sticky CTA
  */
 export function CaptureReveal({
   name,
@@ -31,12 +31,16 @@ export function CaptureReveal({
   onAdd,
   onRetake,
 }: Props) {
-  const { colors, fonts, spacing, radius, scheme } = useTheme();
+  const { colors, fonts, spacing, radius, scheme, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const analysis = enrichAnalysis(rawAnalysis, number);
   const theme = themeFromColorLabel(analysis.color, number);
   const soft = themeSoft(theme, scheme);
   const dexLabel = formatDexNumber(number);
+  const footerPadBottom = Math.max(insets.bottom, spacing[16]);
+  // Button 56 + retake row + gaps + footer padding
+  const footerReserve =
+    spacing[56] + spacing[16] + spacing[40] + spacing[16] + footerPadBottom;
 
   const pills = [
     analysis.tags?.[0],
@@ -47,13 +51,14 @@ export function CaptureReveal({
   const uniquePills = [...new Set(pills)].slice(0, 3);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={{
           flexGrow: 1,
           paddingTop: insets.top + spacing[32],
           paddingHorizontal: spacing[24],
-          paddingBottom: insets.bottom + spacing[24],
+          paddingBottom: footerReserve + spacing[24],
           alignItems: 'center',
         }}
         showsVerticalScrollIndicator={false}
@@ -143,35 +148,63 @@ export function CaptureReveal({
           align="center"
           style={{
             paddingHorizontal: spacing[8],
-            marginBottom: spacing[32],
             fontFamily: fonts.body,
           }}
         >
           {analysis.description}
         </Text>
-
-        <View style={{ width: '100%', marginTop: 'auto', gap: spacing[16] }}>
-          <Button title="Ajouter à ma collection" onPress={onAdd} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Reprendre la photo"
-            onPress={onRetake}
-            style={({ pressed }) => ({
-              alignItems: 'center',
-              paddingVertical: spacing[8],
-              opacity: pressed ? 0.7 : 1,
-            })}
-          >
-            <Text
-              variant="body"
-              color="textBrand"
-              style={{ fontFamily: fonts.bodySemi }}
-            >
-              Reprendre la photo
-            </Text>
-          </Pressable>
-        </View>
       </ScrollView>
+
+      <View
+        style={[
+          styles.footer,
+          {
+            paddingHorizontal: spacing[24],
+            paddingTop: spacing[16],
+            paddingBottom: footerPadBottom,
+            backgroundColor: colors.background,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: colors.border,
+            gap: spacing[8],
+          },
+          shadow.low,
+        ]}
+      >
+        <Button title="Ajouter à ma collection" onPress={onAdd} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Reprendre la photo"
+          onPress={onRetake}
+          style={({ pressed }) => ({
+            alignItems: 'center',
+            paddingVertical: spacing[8],
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text
+            variant="body"
+            color="textBrand"
+            style={{ fontFamily: fonts.bodySemi }}
+          >
+            Reprendre la photo
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+});
