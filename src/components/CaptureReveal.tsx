@@ -80,16 +80,14 @@ export function CaptureReveal({
           style={[
             {
               width: '100%',
-              maxWidth: 320,
               aspectRatio: 1,
-              borderRadius: radius.cta,
-              borderWidth: 2,
-              borderColor: soft,
-              backgroundColor: colors.surface,
+              borderRadius: radius[8],
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.surfaceElevated,
               overflow: 'hidden',
               marginBottom: spacing[24],
             },
-            shadow.low,
           ]}
         >
           <View

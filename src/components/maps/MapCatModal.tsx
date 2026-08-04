@@ -1,5 +1,6 @@
-import { Image, Modal as RNModal, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
@@ -19,7 +20,9 @@ type Props = {
   onGoThere: () => void;
 };
 
-/** Centered preview when tapping a map cat pin. */
+/**
+ * Full-screen cat preview from the map — same canvas background as the app.
+ */
 export function MapCatModal({
   visible,
   cat,
@@ -29,7 +32,7 @@ export function MapCatModal({
   onViewCard,
   onGoThere,
 }: Props) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, fonts, spacing, radius, iconStroke, motion } = useTheme();
   const insets = useSafeAreaInsets();
 
   if (!cat) return null;
@@ -40,60 +43,97 @@ export function MapCatModal({
   return (
     <RNModal
       visible={visible}
-      transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
       accessibilityViewIsModal
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Fermer"
-        onPress={onClose}
-        style={[
-          styles.backdrop,
-          {
-            backgroundColor: colors.overlay,
-            paddingTop: insets.top + spacing[24],
-            paddingBottom: insets.bottom + spacing[24],
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <View
+          style={{
+            paddingTop: insets.top + spacing[8],
             paddingHorizontal: spacing[24],
-          },
-        ]}
-      >
-        <Pressable
-          accessibilityRole="none"
-          accessibilityLabel={`Fiche ${cat.name}`}
-          onPress={(event) => event.stopPropagation()}
-          style={[
-            styles.card,
-            {
+            paddingBottom: spacing[8],
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: colors.background,
+          }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
+            onPress={onClose}
+            style={({ pressed }) => ({
+              width: spacing[40],
+              height: spacing[40],
+              borderRadius: radius[8],
               backgroundColor: colors.surfaceElevated,
-              borderRadius: radius.cta,
               borderWidth: 1,
               borderColor: colors.border,
-              padding: spacing[24],
-              gap: spacing[16],
-            },
-            shadow.floating,
-          ]}
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? motion.pressScale : 1 }],
+            })}
+          >
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M15 18 9 12l6-6"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </Pressable>
+
+          <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+            CatDex
+          </Text>
+
+          <View style={{ width: spacing[40], height: spacing[40] }} />
+        </View>
+
+        <ScrollView
+          style={{ flex: 1, backgroundColor: colors.background }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingHorizontal: spacing[24],
+            paddingBottom: insets.bottom + spacing[24],
+            gap: spacing[24],
+          }}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={{ alignItems: 'center' }}>
+          <View
+            style={{
+              width: '100%',
+              aspectRatio: 1,
+              borderRadius: radius[8],
+              backgroundColor: colors.surfaceSecondary,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <Image
               source={captured && cat.photoUri ? { uri: cat.photoUri } : POLITE_CAT_PIN}
-              style={{
-                width: spacing[96] + spacing[16],
-                height: spacing[96] + spacing[16],
-                borderRadius: captured ? radius.cta : 0,
-                backgroundColor: colors.surfaceSecondary,
-              }}
+              style={{ width: '100%', height: '100%' }}
               resizeMode={captured ? 'cover' : 'contain'}
+              accessibilityLabel={captured ? `Photo de ${cat.name}` : 'Chat mystère'}
             />
           </View>
 
-          <View style={{ gap: spacing[4], alignItems: 'center' }}>
-            <Text variant="h2" color="textBrand" align="center" style={{ fontFamily: fonts.display }}>
+          <View style={{ gap: spacing[8], width: '100%' }}>
+            <Text
+              variant="h2"
+              color="textBrand"
+              style={{ fontFamily: fonts.display }}
+            >
               {captured ? cat.name : 'Chat mystère'}
             </Text>
-            <Text variant="bodySmall" color="textSecondary" align="center">
+            <Text variant="bodySmall" color="textSecondary">
               {captured
                 ? `${cat.analysis.breed} · ${cat.analysis.color}`
                 : 'Pas encore capturé'}
@@ -102,36 +142,32 @@ export function MapCatModal({
           </View>
 
           {captured ? (
-            <Text variant="body" color="textBody" align="center" numberOfLines={3}>
+            <Text variant="body" color="textBody">
               {cat.analysis.description}
             </Text>
           ) : (
-            <Text variant="bodySmall" color="textSecondary" align="center">
+            <Text variant="body" color="textSecondary">
               Approche-toi et photographie-le pour l’ajouter à ton CatDex.
             </Text>
           )}
 
-          {captured ? (
-            <Button title="Voir la fiche" onPress={onViewCard} />
-          ) : (
-            <Button title="J’y vais" onPress={onGoThere} />
-          )}
-
-          <Button title="Fermer" variant="ghost" onPress={onClose} />
-        </Pressable>
-      </Pressable>
+          <View style={{ marginTop: 'auto', width: '100%', gap: spacing[8] }}>
+            {captured ? (
+              <Button title="Voir la fiche" onPress={onViewCard} />
+            ) : (
+              <Button title="J’y vais" onPress={onGoThere} />
+            )}
+            <Button title="Retour" variant="secondary" onPress={onClose} />
+          </View>
+        </ScrollView>
+      </View>
     </RNModal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  root: {
     flex: 1,
-    justifyContent: 'center',
-  },
-  card: {
     width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
   },
 });

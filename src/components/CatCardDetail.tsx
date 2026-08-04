@@ -7,6 +7,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
+import { formatDexNumber } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
 import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -66,7 +67,7 @@ function StarRow({ filled }: { filled: number }) {
     >
       {Array.from({ length: 5 }, (_, index) => {
         const isFilled = index < count;
-        const tone = isFilled ? colors.text : colors.brandSoft;
+        const tone = isFilled ? colors.brand : colors.brandSoft;
         return (
           <Svg key={index} width={18} height={18} viewBox="0 0 19 18" fill="none">
             <Path
@@ -83,7 +84,7 @@ function StarRow({ filled }: { filled: number }) {
   );
 }
 
-function WhiteBlock({
+function InfoSection({
   title,
   body,
   children,
@@ -92,21 +93,10 @@ function WhiteBlock({
   body?: string;
   children?: ReactNode;
 }) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { fonts, spacing } = useTheme();
   return (
-    <View
-      style={[
-        {
-          width: '100%',
-          padding: spacing[16],
-          borderRadius: radius.cta,
-          backgroundColor: colors.surface,
-          gap: spacing[4],
-        },
-        shadow.low,
-      ]}
-    >
-      <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
+    <View style={{ width: '100%', gap: spacing[4] }}>
+      <Text variant="body" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
         {title}
       </Text>
       {body ? (
@@ -119,28 +109,27 @@ function WhiteBlock({
   );
 }
 
-function TraitStatCard({ label, value }: { label: string; value: string }) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+function TraitStat({ label, value }: { label: string; value: string }) {
+  const { colors, fonts, spacing, radius } = useTheme();
   return (
     <View
       accessibilityRole="text"
       accessibilityLabel={`${label}: ${value}`}
-      style={[
-        {
-          flex: 1,
-          minWidth: '40%',
-          padding: spacing[16],
-          borderRadius: radius.cta,
-          backgroundColor: colors.surface,
-          gap: spacing[4],
-        },
-        shadow.low,
-      ]}
+      style={{
+        flex: 1,
+        minWidth: '40%',
+        padding: spacing[16],
+        borderRadius: radius[8],
+        backgroundColor: colors.surfaceElevated,
+        borderWidth: 1,
+        borderColor: colors.border,
+        gap: spacing[4],
+      }}
     >
-      <Text variant="bodySmall" color="text" style={{ fontFamily: fonts.bodySemi }}>
+      <Text variant="caption" color="textSecondary" style={{ fontFamily: fonts.bodySemi }}>
         {label}
       </Text>
-      <Text variant="body" color="textSecondary" numberOfLines={1}>
+      <Text variant="body" color="textBrand" numberOfLines={1} style={{ fontFamily: fonts.bodySemi }}>
         {value}
       </Text>
     </View>
@@ -152,7 +141,7 @@ function PillRow({
   tone = 'brand',
 }: {
   items: string[];
-  tone?: 'brand' | 'mixed' | 'dark';
+  tone?: 'brand' | 'soft' | 'mixed';
 }) {
   const { colors, spacing } = useTheme();
   if (items.length === 0) return null;
@@ -162,10 +151,12 @@ function PillRow({
       {items.map((label, index) => {
         let backgroundColor = colors.brand;
         let color = colors.onBrand;
-        if (tone === 'dark') {
-          backgroundColor = colors.text;
+        if (tone === 'soft') {
+          backgroundColor = colors.brandSoft;
+          color = colors.brand;
         } else if (tone === 'mixed') {
-          backgroundColor = index === 0 ? colors.text : colors.brand;
+          backgroundColor = index === 0 ? colors.brand : colors.brandSoft;
+          color = index === 0 ? colors.onBrand : colors.brand;
         }
         return (
           <Badge
@@ -181,7 +172,7 @@ function PillRow({
 }
 
 /**
- * Cat fiche — lavender sheet, stars, identity, white info blocks, traits & stats.
+ * Cat fiche — full-screen app canvas (same background as the rest of CatDex).
  */
 export function CatCardDetail({
   name,
@@ -197,7 +188,7 @@ export function CatCardDetail({
   secondaryLabel,
   onSecondaryAction,
 }: CatCardDetailProps) {
-  const { colors, fonts, spacing, radius, shadow, iconStroke, scheme, motion } = useTheme();
+  const { colors, fonts, spacing, radius, iconStroke, scheme, motion } = useTheme();
   const insets = useSafeAreaInsets();
   const analysis = enrichAnalysis(rawAnalysis, number);
   const theme = themeFromColorLabel(analysis.color, number);
@@ -215,196 +206,177 @@ export function CatCardDetail({
   const hasFooterActions = Boolean(primaryLabel && onPrimaryAction);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.text }}>
-      {/* Top chrome */}
+    <View style={{ flex: 1, width: '100%', backgroundColor: colors.background }}>
       <View
         style={{
           paddingTop: insets.top + spacing[8],
-          paddingHorizontal: spacing[16],
+          paddingHorizontal: spacing[24],
           paddingBottom: spacing[8],
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
+          backgroundColor: colors.background,
         }}
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Fermer"
+          accessibilityLabel="Retour"
           onPress={onBack}
           style={({ pressed }) => ({
             width: spacing[40],
             height: spacing[40],
+            borderRadius: radius[8],
+            backgroundColor: colors.surfaceElevated,
+            borderWidth: 1,
+            borderColor: colors.border,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: pressed ? 0.7 : 1,
+            opacity: pressed ? 0.85 : 1,
             transform: [{ scale: pressed ? motion.pressScale : 1 }],
           })}
         >
-          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
             <Path
-              d="M6 6l12 12M18 6 6 18"
-              stroke={colors.onBrand}
+              d="M15 18 9 12l6-6"
+              stroke={colors.brand}
               strokeWidth={iconStroke.regular}
               strokeLinecap="round"
+              strokeLinejoin="round"
             />
           </Svg>
         </Pressable>
 
-        <Text
-          variant="bodySmall"
-          style={{ fontFamily: fonts.bodySemi, color: colors.onBrand }}
-        >
+        <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
           CatDex
         </Text>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Plus d’actions"
-          onPress={() => undefined}
-          style={({ pressed }) => ({
-            width: spacing[40],
-            height: spacing[40],
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M5 12h.01M12 12h.01M19 12h.01"
-              stroke={colors.onBrand}
-              strokeWidth={3}
-              strokeLinecap="round"
-            />
-          </Svg>
-        </Pressable>
+        <View style={{ width: spacing[40], height: spacing[40] }} />
       </View>
 
       <ScrollView
+        style={{ flex: 1, width: '100%', backgroundColor: colors.background }}
         contentContainerStyle={{
-          paddingHorizontal: spacing[16],
+          flexGrow: 1,
+          width: '100%',
+          paddingHorizontal: spacing[24],
+          paddingTop: spacing[8],
           paddingBottom:
             insets.bottom + spacing[32] + (hasFooterActions ? spacing[96] : spacing[16]),
+          gap: spacing[24],
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={[
-            {
-              backgroundColor: soft,
-              borderRadius: radius.cta,
-              padding: spacing[24],
-              gap: spacing[24],
-              overflow: 'hidden',
-            },
-            shadow.medium,
-          ]}
-        >
+        <View style={{ gap: spacing[8] }}>
+          <Text variant="label" color="textMuted">
+            {formatDexNumber(number)}
+          </Text>
           <StarRow filled={stars} />
+        </View>
+
+        <View
+          style={{
+            width: '100%',
+            aspectRatio: 1,
+            borderRadius: radius[8],
+            backgroundColor: soft,
+            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          {showPhoto ? (
+            <Image
+              source={{ uri: photoUri! }}
+              resizeMode="cover"
+              style={{ width: '100%', height: '100%' }}
+              accessibilityLabel={`Photo de ${name}`}
+            />
+          ) : (
+            <CatSprite colorLabel={analysis.color} seed={number} size={200} />
+          )}
+        </View>
+
+        <View style={{ gap: spacing[8], width: '100%' }}>
+          {gender ? (
+            <Badge
+              label={gender.toUpperCase()}
+              color={colors.onBrand}
+              backgroundColor={colors.brand}
+            />
+          ) : null}
 
           <View
             style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
               alignItems: 'center',
-              justifyContent: 'center',
-              height: spacing[96] * 2,
+              gap: spacing[8],
             }}
           >
-            {showPhoto ? (
-              <Image
-                source={{ uri: photoUri! }}
-                resizeMode="contain"
-                style={{ width: '100%', height: '100%' }}
-                accessibilityLabel={`Photo de ${name}`}
-              />
-            ) : (
-              <CatSprite colorLabel={analysis.color} seed={number} size={200} />
-            )}
-          </View>
-
-          <View style={{ gap: spacing[8] }}>
-            {gender ? (
-              <Badge
-                label={gender.toUpperCase()}
-                color={colors.onBrand}
-                backgroundColor={colors.brand}
-              />
-            ) : null}
-
-            <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                gap: spacing[8],
-              }}
+            <Text
+              variant="h2"
+              color="textBrand"
+              style={{ fontFamily: fonts.display, textTransform: 'uppercase' }}
             >
-              <Text
-                variant="h2"
-                color="text"
-                style={{ fontFamily: fonts.display, textTransform: 'uppercase' }}
-              >
-                {name}
+              {name}
+            </Text>
+            {symbol ? (
+              <Text variant="body" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+                {symbol}
               </Text>
-              {symbol ? (
-                <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
-                  {symbol}
-                </Text>
-              ) : null}
-              <Text variant="bodySmall" color="textSecondary">
-                {ageYears} ans
-              </Text>
-            </View>
-
-            <PillRow
-              items={[analysis.color, analysis.breed].filter(Boolean)}
-              tone="mixed"
-            />
+            ) : null}
+            <Text variant="bodySmall" color="textSecondary">
+              {ageYears} ans
+            </Text>
           </View>
 
+          <PillRow
+            items={[analysis.color, analysis.breed].filter(Boolean)}
+            tone="mixed"
+          />
+        </View>
+
+        <View style={{ gap: spacing[16], width: '100%' }}>
+          <InfoSection title="Description" body={analysis.description} />
+          <InfoSection
+            title="Emplacement"
+            body={`${locationLabel} · ${formatPlaceDate(discoveredAt)}`}
+          />
+        </View>
+
+        <View style={{ gap: spacing[16], width: '100%' }}>
+          <Text variant="h3" color="textBrand">
+            Caractéristiques
+          </Text>
           <View style={{ gap: spacing[8] }}>
-            <WhiteBlock title="Description" body={analysis.description} />
-            <WhiteBlock
-              title="Emplacement"
-              body={`${locationLabel} · ${formatPlaceDate(discoveredAt)}`}
-            />
-          </View>
-
-          <View style={{ gap: spacing[16] }}>
-            <Text variant="h3" color="text">
-              Caractéristiques
-            </Text>
-            <View style={{ gap: spacing[8] }}>
-              <View style={{ flexDirection: 'row', gap: spacing[8] }}>
-                <TraitStatCard label="Couleur" value={analysis.color} />
-                <TraitStatCard label="Yeux" value={analysis.eyes ?? '—'} />
-              </View>
-              <View style={{ flexDirection: 'row', gap: spacing[8] }}>
-                <TraitStatCard label="Pelage" value={analysis.coat} />
-                <TraitStatCard label="Taille" value={analysis.size ?? '—'} />
-              </View>
+            <View style={{ flexDirection: 'row', gap: spacing[8] }}>
+              <TraitStat label="Couleur" value={analysis.color} />
+              <TraitStat label="Yeux" value={analysis.eyes ?? '—'} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: spacing[8] }}>
+              <TraitStat label="Pelage" value={analysis.coat} />
+              <TraitStat label="Taille" value={analysis.size ?? '—'} />
             </View>
           </View>
+        </View>
 
-          <View style={{ gap: spacing[16] }}>
-            <Text variant="h3" color="text">
-              Traits
-            </Text>
-            <PillRow items={traitTags.slice(0, 3)} tone="dark" />
-          </View>
+        <View style={{ gap: spacing[16], width: '100%' }}>
+          <Text variant="h3" color="textBrand">
+            Traits
+          </Text>
+          <PillRow items={traitTags.slice(0, 3)} tone="soft" />
+        </View>
 
-          <View style={{ gap: spacing[16] }}>
-            <Text variant="h3" color="text">
-              Stats
-            </Text>
-            <PillRow
-              items={[
-                `${likesPct}% de j’aime`,
-                `Vu ${views} fois`,
-                'Capturé',
-              ]}
-              tone="brand"
-            />
-          </View>
+        <View style={{ gap: spacing[16], width: '100%', paddingBottom: spacing[8] }}>
+          <Text variant="h3" color="textBrand">
+            Stats
+          </Text>
+          <PillRow
+            items={[`${likesPct}% de j’aime`, `Vu ${views} fois`, 'Capturé']}
+            tone="brand"
+          />
         </View>
       </ScrollView>
 
@@ -415,10 +387,13 @@ export function CatCardDetail({
             left: 0,
             right: 0,
             bottom: 0,
+            width: '100%',
             paddingHorizontal: spacing[24],
             paddingTop: spacing[16],
             paddingBottom: Math.max(insets.bottom, spacing[16]),
-            backgroundColor: colors.text,
+            backgroundColor: colors.background,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
             gap: spacing[8],
           }}
         >
