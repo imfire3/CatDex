@@ -41,7 +41,7 @@ import type { CatAnalysis } from '@/types/cat';
 type Step = 'camera' | 'analyzing' | 'review' | 'reveal' | 'problem';
 
 /** Keep the analysis loading screen visible long enough to read the checklist. */
-const MIN_ANALYSIS_MS = 2800;
+const MIN_ANALYSIS_MS = 4800;
 
 const FLASH_CYCLE: FlashMode[] = ['auto', 'on', 'off'];
 const FLASH_LABELS: Record<FlashMode, string> = {
