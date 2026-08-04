@@ -96,8 +96,8 @@ export const rarityTokens: Record<
   },
 };
 
-export function themeFromColorLabel(label: string, seed = 0): CatTheme {
-  const text = label.toLowerCase();
+export function themeFromColorLabel(label?: string | null, seed = 0): CatTheme {
+  const text = (label ?? '').toLowerCase();
   if (
     text.includes('orange') ||
     text.includes('roux') ||

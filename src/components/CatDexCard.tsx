@@ -1,5 +1,6 @@
 /**
  * Collection tile — photo, favorite, rarity badge.
+ * Opens the full cat fiche on press.
  */
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
@@ -13,7 +14,7 @@ import {
   resolveRevealRarity,
   themeFromColorLabel,
 } from '@/lib/catTheme';
-import { genderSymbol } from '@/lib/catTraits';
+import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -26,19 +27,20 @@ type Props = {
 
 export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite }: Props) {
   const { colors, fonts, spacing, radius, shadow, iconStroke, motion } = useTheme();
-  const theme = themeFromColorLabel(cat.analysis.color, cat.number);
+  const analysis = enrichAnalysis(cat.analysis, cat.number);
+  const theme = themeFromColorLabel(analysis.color, cat.number);
   const [photoFailed, setPhotoFailed] = useState(false);
   // blob: URIs die after web reload — skip and show sprite until the cat is re-scanned.
   const canShowPhoto =
     Boolean(cat.photoUri) && !photoFailed && !cat.photoUri.startsWith('blob:');
-  const rarityId = resolveRevealRarity(cat.analysis, cat.number);
+  const rarityId = resolveRevealRarity(analysis, cat.number);
   const rarity = rarityTokens[rarityId];
-  const gender = genderSymbol(cat.analysis.gender);
+  const gender = genderSymbol(analysis.gender);
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={cat.name}
+      accessibilityLabel={`Voir la fiche de ${cat.name}`}
       onPress={onPress}
       style={({ pressed }) => [
         {
@@ -46,6 +48,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
           borderRadius: radius.cta,
           backgroundColor: colors.surfaceElevated,
           overflow: 'hidden',
+          cursor: 'pointer',
           transform: [{ scale: pressed ? motion.cardPressScale : 1 }],
         },
         shadow.low,
@@ -69,7 +72,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
             onError={() => setPhotoFailed(true)}
           />
         ) : (
-          <CatSprite colorLabel={cat.analysis.color} seed={cat.number} size={112} />
+          <CatSprite colorLabel={analysis.color} seed={cat.number} size={112} />
         )}
 
         {onToggleFavorite ? (
@@ -78,13 +81,15 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
             accessibilityLabel={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             hitSlop={8}
             onPress={(event) => {
-              event.stopPropagation();
+              // Prevent opening the fiche when tapping the heart (web + native).
+              event?.stopPropagation?.();
               onToggleFavorite();
             }}
             style={({ pressed }) => ({
               position: 'absolute',
               top: spacing[8],
               right: spacing[8],
+              zIndex: 2,
               width: spacing[32],
               height: spacing[32],
               borderRadius: radius.full,

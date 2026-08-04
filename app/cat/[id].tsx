@@ -1,13 +1,20 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, useMemo, type ErrorInfo, type ReactNode } from 'react';
 
 import { CatCardDetail } from '@/components/CatCardDetail';
+import { PageLoading } from '@/components/Loader';
 import { ProblemState } from '@/components/ProblemState';
+import { enrichAnalysis } from '@/lib/catTraits';
 import { useCatsStore } from '@/store/cats';
 
 function goBackFromCat() {
   if (router.canGoBack()) router.back();
   else router.replace('/(tabs)/catdex');
+}
+
+function resolveParamId(raw: string | string[] | undefined): string | undefined {
+  if (Array.isArray(raw)) return raw[0];
+  return raw;
 }
 
 type BoundaryProps = { children: ReactNode };
@@ -44,16 +51,37 @@ class CatDetailErrorBoundary extends Component<BoundaryProps, BoundaryState> {
 }
 
 export default function CatDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const cat = useCatsStore((state) => state.cats.find((item) => item.id === id));
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const id = resolveParamId(params.id);
+  const hydrated = useCatsStore((state) => state.hydrated);
+  const cats = useCatsStore((state) => state.cats);
   const incrementViews = useCatsStore((state) => state.incrementViews);
+
+  const cat = useMemo(
+    () => (id ? cats.find((item) => item.id === id) : undefined),
+    [cats, id],
+  );
+
+  const analysis = useMemo(
+    () => (cat ? enrichAnalysis(cat.analysis, cat.number) : null),
+    [cat],
+  );
 
   useEffect(() => {
     if (!id || !cat) return;
     incrementViews(id);
-  }, [id, cat, incrementViews]);
+  }, [id, cat?.id, incrementViews]);
 
-  if (!id || !cat) {
+  if (!hydrated) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <PageLoading label="Chargement du CatDex…" />
+      </>
+    );
+  }
+
+  if (!id || !cat || !analysis) {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
@@ -74,7 +102,7 @@ export default function CatDetailScreen() {
         name={cat.name}
         number={cat.number}
         photoUri={cat.photoUri}
-        analysis={cat.analysis}
+        analysis={analysis}
         discoveredAt={cat.discoveredAt}
         views={cat.views}
         onBack={goBackFromCat}
