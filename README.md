@@ -41,7 +41,29 @@ Sans clé OpenAI, l'API renvoie une analyse mock pour pouvoir tester le flow.
 
 ```bash
 npm install
+cp .env.example .env   # puis colle ta clé anon Supabase
 npm start
+```
+
+### Simulateur iOS (Mac)
+
+Prérequis : **Xcode** (App Store) + un iPhone Simulator + **Node 20+**.
+
+```bash
+git pull origin main
+npm install
+cp .env.example .env   # si besoin — renseigne EXPO_PUBLIC_SUPABASE_ANON_KEY
+npm run ios:sim
+```
+
+Ça démarre le Simulator, installe Expo Go (SDK 54) si possible, puis Metro.
+Dans le terminal Expo : `i` = rouvrir iOS · `r` = reload · `shift+m` = menu.
+
+Sans script :
+
+```bash
+open -a Simulator
+npx expo start --ios --go --clear
 ```
 
 Sur un **appareil physique**, pointe l'API vers ton Mac :
@@ -115,7 +137,10 @@ catdex/
 # Démarrer l'app
 npm start
 
-# Démarrer sur iOS
+# Démarrer sur iOS (simulateur Mac)
+npm run ios:sim
+
+# Expo iOS classique
 npm run ios
 
 # Démarrer sur Android
