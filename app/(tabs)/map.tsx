@@ -305,7 +305,7 @@ export default function MapScreen() {
         onViewCard={() => {
           if (!selected) return;
           setSheetVisible(false);
-          router.push(`/cat/${selected.id}`);
+          router.push({ pathname: '/cat/[id]', params: { id: selected.id } });
         }}
         onGoThere={() => {
           if (!selected) return;
