@@ -252,7 +252,15 @@ export default function ScannerScreen() {
         exif: false,
         shutterSound: false,
       });
-      if (!photo?.uri || !photo.base64) {
+      const rawBase64 =
+        photo?.base64 ??
+        (typeof photo?.uri === 'string' && photo.uri.includes('base64,')
+          ? photo.uri.split('base64,')[1]
+          : null);
+      const photoUri =
+        photo?.uri ??
+        (rawBase64 ? `data:image/jpeg;base64,${rawBase64}` : null);
+      if (!photoUri || !rawBase64) {
         showToast({
           title: 'Capture impossible',
           description: 'Réessaie ou choisis une photo dans la galerie.',
@@ -260,11 +268,11 @@ export default function ScannerScreen() {
         });
         return;
       }
-      setPhotoUri(photo.uri);
-      setPhotoBase64(photo.base64);
+      setPhotoUri(photoUri);
+      setPhotoBase64(rawBase64);
       setStep('analyzing');
       setAnalyzing(true);
-      void runAnalysis(photo.base64, photo.uri, 'image/jpeg');
+      void runAnalysis(rawBase64, photoUri, 'image/jpeg');
     } catch (error) {
       showToast({
         title: 'Capture impossible',
@@ -526,7 +534,6 @@ export default function ScannerScreen() {
     setFacing((current) => (current === 'back' ? 'front' : 'back'));
   };
 
-  const supportsLiveCamera = true;
   const showFlashControls = Platform.OS !== 'web';
   const scanFrameSize = spacing[96] * 2 + spacing[32];
   const cameraControlSize = spacing[48];
