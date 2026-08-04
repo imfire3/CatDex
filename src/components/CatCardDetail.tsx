@@ -1,15 +1,17 @@
 import { useState, type ReactNode } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
 import { formatDexNumber } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
 import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
+import { isCatPhotoRef } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { CatAnalysis } from '@/types/cat';
 
@@ -203,7 +205,11 @@ export function CatCardDetail({
     Boolean(photoUri) &&
     !photoFailed &&
     !photoUri!.startsWith('demo') &&
-    !photoUri!.startsWith('blob:');
+    !photoUri!.startsWith('blob:') &&
+    (isCatPhotoRef(photoUri) ||
+      photoUri!.startsWith('data:') ||
+      photoUri!.startsWith('http') ||
+      photoUri!.startsWith('file:'));
   const traitTags =
     analysis.tags && analysis.tags.length > 0
       ? analysis.tags
@@ -291,17 +297,16 @@ export function CatCardDetail({
             borderColor: colors.border,
           }}
         >
+          <CatSprite colorLabel={analysis.color} seed={number} size={200} />
           {showPhoto ? (
-            <Image
-              source={{ uri: photoUri! }}
+            <CatImage
+              uri={photoUri}
               resizeMode="cover"
-              style={{ width: '100%', height: '100%' }}
+              style={{ width: '100%', height: '100%', position: 'absolute' }}
               accessibilityLabel={`Photo de ${name}`}
               onError={() => setPhotoFailed(true)}
             />
-          ) : (
-            <CatSprite colorLabel={analysis.color} seed={number} size={200} />
-          )}
+          ) : null}
         </View>
 
         <View style={{ gap: spacing[8], width: '100%' }}>

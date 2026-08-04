@@ -103,7 +103,12 @@ export default function ProfileScreen() {
   const xpProgress = xp / XP_MAX;
   const displayName = user?.displayName ?? 'Explorateur';
   const initials = displayName.slice(0, 2).toUpperCase();
-  const avatarUri = cats[0]?.photoUri;
+  const avatarUri =
+    cats[0]?.photoUri &&
+    !cats[0].photoUri.startsWith('blob:') &&
+    !cats[0].photoUri.startsWith('catphoto:')
+      ? cats[0].photoUri
+      : undefined;
   const placesExplored = catsCount > 0 ? Math.max(1, Math.round(catsCount * 0.58)) : 0;
   const badgesCount = catsCount > 0 ? Math.max(1, Math.floor(catsCount / 3) + 2) : 0;
 
