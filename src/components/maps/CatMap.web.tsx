@@ -6,6 +6,8 @@ import {
   MAP_PITCH,
   MAP_ZOOM,
 } from '@/components/maps/mapCamera';
+import { PAW_SVG_MARKUP } from '@/components/maps/CatPinVisual';
+import { isCatPhotoRef, resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -157,11 +159,22 @@ function add3dBuildings(map: MapLibreMap) {
 
 function makePinElement(opts: {
   label: string;
-  color: string;
-  border: string;
+  brand: string;
+  brandSoft: string;
+  surface: string;
   size: number;
+  photoUri?: string;
   dimmed?: boolean;
+  nearby?: boolean;
 }): HTMLButtonElement {
+  const size = opts.size;
+  const tipH = 10;
+  const tipW = 16;
+  const badge = 20;
+  const border = 4;
+  const wrapW = size + 32;
+  const wrapH = size + tipH + 16;
+
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.setAttribute('aria-label', opts.label);
@@ -170,30 +183,145 @@ function makePinElement(opts: {
     'padding:0',
     'cursor:pointer',
     'background:transparent',
-    `width:${opts.size}px`,
-    `height:${opts.size}px`,
+    `width:${wrapW}px`,
+    `height:${wrapH}px`,
     'display:flex',
     'align-items:flex-end',
     'justify-content:center',
-    opts.dimmed ? 'opacity:0.72' : 'opacity:1',
+    'position:relative',
+    opts.dimmed ? 'opacity:0.78' : 'opacity:1',
   ].join(';');
 
-  const bubble = document.createElement('span');
-  bubble.style.cssText = [
-    `width:${opts.size - 8}px`,
-    `height:${opts.size - 8}px`,
+  const pulseOuter = document.createElement('span');
+  pulseOuter.style.cssText = [
+    'position:absolute',
+    `width:${size + 24}px`,
+    `height:${size + 24}px`,
     'border-radius:999px',
-    `background:${opts.color}`,
-    `border:2px solid ${opts.border}`,
-    'box-shadow:0 4px 12px rgba(17,20,90,0.18)',
+    `border:2px solid ${opts.brandSoft}`,
+    'bottom:2px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    opts.nearby ? 'opacity:1' : 'opacity:0.7',
+    'pointer-events:none',
+  ].join(';');
+
+  const pulseInner = document.createElement('span');
+  pulseInner.style.cssText = [
+    'position:absolute',
+    `width:${size + 8}px`,
+    `height:${size + 8}px`,
+    'border-radius:999px',
+    `background:${opts.brandSoft}`,
+    'bottom:8px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    opts.nearby ? 'opacity:0.9' : 'opacity:0.55',
+    'pointer-events:none',
+  ].join(';');
+
+  const column = document.createElement('span');
+  column.style.cssText = [
+    'display:flex',
+    'flex-direction:column',
+    'align-items:center',
+    'position:relative',
+    'z-index:1',
+  ].join(';');
+
+  const avatar = document.createElement('span');
+  avatar.style.cssText = [
+    `width:${size}px`,
+    `height:${size}px`,
+    'border-radius:999px',
+    `border:${border}px solid ${opts.brand}`,
+    `background:${opts.surface}`,
+    'overflow:hidden',
+    'position:relative',
+    'box-shadow:0 4px 14px rgba(106,105,248,0.28)',
     'display:flex',
     'align-items:center',
     'justify-content:center',
-    'font:700 11px/1 system-ui,sans-serif',
-    'color:#fff',
   ].join(';');
-  bubble.textContent = '🐱';
-  btn.appendChild(bubble);
+
+  const placeholder = document.createElement('span');
+  placeholder.textContent = '🐱';
+  placeholder.style.cssText =
+    'font-size:22px;line-height:1;user-select:none;pointer-events:none';
+  avatar.appendChild(placeholder);
+
+  if (opts.photoUri && !opts.photoUri.startsWith('blob:')) {
+    const img = document.createElement('img');
+    img.alt = opts.label;
+    img.draggable = false;
+    img.style.cssText = [
+      'position:absolute',
+      'inset:0',
+      'width:100%',
+      'height:100%',
+      'object-fit:cover',
+      'border-radius:999px',
+    ].join(';');
+    img.onerror = () => {
+      img.remove();
+    };
+    img.onload = () => {
+      placeholder.style.display = 'none';
+    };
+
+    const applySrc = (src: string) => {
+      img.src = src;
+      if (!img.parentElement) avatar.appendChild(img);
+    };
+
+    if (isCatPhotoRef(opts.photoUri)) {
+      void resolveCatPhotoUri(opts.photoUri).then((resolved) => {
+        if (resolved) applySrc(resolved);
+      });
+    } else {
+      applySrc(opts.photoUri);
+    }
+  }
+
+  const badgeEl = document.createElement('span');
+  badgeEl.style.cssText = [
+    'position:absolute',
+    `width:${badge}px`,
+    `height:${badge}px`,
+    'border-radius:999px',
+    `background:${opts.brand}`,
+    `border:2px solid ${opts.surface}`,
+    'top:-4px',
+    'right:-4px',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'box-shadow:0 2px 6px rgba(17,20,90,0.16)',
+    'z-index:2',
+  ].join(';');
+  badgeEl.innerHTML = PAW_SVG_MARKUP;
+
+  // Badge sits on the avatar ring — attach to a relative wrapper
+  const avatarWrap = document.createElement('span');
+  avatarWrap.style.cssText = 'position:relative;display:inline-flex;overflow:visible';
+  avatarWrap.appendChild(avatar);
+  avatarWrap.appendChild(badgeEl);
+
+  const tip = document.createElement('span');
+  tip.style.cssText = [
+    'width:0',
+    'height:0',
+    'margin-top:-2px',
+    `border-left:${tipW / 2}px solid transparent`,
+    `border-right:${tipW / 2}px solid transparent`,
+    `border-top:${tipH}px solid ${opts.brand}`,
+  ].join(';');
+
+  column.appendChild(avatarWrap);
+  column.appendChild(tip);
+  btn.appendChild(pulseOuter);
+  btn.appendChild(pulseInner);
+  btn.appendChild(column);
   return btn;
 }
 
@@ -304,10 +432,13 @@ export function CatMap({
       const captured = capturedCatIds?.includes(cat.id) ?? true;
       const el = makePinElement({
         label: cat.name,
-        color: nearby ? colors.accent : colors.brand,
-        border: colors.surfaceElevated,
+        brand: colors.brand,
+        brandSoft: colors.brandSoft,
+        surface: colors.surfaceElevated,
         size: nearby ? spacing[56] : spacing[48],
+        photoUri: cat.photoUri,
         dimmed: !captured,
+        nearby,
       });
       el.addEventListener('click', (event) => {
         event.stopPropagation();
