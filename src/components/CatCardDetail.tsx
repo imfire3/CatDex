@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -198,7 +198,10 @@ export function CatCardDetail({
   const stars = starScore(views, number);
   const ageYears = displayAgeYears(number);
   const likesPct = 50 + ((number * 13) % 41);
-  const showPhoto = Boolean(photoUri) && !photoUri!.startsWith('demo');
+  const showPhoto =
+    Boolean(photoUri) &&
+    !photoUri!.startsWith('demo') &&
+    !photoUri!.startsWith('blob:');
   const traitTags =
     analysis.tags && analysis.tags.length > 0
       ? analysis.tags
@@ -292,6 +295,9 @@ export function CatCardDetail({
               resizeMode="cover"
               style={{ width: '100%', height: '100%' }}
               accessibilityLabel={`Photo de ${name}`}
+              onError={() => {
+                /* broken URI — CatSprite fallback via remount is handled by parent; keep soft bg */
+              }}
             />
           ) : (
             <CatSprite colorLabel={analysis.color} seed={number} size={200} />
