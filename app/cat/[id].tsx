@@ -1,9 +1,47 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
 
 import { CatCardDetail } from '@/components/CatCardDetail';
 import { ProblemState } from '@/components/ProblemState';
 import { useCatsStore } from '@/store/cats';
+
+function goBackFromCat() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/(tabs)/catdex');
+}
+
+type BoundaryProps = { children: ReactNode };
+type BoundaryState = { hasError: boolean };
+
+/** Catch render bugs on the cat fiche and offer a clear Retour. */
+class CatDetailErrorBoundary extends Component<BoundaryProps, BoundaryState> {
+  state: BoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): BoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[CatDetail]', error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <>
+          <Stack.Screen options={{ headerShown: false }} />
+          <ProblemState
+            title="Oups"
+            description="Il y a un problème avec cette fiche chat. Reviens en arrière pour continuer."
+            actionLabel="Retour"
+            onAction={goBackFromCat}
+          />
+        </>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function CatDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -11,26 +49,26 @@ export default function CatDetailScreen() {
   const incrementViews = useCatsStore((state) => state.incrementViews);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !cat) return;
     incrementViews(id);
-  }, [id, incrementViews]);
+  }, [id, cat, incrementViews]);
 
-  if (!cat) {
+  if (!id || !cat) {
     return (
-      <ProblemState
-        title="Oups"
-        description="Il y a un problème — ce chat est introuvable."
-        actionLabel="Retour"
-        onAction={() => {
-          if (router.canGoBack()) router.back();
-          else router.replace('/(tabs)/catdex');
-        }}
-      />
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ProblemState
+          title="Oups"
+          description="Il y a un problème — ce chat est introuvable."
+          actionLabel="Retour"
+          onAction={goBackFromCat}
+        />
+      </>
     );
   }
 
   return (
-    <>
+    <CatDetailErrorBoundary>
       <Stack.Screen options={{ headerShown: false }} />
       <CatCardDetail
         name={cat.name}
@@ -39,8 +77,8 @@ export default function CatDetailScreen() {
         analysis={cat.analysis}
         discoveredAt={cat.discoveredAt}
         views={cat.views}
-        onBack={() => router.back()}
+        onBack={goBackFromCat}
       />
-    </>
+    </CatDetailErrorBoundary>
   );
 }

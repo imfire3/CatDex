@@ -9,7 +9,6 @@ import { AuthBackButton } from '@/components/Auth/AuthChrome';
 import { Text } from '@/components/Text';
 import { getTabBarTotalHeight } from '@/layout/tabBarMetrics';
 import { CATDEX_TARGET } from '@/lib/constants';
-import { DEMO_CATS } from '@/lib/demoCats';
 import { type CatDexRarityFilter, matchesCatDexRarityFilter } from '@/lib/catTheme';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -26,8 +25,7 @@ const RARITY_FILTERS: { id: CatDexRarityFilter; label: string }[] = [
 export default function CatDexScreen() {
   const { colors, fonts, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
-  const storedCats = useCatsStore((state) => state.cats);
-  const cats = __DEV__ && storedCats.length === 0 ? DEMO_CATS : storedCats;
+  const cats = useCatsStore((state) => state.cats);
   const [rarityFilter, setRarityFilter] = useState<CatDexRarityFilter>('all');
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
 

@@ -12,7 +12,7 @@ type Props = {
   onAction: () => void;
 };
 
-/** Full-screen problem state — Oups + Retour. */
+/** Full-screen problem state — Oups + clear Retour action. */
 export function ProblemState({
   title = 'Oups',
   description = 'Il y a un problème. Réessaie ou reviens en arrière.',
@@ -33,6 +33,7 @@ export function ProblemState({
         justifyContent: 'center',
         gap: spacing[24],
       }}
+      accessibilityRole="alert"
     >
       <View style={{ gap: spacing[8], alignItems: 'center' }}>
         <Text variant="h1" color="textBrand" align="center" style={{ fontFamily: fonts.display }}>
@@ -42,7 +43,11 @@ export function ProblemState({
           {description}
         </Text>
       </View>
-      <Button title={actionLabel} onPress={onAction} />
+      <Button
+        title={actionLabel}
+        onPress={onAction}
+        accessibilityLabel={actionLabel}
+      />
     </View>
   );
 }

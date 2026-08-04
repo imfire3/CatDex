@@ -11,7 +11,6 @@ import { CatMap } from '@/components/maps/CatMap';
 import { MapCatModal } from '@/components/maps/MapCatModal';
 import { getMapHudBottom } from '@/layout/tabBarMetrics';
 import { PARIS_20E } from '@/lib/constants';
-import { DEMO_CATS } from '@/lib/demoCats';
 import {
   DISCOVERY_RADIUS_M,
   isRareCat,
@@ -37,11 +36,8 @@ export default function MapScreen() {
 
   const capturedIds = useMemo(() => new Set(storedCats.map((cat) => cat.id)), [storedCats]);
 
-  /** Captured cats + world spawns (demo) not yet in the CatDex. */
-  const mapCats = useMemo(() => {
-    const world = __DEV__ ? DEMO_CATS.filter((cat) => !capturedIds.has(cat.id)) : [];
-    return [...storedCats, ...world];
-  }, [capturedIds, storedCats]);
+  /** Only cats the player actually captured — no demo samples on the map. */
+  const mapCats = storedCats;
 
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
