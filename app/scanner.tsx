@@ -37,7 +37,10 @@ import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { CatAnalysis } from '@/types/cat';
 
-type Step = 'camera' | 'review' | 'reveal' | 'problem';
+type Step = 'camera' | 'analyzing' | 'review' | 'reveal' | 'problem';
+
+/** Keep the analysis loading screen visible long enough to read the checklist. */
+const MIN_ANALYSIS_MS = 2800;
 
 const FLASH_CYCLE: FlashMode[] = ['auto', 'on', 'off'];
 const FLASH_LABELS: Record<FlashMode, string> = {
@@ -133,7 +136,11 @@ export default function ScannerScreen() {
     } as Location.LocationObject;
   };
 
-  const enterReveal = async (nextAnalysis: CatAnalysis, imageUri: string, mocked?: boolean) => {
+  const enterReveal = async (
+    nextAnalysis: CatAnalysis,
+    imageUri: string,
+    mocked?: boolean,
+  ) => {
     const position = await ensureLocation();
     const { latitude, longitude } = position.coords;
     setCoords({ latitude, longitude });
@@ -156,16 +163,36 @@ export default function ScannerScreen() {
     mimeType = 'image/jpeg',
   ) => {
     setAnalyzing(true);
+    setStep('analyzing');
+    const startedAt = Date.now();
+
+    const waitMinDuration = async () => {
+      const elapsed = Date.now() - startedAt;
+      const remaining = MIN_ANALYSIS_MS - elapsed;
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
+    };
+
     try {
-      const { analysis: nextAnalysis, mocked } = await analyzeCatPhoto(base64, mimeType);
+      const { analysis: nextAnalysis, mocked, cutoutUri } = await analyzeCatPhoto(
+        base64,
+        mimeType,
+      );
+      await waitMinDuration();
       if (isNoCatFound(nextAnalysis)) {
         setPhotoUri(imageUri);
         setAnalysis(nextAnalysis);
         setStep('problem');
         return;
       }
-      await enterReveal(enrichAnalysis(nextAnalysis, nextNumber), imageUri, mocked);
+      await enterReveal(
+        enrichAnalysis(nextAnalysis, nextNumber),
+        cutoutUri ?? imageUri,
+        mocked,
+      );
     } catch (error) {
+      await waitMinDuration();
       showToast({
         title: 'Analyse indisponible',
         description:
@@ -198,7 +225,8 @@ export default function ScannerScreen() {
     }
     setPhotoUri(photo.uri);
     setPhotoBase64(photo.base64);
-    setStep('review');
+    setStep('analyzing');
+    setAnalyzing(true);
     void runAnalysis(photo.base64, photo.uri, 'image/jpeg');
   };
 
@@ -227,7 +255,8 @@ export default function ScannerScreen() {
         : 'image/jpeg';
     setPhotoUri(asset.uri);
     setPhotoBase64(asset.base64);
-    setStep('review');
+    setStep('analyzing');
+    setAnalyzing(true);
     void runAnalysis(asset.base64, asset.uri, mimeType);
   };
 
@@ -334,11 +363,18 @@ export default function ScannerScreen() {
   }
 
   if (step === 'reveal' && photoUri && analysis) {
+    const locationLabel = `À proximité · ${new Date().toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })}`;
+
     return (
       <CatRevealView
         photoUri={photoUri}
         analysis={analysis}
         dexNumber={nextNumber}
+        locationLabel={locationLabel}
         onAdd={() => void handleAddToCatDex()}
         onBack={() => {
           if (router.canGoBack()) router.back();
@@ -348,7 +384,7 @@ export default function ScannerScreen() {
     );
   }
 
-  if (step === 'review' && photoUri && analyzing) {
+  if ((step === 'analyzing' || analyzing) && photoUri) {
     return <AnalysisLoadingView photoUri={photoUri} />;
   }
 

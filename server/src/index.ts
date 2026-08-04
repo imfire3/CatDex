@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
 import { serve } from '@hono/node-server';
+import { removeBackground } from '@imgly/background-removal-node';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import OpenAI from 'openai';
@@ -57,14 +58,14 @@ function normalizeGender(value?: string) {
 
 function normalizeTags(tags?: string[] | string) {
   if (Array.isArray(tags)) {
-    return tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 2);
+    return tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 3);
   }
   if (typeof tags === 'string' && tags.trim()) {
     return tags
       .split(/[,;/]/)
       .map((t) => t.trim())
       .filter(Boolean)
-      .slice(0, 2);
+      .slice(0, 3);
   }
   return undefined;
 }
@@ -83,6 +84,30 @@ function normalizeAnalysis(json: AnalysisJson) {
   };
 }
 
+function stripDataUrl(imageBase64: string, mimeType: string) {
+  const dataUrl = /^data:([^;]+);base64,(.+)$/s.exec(imageBase64);
+  if (!dataUrl) return { imageBase64, mimeType };
+  return {
+    mimeType: dataUrl[1] || mimeType,
+    imageBase64: dataUrl[2],
+  };
+}
+
+async function cutoutCatPng(imageBase64: string, mimeType: string): Promise<string | null> {
+  try {
+    const input = Buffer.from(imageBase64, 'base64');
+    const blob = await removeBackground(new Blob([input], { type: mimeType }), {
+      model: 'small',
+      output: { format: 'image/png', quality: 0.9, type: 'foreground' },
+    });
+    const buffer = Buffer.from(await blob.arrayBuffer());
+    return buffer.toString('base64');
+  } catch (error) {
+    console.error('[cutout]', error);
+    return null;
+  }
+}
+
 app.post('/analyze-cat', async (c) => {
   const body = await c.req.json().catch(() => null);
   const parsed = analyzeSchema.safeParse(body);
@@ -91,22 +116,8 @@ app.post('/analyze-cat', async (c) => {
     return c.json({ error: 'Payload invalide' }, 400);
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return c.json({ analysis: fallbackAnalysis, mocked: true });
-  }
+  let { imageBase64, mimeType } = stripDataUrl(parsed.data.imageBase64, parsed.data.mimeType);
 
-  const openai = new OpenAI({ apiKey });
-  let { imageBase64, mimeType } = parsed.data;
-
-  // Clients may send a full data URL by mistake
-  const dataUrl = /^data:([^;]+);base64,(.+)$/s.exec(imageBase64);
-  if (dataUrl) {
-    mimeType = dataUrl[1] || mimeType;
-    imageBase64 = dataUrl[2];
-  }
-
-  // HEIC from iOS library is unsupported by OpenAI vision — ask for JPEG
   const normalizedMime = mimeType.toLowerCase();
   if (
     normalizedMime.includes('heic') ||
@@ -123,47 +134,65 @@ app.post('/analyze-cat', async (c) => {
     );
   }
 
-  try {
-    const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: [
-            'Tu es le naturaliste urbain de CatDex.',
-            'Tu analyses UNIQUEMENT des photos de chats (ou clairement dominées par un chat).',
-            'Réponds uniquement en JSON valide avec les clés:',
-            'color (couleur principale, ex: "Noir", "Roux tigré"),',
-            'breed (race ou type probable, ex: "Européen", "Siamois"),',
-            'coat (longueur/type de poil, ex: "Court", "Long"),',
-            'eyes (couleur des yeux, ex: "Ambre", "Verts"),',
-            'size (Petite | Moyenne | Grande),',
-            'gender (male | female | unknown),',
-            'tags (tableau de 2 mots d’ambiance, ex: ["Ombre","Mystère"]),',
-            'description (2 phrases max, ton chaleureux, français, sans inventer de lieux),',
-            'suggestedName (un seul prénom court et mignon adapté à l’apparence).',
-            'Si la photo ne montre pas de chat, mets breed="Inconnu", color="Indéterminée",',
-            'description="Aucun chat clairement visible sur cette photo.", suggestedName="".',
-          ].join(' '),
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Analyse ce chat pour le CatDex.',
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${imageBase64}`,
-              },
-            },
-          ],
-        },
-      ],
+  const apiKey = process.env.OPENAI_API_KEY;
+  const cutoutPromise = cutoutCatPng(imageBase64, mimeType);
+
+  if (!apiKey) {
+    const cutoutBase64 = await cutoutPromise;
+    return c.json({
+      analysis: fallbackAnalysis,
+      mocked: true,
+      cutoutBase64: cutoutBase64 ?? undefined,
+      cutoutMimeType: cutoutBase64 ? 'image/png' : undefined,
     });
+  }
+
+  const openai = new OpenAI({ apiKey });
+
+  try {
+    const [completion, cutoutBase64] = await Promise.all([
+      openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: [
+              'Tu es le naturaliste urbain de CatDex.',
+              'Tu analyses UNIQUEMENT des photos de chats (ou clairement dominées par un chat).',
+              'Réponds uniquement en JSON valide avec les clés:',
+              'color (couleur principale, ex: "Noir", "Roux tigré"),',
+              'breed (race ou type probable, ex: "Européen", "Siamois"),',
+              'coat (longueur/type de poil, ex: "Court", "Long"),',
+              'eyes (couleur des yeux, ex: "Ambre", "Verts"),',
+              'size (Petite | Moyenne | Grande),',
+              'gender (male | female | unknown),',
+              'tags (tableau de 2 à 3 mots d’ambiance, ex: ["Ombre","Mystère"]),',
+              'description (2 phrases max, ton chaleureux, français, sans inventer de lieux),',
+              'suggestedName (un seul prénom court et mignon adapté à l’apparence).',
+              'Si la photo ne montre pas de chat, mets breed="Inconnu", color="Indéterminée",',
+              'description="Aucun chat clairement visible sur cette photo.", suggestedName="".',
+            ].join(' '),
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Analyse ce chat pour le CatDex.',
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${imageBase64}`,
+                },
+              },
+            ],
+          },
+        ],
+      }),
+      cutoutPromise,
+    ]);
 
     const raw = completion.choices[0]?.message?.content ?? '{}';
     const json = JSON.parse(raw) as AnalysisJson;
@@ -171,14 +200,19 @@ app.post('/analyze-cat', async (c) => {
     return c.json({
       analysis: normalizeAnalysis(json),
       mocked: false,
+      cutoutBase64: cutoutBase64 ?? undefined,
+      cutoutMimeType: cutoutBase64 ? 'image/png' : undefined,
     });
   } catch (error) {
     console.error('[analyze-cat]', error);
+    const cutoutBase64 = await cutoutPromise.catch(() => null);
     return c.json(
       {
         error: 'Échec analyse OpenAI',
         analysis: fallbackAnalysis,
         mocked: true,
+        cutoutBase64: cutoutBase64 ?? undefined,
+        cutoutMimeType: cutoutBase64 ? 'image/png' : undefined,
       },
       502,
     );

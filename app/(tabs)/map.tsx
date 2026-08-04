@@ -7,12 +7,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { BottomSheet } from '@/components/BottomSheet';
-import { Button } from '@/components/Button';
 import { CatSprite } from '@/components/CatSprite';
 import { Chip } from '@/components/Chip';
 import { ProgressBar } from '@/components/Progress/ProgressBar';
 import { Text } from '@/components/Text';
 import { CatMap } from '@/components/maps/CatMap';
+import { MapCatModal } from '@/components/maps/MapCatModal';
 import { getMapHudBottom } from '@/layout/tabBarMetrics';
 import { DEMO_CATS } from '@/lib/demoCats';
 import {
@@ -42,7 +42,13 @@ export default function MapScreen() {
   const storedCats = useCatsStore((state) => state.cats);
   const setHasNearbyCat = useMapExploreStore((state) => state.setHasNearbyCat);
 
-  const mapCats = storedCats.length > 0 ? storedCats : __DEV__ ? DEMO_CATS : [];
+  const capturedIds = useMemo(() => new Set(storedCats.map((cat) => cat.id)), [storedCats]);
+
+  /** Captured cats + world spawns (demo) not yet in the CatDex. */
+  const mapCats = useMemo(() => {
+    const world = __DEV__ ? DEMO_CATS.filter((cat) => !capturedIds.has(cat.id)) : [];
+    return [...storedCats, ...world];
+  }, [capturedIds, storedCats]);
 
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -59,12 +65,19 @@ export default function MapScreen() {
   } | null>(null);
 
   const lastHapticCatRef = useRef<string | null>(null);
-  const collectionCount = storedCats.length > 0 ? storedCats.length : __DEV__ ? mapCats.length : 0;
+  const collectionCount = storedCats.length;
+  const selectedCaptured = selected ? capturedIds.has(selected.id) : false;
 
   const sortedCats = useMemo(
     () => sortCatsByDistance(mapCats, userCoordinate),
     [mapCats, userCoordinate],
   );
+
+  const selectedDistance = useMemo(() => {
+    if (!selected) return null;
+    const match = sortedCats.find((item) => item.cat.id === selected.id);
+    return match?.distanceM ?? null;
+  }, [selected, sortedCats]);
 
   const filteredCats = useMemo(() => {
     return sortedCats.filter(({ cat, distanceM }) => {
@@ -154,6 +167,7 @@ export default function MapScreen() {
           focusCoordinate={focusCoordinate}
           userCoordinate={userCoordinate}
           nearbyCatIds={nearbyCatIds}
+          capturedCatIds={[...capturedIds]}
           onSelectCat={(item) => {
             setSelected(item);
             setSheetVisible(true);
@@ -351,34 +365,30 @@ export default function MapScreen() {
         </View>
       </BottomSheet>
 
-      <BottomSheet
+      <MapCatModal
         visible={sheetVisible}
+        cat={selected}
+        captured={selectedCaptured}
+        distanceM={selectedDistance}
         onClose={() => {
           setSheetVisible(false);
           setSelected(null);
         }}
-      >
-        {selected ? (
-          <View style={{ gap: spacing[16] }}>
-            <Text variant="h2" color="textBrand">
-              {selected.name}
-            </Text>
-            <Text variant="bodySmall" color="textSecondary">
-              {selected.analysis.breed} · {selected.analysis.color}
-            </Text>
-            <Text variant="body" color="textBody" numberOfLines={3}>
-              {selected.analysis.description}
-            </Text>
-            <Button
-              title="Voir la fiche"
-              onPress={() => {
-                setSheetVisible(false);
-                router.push(`/cat/${selected.id}`);
-              }}
-            />
-          </View>
-        ) : null}
-      </BottomSheet>
+        onViewCard={() => {
+          if (!selected) return;
+          setSheetVisible(false);
+          router.push(`/cat/${selected.id}`);
+        }}
+        onGoThere={() => {
+          if (!selected) return;
+          setFocusCoordinate({
+            latitude: selected.latitude,
+            longitude: selected.longitude,
+          });
+          setSheetVisible(false);
+          setSelected(null);
+        }}
+      />
     </View>
   );
 }

@@ -6,9 +6,19 @@ type AnalyzeResponse = {
   analysis: CatAnalysis;
   mocked?: boolean;
   error?: string;
+  /** Transparent PNG cutout as a data URI, when available. */
+  cutoutUri?: string;
 };
 
-const ANALYZE_TIMEOUT_MS = 45_000;
+type AnalyzeApiPayload = {
+  analysis?: CatAnalysis;
+  mocked?: boolean;
+  error?: string;
+  cutoutBase64?: string;
+  cutoutMimeType?: string;
+};
+
+const ANALYZE_TIMEOUT_MS = 60_000;
 
 function stripDataUrl(imageBase64: string): { base64: string; mimeType?: string } {
   const match = /^data:([^;]+);base64,(.+)$/s.exec(imageBase64.trim());
@@ -32,15 +42,22 @@ async function requestAnalyze(
     signal,
   });
 
-  let data: AnalyzeResponse | null = null;
+  let data: AnalyzeApiPayload | null = null;
   try {
-    data = (await response.json()) as AnalyzeResponse;
+    data = (await response.json()) as AnalyzeApiPayload;
   } catch {
     data = null;
   }
 
   if (data?.analysis) {
-    return data;
+    return {
+      analysis: data.analysis,
+      mocked: data.mocked,
+      error: data.error,
+      cutoutUri: data.cutoutBase64
+        ? `data:${data.cutoutMimeType ?? 'image/png'};base64,${data.cutoutBase64}`
+        : undefined,
+    };
   }
 
   if (!response.ok) {
@@ -83,7 +100,6 @@ export async function analyzeCatPhoto(
         lastError = new Error(`Impossible de joindre l’API (${apiBase}).`);
       } else if (error instanceof Error) {
         lastError = error;
-        // Server reachable but returned a hard error — don't try other hosts.
         if (!/impossible de joindre/i.test(error.message)) {
           break;
         }

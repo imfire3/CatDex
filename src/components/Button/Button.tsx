@@ -98,7 +98,7 @@ export function Button({
   const labelColor =
     variant === 'primary'
       ? isDisabled
-        ? colors.ctaSecondaryLabel
+        ? colors.textMuted
         : colors.onAccent
       : variant === 'google'
         ? colors.authGoogleLabel
@@ -142,7 +142,7 @@ export function Button({
   const primaryDisabled = variant === 'primary' && isDisabled;
 
   const surfaceBg = primaryDisabled
-    ? colors.ctaSecondary
+    ? colors.surfaceDisabled
     : variant === 'primary'
       ? colors.accent
       : variant === 'google'

@@ -65,17 +65,17 @@ export function AnalysisLoadingView({ photoUri }: Props) {
   useEffect(() => {
     const timer = setInterval(() => {
       setProgress((value) => {
-        if (value >= 0.92) return value;
-        const step = value < 0.5 ? 0.04 : value < 0.8 ? 0.025 : 0.012;
-        return Math.min(0.92, value + step);
+        if (value >= 0.96) return value;
+        const step = value < 0.45 ? 0.07 : value < 0.75 ? 0.045 : 0.028;
+        return Math.min(0.96, value + step);
       });
-    }, 180);
+    }, 160);
 
     return () => clearInterval(timer);
   }, []);
 
   const completedSteps = useMemo(() => {
-    const thresholds = [0.22, 0.46, 0.7, 0.9];
+    const thresholds = [0.2, 0.42, 0.65, 0.88];
     return ANALYSIS_STEPS.map((_, index) => progress >= thresholds[index]);
   }, [progress]);
 

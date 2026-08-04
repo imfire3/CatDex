@@ -30,6 +30,8 @@ type Props = {
   /** Player position for the custom CatDex location indicator. */
   userCoordinate?: { latitude: number; longitude: number } | null;
   nearbyCatIds?: string[];
+  /** Ids of cats already in the player CatDex. */
+  capturedCatIds?: string[];
 };
 
 type ExtraMaps = {
@@ -63,6 +65,7 @@ export function CatMap({
   focusCoordinate,
   userCoordinate,
   nearbyCatIds,
+  capturedCatIds,
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
@@ -141,6 +144,7 @@ export function CatMap({
             cat={cat}
             onPress={onSelectCat}
             isNearby={nearbyCatIds?.includes(cat.id) ?? false}
+            captured={capturedCatIds?.includes(cat.id) ?? true}
           />
         ))}
         {userCoordinate ? (

@@ -62,6 +62,7 @@ export function AuthHeader({
   showBack = true,
   onBack,
   inline = false,
+  embedded = false,
 }: {
   title: string;
   subtitle?: string;

@@ -48,12 +48,15 @@ export default function SignupScreen() {
     };
   }, [accepted, confirm, email, password, pseudo, submitted]);
 
-  const formFilled =
-    Boolean(pseudo.trim()) &&
-    Boolean(email.trim()) &&
-    Boolean(password) &&
-    Boolean(confirm) &&
-    accepted;
+  const canSubmit = useMemo(
+    () =>
+      !validatePseudo(pseudo) &&
+      !validateEmail(email) &&
+      !validatePassword(password) &&
+      !validatePasswordConfirm(password, confirm) &&
+      accepted,
+    [accepted, confirm, email, password, pseudo],
+  );
 
   if (user) {
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
@@ -95,7 +98,7 @@ export default function SignupScreen() {
           <View style={{ alignSelf: 'stretch' }}>
             <Button
               title="Créer mon compte"
-              disabled={!formFilled}
+              disabled={!canSubmit}
               onPress={onSubmit}
             />
           </View>
