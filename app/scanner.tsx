@@ -363,36 +363,49 @@ export default function ScannerScreen() {
 
     const name =
       analysis.suggestedName?.trim() || formatCatDefaultName(nextNumber);
-    const cat = addCat({
-      photoUri: durablePhoto,
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-      name,
-      analysis: enrichAnalysis(analysis, nextNumber),
-    });
 
-    if (Platform.OS !== 'web') {
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch {
-        // ignore
+    try {
+      const cat = await addCat({
+        photoUri: durablePhoto,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        name,
+        analysis: enrichAnalysis(analysis, nextNumber),
+      });
+
+      if (Platform.OS !== 'web') {
+        try {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch {
+          // ignore
+        }
       }
+
+      const remaining = Math.max(0, CATDEX_TARGET - cat.number);
+      showToast({
+        title: 'Ajouté au CatDex',
+        description:
+          remaining > 0
+            ? `${cat.name} · Plus que ${remaining} chat${remaining > 1 ? 's' : ''}`
+            : `${cat.name} · CatDex complet !`,
+        tone: 'success',
+      });
+
+      router.replace({
+        pathname: '/(tabs)/catdex',
+        params: { justAdded: cat.id },
+      });
+    } catch (error) {
+      addingRef.current = false;
+      showToast({
+        title: 'Ajout impossible',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Stockage plein — recharge l’app puis réessaie.',
+        tone: 'danger',
+      });
     }
-
-    const remaining = Math.max(0, CATDEX_TARGET - cat.number);
-    showToast({
-      title: 'Ajouté au CatDex',
-      description:
-        remaining > 0
-          ? `${cat.name} · Plus que ${remaining} chat${remaining > 1 ? 's' : ''}`
-          : `${cat.name} · CatDex complet !`,
-      tone: 'success',
-    });
-
-    router.replace({
-      pathname: '/(tabs)/catdex',
-      params: { justAdded: cat.id },
-    });
   };
 
   if (step === 'problem') {

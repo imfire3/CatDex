@@ -3,6 +3,12 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { formatCatDefaultName } from '@/lib/constants';
+import {
+  deleteCatPhoto,
+  migrateInlineCatPhotos,
+  persistCatPhoto,
+  reclaimPhotoQuotaFromLocalStorage,
+} from '@/lib/photoStorage';
 import type { Cat, CatAnalysis } from '@/types/cat';
 
 type AddCatInput = {
@@ -19,12 +25,15 @@ type CatsState = {
   nextNumber: number;
   hydrated: boolean;
   setHydrated: (value: boolean) => void;
-  addCat: (input: AddCatInput) => Cat;
+  addCat: (input: AddCatInput) => Promise<Cat>;
   incrementViews: (id: string) => void;
   updateCat: (id: string, patch: Partial<Pick<Cat, 'name' | 'notes'>>) => void;
   removeCat: (id: string) => void;
   getCat: (id: string) => Cat | undefined;
 };
+
+// Best-effort reclaim before Zustand rehydrates (web localStorage quota).
+void reclaimPhotoQuotaFromLocalStorage();
 
 export const useCatsStore = create<CatsState>()(
   persist(
@@ -33,13 +42,24 @@ export const useCatsStore = create<CatsState>()(
       nextNumber: 1,
       hydrated: false,
       setHydrated: (value) => set({ hydrated: value }),
-      addCat: (input) => {
+      addCat: async (input) => {
         const number = get().nextNumber;
+        const id = `cat_${Date.now()}_${number}`;
+
+        let photoUri = '';
+        try {
+          photoUri = await persistCatPhoto(id, input.photoUri);
+        } catch (error) {
+          console.warn('[cats] photo persist failed', error);
+          // Keep the fiche — sprite fallback — rather than blowing localStorage quota.
+          photoUri = '';
+        }
+
         const cat: Cat = {
-          id: `cat_${Date.now()}_${number}`,
+          id,
           number,
           name: input.name?.trim() || formatCatDefaultName(number),
-          photoUri: input.photoUri,
+          photoUri,
           latitude: input.latitude,
           longitude: input.longitude,
           discoveredAt: new Date().toISOString(),
@@ -67,10 +87,15 @@ export const useCatsStore = create<CatsState>()(
             cat.id === id ? { ...cat, ...patch } : cat,
           ),
         })),
-      removeCat: (id) =>
+      removeCat: (id) => {
+        const existing = get().cats.find((cat) => cat.id === id);
+        if (existing?.photoUri) {
+          void deleteCatPhoto(existing.photoUri);
+        }
         set((state) => ({
           cats: state.cats.filter((cat) => cat.id !== id),
-        })),
+        }));
+      },
       getCat: (id) => get().cats.find((cat) => cat.id === id),
     }),
     {
@@ -80,8 +105,21 @@ export const useCatsStore = create<CatsState>()(
         cats: state.cats,
         nextNumber: state.nextNumber,
       }),
-      onRehydrateStorage: () => () => {
-        useCatsStore.getState().setHydrated(true);
+      onRehydrateStorage: () => (state) => {
+        void (async () => {
+          try {
+            if (state?.cats?.length) {
+              const migrated = await migrateInlineCatPhotos(state.cats);
+              if (migrated !== state.cats) {
+                useCatsStore.setState({ cats: migrated });
+              }
+            }
+          } catch (error) {
+            console.warn('[cats] photo migration failed', error);
+          } finally {
+            useCatsStore.getState().setHydrated(true);
+          }
+        })();
       },
     },
   ),

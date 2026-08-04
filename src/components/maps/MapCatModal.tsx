@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { Button } from '@/components/Button';
+import { CatImage } from '@/components/CatImage';
 import { Text } from '@/components/Text';
 import { formatDistanceMeters } from '@/lib/constants';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -117,12 +118,21 @@ export function MapCatModal({
               justifyContent: 'center',
             }}
           >
-            <Image
-              source={captured && cat.photoUri ? { uri: cat.photoUri } : POLITE_CAT_PIN}
-              style={{ width: '100%', height: '100%' }}
-              resizeMode={captured ? 'cover' : 'contain'}
-              accessibilityLabel={captured ? `Photo de ${cat.name}` : 'Chat mystère'}
-            />
+            {captured && cat.photoUri ? (
+              <CatImage
+                uri={cat.photoUri}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+                accessibilityLabel={`Photo de ${cat.name}`}
+              />
+            ) : (
+              <Image
+                source={POLITE_CAT_PIN}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="contain"
+                accessibilityLabel="Chat mystère"
+              />
+            )}
           </View>
 
           <View style={{ gap: spacing[8], width: '100%' }}>

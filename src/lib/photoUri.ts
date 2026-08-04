@@ -7,7 +7,9 @@ export function isDurablePhotoUri(uri: string): boolean {
   return (
     uri.startsWith('data:') ||
     uri.startsWith('https://') ||
-    uri.startsWith('http://')
+    uri.startsWith('http://') ||
+    uri.startsWith('catphoto:') ||
+    uri.startsWith('file:')
   );
 }
 

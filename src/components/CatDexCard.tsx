@@ -3,9 +3,10 @@
  * Opens the full cat fiche on press.
  */
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
 import {
@@ -15,6 +16,7 @@ import {
   themeFromColorLabel,
 } from '@/lib/catTheme';
 import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
+import { isCatPhotoRef } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -32,7 +34,13 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
   const [photoFailed, setPhotoFailed] = useState(false);
   // blob: URIs die after web reload — skip and show sprite until the cat is re-scanned.
   const canShowPhoto =
-    Boolean(cat.photoUri) && !photoFailed && !cat.photoUri.startsWith('blob:');
+    Boolean(cat.photoUri) &&
+    !photoFailed &&
+    !cat.photoUri.startsWith('blob:') &&
+    (isCatPhotoRef(cat.photoUri) ||
+      cat.photoUri.startsWith('data:') ||
+      cat.photoUri.startsWith('http') ||
+      cat.photoUri.startsWith('file:'));
   const rarityId = resolveRevealRarity(analysis, cat.number);
   const rarity = rarityTokens[rarityId];
   const gender = genderSymbol(analysis.gender);
@@ -54,26 +62,25 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
         shadow.low,
       ]}
     >
-      <View
-        style={{
-          aspectRatio: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.surfaceSecondary,
-          overflow: 'hidden',
-        }}
-      >
-        {canShowPhoto ? (
-          <Image
-            source={{ uri: cat.photoUri }}
-            style={styles.photo}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-            onError={() => setPhotoFailed(true)}
-          />
-        ) : (
+        <View
+          style={{
+            aspectRatio: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: colors.surfaceSecondary,
+            overflow: 'hidden',
+          }}
+        >
           <CatSprite colorLabel={analysis.color} seed={cat.number} size={112} />
-        )}
+          {canShowPhoto ? (
+            <CatImage
+              uri={cat.photoUri}
+              style={styles.photo}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+              onError={() => setPhotoFailed(true)}
+            />
+          ) : null}
 
         {onToggleFavorite ? (
           <Pressable

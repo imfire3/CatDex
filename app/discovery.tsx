@@ -60,21 +60,23 @@ export default function DiscoveryScreen() {
   }));
 
   const confirm = () => {
-    addCat({
-      photoUri: params.photoUri,
-      latitude: Number(params.latitude),
-      longitude: Number(params.longitude),
-      name,
-      notes: params.notes,
-      analysis: {
-        color: params.color,
-        breed: params.breed,
-        coat: params.coat,
-        description: params.description,
-        suggestedName: params.suggestedName,
-      },
-    });
-    router.replace('/(tabs)/map');
+    void (async () => {
+      await addCat({
+        photoUri: params.photoUri,
+        latitude: Number(params.latitude),
+        longitude: Number(params.longitude),
+        name,
+        notes: params.notes,
+        analysis: {
+          color: params.color,
+          breed: params.breed,
+          coat: params.coat,
+          description: params.description,
+          suggestedName: params.suggestedName,
+        },
+      });
+      router.replace('/(tabs)/map');
+    })();
   };
 
   return (
