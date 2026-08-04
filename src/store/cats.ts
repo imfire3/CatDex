@@ -4,11 +4,17 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 
 import { formatCatDefaultName } from '@/lib/constants';
 import {
+  mergeRemoteCats,
+  pullMyCatsFromSupabase,
+  pushCatToSupabase,
+} from '@/lib/catSync';
+import {
   deleteCatPhoto,
   migrateInlineCatPhotos,
   persistCatPhoto,
   reclaimPhotoQuotaFromLocalStorage,
 } from '@/lib/photoStorage';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import type { Cat, CatAnalysis } from '@/types/cat';
 
 type AddCatInput = {
@@ -27,9 +33,10 @@ type CatsState = {
   setHydrated: (value: boolean) => void;
   addCat: (input: AddCatInput) => Promise<Cat>;
   incrementViews: (id: string) => void;
-  updateCat: (id: string, patch: Partial<Pick<Cat, 'name' | 'notes'>>) => void;
+  updateCat: (id: string, patch: Partial<Pick<Cat, 'name' | 'notes' | 'remoteId' | 'photoUri'>>) => void;
   removeCat: (id: string) => void;
   getCat: (id: string) => Cat | undefined;
+  syncFromRemote: () => Promise<void>;
 };
 
 function isQuotaError(error: unknown): boolean {
@@ -51,7 +58,6 @@ const safeCatsStorage: StateStorage = {
     } catch (error) {
       if (!isQuotaError(error)) throw error;
       await reclaimPhotoQuotaFromLocalStorage();
-      // Strip any remaining inline data: URIs from the payload before retry.
       try {
         const parsed = JSON.parse(value) as {
           state?: { cats?: Array<{ photoUri?: string }> };
@@ -74,7 +80,6 @@ const safeCatsStorage: StateStorage = {
   removeItem: (name) => AsyncStorage.removeItem(name),
 };
 
-// Best-effort reclaim before Zustand rehydrates (web localStorage quota).
 void reclaimPhotoQuotaFromLocalStorage();
 
 export const useCatsStore = create<CatsState>()(
@@ -84,6 +89,7 @@ export const useCatsStore = create<CatsState>()(
       nextNumber: 1,
       hydrated: false,
       setHydrated: (value) => set({ hydrated: value }),
+
       addCat: async (input) => {
         const number = get().nextNumber;
         const id = `cat_${Date.now()}_${number}`;
@@ -93,11 +99,10 @@ export const useCatsStore = create<CatsState>()(
           photoUri = await persistCatPhoto(id, input.photoUri);
         } catch (error) {
           console.warn('[cats] photo persist failed', error);
-          // Keep the fiche — sprite fallback — rather than blowing localStorage quota.
           photoUri = '';
         }
 
-        const cat: Cat = {
+        let cat: Cat = {
           id,
           number,
           name: input.name?.trim() || formatCatDefaultName(number),
@@ -110,6 +115,17 @@ export const useCatsStore = create<CatsState>()(
           analysis: input.analysis,
         };
 
+        if (isSupabaseConfigured) {
+          const remoteId = await pushCatToSupabase(cat);
+          if (remoteId) {
+            cat = {
+              ...cat,
+              remoteId,
+              photoUri: cat.photoUri || photoUri,
+            };
+          }
+        }
+
         set((state) => ({
           cats: [cat, ...state.cats],
           nextNumber: state.nextNumber + 1,
@@ -117,28 +133,57 @@ export const useCatsStore = create<CatsState>()(
 
         return cat;
       },
+
       incrementViews: (id) =>
         set((state) => ({
           cats: state.cats.map((cat) =>
-            cat.id === id ? { ...cat, views: cat.views + 1 } : cat,
+            cat.id === id || cat.remoteId === id
+              ? { ...cat, views: cat.views + 1 }
+              : cat,
           ),
         })),
+
       updateCat: (id, patch) =>
         set((state) => ({
           cats: state.cats.map((cat) =>
-            cat.id === id ? { ...cat, ...patch } : cat,
+            cat.id === id || cat.remoteId === id ? { ...cat, ...patch } : cat,
           ),
         })),
+
       removeCat: (id) => {
-        const existing = get().cats.find((cat) => cat.id === id);
+        const existing = get().cats.find(
+          (cat) => cat.id === id || cat.remoteId === id,
+        );
         if (existing?.photoUri) {
           void deleteCatPhoto(existing.photoUri);
         }
         set((state) => ({
-          cats: state.cats.filter((cat) => cat.id !== id),
+          cats: state.cats.filter(
+            (cat) => cat.id !== id && cat.remoteId !== id,
+          ),
         }));
       },
-      getCat: (id) => get().cats.find((cat) => cat.id === id),
+
+      getCat: (id) =>
+        get().cats.find((cat) => cat.id === id || cat.remoteId === id),
+
+      syncFromRemote: async () => {
+        if (!isSupabaseConfigured) return;
+        const remote = await pullMyCatsFromSupabase();
+        if (remote.length === 0) return;
+
+        set((state) => {
+          const merged = mergeRemoteCats(state.cats, remote);
+          const maxNumber = merged.reduce(
+            (max, cat) => Math.max(max, cat.number || 0),
+            0,
+          );
+          return {
+            cats: merged,
+            nextNumber: Math.max(state.nextNumber, maxNumber + 1),
+          };
+        });
+      },
     }),
     {
       name: 'catdex-cats',

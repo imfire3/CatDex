@@ -1,206 +1,137 @@
-import { supabase } from './supabase';
 import { decode } from 'base64-arraybuffer';
-import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
 
-/**
- * Upload a cat photo to Supabase Storage
- */
-export async function uploadCatPhoto(
-  uri: string,
-  catId: string
-): Promise<string> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error('User must be authenticated to upload photos');
-    }
+import { isCatPhotoRef, resolveCatPhotoUri } from '@/lib/photoStorage';
+import { requireSupabase } from '@/lib/supabase';
 
-    // Get file extension
-    const ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${user.id}/${catId}_${Date.now()}.${ext}`;
-    const contentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-
-    // Read file as base64
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    // Convert base64 to ArrayBuffer
-    const arrayBuffer = decode(base64);
-
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('cats')
-      .upload(fileName, arrayBuffer, {
-        contentType,
-        upsert: false,
-      });
-
-    if (error) throw error;
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('cats')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
-  } catch (error) {
-    console.error('Error uploading cat photo:', error);
-    throw error;
-  }
+function stripDataUrl(input: string): { mimeType: string; base64: string } {
+  const match = /^data:([^;]+);base64,(.+)$/s.exec(input.trim());
+  if (match) return { mimeType: match[1], base64: match[2] };
+  return { mimeType: 'image/jpeg', base64: input.trim() };
 }
 
-/**
- * Upload a sighting photo to Supabase Storage
- */
+async function uriToBase64(uri: string): Promise<{ base64: string; mimeType: string }> {
+  if (uri.startsWith('data:')) {
+    return stripDataUrl(uri);
+  }
+
+  if (isCatPhotoRef(uri)) {
+    const resolved = await resolveCatPhotoUri(uri);
+    if (!resolved) throw new Error('Photo introuvable');
+    return uriToBase64(resolved);
+  }
+
+  if (uri.startsWith('blob:') && typeof fetch !== 'undefined') {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+    return {
+      mimeType: blob.type || 'image/jpeg',
+      base64: btoa(binary),
+    };
+  }
+
+  if (Platform.OS !== 'web') {
+    const FileSystem = await import('expo-file-system');
+    const legacy = FileSystem as typeof FileSystem & {
+      readAsStringAsync?: (uri: string, options?: { encoding?: string }) => Promise<string>;
+    };
+    if (!legacy.readAsStringAsync) {
+      throw new Error('Lecture de fichier indisponible');
+    }
+    const base64 = await legacy.readAsStringAsync(uri, { encoding: 'base64' });
+    return { base64, mimeType: 'image/jpeg' };
+  }
+
+  throw new Error('Format de photo non supporté pour l’upload');
+}
+
+async function uploadToCatsBucket(path: string, uri: string, upsert = false): Promise<string> {
+  const client = requireSupabase();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (!user) throw new Error('User must be authenticated to upload photos');
+
+  const { base64, mimeType } = await uriToBase64(uri);
+  const arrayBuffer = decode(base64);
+  const { error } = await client.storage.from('cats').upload(path, arrayBuffer, {
+    contentType: mimeType || 'image/jpeg',
+    upsert,
+  });
+  if (error) throw error;
+
+  const {
+    data: { publicUrl },
+  } = client.storage.from('cats').getPublicUrl(path);
+  return publicUrl;
+}
+
+export async function uploadCatPhoto(uri: string, catId: string): Promise<string> {
+  const client = requireSupabase();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (!user) throw new Error('User must be authenticated to upload photos');
+  if (uri.startsWith('http://') || uri.startsWith('https://')) return uri;
+
+  const fileName = `${user.id}/${catId}_${Date.now()}.jpg`;
+  return uploadToCatsBucket(fileName, uri);
+}
+
 export async function uploadSightingPhoto(
   uri: string,
   catId: string,
-  sightingId: string
+  sightingId: string,
 ): Promise<string> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error('User must be authenticated to upload photos');
-    }
+  const client = requireSupabase();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (!user) throw new Error('User must be authenticated to upload photos');
+  if (uri.startsWith('http://') || uri.startsWith('https://')) return uri;
 
-    // Get file extension
-    const ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${user.id}/sightings/${catId}_${sightingId}_${Date.now()}.${ext}`;
-    const contentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-
-    // Read file as base64
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    // Convert base64 to ArrayBuffer
-    const arrayBuffer = decode(base64);
-
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('cats')
-      .upload(fileName, arrayBuffer, {
-        contentType,
-        upsert: false,
-      });
-
-    if (error) throw error;
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('cats')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
-  } catch (error) {
-    console.error('Error uploading sighting photo:', error);
-    throw error;
-  }
+  const fileName = `${user.id}/sightings/${catId}_${sightingId}_${Date.now()}.jpg`;
+  return uploadToCatsBucket(fileName, uri);
 }
 
-/**
- * Upload a profile avatar to Supabase Storage
- */
 export async function uploadAvatar(uri: string): Promise<string> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error('User must be authenticated to upload avatar');
-    }
+  const client = requireSupabase();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (!user) throw new Error('User must be authenticated to upload avatar');
 
-    // Get file extension
-    const ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${user.id}/avatar.${ext}`;
-    const contentType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-
-    // Read file as base64
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    // Convert base64 to ArrayBuffer
-    const arrayBuffer = decode(base64);
-
-    // Upload to Supabase Storage (upsert to replace existing avatar)
-    const { data, error } = await supabase.storage
-      .from('cats')
-      .upload(fileName, arrayBuffer, {
-        contentType,
-        upsert: true,
-      });
-
-    if (error) throw error;
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('cats')
-      .getPublicUrl(fileName);
-
-    // Update profile with new avatar URL
-    await supabase
-      .from('profiles')
-      .update({ avatar_url: publicUrl })
-      .eq('id', user.id);
-
-    return publicUrl;
-  } catch (error) {
-    console.error('Error uploading avatar:', error);
-    throw error;
-  }
+  const fileName = `${user.id}/avatar.jpg`;
+  const publicUrl = await uploadToCatsBucket(fileName, uri, true);
+  await client.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+  return publicUrl;
 }
 
-/**
- * Delete a photo from Supabase Storage
- */
 export async function deletePhoto(url: string): Promise<void> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error('User must be authenticated to delete photos');
-    }
+  const client = requireSupabase();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (!user) throw new Error('User must be authenticated to delete photos');
 
-    // Extract file path from URL
-    const urlParts = url.split('/storage/v1/object/public/cats/');
-    if (urlParts.length < 2) {
-      throw new Error('Invalid photo URL');
-    }
-    
-    const filePath = urlParts[1];
-
-    // Verify the file belongs to the user
-    if (!filePath.startsWith(user.id)) {
-      throw new Error('You can only delete your own photos');
-    }
-
-    // Delete from storage
-    const { error } = await supabase.storage
-      .from('cats')
-      .remove([filePath]);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error('Error deleting photo:', error);
-    throw error;
+  const urlParts = url.split('/storage/v1/object/public/cats/');
+  if (urlParts.length < 2) throw new Error('Invalid photo URL');
+  const filePath = urlParts[1];
+  if (!filePath.startsWith(user.id)) {
+    throw new Error('You can only delete your own photos');
   }
+
+  const { error } = await client.storage.from('cats').remove([filePath]);
+  if (error) throw error;
 }
 
-/**
- * Get a signed URL for a private photo (if needed later)
- */
-export async function getSignedPhotoUrl(
-  path: string,
-  expiresIn: number = 3600
-): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from('cats')
-    .createSignedUrl(path, expiresIn);
-
+export async function getSignedPhotoUrl(path: string, expiresIn: number = 3600): Promise<string> {
+  const client = requireSupabase();
+  const { data, error } = await client.storage.from('cats').createSignedUrl(path, expiresIn);
   if (error) throw error;
-  
   return data.signedUrl;
 }

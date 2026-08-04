@@ -9,7 +9,12 @@ import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { TextInput } from '@/components/Input';
 import { validateEmail, validatePassword } from '@/lib/authValidation';
-import { useAuthStore, getPostAuthHref } from '@/store/auth';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import {
+  getAuthErrorMessage,
+  getPostAuthHref,
+  useAuthStore,
+} from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 function GoogleGlyph() {
@@ -50,12 +55,16 @@ export default function LoginScreen() {
   const { colors, spacing, fonts, motion } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
-  const signIn = useAuthStore((state) => state.signIn);
+  const signInWithEmail = useAuthStore((state) => state.signInWithEmail);
+  const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle);
+  const signInWithApple = useAuthStore((state) => state.signInWithApple);
+  const clearError = useAuthStore((state) => state.clearError);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const errors = useMemo(() => {
     if (!submitted) return { email: null as string | null, password: null as string | null };
@@ -69,17 +78,39 @@ export default function LoginScreen() {
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
   }
 
-  const enter = (provider: 'email' | 'google' | 'apple') => {
-    if (provider === 'email') {
-      setSubmitted(true);
-      if (validateEmail(email) || validatePassword(password)) return;
-      setLoading(true);
-      signIn('email', email.trim());
-    } else {
-      setLoading(true);
-      signIn(provider);
+  const enterEmail = async () => {
+    setSubmitted(true);
+    clearError();
+    setFormError(null);
+    if (validateEmail(email) || validatePassword(password)) return;
+
+    setLoading(true);
+    try {
+      await signInWithEmail(email.trim(), password);
+      router.replace(getPostAuthHref(useAuthStore.getState().onboardingCompleted));
+    } catch (error) {
+      setFormError(getAuthErrorMessage(error as never));
+    } finally {
+      setLoading(false);
     }
-    router.replace(getPostAuthHref(useAuthStore.getState().onboardingCompleted));
+  };
+
+  const enterOAuth = async (provider: 'google' | 'apple') => {
+    clearError();
+    setFormError(null);
+    setLoading(true);
+    try {
+      if (provider === 'google') await signInWithGoogle();
+      else await signInWithApple();
+      // Native OAuth returns via deep link; mock mode sets user immediately.
+      if (useAuthStore.getState().user) {
+        router.replace(getPostAuthHref(useAuthStore.getState().onboardingCompleted));
+      }
+    } catch (error) {
+      setFormError(getAuthErrorMessage(error as never));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const primaryDisabled = loading || !email.trim() || !password;
@@ -103,7 +134,7 @@ export default function LoginScreen() {
               title="Connexion"
               loading={loading}
               disabled={primaryDisabled && !loading}
-              onPress={() => enter('email')}
+              onPress={() => void enterEmail()}
             />
           </View>
           <Pressable
@@ -131,6 +162,16 @@ export default function LoginScreen() {
       }
     >
       <View style={{ gap: spacing[24] }}>
+        {!isSupabaseConfigured ? (
+          <Text variant="caption" color="warning">
+            Mode local — ajoute ta clé Supabase dans `.env` pour l’auth réelle.
+          </Text>
+        ) : null}
+        {formError ? (
+          <Text variant="bodySmall" color="danger">
+            {formError}
+          </Text>
+        ) : null}
         <TextInput
           label="E-mail"
           value={email}
@@ -160,14 +201,14 @@ export default function LoginScreen() {
           variant="google"
           title="Continuer avec Google"
           disabled={loading}
-          onPress={() => enter('google')}
+          onPress={() => void enterOAuth('google')}
           icon={<GoogleGlyph />}
         />
         <Button
           variant="apple"
           title="Continuer avec Apple"
           disabled={loading}
-          onPress={() => enter('apple')}
+          onPress={() => void enterOAuth('apple')}
           icon={<AppleGlyph color={colors.authAppleLabel} />}
         />
       </View>

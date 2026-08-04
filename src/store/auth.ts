@@ -2,9 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Session, AuthError } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
+import { Platform } from 'react-native';
 
 import type { User } from '@/types/cat';
-import { supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 type SignUpInput = {
   email: string;
@@ -18,9 +20,9 @@ type AuthState = {
   onboardingCompleted: boolean;
   hydrated: boolean;
   loading: boolean;
-  error: AuthError | null;
+  error: AuthError | string | null;
   setHydrated: (value: boolean) => void;
-  signIn: (provider: User['provider'], email?: string, displayName?: string) => Promise<void>;
+  clearError: () => void;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUp: (input: SignUpInput) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -28,6 +30,7 @@ type AuthState = {
   completeOnboarding: () => void;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
+  handleAuthUrl: (url: string) => Promise<boolean>;
 };
 
 function isGuestUser(user: User | null | undefined): boolean {
@@ -37,6 +40,57 @@ function isGuestUser(user: User | null | undefined): boolean {
     user.email === 'invite@catdex.app' ||
     user.displayName === 'Invité'
   );
+}
+
+function providerFromUser(user: { app_metadata?: { provider?: string } }): User['provider'] {
+  const provider = user.app_metadata?.provider;
+  if (provider === 'google' || provider === 'apple') return provider;
+  return 'email';
+}
+
+async function profileForUser(userId: string, email: string | undefined) {
+  if (!supabase) return null;
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching profile:', error);
+  }
+  return (
+    profile ?? {
+      display_name: email?.split('@')[0] || 'User',
+      avatar_url: null as string | null,
+    }
+  );
+}
+
+function toAppUser(
+  sessionUser: {
+    id: string;
+    email?: string | null;
+    app_metadata?: { provider?: string };
+  },
+  profile: { display_name?: string | null; avatar_url?: string | null } | null,
+): User {
+  return {
+    id: sessionUser.id,
+    email: sessionUser.email || '',
+    displayName:
+      profile?.display_name || sessionUser.email?.split('@')[0] || 'User',
+    provider: providerFromUser(sessionUser),
+    avatarUrl: profile?.avatar_url || undefined,
+  };
+}
+
+async function syncCatsAfterAuth() {
+  try {
+    const { useCatsStore } = await import('@/store/cats');
+    await useCatsStore.getState().syncFromRemote();
+  } catch (error) {
+    console.warn('[auth] cat sync failed', error);
+  }
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -50,11 +104,11 @@ export const useAuthStore = create<AuthState>()(
       error: null,
 
       setHydrated: (value) => set({ hydrated: value }),
+      clearError: () => set({ error: null }),
 
       initialize: async () => {
-        // Skip Supabase initialization if not configured
         if (!supabase) {
-          console.log('📝 Using mock authentication (Supabase not configured)');
+          console.log('📝 Auth mock (Supabase non configuré)');
           set({ loading: false, hydrated: true });
           return;
         }
@@ -62,57 +116,35 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ loading: true, error: null });
 
-          // Get current session
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-          
+          const {
+            data: { session },
+            error: sessionError,
+          } = await supabase.auth.getSession();
           if (sessionError) throw sessionError;
 
           if (session?.user) {
-            // Fetch user profile from database
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (profileError && profileError.code !== 'PGRST116') {
-              console.error('Error fetching profile:', profileError);
-            }
-
+            const profile = await profileForUser(session.user.id, session.user.email);
             set({
               session,
-              user: {
-                id: session.user.id,
-                email: session.user.email || '',
-                displayName: profile?.display_name || session.user.email?.split('@')[0] || 'User',
-                provider: (session.user.app_metadata.provider as User['provider']) || 'email',
-                avatarUrl: profile?.avatar_url,
-              },
+              user: toAppUser(session.user, profile),
               loading: false,
             });
+            void syncCatsAfterAuth();
           } else {
             set({ session: null, user: null, loading: false });
           }
 
-          // Listen for auth changes
-          supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (session?.user) {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-
+          supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+            if (nextSession?.user) {
+              const profile = await profileForUser(
+                nextSession.user.id,
+                nextSession.user.email,
+              );
               set({
-                session,
-                user: {
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  displayName: profile?.display_name || session.user.email?.split('@')[0] || 'User',
-                  provider: (session.user.app_metadata.provider as User['provider']) || 'email',
-                  avatarUrl: profile?.avatar_url,
-                },
+                session: nextSession,
+                user: toAppUser(nextSession.user, profile),
               });
+              void syncCatsAfterAuth();
             } else {
               set({ session: null, user: null });
             }
@@ -123,28 +155,38 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      signIn: async (provider, email, displayName) => {
-        // Legacy method for compatibility - redirects to appropriate method
-        if (provider === 'email' && email) {
-          // For email, this would need a password - kept for backward compatibility
-          const resolvedEmail = email?.trim() || 'explorer@catdex.app';
-          set({
-            user: {
-              id: `user_${provider}_${Date.now()}`,
-              email: resolvedEmail,
-              displayName: displayName?.trim() || resolvedEmail.split('@')[0] || 'Explorer',
-              provider,
-            },
-          });
-        } else if (provider === 'google') {
-          await get().signInWithGoogle();
-        } else if (provider === 'apple') {
-          await get().signInWithApple();
+      handleAuthUrl: async (url: string) => {
+        if (!supabase) return false;
+        try {
+          // Prefer PKCE code exchange when present
+          if (url.includes('code=')) {
+            const { error } = await supabase.auth.exchangeCodeForSession(url);
+            if (error) throw error;
+            return true;
+          }
+          // Implicit hash tokens (web)
+          if (url.includes('access_token') || url.includes('#')) {
+            const hash = url.includes('#') ? url.split('#')[1] : url.split('?')[1];
+            const params = new URLSearchParams(hash);
+            const access_token = params.get('access_token');
+            const refresh_token = params.get('refresh_token');
+            if (access_token && refresh_token) {
+              const { error } = await supabase.auth.setSession({
+                access_token,
+                refresh_token,
+              });
+              if (error) throw error;
+              return true;
+            }
+          }
+        } catch (error) {
+          console.error('Auth URL handling error:', error);
+          set({ error: error as AuthError });
         }
+        return false;
       },
 
       signInWithEmail: async (email, password) => {
-        // Fallback to mock if Supabase not configured
         if (!supabase) {
           set({
             user: {
@@ -154,38 +196,29 @@ export const useAuthStore = create<AuthState>()(
               provider: 'email',
             },
             loading: false,
+            error: null,
           });
           return;
         }
 
         try {
           set({ loading: true, error: null });
-
           const { data, error } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password,
           });
-
           if (error) throw error;
 
           if (data.user) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', data.user.id)
-              .single();
-
+            const profile = await profileForUser(data.user.id, data.user.email);
             set({
               session: data.session,
-              user: {
-                id: data.user.id,
-                email: data.user.email || '',
-                displayName: profile?.display_name || data.user.email?.split('@')[0] || 'User',
-                provider: 'email',
-                avatarUrl: profile?.avatar_url,
-              },
+              user: toAppUser(data.user, profile),
               loading: false,
             });
+            void syncCatsAfterAuth();
+          } else {
+            set({ loading: false });
           }
         } catch (error) {
           console.error('Sign in error:', error);
@@ -195,7 +228,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signUp: async ({ email, password, displayName }) => {
-        // Fallback to mock if Supabase not configured
         if (!supabase) {
           set({
             user: {
@@ -206,35 +238,40 @@ export const useAuthStore = create<AuthState>()(
             },
             onboardingCompleted: false,
             loading: false,
+            error: null,
           });
           return;
         }
 
         try {
           set({ loading: true, error: null });
-
           const { data, error } = await supabase.auth.signUp({
             email: email.trim(),
             password,
             options: {
-              data: {
-                display_name: displayName.trim(),
-              },
+              data: { display_name: displayName.trim() },
             },
           });
-
           if (error) throw error;
 
           if (data.user) {
-            // Create profile
-            const { error: profileError } = await supabase.from('profiles').insert({
-              id: data.user.id,
-              email: email.trim(),
-              display_name: displayName.trim(),
-            });
+            // Profile is created by DB trigger; upsert is best-effort only.
+            await supabase.from('profiles').upsert(
+              {
+                id: data.user.id,
+                email: email.trim(),
+                display_name: displayName.trim(),
+              },
+              { onConflict: 'id' },
+            );
 
-            if (profileError) {
-              console.error('Profile creation error:', profileError);
+            if (!data.session) {
+              set({
+                loading: false,
+                error:
+                  'Compte créé — confirme ton e-mail puis reconnecte-toi.',
+              });
+              return;
             }
 
             set({
@@ -248,6 +285,9 @@ export const useAuthStore = create<AuthState>()(
               onboardingCompleted: false,
               loading: false,
             });
+            void syncCatsAfterAuth();
+          } else {
+            set({ loading: false });
           }
         } catch (error) {
           console.error('Sign up error:', error);
@@ -257,7 +297,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithGoogle: async () => {
-        // Fallback to mock if Supabase not configured
         if (!supabase) {
           set({
             user: {
@@ -273,16 +312,23 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           set({ loading: true, error: null });
+          const redirectTo =
+            Platform.OS === 'web' && typeof window !== 'undefined'
+              ? `${window.location.origin}/auth/callback`
+              : Linking.createURL('auth/callback');
 
           const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-              redirectTo: 'catdex://auth/callback',
+              redirectTo,
+              skipBrowserRedirect: Platform.OS !== 'web',
             },
           });
-
           if (error) throw error;
 
+          if (Platform.OS !== 'web' && data.url) {
+            await Linking.openURL(data.url);
+          }
           set({ loading: false });
         } catch (error) {
           console.error('Google sign in error:', error);
@@ -292,7 +338,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithApple: async () => {
-        // Fallback to mock if Supabase not configured
         if (!supabase) {
           set({
             user: {
@@ -308,16 +353,23 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           set({ loading: true, error: null });
+          const redirectTo =
+            Platform.OS === 'web' && typeof window !== 'undefined'
+              ? `${window.location.origin}/auth/callback`
+              : Linking.createURL('auth/callback');
 
           const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'apple',
             options: {
-              redirectTo: 'catdex://auth/callback',
+              redirectTo,
+              skipBrowserRedirect: Platform.OS !== 'web',
             },
           });
-
           if (error) throw error;
 
+          if (Platform.OS !== 'web' && data.url) {
+            await Linking.openURL(data.url);
+          }
           set({ loading: false });
         } catch (error) {
           console.error('Apple sign in error:', error);
@@ -334,7 +386,12 @@ export const useAuthStore = create<AuthState>()(
           if (supabase) {
             await supabase.auth.signOut();
           }
-          set({ user: null, session: null, onboardingCompleted: false, loading: false });
+          set({
+            user: null,
+            session: null,
+            onboardingCompleted: false,
+            loading: false,
+          });
         } catch (error) {
           console.error('Sign out error:', error);
           set({ loading: false, error: error as AuthError });
@@ -353,15 +410,36 @@ export const useAuthStore = create<AuthState>()(
         if (isGuestUser(state?.user)) {
           useAuthStore.setState({ user: null, onboardingCompleted: false });
         }
+        // Drop stale mock users when Supabase is configured
+        if (
+          isSupabaseConfigured &&
+          state?.user?.id?.startsWith('user_')
+        ) {
+          useAuthStore.setState({ user: null, onboardingCompleted: false });
+        }
         useAuthStore.getState().setHydrated(true);
-        // Initialize Supabase auth after rehydration
-        useAuthStore.getState().initialize();
+        void useAuthStore.getState().initialize();
       },
     },
   ),
 );
 
-/** Post-auth destination: onboarding if needed, otherwise map. */
 export function getPostAuthHref(onboardingCompleted: boolean) {
   return onboardingCompleted ? '/(tabs)/map' : '/(auth)/intro';
+}
+
+export function getAuthErrorMessage(error: AuthError | string | null | undefined): string {
+  if (!error) return 'Une erreur est survenue.';
+  if (typeof error === 'string') return error;
+  const message = error.message || 'Une erreur est survenue.';
+  if (/invalid login credentials/i.test(message)) {
+    return 'E-mail ou mot de passe incorrect.';
+  }
+  if (/email not confirmed/i.test(message)) {
+    return 'Confirme ton e-mail avant de te connecter.';
+  }
+  if (/already registered/i.test(message)) {
+    return 'Un compte existe déjà avec cet e-mail.';
+  }
+  return message;
 }
