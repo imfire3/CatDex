@@ -190,6 +190,7 @@ export function CatCardDetail({
 }: CatCardDetailProps) {
   const { colors, fonts, spacing, radius, iconStroke, scheme, motion } = useTheme();
   const insets = useSafeAreaInsets();
+  const [photoFailed, setPhotoFailed] = useState(false);
   const analysis = enrichAnalysis(rawAnalysis, number);
   const theme = themeFromColorLabel(analysis.color, number);
   const soft = themeSoft(theme, scheme);
@@ -200,6 +201,7 @@ export function CatCardDetail({
   const likesPct = 50 + ((number * 13) % 41);
   const showPhoto =
     Boolean(photoUri) &&
+    !photoFailed &&
     !photoUri!.startsWith('demo') &&
     !photoUri!.startsWith('blob:');
   const traitTags =
@@ -295,9 +297,7 @@ export function CatCardDetail({
               resizeMode="cover"
               style={{ width: '100%', height: '100%' }}
               accessibilityLabel={`Photo de ${name}`}
-              onError={() => {
-                /* broken URI — CatSprite fallback via remount is handled by parent; keep soft bg */
-              }}
+              onError={() => setPhotoFailed(true)}
             />
           ) : (
             <CatSprite colorLabel={analysis.color} seed={number} size={200} />
