@@ -1,5 +1,5 @@
 /**
- * Soft cream luminous veil — very light so Apple Maps 3D remains readable.
+ * Soft cream luminous veil — keeps the pale isometric map high-key.
  */
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,11 +9,11 @@ export function MapLuminousOverlay() {
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <LinearGradient
         colors={[
-          'rgba(255, 255, 255, 0.12)',
+          'rgba(244, 243, 248, 0.18)',
           'rgba(255, 255, 255, 0)',
-          'rgba(255, 255, 255, 0.08)',
+          'rgba(244, 243, 248, 0.14)',
         ]}
-        locations={[0, 0.45, 1]}
+        locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
       />
     </View>
