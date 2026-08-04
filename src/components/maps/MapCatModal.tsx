@@ -9,11 +9,7 @@ import { formatDistanceMeters } from '@/lib/constants';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-<<<<<<< HEAD
 import { LOWPOLY_CAT_PIN } from '@/components/maps/CatPinVisual';
-=======
-const MYSTERY_CAT_PIN = require('../../../assets/models/paws-polite-cat/pin.png');
->>>>>>> origin/cursor/uncaptured-pin-capture-cta-a08b
 
 type Props = {
   visible: boolean;
@@ -134,11 +130,7 @@ export function MapCatModal({
               />
             ) : (
               <Image
-<<<<<<< HEAD
                 source={LOWPOLY_CAT_PIN}
-=======
-                source={MYSTERY_CAT_PIN}
->>>>>>> origin/cursor/uncaptured-pin-capture-cta-a08b
                 style={{ width: '72%', height: '72%' }}
                 resizeMode="contain"
                 accessibilityLabel="Chat mystère"
