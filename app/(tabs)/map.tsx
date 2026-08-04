@@ -17,6 +17,7 @@ import {
   PROXIMITY_ALERT_M,
   sortCatsByDistance,
 } from '@/lib/mapExplore';
+import { buildWorldCats } from '@/lib/worldCats';
 import { useCatsStore } from '@/store/cats';
 import { useMapExploreStore } from '@/store/mapExplore';
 import { useMissionsStore } from '@/store/missions';
@@ -38,7 +39,6 @@ export default function MapScreen() {
   const openMissionCount = missions.filter((m) => !m.completed).length;
 
   const capturedIds = useMemo(() => new Set(storedCats.map((cat) => cat.id)), [storedCats]);
-  const mapCats = storedCats;
 
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -54,6 +54,21 @@ export default function MapScreen() {
   } | null>(null);
 
   const lastHapticCatRef = useRef<string | null>(null);
+  /** Freeze world spawn origin so pins don’t drift with GPS noise. */
+  const worldAnchorRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  if (userCoordinate && !worldAnchorRef.current) {
+    worldAnchorRef.current = userCoordinate;
+  }
+
+  /** Own CatDex + world spawns around the player (world pins stay uncaptured). */
+  const mapCats = useMemo(() => {
+    const anchor = worldAnchorRef.current ?? PARIS_20E.center;
+    const world = buildWorldCats(anchor).filter((cat) => !capturedIds.has(cat.id));
+    const byId = new Map<string, Cat>();
+    for (const cat of [...storedCats, ...world]) byId.set(cat.id, cat);
+    return [...byId.values()];
+  }, [storedCats, userCoordinate, capturedIds]);
+
   const selectedCaptured = selected ? capturedIds.has(selected.id) : false;
 
   const sortedCats = useMemo(
@@ -233,6 +248,12 @@ export default function MapScreen() {
           });
           setSheetVisible(false);
           setSelected(null);
+        }}
+        onCapture={() => {
+          if (!selected) return;
+          setSheetVisible(false);
+          setSelected(null);
+          router.push('/scanner');
         }}
       />
     </View>

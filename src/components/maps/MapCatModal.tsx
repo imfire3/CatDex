@@ -9,7 +9,11 @@ import { formatDistanceMeters } from '@/lib/constants';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
+<<<<<<< HEAD
 import { LOWPOLY_CAT_PIN } from '@/components/maps/CatPinVisual';
+=======
+const MYSTERY_CAT_PIN = require('../../../assets/models/paws-polite-cat/pin.png');
+>>>>>>> origin/cursor/uncaptured-pin-capture-cta-a08b
 
 type Props = {
   visible: boolean;
@@ -19,6 +23,8 @@ type Props = {
   onClose: () => void;
   onViewCard: () => void;
   onGoThere: () => void;
+  /** Primary action for uncaptured world cats — open the scanner. */
+  onCapture: () => void;
 };
 
 /**
@@ -32,6 +38,7 @@ export function MapCatModal({
   onClose,
   onViewCard,
   onGoThere,
+  onCapture,
 }: Props) {
   const { colors, fonts, spacing, radius, iconStroke, motion } = useTheme();
   const insets = useSafeAreaInsets();
@@ -127,7 +134,11 @@ export function MapCatModal({
               />
             ) : (
               <Image
+<<<<<<< HEAD
                 source={LOWPOLY_CAT_PIN}
+=======
+                source={MYSTERY_CAT_PIN}
+>>>>>>> origin/cursor/uncaptured-pin-capture-cta-a08b
                 style={{ width: '72%', height: '72%' }}
                 resizeMode="contain"
                 accessibilityLabel="Chat mystère"
@@ -165,9 +176,14 @@ export function MapCatModal({
             {captured ? (
               <Button title="Voir la fiche" onPress={onViewCard} />
             ) : (
-              <Button title="J’y vais" onPress={onGoThere} />
+              <>
+                <Button title="Le capturer" onPress={onCapture} />
+                <Button title="J’y vais" variant="secondary" onPress={onGoThere} />
+              </>
             )}
-            <Button title="Retour" variant="secondary" onPress={onClose} />
+            {captured ? (
+              <Button title="Retour" variant="secondary" onPress={onClose} />
+            ) : null}
           </View>
         </ScrollView>
       </View>
