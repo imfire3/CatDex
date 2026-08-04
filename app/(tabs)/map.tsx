@@ -121,7 +121,7 @@ export default function MapScreen() {
         cats={filteredCats}
         scheme="light"
         focusCoordinate={focusCoordinate}
-        userCoordinate={userCoordinate ?? PARIS_20E.center}
+        userCoordinate={userCoordinate}
         onSelectCat={(item) => {
           setSelected(item);
           setSheetVisible(true);
