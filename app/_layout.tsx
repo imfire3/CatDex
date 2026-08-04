@@ -35,6 +35,10 @@ function RootNavigator() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen
+        name="auth/callback"
+        options={{ headerShown: false, animation: 'fade' }}
+      />
+      <Stack.Screen
         name="scanner"
         options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
       />

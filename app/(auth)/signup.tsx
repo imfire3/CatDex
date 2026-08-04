@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
+import { Text } from '@/components/Text';
 import { TextInput } from '@/components/Input';
 import {
   validateEmail,
@@ -12,7 +13,12 @@ import {
   validatePasswordConfirm,
   validatePseudo,
 } from '@/lib/authValidation';
-import { useAuthStore, getPostAuthHref } from '@/store/auth';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import {
+  getAuthErrorMessage,
+  getPostAuthHref,
+  useAuthStore,
+} from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SignupScreen() {
@@ -20,6 +26,7 @@ export default function SignupScreen() {
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const signUp = useAuthStore((state) => state.signUp);
+  const clearError = useAuthStore((state) => state.clearError);
 
   const [pseudo, setPseudo] = useState('');
   const [email, setEmail] = useState('');
@@ -27,6 +34,8 @@ export default function SignupScreen() {
   const [confirm, setConfirm] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const errors = useMemo(() => {
     if (!submitted) {
@@ -53,16 +62,19 @@ export default function SignupScreen() {
       !validateEmail(email) &&
       !validatePassword(password) &&
       !validatePasswordConfirm(password, confirm) &&
-      accepted,
-    [accepted, confirm, email, password, pseudo],
+      accepted &&
+      !loading,
+    [accepted, confirm, email, loading, password, pseudo],
   );
 
   if (user) {
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
   }
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     setSubmitted(true);
+    clearError();
+    setFormError(null);
     const next = {
       pseudo: validatePseudo(pseudo),
       email: validateEmail(email),
@@ -72,12 +84,27 @@ export default function SignupScreen() {
     };
     if (Object.values(next).some(Boolean)) return;
 
-    signUp({
-      email: email.trim(),
-      password,
-      displayName: pseudo.trim(),
-    });
-    router.replace('/(auth)/intro');
+    setLoading(true);
+    try {
+      await signUp({
+        email: email.trim(),
+        password,
+        displayName: pseudo.trim(),
+      });
+
+      const state = useAuthStore.getState();
+      if (state.user) {
+        router.replace('/(auth)/intro');
+        return;
+      }
+      if (state.error) {
+        setFormError(getAuthErrorMessage(state.error));
+      }
+    } catch (error) {
+      setFormError(getAuthErrorMessage(error as never));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -97,18 +124,30 @@ export default function SignupScreen() {
         <View style={{ gap: spacing[8] }}>
           <Button
             title="Créer mon compte"
+            loading={loading}
             disabled={!canSubmit}
-            onPress={onSubmit}
+            onPress={() => void onSubmit()}
           />
           <Button
             variant="secondary"
             title="J’ai déjà un compte"
+            disabled={loading}
             onPress={() => router.push('/(auth)/login')}
           />
         </View>
       }
     >
       <View style={{ gap: spacing[16] }}>
+        {!isSupabaseConfigured ? (
+          <Text variant="caption" color="warning">
+            Mode local — ajoute ta clé Supabase dans `.env` pour l’auth réelle.
+          </Text>
+        ) : null}
+        {formError ? (
+          <Text variant="bodySmall" color="danger">
+            {formError}
+          </Text>
+        ) : null}
         <TextInput
           label="Pseudo"
           value={pseudo}

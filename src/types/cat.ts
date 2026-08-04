@@ -16,6 +16,8 @@ export type CatAnalysis = {
 
 export type Cat = {
   id: string;
+  /** Supabase UUID when synced */
+  remoteId?: string;
   number: number;
   name: string;
   photoUri: string;
