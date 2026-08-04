@@ -1,12 +1,19 @@
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AuthBackButton } from '@/components/Auth/AuthChrome';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { formatDexNumber } from '@/lib/constants';
-import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
-import { enrichAnalysis } from '@/lib/catTraits';
+import {
+  catDexRarityLabel,
+  resolveRevealRarity,
+  rarityTokens,
+  themeFromColorLabel,
+  themeSoft,
+} from '@/lib/catTheme';
+import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { CatAnalysis } from '@/types/cat';
 
@@ -20,8 +27,8 @@ type Props = {
 };
 
 /**
- * Post-capture reveal — white centered layout from CatDex mock.
- * "NOUVEAU CATDEX" · #NNN · photo · name · trait pills · description · sticky CTA
+ * Post-capture reveal — same visual language as CatCardDetail,
+ * with a flex sticky bottom CTA bar (always pinned above the home indicator).
  */
 export function CaptureReveal({
   name,
@@ -37,10 +44,10 @@ export function CaptureReveal({
   const theme = themeFromColorLabel(analysis.color, number);
   const soft = themeSoft(theme, scheme);
   const dexLabel = formatDexNumber(number);
+  const rarityId = resolveRevealRarity(analysis, number);
+  const rarity = rarityTokens[rarityId];
+  const symbol = genderSymbol(analysis.gender);
   const footerPadBottom = Math.max(insets.bottom, spacing[16]);
-  // Button 56 + retake row + gaps + footer padding
-  const footerReserve =
-    spacing[56] + spacing[16] + spacing[40] + spacing[16] + footerPadBottom;
 
   const pills = [
     analysis.tags?.[0],
@@ -52,30 +59,44 @@ export function CaptureReveal({
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <View
+        style={{
+          paddingTop: insets.top + spacing[8],
+          paddingHorizontal: spacing[24],
+          paddingBottom: spacing[8],
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: colors.background,
+        }}
+      >
+        <AuthBackButton onPress={onRetake} />
+        <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+          CatDex
+        </Text>
+        <View style={{ width: spacing[40], height: spacing[40] }} />
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: insets.top + spacing[32],
           paddingHorizontal: spacing[24],
-          paddingBottom: footerReserve + spacing[24],
-          alignItems: 'center',
+          paddingTop: spacing[8],
+          paddingBottom: spacing[24],
+          gap: spacing[24],
         }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={{ alignItems: 'center', gap: spacing[4], marginBottom: spacing[24] }}>
-          <Text
-            variant="label"
-            color="textBrand"
-            align="center"
-            style={{ letterSpacing: 1.2 }}
-          >
+        <View style={{ gap: spacing[4] }}>
+          <Text variant="label" color="textBrand" style={{ letterSpacing: 1.2 }}>
             Nouveau CatDex
           </Text>
           <Text
-            variant="display"
-            align="center"
-            style={{ fontFamily: fonts.display, color: colors.text }}
+            variant="h1"
+            color="text"
+            style={{ fontFamily: fonts.display }}
           >
             {dexLabel}
           </Text>
@@ -89,107 +110,141 @@ export function CaptureReveal({
               borderRadius: radius[8],
               borderWidth: 1,
               borderColor: colors.border,
-              backgroundColor: colors.surfaceElevated,
+              backgroundColor: soft,
               overflow: 'hidden',
-              marginBottom: spacing[24],
             },
+            shadow.low,
           ]}
         >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: soft,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Image
-              source={{ uri: photoUri }}
-              resizeMode="cover"
-              style={{ width: '100%', height: '100%' }}
-              accessibilityLabel={`Photo de ${name}`}
-            />
-          </View>
+          <Image
+            source={{ uri: photoUri }}
+            resizeMode="cover"
+            style={{ width: '100%', height: '100%' }}
+            accessibilityLabel={`Photo de ${name}`}
+          />
         </View>
 
-        <Text
-          variant="h2"
-          align="center"
-          color="text"
-          style={{ fontFamily: fonts.display, marginBottom: spacing[16] }}
-        >
-          {name}
-        </Text>
+        <View style={{ gap: spacing[8], width: '100%' }}>
+          <Badge
+            label={catDexRarityLabel(rarityId).toUpperCase()}
+            color={rarity.foreground}
+            backgroundColor={rarity.background}
+          />
 
-        {uniquePills.length > 0 ? (
           <View
             style={{
               flexDirection: 'row',
               flexWrap: 'wrap',
-              justifyContent: 'center',
+              alignItems: 'center',
               gap: spacing[8],
-              marginBottom: spacing[16],
             }}
           >
-            {uniquePills.map((label) => (
-              <Badge
-                key={label}
-                label={label}
-                color={theme.badge}
-                backgroundColor={soft}
-              />
-            ))}
+            <Text
+              variant="h2"
+              color="textBrand"
+              style={{ fontFamily: fonts.display, textTransform: 'uppercase' }}
+            >
+              {name}
+            </Text>
+            {symbol ? (
+              <Text variant="body" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+                {symbol}
+              </Text>
+            ) : null}
           </View>
-        ) : null}
 
-        <Text
-          variant="body"
-          color="textBody"
-          align="center"
+          {uniquePills.length > 0 ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: spacing[8],
+              }}
+            >
+              {uniquePills.map((label) => (
+                <Badge
+                  key={label}
+                  label={label}
+                  color={theme.badge}
+                  backgroundColor={soft}
+                />
+              ))}
+            </View>
+          ) : null}
+        </View>
+
+        <View
           style={{
-            paddingHorizontal: spacing[8],
-            fontFamily: fonts.body,
+            width: '100%',
+            gap: spacing[8],
+            padding: spacing[16],
+            borderRadius: radius[8],
+            backgroundColor: colors.surfaceElevated,
+            borderWidth: 1,
+            borderColor: colors.border,
           }}
         >
-          {analysis.description}
-        </Text>
+          <Text variant="body" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+            Description
+          </Text>
+          <Text variant="body" color="textBody" style={{ fontFamily: fonts.body }}>
+            {analysis.description}
+          </Text>
+        </View>
+
+        <View style={{ gap: spacing[8], width: '100%' }}>
+          <Text variant="h3" color="textBrand">
+            Caractéristiques
+          </Text>
+          <View style={{ flexDirection: 'row', gap: spacing[8] }}>
+            <TraitStat label="Couleur" value={analysis.color || '—'} />
+            <TraitStat label="Race" value={analysis.breed || '—'} />
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing[8] }}>
+            <TraitStat label="Pelage" value={analysis.coat || '—'} />
+            <TraitStat label="Taille" value={analysis.size || '—'} />
+          </View>
+        </View>
       </ScrollView>
 
       <View
-        style={[
-          styles.footer,
-          {
-            paddingHorizontal: spacing[24],
-            paddingTop: spacing[16],
-            paddingBottom: footerPadBottom,
-            backgroundColor: colors.background,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: colors.border,
-            gap: spacing[8],
-          },
-          shadow.low,
-        ]}
+        style={{
+          paddingHorizontal: spacing[24],
+          paddingTop: spacing[16],
+          paddingBottom: footerPadBottom,
+          backgroundColor: colors.background,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.border,
+          gap: spacing[8],
+        }}
       >
         <Button title="Ajouter à ma collection" onPress={onAdd} />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Reprendre la photo"
-          onPress={onRetake}
-          style={({ pressed }) => ({
-            alignItems: 'center',
-            paddingVertical: spacing[8],
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text
-            variant="body"
-            color="textBrand"
-            style={{ fontFamily: fonts.bodySemi }}
-          >
-            Reprendre la photo
-          </Text>
-        </Pressable>
+        <Button title="Reprendre la photo" variant="secondary" onPress={onRetake} />
       </View>
+    </View>
+  );
+}
+
+function TraitStat({ label, value }: { label: string; value: string }) {
+  const { colors, fonts, spacing, radius } = useTheme();
+  return (
+    <View
+      style={{
+        flex: 1,
+        gap: spacing[4],
+        padding: spacing[16],
+        borderRadius: radius[8],
+        backgroundColor: colors.surfaceElevated,
+        borderWidth: 1,
+        borderColor: colors.border,
+      }}
+    >
+      <Text variant="caption" color="textMuted">
+        {label}
+      </Text>
+      <Text variant="bodySmall" color="text" style={{ fontFamily: fonts.bodySemi }} numberOfLines={1}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -200,11 +255,5 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-  },
-  footer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
   },
 });
