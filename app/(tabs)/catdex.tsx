@@ -54,14 +54,30 @@ export default function CatDexScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={{ paddingHorizontal: spacing[24], paddingTop: spacing[24], gap: spacing[16] }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ flex: 1, alignItems: 'flex-start' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: spacing[40] }}>
+          <View style={{ flex: 1, alignItems: 'flex-start', zIndex: 1 }}>
             <AuthBackButton onPress={handleBack} />
           </View>
-          <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
-            CatDex
-          </Text>
-          <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text
+              variant="h1"
+              color="textBrand"
+              align="center"
+              style={{ fontFamily: fonts.display }}
+            >
+              CatDex
+            </Text>
+          </View>
+          <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center', zIndex: 1 }}>
             <Text variant="bodySmall" color="brand" style={{ fontFamily: fonts.bodySemi }}>
               {cats.length} / {CATDEX_TARGET}
             </Text>

@@ -29,11 +29,16 @@ export default function MissionsScreen() {
           gap: spacing[24],
         }}
       >
-        <View style={{ gap: spacing[8] }}>
-          <Text variant="h1" color="textBrand">
+        <View style={{ gap: spacing[8], alignItems: 'center' }}>
+          <Text
+            variant="h1"
+            color="textBrand"
+            align="center"
+            style={{ fontFamily: fonts.display, width: '100%' }}
+          >
             Missions
           </Text>
-          <Text variant="body" color="textBody">
+          <Text variant="body" color="textBody" align="center" style={{ width: '100%' }}>
             Gagne de l’XP, remplis tes objectifs, progresse comme un dresseur urbain.
           </Text>
         </View>
