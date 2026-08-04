@@ -94,7 +94,7 @@ export function AnalysisLoadingView({ photoUri }: Props) {
   const percentLabel = `${Math.round(progress * 100)}%`;
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.text }]}>
       <Image
         source={{ uri: photoUri }}
         style={StyleSheet.absoluteFillObject}
@@ -106,7 +106,7 @@ export function AnalysisLoadingView({ photoUri }: Props) {
         pointerEvents="none"
         style={[
           StyleSheet.absoluteFillObject,
-          { backgroundColor: 'rgba(21, 23, 43, 0.48)' },
+          { backgroundColor: colors.overlay },
         ]}
       />
 
@@ -184,6 +184,5 @@ export function AnalysisLoadingView({ photoUri }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#15172B',
   },
 });
