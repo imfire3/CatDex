@@ -58,7 +58,11 @@ export default function LoginScreen() {
   const signInWithEmail = useAuthStore((state) => state.signInWithEmail);
   const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle);
   const signInWithApple = useAuthStore((state) => state.signInWithApple);
+  const oauthDisabled = useAuthStore((state) => state.oauthDisabled);
   const clearError = useAuthStore((state) => state.clearError);
+  const googleEnabled = !oauthDisabled.google;
+  const appleEnabled = !oauthDisabled.apple;
+  const showOAuth = googleEnabled || appleEnabled;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -194,24 +198,42 @@ export default function LoginScreen() {
         />
       </View>
 
-      <AuthDivider />
-
-      <View style={{ gap: spacing[16] }}>
-        <Button
-          variant="google"
-          title="Continuer avec Google"
-          disabled={loading}
-          onPress={() => void enterOAuth('google')}
-          icon={<GoogleGlyph />}
-        />
-        <Button
-          variant="apple"
-          title="Continuer avec Apple"
-          disabled={loading}
-          onPress={() => void enterOAuth('apple')}
-          icon={<AppleGlyph color={colors.authAppleLabel} />}
-        />
-      </View>
+      {showOAuth ? (
+        <>
+          <AuthDivider />
+          <View style={{ gap: spacing[16] }}>
+            {googleEnabled ? (
+              <Button
+                variant="google"
+                title="Continuer avec Google"
+                disabled={loading}
+                onPress={() => void enterOAuth('google')}
+                icon={<GoogleGlyph />}
+              />
+            ) : null}
+            {appleEnabled ? (
+              <Button
+                variant="apple"
+                title="Continuer avec Apple"
+                disabled={loading}
+                onPress={() => void enterOAuth('apple')}
+                icon={<AppleGlyph color={colors.authAppleLabel} />}
+              />
+            ) : null}
+            {!googleEnabled || !appleEnabled ? (
+              <Text variant="caption" color="textSecondary" align="center">
+                Google / Apple doivent être activés dans Supabase (Authentication →
+                Providers). En attendant, utilise e-mail.
+              </Text>
+            ) : null}
+          </View>
+        </>
+      ) : (
+        <Text variant="caption" color="textSecondary" align="center">
+          Connexion sociale indisponible — utilise e-mail / mot de passe pour
+          ouvrir la carte.
+        </Text>
+      )}
     </AuthShell>
   );
 }

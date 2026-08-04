@@ -14,6 +14,8 @@ type SignUpInput = {
   displayName: string;
 };
 
+type OAuthProviderId = 'google' | 'apple';
+
 type AuthState = {
   user: User | null;
   session: Session | null;
@@ -21,6 +23,8 @@ type AuthState = {
   hydrated: boolean;
   loading: boolean;
   error: AuthError | string | null;
+  /** Providers disabled after Supabase returns “provider is not enabled”. */
+  oauthDisabled: Partial<Record<OAuthProviderId, boolean>>;
   setHydrated: (value: boolean) => void;
   clearError: () => void;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -32,6 +36,29 @@ type AuthState = {
   initialize: () => Promise<void>;
   handleAuthUrl: (url: string) => Promise<boolean>;
 };
+
+function isOAuthProviderDisabledError(error: unknown): boolean {
+  const message =
+    typeof error === 'string'
+      ? error
+      : error && typeof error === 'object' && 'message' in error
+        ? String((error as { message?: unknown }).message ?? '')
+        : '';
+  const code =
+    error && typeof error === 'object' && 'code' in error
+      ? String((error as { code?: unknown }).code ?? '')
+      : '';
+  const errorCode =
+    error && typeof error === 'object' && 'error_code' in error
+      ? String((error as { error_code?: unknown }).error_code ?? '')
+      : '';
+  return (
+    /provider is not enabled/i.test(message) ||
+    /unsupported provider/i.test(message) ||
+    ((errorCode === 'validation_failed' || code === 'validation_failed') &&
+      /provider/i.test(message))
+  );
+}
 
 function isGuestUser(user: User | null | undefined): boolean {
   if (!user) return false;
@@ -102,6 +129,7 @@ export const useAuthStore = create<AuthState>()(
       hydrated: false,
       loading: false,
       error: null,
+      oauthDisabled: {},
 
       setHydrated: (value) => set({ hydrated: value }),
       clearError: () => set({ error: null }),
@@ -332,6 +360,16 @@ export const useAuthStore = create<AuthState>()(
           set({ loading: false });
         } catch (error) {
           console.error('Google sign in error:', error);
+          if (isOAuthProviderDisabledError(error)) {
+            set((state) => ({
+              loading: false,
+              oauthDisabled: { ...state.oauthDisabled, google: true },
+              error: 'Google n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',
+            }));
+            throw new Error(
+              'Google n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',
+            );
+          }
           set({ loading: false, error: error as AuthError });
           throw error;
         }
@@ -373,6 +411,16 @@ export const useAuthStore = create<AuthState>()(
           set({ loading: false });
         } catch (error) {
           console.error('Apple sign in error:', error);
+          if (isOAuthProviderDisabledError(error)) {
+            set((state) => ({
+              loading: false,
+              oauthDisabled: { ...state.oauthDisabled, apple: true },
+              error: 'Apple n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',
+            }));
+            throw new Error(
+              'Apple n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',
+            );
+          }
           set({ loading: false, error: error as AuthError });
           throw error;
         }
@@ -430,8 +478,16 @@ export function getPostAuthHref(onboardingCompleted: boolean) {
 
 export function getAuthErrorMessage(error: AuthError | string | null | undefined): string {
   if (!error) return 'Une erreur est survenue.';
-  if (typeof error === 'string') return error;
+  if (typeof error === 'string') {
+    if (isOAuthProviderDisabledError(error)) {
+      return 'Google / Apple ne sont pas activés dans Supabase. Connecte-toi avec e-mail.';
+    }
+    return error;
+  }
   const message = error.message || 'Une erreur est survenue.';
+  if (isOAuthProviderDisabledError(error) || isOAuthProviderDisabledError(message)) {
+    return 'Google / Apple ne sont pas activés dans Supabase. Connecte-toi avec e-mail.';
+  }
   if (/invalid login credentials/i.test(message)) {
     return 'E-mail ou mot de passe incorrect.';
   }

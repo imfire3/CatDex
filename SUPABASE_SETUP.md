@@ -25,6 +25,17 @@ Cela crée : `profiles`, `cats`, `sightings`, `cat_analysis`, RLS, PostGIS nearb
 Authentication → Providers → Email : activé  
 Optionnel : désactive **Confirm email** pour tester plus vite.
 
+### Google / Apple (sinon erreur `provider is not enabled`)
+Par défaut seuls **Email** est requis. Si tu cliques Google/Apple sans les activer,
+Supabase renvoie `Unsupported provider: provider is not enabled`.
+
+Pour activer Google :
+1. Authentication → Providers → **Google** → Enable  
+2. Colle Client ID + Client Secret (Google Cloud Console)  
+3. Redirect URL Supabase : `https://ocmxluabuaexzsrjuwrk.supabase.co/auth/v1/callback`
+
+Sans OAuth, connecte-toi uniquement avec **e-mail / mot de passe**.
+
 ## 4. Redirect URLs (OAuth / web)
 Authentication → URL Configuration → ajoute :
 - `https://<ton-tunnel>.trycloudflare.com/auth/callback`
