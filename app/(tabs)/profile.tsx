@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Avatar } from '@/components/Avatar';
 import { Text } from '@/components/Text';
@@ -72,7 +72,7 @@ function StatColumn({
   value: string;
   caption: string;
 }) {
-  const { colors, fonts, spacing } = useTheme();
+  const { fonts, spacing } = useTheme();
 
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: spacing[4] }}>
@@ -267,7 +267,7 @@ export default function ProfileScreen() {
             />
             <ProfileMenuRow
               label="Paramètres"
-              onPress={() => comingSoon('Paramètres')}
+              onPress={() => router.push('/settings')}
               icon={
                 <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
                   <Circle cx="12" cy="12" r="2.5" stroke={iconColor} strokeWidth={iconStroke.regular} />
@@ -281,13 +281,16 @@ export default function ProfileScreen() {
               }
             />
             <ProfileMenuRow
-              label="Statistiques"
-              onPress={() => comingSoon('Statistiques')}
+              label="Succès"
+              onPress={() => router.push('/achievements')}
               icon={
                 <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                  <Rect x="5" y="12" width="3" height="7" rx="1" fill={iconColor} />
-                  <Rect x="10.5" y="8" width="3" height="11" rx="1" fill={iconColor} />
-                  <Rect x="16" y="5" width="3" height="14" rx="1" fill={iconColor} />
+                  <Path
+                    d="M12 3.5 14.8 9l6.2.9-4.5 4.4 1.1 6.2L12 17.8 6.4 20.5l1.1-6.2L3 9.9l6.2-.9L12 3.5Z"
+                    stroke={iconColor}
+                    strokeWidth={iconStroke.regular}
+                    strokeLinejoin="round"
+                  />
                 </Svg>
               }
             />

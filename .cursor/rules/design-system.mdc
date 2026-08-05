@@ -13,37 +13,34 @@ import { useTheme } from '@/theme';
 const { colors, spacing, radius, typography, shadow, gradients, motion, iconSize } = useTheme();
 ```
 
-## Colors (white-first · navy brand · turquoise accent)
+## Colors (white-first · soft purple brand)
 
 | Token | Value | Role |
 |---|---|---|
-| `brand` / `textBrand` | `#11145A` | Headings, active nav |
-| `brandPressed` | `#0C0F42` | Pressed navy |
-| `brandSoft` | `rgba(17,20,90,0.08)` | Soft navy tint |
-| `accent` / `primary` | `#2EC9C3` | Primary buttons, FAB, progress |
-| `accentPressed` | `#24A8A3` | Pressed turquoise |
-| `accentSoft` | `rgba(46,201,195,0.14)` | Soft turquoise tint |
-| `ctaSecondary` | `#F5F5F5` | Secondary CTA fill |
-| `ctaSecondaryBorder` | `#D0D0D0` | Secondary CTA border |
-| `ctaSecondaryLabel` | `#8F8F8F` | Secondary CTA label |
+| `brand` / `textBrand` / `accent` / `primary` | `#6C63FF` | Headings, primary CTAs, active nav |
+| `brandHover` | `#756CFF` | Hover purple |
+| `brandPressed` / `accentPressed` | `#5C53F5` | Pressed purple |
+| `brandSoft` / `accentSoft` | `#F0EFFF` | Soft purple tint |
 | `background` / `surface` | `#FFFFFF` | App canvas |
-| `surfaceSecondary` | `#F7F8FC` | Inputs, muted cards |
-| `surfaceTertiary` / `surfaceMuted` | `#F2F4F8` | Nested surfaces |
-| `text` | `#15172B` | Primary ink |
-| `textBody` | `rgba(21,23,43,0.78)` | Body copy |
-| `textSecondary` | `#667085` | Supporting text |
-| `textMuted` / `placeholder` | `#98A2B3` | Metadata, placeholders |
-| `border` | `#E8EAF0` | Subtle borders |
-| `borderDefault` | `#D9DDE6` | Default control borders |
-| `focusRing` | `#2EC9C3` | Focus |
+| `surfaceSecondary` | `#F8F9FC` | Inputs, muted cards |
+| `surfaceElevated` | `#FCFCFE` | Elevated cards / sheets |
+| `ctaSecondary` | `#FFFFFF` | Secondary CTA fill |
+| `ctaSecondaryBorder` | `#D7D9E2` | Secondary CTA border |
+| `text` | `#181A25` | Primary ink |
+| `textBody` | `rgba(24,26,37,0.78)` | Body copy |
+| `textSecondary` | `#6F7283` | Supporting text |
+| `textMuted` / `placeholder` | `#9CA0AF` | Metadata, placeholders |
+| `border` | `#E5E7EB` | Subtle borders |
+| `borderStrong` | `#D7D9E2` | Stronger control borders |
+| `focusRing` | `#6C63FF` | Focus |
 | `success` / `warning` / `danger` / `info` | semantic | States (+ Soft variants) |
 | `tabBar` | `rgba(255,255,255,0.96)` | Bottom nav |
-| `onAccent` / `onPrimary` | `#FFFFFF` | On turquoise |
-| `onBrand` | `#FFFFFF` | On navy |
+| `onAccent` / `onPrimary` / `onBrand` | `#FFFFFF` | On purple |
 
 Coat / rarity accents: `src/lib/catTheme.ts` only — never as app chrome.
+Rarity: Common `#8B95A7` · Rare `#3B82F6` · Epic `#8B5CF6` · Legendary `#F59E0B`.
 
-**Gradients:** `primary` turquoise, `xp` turquoise→green. Avoid heavy multi-stop gradients.
+**Gradients:** `primary` purple, `xp` purple→green. Avoid heavy multi-stop gradients.
 
 ## Typography
 
@@ -57,35 +54,43 @@ Use `<Text variant="…" color="…" />` — prefer `color="textBrand"` for titl
 | `h1` | 32 / 40 / -0.8 |
 | `h2` | 24 / 32 / -0.4 |
 | `h3` | 20 / 28 / -0.2 |
+| `title` | 18 / 24 / -0.15 |
 | `body` | 16 / 24 / -0.1 |
 | `bodySmall` | 14 / 20 / 0 |
 | `caption` | 12 / 16 / 0.1 |
-| `label` | 12 / 16 / 0.8 uppercase |
+| `label` | 12 / 16 / 0.4 |
+| `button` | 16 / 24 / -0.1 |
+
+Avoid excessive uppercase.
 
 ## Spacing — 8pt grid
 
-Allowed: `4 · 8 · 16 · 24 · 32 · 40 · 48 · 56 · 64 · 80 · 96`  
+Allowed: `4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 48 · 56 · 64 · 80 · 96`  
 Screen padding `24` · card padding `16`/`24` · section gap `32` · button height `56`.
 
 ## Radius
 
-Surfaces / inputs / cards: `8` (`radius.xs` / `sm` / `md` / `lg` / `sheet` → 8).  
-Auth & primary CTAs: `16` (`radius.cta` / `radius[16]` / `xl`).  
-Circles only: `pill` / `full` (FAB, avatar, badge, progress).
+| Token | Value |
+|---|---|
+| `xs` / `sm` / Small | `12` |
+| `md` / Medium | `16` |
+| `lg` / `cta` / Large | `20` |
+| `xl` / `sheet` / Extra large | `28` |
+| `pill` / `full` | `999` (circles only) |
 
 ## Elevation
 
-Prefer borders + soft navy-tinted shadows: `shadow.none | low | medium | floating | glow`.  
-Cards: border + `low`. FAB/nav: `medium`. Sheets: `floating`. Glow = turquoise FAB only.
+Prefer borders + soft ink-tinted shadows: `shadow.none | low | medium | floating | glow`.  
+Cards: border + `low`. FAB/nav: `medium`. Sheets: `floating`. Glow = purple FAB only.
 
 ## Motion / Icons
 
 `fast≈140 · standard/normal≈220 · slow≈320 · reveal≈520`. Press `0.98` / card `0.99`.  
-Icons: inline `react-native-svg`; sizes `sm=16 md=24 lg=32 xl=40`.
+Icons: inline `react-native-svg`; sizes `sm=16 md=24 lg=32 xl=40`. Min touch target `44×44`.
 
 ## Components
 
-- Prefer shared: `Text`, `Button` (`primary|secondary|ghost|destructive|icon`), `TextInput`/`SearchInput`, `Card`/`PhotoCard`, `Chip`, `Badge`, `BottomSheet`, `EmptyState`, `Spinner`/`Skeleton`.
+- Prefer shared: `Text`, `Button` (`primary|secondary|outline|ghost|text|destructive|icon`), `TextInput`/`SearchInput`, `Card`/`PhotoCard`, `Chip`, `Badge`, `BottomSheet`, `EmptyState`, `Spinner`/`Skeleton`.
 - Brand: **CatDex** — “Ton quartier. Tes chats.”
 
 ```tsx

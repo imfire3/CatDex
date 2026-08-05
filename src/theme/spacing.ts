@@ -1,15 +1,17 @@
 /**
- * 8pt grid — ONLY these values are allowed in the Design System.
- * 4 = micro only. 56 / 80 added for button height / large gaps.
+ * 8-point spacing system — ONLY these values are allowed.
+ * 4 = micro only. 12 / 20 included per product brief.
  */
-export const spacingScale = [4, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96] as const;
+export const spacingScale = [4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64, 80, 96] as const;
 
 export type SpacingValue = (typeof spacingScale)[number];
 
 export const spacing = {
   4: 4,
   8: 8,
+  12: 12,
   16: 16,
+  20: 20,
   24: 24,
   32: 32,
   40: 40,

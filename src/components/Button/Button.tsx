@@ -16,7 +16,9 @@ import { useTheme } from '@/theme/ThemeProvider';
 export type ButtonVariant =
   | 'primary'
   | 'secondary'
+  | 'outline'
   | 'ghost'
+  | 'text'
   | 'destructive'
   | 'icon'
   | 'google'
@@ -35,9 +37,18 @@ export type ButtonProps = {
   fullWidth?: boolean;
 };
 
+type SurfaceTokens = {
+  background: string;
+  pressed: string;
+  borderColor: string;
+  borderWidth: number;
+  label: string;
+  useShadow: boolean;
+};
+
 /**
- * Primary = turquoise · Google / Apple = social auth · Secondary = gray · Ghost · Destructive · Icon
- * CTA corners use radius.cta (16).
+ * Primary = purple · Secondary / Outline / Ghost / Text · Destructive · Icon · Google / Apple
+ * Primary CTA: height 56, radius 20, horizontal padding 24.
  */
 export function Button({
   title,
@@ -49,7 +60,7 @@ export function Button({
   icon,
   accessibilityLabel,
   style,
-  fullWidth = variant !== 'icon',
+  fullWidth = variant !== 'icon' && variant !== 'text',
 }: ButtonProps) {
   const { colors, spacing, radius, fonts, motion, shadow } = useTheme();
   const isDisabled = disabled || loading;
@@ -79,7 +90,7 @@ export function Button({
           styles.iconButton,
           {
             backgroundColor: colors.ctaSecondary,
-            borderRadius: radius[8],
+            borderRadius: radius.md,
             borderWidth: StyleSheet.hairlineWidth,
             borderColor: colors.ctaSecondaryBorder,
             opacity: isDisabled ? 0.5 : pressed ? 0.88 : 1,
@@ -95,38 +106,92 @@ export function Button({
     );
   }
 
-  const labelColor =
-    variant === 'primary'
-      ? isDisabled
-        ? colors.textMuted
-        : colors.onAccent
-      : variant === 'google'
-        ? colors.authGoogleLabel
-        : variant === 'apple'
-          ? colors.authAppleLabel
-          : variant === 'secondary'
-            ? isDisabled
-              ? colors.textMuted
-              : colors.brand
-            : variant === 'destructive'
-              ? colors.danger
-              : colors.brand;
+  const surfaces: Record<Exclude<ButtonVariant, 'icon'>, SurfaceTokens> = {
+    primary: {
+      background: isDisabled ? colors.surfaceDisabled : colors.accent,
+      pressed: colors.accentPressed,
+      borderColor: 'transparent',
+      borderWidth: 0,
+      label: isDisabled ? colors.textMuted : colors.onAccent,
+      useShadow: !isDisabled,
+    },
+    secondary: {
+      background: colors.ctaSecondary,
+      pressed: colors.ctaSecondaryPressed,
+      borderColor: colors.ctaSecondaryBorder,
+      borderWidth: StyleSheet.hairlineWidth,
+      label: isDisabled ? colors.textMuted : colors.brand,
+      useShadow: false,
+    },
+    outline: {
+      background: colors.surface,
+      pressed: colors.brandSoft,
+      borderColor: colors.brand,
+      borderWidth: 1.5,
+      label: isDisabled ? colors.textMuted : colors.brand,
+      useShadow: false,
+    },
+    ghost: {
+      background: colors.surfaceSecondary,
+      pressed: colors.surfaceTertiary,
+      borderColor: colors.border,
+      borderWidth: 1,
+      label: isDisabled ? colors.textMuted : colors.brand,
+      useShadow: false,
+    },
+    text: {
+      background: 'transparent',
+      pressed: colors.brandSoft,
+      borderColor: 'transparent',
+      borderWidth: 0,
+      label: isDisabled ? colors.textMuted : colors.brand,
+      useShadow: false,
+    },
+    destructive: {
+      background: colors.dangerSoft,
+      pressed: colors.dangerSoft,
+      borderColor: colors.danger,
+      borderWidth: 1,
+      label: colors.danger,
+      useShadow: false,
+    },
+    google: {
+      background: colors.surface,
+      pressed: colors.authGooglePressed,
+      borderColor: colors.authGoogleBorder,
+      borderWidth: 1,
+      label: colors.authGoogleLabel,
+      useShadow: false,
+    },
+    apple: {
+      background: colors.authAppleBg,
+      pressed: colors.authApplePressed,
+      borderColor: 'transparent',
+      borderWidth: 0,
+      label: colors.authAppleLabel,
+      useShadow: true,
+    },
+  };
 
-  const labelWeight = fonts.bodySemi;
+  const surface = surfaces[variant];
+  const isTextVariant = variant === 'text';
+  const horizontalPadding = isTextVariant ? spacing[8] : spacing[24];
+  /** Text buttons keep a 44px minimum touch target (WCAG). */
+  const minHeight = isTextVariant ? 44 : spacing[56];
 
   const content = (
     <View style={[styles.content, { gap: spacing[8] }]}>
       {loading ? (
-        <ActivityIndicator color={labelColor} />
+        <ActivityIndicator color={surface.label} />
       ) : (
         <>
           {icon}
           {title ? (
             <Text
-              variant="body"
+              variant="button"
               style={{
-                fontFamily: labelWeight,
-                color: labelColor,
+                fontFamily: fonts.bodySemi,
+                color: surface.label,
               }}
             >
               {title}
@@ -139,46 +204,6 @@ export function Button({
     </View>
   );
 
-  const primaryDisabled = variant === 'primary' && isDisabled;
-
-  const surfaceBg = primaryDisabled
-    ? colors.surfaceDisabled
-    : variant === 'primary'
-      ? colors.accent
-      : variant === 'google'
-        ? colors.surface
-        : variant === 'apple'
-          ? colors.authAppleBg
-          : variant === 'secondary'
-            ? colors.ctaSecondary
-            : variant === 'ghost'
-              ? colors.surfaceSecondary
-              : variant === 'destructive'
-                ? colors.dangerSoft
-                : 'transparent';
-
-  const showBorder =
-    primaryDisabled ||
-    variant === 'secondary' ||
-    variant === 'destructive' ||
-    variant === 'google' ||
-    variant === 'ghost';
-
-  const borderRadius = radius.cta;
-
-  const pressedBg =
-    variant === 'primary'
-      ? colors.accentPressed
-      : variant === 'google'
-        ? colors.authGooglePressed
-        : variant === 'apple'
-          ? colors.authApplePressed
-          : variant === 'secondary'
-            ? colors.ctaSecondaryPressed
-            : variant === 'destructive'
-              ? colors.dangerSoft
-              : colors.surfaceTertiary;
-
   return (
     <Pressable
       accessibilityRole="button"
@@ -190,27 +215,20 @@ export function Button({
         styles.button,
         fullWidth && styles.fullWidth,
         {
-          borderRadius,
-          minHeight: spacing[56],
-          opacity: isDisabled && !primaryDisabled ? 0.45 : 1,
+          borderRadius: radius.cta,
+          minHeight,
+          opacity: isDisabled && variant !== 'primary' ? 0.45 : 1,
           transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           overflow: 'hidden',
-          borderWidth: variant === 'google' ? 1 : showBorder ? (variant === 'secondary' || primaryDisabled ? StyleSheet.hairlineWidth : 1) : 0,
-          borderColor:
-            variant === 'google'
-              ? colors.authGoogleBorder
-              : variant === 'destructive'
-                ? colors.danger
-                : variant === 'secondary' || primaryDisabled
-                  ? colors.ctaSecondaryBorder
-                  : colors.border,
-          backgroundColor: pressed && !isDisabled ? pressedBg : surfaceBg,
+          borderWidth: surface.borderWidth,
+          borderColor: surface.borderColor,
+          backgroundColor: pressed && !isDisabled ? surface.pressed : surface.background,
         },
-        (variant === 'primary' && !isDisabled) || variant === 'apple' ? shadow.low : null,
+        surface.useShadow ? shadow.low : null,
         style,
       ]}
     >
-      <View style={{ paddingHorizontal: spacing[16], flex: 1, justifyContent: 'center' }}>
+      <View style={{ paddingHorizontal: horizontalPadding, flex: 1, justifyContent: 'center' }}>
         {content}
       </View>
     </Pressable>
@@ -225,6 +243,12 @@ export const SecondaryButton = (props: Omit<ButtonProps, 'variant'>) => (
 );
 export const GhostButton = (props: Omit<ButtonProps, 'variant'>) => (
   <Button {...props} variant="ghost" />
+);
+export const OutlineButton = (props: Omit<ButtonProps, 'variant'>) => (
+  <Button {...props} variant="outline" />
+);
+export const TextButton = (props: Omit<ButtonProps, 'variant'>) => (
+  <Button {...props} variant="text" />
 );
 
 const styles = StyleSheet.create({

@@ -4,9 +4,13 @@ export {
   PrimaryButton,
   SecondaryButton,
   GhostButton,
+  OutlineButton,
+  TextButton,
+  CameraCaptureButton,
   type ButtonProps,
   type ButtonVariant,
 } from './Button';
+export type { CameraCaptureButtonProps } from './Button/CameraCaptureButton';
 export { TextInput, SearchInput, Textarea, type AppTextInputProps } from './Input';
 export {
   Card,

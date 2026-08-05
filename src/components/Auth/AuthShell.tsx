@@ -40,7 +40,7 @@ type AuthShellProps = {
   footer?: ReactNode;
   /** Stretch the white sheet to fill the screen (login / form screens). */
   fullHeight?: boolean;
-  /** Flat app canvas (#F9F9FB) without map wallpaper. */
+  /** Flat app canvas without map wallpaper. */
   plain?: boolean;
 };
 
@@ -168,21 +168,21 @@ export function AuthShell({
 
 /** @deprecated Use theme colors — kept for secondary CTA styles during migration */
 export const AUTH_LIGHT = {
-  text: '#15172B',
-  textBody: 'rgba(21,23,43,0.78)',
-  textSecondary: '#667085',
+  text: '#181A25',
+  textBody: 'rgba(24,26,37,0.78)',
+  textSecondary: '#6F7283',
   sheet: '#FFFFFF',
-  field: '#EEF0F2',
-  secondaryBg: '#EEF0F2',
-  border: '#EEF0F2',
-  skySoft: 'rgba(106,105,248,0.12)',
-  orangeSoft: '#FFF3EC',
-  mintSoft: '#E8F8F2',
+  field: '#F8F9FC',
+  secondaryBg: '#F8F9FC',
+  border: '#E5E7EB',
+  skySoft: '#F0EFFF',
+  orangeSoft: '#FFF7E6',
+  mintSoft: '#ECFDF3',
 } as const;
 
 export const authSecondaryOnLight = {
-  backgroundColor: '#EEF0F2',
-  borderColor: '#D8DBDF',
+  backgroundColor: '#F8F9FC',
+  borderColor: '#D7D9E2',
   minHeight: 56,
 } as ViewStyle;
 

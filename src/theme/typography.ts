@@ -23,10 +23,12 @@ export type TextVariant =
   | 'h1'
   | 'h2'
   | 'h3'
+  | 'title'
   | 'body'
   | 'bodySmall'
   | 'caption'
-  | 'label';
+  | 'label'
+  | 'button';
 
 export type TypographyStyle = {
   fontFamily: string;
@@ -66,6 +68,13 @@ export const typography: Record<TextVariant, TypographyStyle> = {
     letterSpacing: -0.2,
     fontWeight: Platform.OS === 'ios' ? '600' : undefined,
   },
+  title: {
+    fontFamily: fontFamilies.bodySemi,
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: -0.15,
+    fontWeight: Platform.OS === 'ios' ? '600' : undefined,
+  },
   body: {
     fontFamily: fontFamilies.body,
     fontSize: 16,
@@ -91,8 +100,15 @@ export const typography: Record<TextVariant, TypographyStyle> = {
     fontFamily: fontFamilies.bodySemi,
     fontSize: 12,
     lineHeight: 16,
-    letterSpacing: 0.8,
+    letterSpacing: 0.4,
     fontWeight: Platform.OS === 'ios' ? '600' : undefined,
-    textTransform: 'uppercase',
+    textTransform: 'none',
+  },
+  button: {
+    fontFamily: fontFamilies.bodySemi,
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: -0.1,
+    fontWeight: Platform.OS === 'ios' ? '600' : undefined,
   },
 };

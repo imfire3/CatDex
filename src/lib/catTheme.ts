@@ -1,6 +1,6 @@
 /**
  * Coat themes for CatDex cards — soft pastels on white surfaces.
- * Separate from brand navy / turquoise interface tokens.
+ * Separate from brand purple interface tokens.
  */
 
 const THEME_PALETTE = [
@@ -72,27 +72,27 @@ export const rarityTokens: Record<
 > = {
   common: {
     label: 'Commun',
-    foreground: '#667085',
-    background: '#F2F4F8',
-    border: '#E8EAF0',
+    foreground: '#8B95A7',
+    background: 'rgba(139, 149, 167, 0.14)',
+    border: 'rgba(139, 149, 167, 0.28)',
   },
   uncommon: {
-    label: 'Peu commun',
-    foreground: '#2E90FA',
-    background: 'rgba(46, 144, 250, 0.12)',
-    border: 'rgba(46, 144, 250, 0.28)',
+    label: 'Rare',
+    foreground: '#3B82F6',
+    background: 'rgba(59, 130, 246, 0.12)',
+    border: 'rgba(59, 130, 246, 0.28)',
   },
   rare: {
-    label: 'Rare',
-    foreground: '#7A5AF8',
-    background: 'rgba(122, 90, 248, 0.12)',
-    border: 'rgba(122, 90, 248, 0.28)',
+    label: 'Épique',
+    foreground: '#8B5CF6',
+    background: 'rgba(139, 92, 246, 0.12)',
+    border: 'rgba(139, 92, 246, 0.28)',
   },
   exceptional: {
-    label: 'Exceptionnel',
-    foreground: '#E8834A',
-    background: 'rgba(232, 131, 74, 0.12)',
-    border: 'rgba(232, 131, 74, 0.28)',
+    label: 'Légendaire',
+    foreground: '#F59E0B',
+    background: 'rgba(245, 158, 11, 0.12)',
+    border: 'rgba(245, 158, 11, 0.28)',
   },
 };
 
@@ -178,17 +178,12 @@ export function resolveRevealRarity(
 }
 
 export function revealRarityLabel(id: RarityId): string {
-  if (id === 'rare') return 'Épique';
-  if (id === 'exceptional') return 'Légendaire';
   return rarityTokens[id].label;
 }
 
 /** Short labels for CatDex grid + filters. */
 export function catDexRarityLabel(id: RarityId): string {
-  if (id === 'uncommon') return 'Rare';
-  if (id === 'rare') return 'Épique';
-  if (id === 'exceptional') return 'Légendaire';
-  return 'Commun';
+  return rarityTokens[id].label;
 }
 
 export type CatDexRarityFilter = 'all' | RarityId;

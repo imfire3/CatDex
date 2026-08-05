@@ -1,22 +1,24 @@
 /**
- * CatDex Design System — white-first, indigo brand (#6A69F8), soft gray (#EEF0F2)
+ * CatDex Design System — white-first · soft purple primary (#6C63FF)
  *
  * brand / accent → primary actions, headings, active nav
- * soft gray → muted surfaces, soft fills, nested cards
  * Coat/rarity colors live in src/lib/catTheme.ts — not here.
  */
 
-const BRAND = '#6A69F8';
-const BRAND_PRESSED = '#5554E0';
-const BRAND_SOFT = 'rgba(106, 105, 248, 0.12)';
-const SOFT_GRAY = '#EEF0F2';
-const APP_BG = '#F9F9FB';
+const BRAND = '#6C63FF';
+const BRAND_HOVER = '#756CFF';
+const BRAND_PRESSED = '#5C53F5';
+const BRAND_SOFT = '#F0EFFF';
+const SECONDARY_BG = '#F8F9FC';
+const APP_BG = '#FFFFFF';
+const ELEVATED = '#FCFCFE';
 
 const light = {
   brand: BRAND,
+  brandHover: BRAND_HOVER,
   brandPressed: BRAND_PRESSED,
   brandSoft: BRAND_SOFT,
-  captureFabHalo: 'rgba(106, 105, 248, 0.28)',
+  captureFabHalo: 'rgba(108, 99, 255, 0.28)',
   accent: BRAND,
   accentPressed: BRAND_PRESSED,
   accentSoft: BRAND_SOFT,
@@ -28,78 +30,78 @@ const light = {
 
   background: APP_BG,
   surface: APP_BG,
-  /** White cards and sheets on the app canvas (#F9F9FB). */
-  surfaceElevated: '#FFFFFF',
-  surfaceSecondary: SOFT_GRAY,
-  surfaceTertiary: SOFT_GRAY,
-  surfaceMuted: SOFT_GRAY,
-  surfaceDisabled: SOFT_GRAY,
+  /** Elevated cards and sheets on the app canvas. */
+  surfaceElevated: ELEVATED,
+  surfaceSecondary: SECONDARY_BG,
+  surfaceTertiary: SECONDARY_BG,
+  surfaceMuted: SECONDARY_BG,
+  surfaceDisabled: '#F3F4F7',
 
-  /** Secondary CTA — white fill, brand label */
+  /** Secondary CTA — light fill, brand label */
   ctaSecondary: '#FFFFFF',
-  ctaSecondaryPressed: '#F3F3F7',
-  ctaSecondaryBorder: '#D8DBDF',
+  ctaSecondaryPressed: SECONDARY_BG,
+  ctaSecondaryBorder: '#D7D9E2',
   ctaSecondaryLabel: BRAND,
 
   /** Social auth — Google (official-adjacent) */
-  authGoogleBorder: SOFT_GRAY,
+  authGoogleBorder: '#E5E7EB',
   authGoogleLabel: '#202124',
-  authGooglePressed: SOFT_GRAY,
+  authGooglePressed: SECONDARY_BG,
   /** Social auth — Apple HIG */
   authAppleBg: '#000000',
   authApplePressed: '#1A1A1A',
   authAppleLabel: '#FFFFFF',
 
-  text: '#15172B',
+  text: '#181A25',
   textBrand: BRAND,
-  textBody: 'rgba(21, 23, 43, 0.78)',
-  textSecondary: '#667085',
-  textMuted: '#98A2B3',
-  placeholder: '#98A2B3',
+  textBody: 'rgba(24, 26, 37, 0.78)',
+  textSecondary: '#6F7283',
+  textMuted: '#9CA0AF',
+  placeholder: '#9CA0AF',
   textInverse: '#FFFFFF',
   textDisabled: '#B7BDC8',
 
-  border: SOFT_GRAY,
-  borderDefault: '#D8DBDF',
-  borderStrong: '#BCC3D0',
+  border: '#E5E7EB',
+  borderDefault: '#E5E7EB',
+  borderStrong: '#D7D9E2',
   focusRing: BRAND,
-  borderError: '#E5484D',
+  borderError: '#EF4444',
 
-  mint: '#12B76A',
-  mintSoft: 'rgba(18, 183, 106, 0.12)',
-  yellow: '#F79009',
-  yellowSoft: 'rgba(247, 144, 9, 0.12)',
-  orange: '#F79009',
-  orangeSoft: 'rgba(247, 144, 9, 0.12)',
-  sky: BRAND,
-  skySoft: BRAND_SOFT,
-  rose: '#F63D68',
-  roseSoft: 'rgba(246, 61, 104, 0.12)',
-  success: '#12B76A',
-  successSoft: 'rgba(18, 183, 106, 0.12)',
-  warning: '#F79009',
-  warningSoft: 'rgba(247, 144, 9, 0.12)',
-  danger: '#E5484D',
-  dangerSoft: 'rgba(229, 72, 77, 0.12)',
-  info: BRAND,
-  infoSoft: BRAND_SOFT,
+  mint: '#22C55E',
+  mintSoft: '#ECFDF3',
+  yellow: '#F59E0B',
+  yellowSoft: '#FFF7E6',
+  orange: '#F59E0B',
+  orangeSoft: '#FFF7E6',
+  sky: '#3B82F6',
+  skySoft: '#EFF6FF',
+  rose: '#EF4444',
+  roseSoft: '#FEF2F2',
+  success: '#22C55E',
+  successSoft: '#ECFDF3',
+  warning: '#F59E0B',
+  warningSoft: '#FFF7E6',
+  danger: '#EF4444',
+  dangerSoft: '#FEF2F2',
+  info: '#3B82F6',
+  infoSoft: '#EFF6FF',
 
   /** Map player dot — Google Maps–style blue */
   mapPlayer: '#4285F4',
   mapPlayerSoft: 'rgba(66, 133, 244, 0.32)',
   mapPlayerRing: '#FFFFFF',
 
-  overlay: 'rgba(106, 105, 248, 0.4)',
+  overlay: 'rgba(108, 99, 255, 0.4)',
   onAccent: '#FFFFFF',
   onPrimary: '#FFFFFF',
   onBrand: '#FFFFFF',
-  onSurface: '#15172B',
-  skeleton: SOFT_GRAY,
-  skeletonHighlight: '#F7F8FA',
+  onSurface: '#181A25',
+  skeleton: '#E5E7EB',
+  skeletonHighlight: '#F8F9FC',
   glassFill: 'rgba(255, 255, 255, 0.9)',
-  shadowColor: BRAND,
+  shadowColor: '#181A25',
   mapPinRing: '#FFFFFF',
-  tabBar: '#FFFFFF',
+  tabBar: 'rgba(255, 255, 255, 0.96)',
   gradientStart: BRAND,
   gradientEnd: BRAND_PRESSED,
 } as const;
@@ -113,6 +115,7 @@ export type ColorScheme = keyof typeof palette;
 
 export type ThemeColors = {
   brand: string;
+  brandHover: string;
   brandPressed: string;
   brandSoft: string;
   captureFabHalo: string;
@@ -168,10 +171,10 @@ export type ThemeColors = {
   roseSoft: string;
   success: string;
   successSoft: string;
-  warning: string;
-  warningSoft: string;
   danger: string;
   dangerSoft: string;
+  warning: string;
+  warningSoft: string;
   info: string;
   infoSoft: string;
   mapPlayer: string;
