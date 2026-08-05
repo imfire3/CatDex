@@ -1,23 +1,35 @@
 /**
- * Shared CatDex map pin — low-poly 3D cat sprite on a soft ground pulse.
- * Used by native Marker views and mirrored in the web MapLibre DOM pin.
+ * Shared CatDex map pin — flat circular face + tip anchored to the ground.
+ * Kept intentionally 2D so pins stay readable and stick to the map on zoom.
  */
+import { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
+import { CatImage } from '@/components/CatImage';
+import { CatSprite } from '@/components/CatSprite';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-/** Bundled low-poly tabby used as the Explorer map pin. */
+/** @deprecated Kept for any residual imports — prefer flat CatSprite pins. */
 export const LOWPOLY_CAT_PIN = require('../../../assets/models/lowpoly-tabby/pin.png');
 
-export const CAT_PIN_AVATAR = 56;
+export const CAT_PIN_AVATAR = 40;
 export const CAT_PIN_TIP_H = 8;
+
+/**
+ * Scale HTML pin content with MapLibre zoom so markers feel glued to the map.
+ * Root Marker element must NOT be transformed — only an inner wrapper.
+ */
+export function pinScaleForZoom(zoom: number): number {
+  // minZoom 13 → ~0.55, default ~16.6 → ~1, maxZoom 19 → ~1.2
+  return Math.min(1.2, Math.max(0.55, 0.55 + (zoom - 13) * 0.11));
+}
 
 type PinVisualProps = {
   cat: Cat;
   captured?: boolean;
   isNearby?: boolean;
-  /** Override height of the cat sprite (default 56). */
+  /** Override diameter of the face circle (default 40). */
   size?: number;
 };
 
@@ -35,56 +47,83 @@ export function resolveBundledImageUri(asset: number | string | { uri?: string }
 
 /**
  * Visual-only pin body (no Map Marker wrapper).
+ * Tip sits on the bottom edge — Marker anchor must be bottom-center.
  */
 export function CatPinVisual({
+  cat,
   captured = true,
   isNearby = false,
   size = CAT_PIN_AVATAR,
 }: PinVisualProps) {
-  const { colors, spacing, radius } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
+  const [photoFailed, setPhotoFailed] = useState(false);
   const tipW = spacing[16];
   const tipH = CAT_PIN_TIP_H;
-  const spriteH = size;
-  const spriteW = Math.round(size * 0.92);
+  const ring = spacing[4];
+  const showPhoto =
+    captured &&
+    Boolean(cat.photoUri) &&
+    !photoFailed &&
+    !cat.photoUri.startsWith('blob:');
 
   return (
     <View style={styles.root} pointerEvents="none">
+      {/* Soft ground disc — sits just above the tip point */}
       <View
         style={[
-          styles.pulseOuter,
+          styles.ground,
           {
-            width: spriteW + spacing[16],
-            height: spacing[24],
-            borderRadius: radius.full,
-            borderColor: colors.brandSoft,
-            opacity: isNearby ? 0.95 : 0.65,
-          },
-        ]}
-      />
-      <View
-        style={[
-          styles.pulseInner,
-          {
-            width: spriteW * 0.72,
+            width: size + spacing[8],
             height: spacing[8],
             borderRadius: radius.full,
             backgroundColor: colors.brandSoft,
-            opacity: isNearby ? 0.85 : 0.5,
+            opacity: isNearby ? 0.9 : 0.55,
           },
         ]}
       />
 
       <View style={styles.column}>
-        <Image
-          source={LOWPOLY_CAT_PIN}
-          accessibilityLabel="Chat"
-          resizeMode="contain"
-          style={{
-            width: spriteW,
-            height: spriteH,
-            opacity: captured ? 1 : 0.72,
-          }}
-        />
+        <View
+          style={[
+            styles.avatar,
+            {
+              width: size,
+              height: size,
+              borderRadius: radius.full,
+              borderWidth: ring,
+              borderColor: isNearby ? colors.accent : colors.brand,
+              backgroundColor: colors.surfaceElevated,
+              opacity: captured ? 1 : 0.82,
+            },
+            shadow.low,
+          ]}
+        >
+          {showPhoto ? (
+            <CatImage
+              uri={cat.photoUri}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+              accessibilityLabel={cat.name}
+              onError={() => setPhotoFailed(true)}
+            />
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surfaceSecondary,
+              }}
+            >
+              <CatSprite
+                colorLabel={cat.analysis?.color ?? 'Roux'}
+                seed={cat.number}
+                size={size - ring * 2}
+                faceOnly
+              />
+            </View>
+          )}
+        </View>
 
         <View
           style={{
@@ -96,7 +135,7 @@ export function CatPinVisual({
             borderTopWidth: tipH,
             borderLeftColor: 'transparent',
             borderRightColor: 'transparent',
-            borderTopColor: colors.brand,
+            borderTopColor: isNearby ? colors.accent : colors.brand,
           }}
         />
       </View>
@@ -112,13 +151,13 @@ const styles = StyleSheet.create({
   column: {
     alignItems: 'center',
   },
-  pulseOuter: {
-    position: 'absolute',
-    bottom: 6,
-    borderWidth: 2,
+  avatar: {
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  pulseInner: {
+  ground: {
     position: 'absolute',
-    bottom: 10,
+    bottom: 2,
   },
 });

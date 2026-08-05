@@ -8,10 +8,12 @@ import {
   MAP_ZOOM,
 } from '@/components/maps/mapCamera';
 import {
-  LOWPOLY_CAT_PIN,
-  resolveBundledImageUri,
+  CAT_PIN_AVATAR,
+  CAT_PIN_TIP_H,
+  pinScaleForZoom,
 } from '@/components/maps/CatPinVisual';
 import { mapPalette } from '@/components/maps/mapPalette';
+import { themeFromColorLabel } from '@/lib/catTheme';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -40,6 +42,7 @@ type MapLibreMap = {
   getStyle: () => { layers?: Array<Record<string, unknown>>; sources?: Record<string, unknown> } | undefined;
   getZoom: () => number;
   on: (event: string, cb: () => void) => void;
+  off: (event: string, cb: () => void) => void;
   remove: () => void;
   setLayoutProperty: (id: string, name: string, value: unknown) => void;
   setPaintProperty: (id: string, name: string, value: unknown) => void;
@@ -49,6 +52,7 @@ type MapLibreMarker = {
   addTo: (map: MapLibreMap) => MapLibreMarker;
   remove: () => void;
   setLngLat: (lngLat: LngLatLike) => MapLibreMarker;
+  getElement: () => HTMLElement;
 };
 
 type MapLibreNS = {
@@ -155,25 +159,46 @@ function ensure3dBuildings(map: MapLibreMap) {
   }
 }
 
+function shadeHex(hex: string, amount: number): string {
+  const raw = hex.replace('#', '');
+  if (raw.length !== 6) return hex;
+  const num = Number.parseInt(raw, 16);
+  const r = Math.min(255, Math.max(0, ((num >> 16) & 0xff) + Math.round(255 * amount)));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + Math.round(255 * amount)));
+  const b = Math.min(255, Math.max(0, (num & 0xff) + Math.round(255 * amount)));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
+/** Flat circular face pin for MapLibre HTML markers (tip = ground anchor). */
 function makePinElement(opts: {
   label: string;
   brand: string;
   brandSoft: string;
+  accent: string;
   size: number;
-  pinSrc: string;
+  coatColor: string;
+  seed: number;
+  photoUri?: string;
   dimmed?: boolean;
   nearby?: boolean;
 }): HTMLButtonElement {
   const size = opts.size;
-  const tipH = 8;
+  const tipH = CAT_PIN_TIP_H;
   const tipW = 16;
-  const spriteW = Math.round(size * 0.92);
-  const wrapW = spriteW + 32;
-  const wrapH = size + tipH + 16;
+  const ring = 4;
+  const wrapW = size + 16;
+  const wrapH = size + tipH;
+  const ringColor = opts.nearby ? opts.accent : opts.brand;
+  const theme = themeFromColorLabel(opts.coatColor, opts.seed);
+  const fill = theme.hex;
+  const dark = shadeHex(fill, -0.22);
+  const light = shadeHex(fill, 0.28);
+  const face = size - ring * 2;
 
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.setAttribute('aria-label', opts.label);
+  // Outer box is what MapLibre positions — never transform this node.
   btn.style.cssText = [
     'border:0',
     'padding:0',
@@ -184,35 +209,36 @@ function makePinElement(opts: {
     'display:flex',
     'align-items:flex-end',
     'justify-content:center',
+    'overflow:visible',
+    opts.dimmed ? 'opacity:0.82' : 'opacity:1',
+  ].join(';');
+
+  // Inner scales with zoom from the tip (bottom center).
+  const scaleRoot = document.createElement('span');
+  scaleRoot.setAttribute('data-pin-scale', '1');
+  scaleRoot.style.cssText = [
     'position:relative',
-    opts.dimmed ? 'opacity:0.72' : 'opacity:1',
+    'display:flex',
+    'flex-direction:column',
+    'align-items:center',
+    'justify-content:flex-end',
+    `width:${wrapW}px`,
+    `height:${wrapH}px`,
+    'transform-origin:bottom center',
+    'will-change:transform',
   ].join(';');
 
-  const pulseOuter = document.createElement('span');
-  pulseOuter.style.cssText = [
+  const ground = document.createElement('span');
+  ground.style.cssText = [
     'position:absolute',
-    `width:${spriteW + 16}px`,
-    'height:24px',
-    'border-radius:999px',
-    `border:2px solid ${opts.brandSoft}`,
-    'bottom:6px',
-    'left:50%',
-    'transform:translateX(-50%)',
-    opts.nearby ? 'opacity:0.95' : 'opacity:0.65',
-    'pointer-events:none',
-  ].join(';');
-
-  const pulseInner = document.createElement('span');
-  pulseInner.style.cssText = [
-    'position:absolute',
-    `width:${Math.round(spriteW * 0.72)}px`,
+    `width:${size + 8}px`,
     'height:8px',
     'border-radius:999px',
     `background:${opts.brandSoft}`,
-    'bottom:10px',
+    'bottom:2px',
     'left:50%',
-    'transform:translateX(-50%)',
-    opts.nearby ? 'opacity:0.85' : 'opacity:0.5',
+    'margin-left:' + `${-((size + 8) / 2)}px`,
+    opts.nearby ? 'opacity:0.9' : 'opacity:0.55',
     'pointer-events:none',
   ].join(';');
 
@@ -225,18 +251,40 @@ function makePinElement(opts: {
     'z-index:1',
   ].join(';');
 
-  const img = document.createElement('img');
-  img.alt = opts.label;
-  img.draggable = false;
-  img.src = opts.pinSrc;
-  img.style.cssText = [
-    `width:${spriteW}px`,
+  const avatar = document.createElement('span');
+  avatar.style.cssText = [
+    `width:${size}px`,
     `height:${size}px`,
-    'object-fit:contain',
-    'display:block',
-    'pointer-events:none',
-    'user-select:none',
+    'border-radius:999px',
+    `border:${ring}px solid ${ringColor}`,
+    'background:#fff',
+    'overflow:hidden',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'box-sizing:border-box',
   ].join(';');
+
+  const showPhoto =
+    Boolean(opts.photoUri) &&
+    !opts.photoUri!.startsWith('blob:') &&
+    !opts.dimmed;
+
+  if (showPhoto) {
+    const img = document.createElement('img');
+    img.alt = opts.label;
+    img.draggable = false;
+    img.src = opts.photoUri!;
+    img.style.cssText =
+      'width:100%;height:100%;object-fit:cover;display:block;pointer-events:none';
+    img.onerror = () => {
+      img.remove();
+      avatar.appendChild(faceSvg(face, fill, dark, light));
+    };
+    avatar.appendChild(img);
+  } else {
+    avatar.appendChild(faceSvg(face, fill, dark, light));
+  }
 
   const tip = document.createElement('span');
   tip.style.cssText = [
@@ -245,15 +293,45 @@ function makePinElement(opts: {
     'margin-top:-4px',
     `border-left:${tipW / 2}px solid transparent`,
     `border-right:${tipW / 2}px solid transparent`,
-    `border-top:${tipH}px solid ${opts.brand}`,
+    `border-top:${tipH}px solid ${ringColor}`,
   ].join(';');
 
-  column.appendChild(img);
+  column.appendChild(avatar);
   column.appendChild(tip);
-  btn.appendChild(pulseOuter);
-  btn.appendChild(pulseInner);
-  btn.appendChild(column);
+  scaleRoot.appendChild(ground);
+  scaleRoot.appendChild(column);
+  btn.appendChild(scaleRoot);
   return btn;
+}
+
+function faceSvg(size: number, fill: string, dark: string, light: string): SVGSVGElement {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.setAttribute('viewBox', '0 0 64 64');
+  svg.style.cssText = 'display:block;pointer-events:none';
+  svg.innerHTML = [
+    `<circle cx="32" cy="34" r="22" fill="${fill}" />`,
+    `<path d="M14 22 8 6l14 10Z" fill="${fill}" />`,
+    `<path d="M50 22 56 6 42 16Z" fill="${fill}" />`,
+    `<path d="M14 22 8 6l14 10Z" fill="${light}" opacity="0.45" />`,
+    `<path d="M50 22 56 6 42 16Z" fill="${light}" opacity="0.45" />`,
+    `<ellipse cx="24" cy="34" rx="3.2" ry="4" fill="${dark}" />`,
+    `<ellipse cx="40" cy="34" rx="3.2" ry="4" fill="${dark}" />`,
+    `<path d="M32 38c1.6 1.4 3.2 1.4 4.8 0" stroke="${dark}" stroke-width="1.6" stroke-linecap="round" fill="none" />`,
+    `<circle cx="32" cy="36" r="1.4" fill="${dark}" />`,
+  ].join('');
+  return svg;
+}
+
+function applyMarkerZoomScale(map: MapLibreMap, markers: MapLibreMarker[]) {
+  const scale = pinScaleForZoom(map.getZoom());
+  markers.forEach((marker) => {
+    const inner = marker.getElement().querySelector('[data-pin-scale]') as HTMLElement | null;
+    if (!inner) return;
+    inner.style.transform = `scale(${scale})`;
+  });
 }
 
 /**
@@ -361,7 +439,6 @@ export function CatMap({
     catMarkersRef.current.forEach((marker) => marker.remove());
     catMarkersRef.current = [];
 
-    const pinSrc = resolveBundledImageUri(LOWPOLY_CAT_PIN);
     cats.forEach((cat) => {
       const nearby = nearbyCatIds?.includes(cat.id) ?? false;
       const captured = capturedCatIds?.includes(cat.id) ?? true;
@@ -369,8 +446,11 @@ export function CatMap({
         label: cat.name,
         brand: colors.brand,
         brandSoft: colors.brandSoft,
-        size: nearby ? spacing[64] : spacing[56],
-        pinSrc,
+        accent: colors.accent,
+        size: nearby ? spacing[48] : CAT_PIN_AVATAR,
+        coatColor: cat.analysis?.color ?? 'Roux',
+        seed: cat.number,
+        photoUri: captured ? cat.photoUri : undefined,
         dimmed: !captured,
         nearby,
       });
@@ -379,11 +459,25 @@ export function CatMap({
         onSelectRef.current(cat);
       });
 
-      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      const marker = new maplibregl.Marker({
+        element: el,
+        anchor: 'bottom',
+        pitchAlignment: 'viewport',
+        rotationAlignment: 'viewport',
+      })
         .setLngLat([cat.longitude, cat.latitude])
         .addTo(map);
       catMarkersRef.current.push(marker);
     });
+
+    const syncScale = () => applyMarkerZoomScale(map, catMarkersRef.current);
+    syncScale();
+    map.on('zoom', syncScale);
+    map.on('zoomend', syncScale);
+    return () => {
+      map.off('zoom', syncScale);
+      map.off('zoomend', syncScale);
+    };
   }, [cats, nearbyCatIds, capturedCatIds, colors, spacing, mapReady]);
 
   useEffect(() => {

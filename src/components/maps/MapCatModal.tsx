@@ -1,15 +1,14 @@
-import { Image, Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { Button } from '@/components/Button';
 import { CatImage } from '@/components/CatImage';
+import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
 import { formatDistanceMeters } from '@/lib/constants';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
-
-import { LOWPOLY_CAT_PIN } from '@/components/maps/CatPinVisual';
 
 type Props = {
   visible: boolean;
@@ -129,11 +128,11 @@ export function MapCatModal({
                 accessibilityLabel={`Photo de ${cat.name}`}
               />
             ) : (
-              <Image
-                source={LOWPOLY_CAT_PIN}
-                style={{ width: '72%', height: '72%' }}
-                resizeMode="contain"
-                accessibilityLabel="Chat mystère"
+              <CatSprite
+                colorLabel={cat.analysis?.color ?? 'Roux'}
+                seed={cat.number}
+                size={180}
+                faceOnly
               />
             )}
           </View>
