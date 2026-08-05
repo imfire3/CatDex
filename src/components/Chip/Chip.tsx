@@ -12,35 +12,34 @@ export type ChipProps = {
   icon?: React.ReactNode;
 };
 
-/** Filter chip — selected uses primary CTA colors (solid accent + white label). */
+/** Filter chip — pill shape; selected = solid primary + white label (Figma). */
 export function Chip({ label, selected, onPress, static: isStatic, disabled, icon }: ChipProps) {
-  const { colors, fonts, spacing, radius, motion } = useTheme();
+  const { colors, spacing, radius, motion, shadow } = useTheme();
 
-  const backgroundColor = selected ? colors.accent : colors.surface;
-  const borderColor = selected ? colors.accent : colors.borderDefault;
+  const backgroundColor = selected ? colors.primary : colors.background;
+  const borderColor = selected ? colors.primary : colors.border;
 
   const body = (
     <View
-      style={{
-        backgroundColor,
-        borderRadius: radius[8],
-        paddingHorizontal: spacing[16],
-        paddingVertical: spacing[8],
-        borderWidth: 1,
-        borderColor,
-        opacity: disabled ? 0.45 : 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing[8],
-        minHeight: 40,
-      }}
+      style={[
+        {
+          backgroundColor,
+          borderRadius: radius.pill,
+          paddingHorizontal: spacing[16],
+          paddingVertical: spacing[8],
+          borderWidth: 1,
+          borderColor,
+          opacity: disabled ? 0.45 : 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing[8],
+          minHeight: 36,
+        },
+        selected ? shadow.soft : null,
+      ]}
     >
       {icon}
-      <Text
-        variant="bodySmall"
-        color={selected ? 'onAccent' : 'textSecondary'}
-        style={{ fontFamily: fonts.bodySemi }}
-      >
+      <Text variant="button" color={selected ? 'onPrimary' : 'textSecondary'}>
         {label}
       </Text>
     </View>

@@ -1,6 +1,6 @@
 /**
  * Coat themes for CatDex cards — soft pastels on white surfaces.
- * Separate from brand navy / turquoise interface tokens.
+ * Separate from brand indigo interface tokens (Figma Cat-DEX-UI).
  */
 
 const THEME_PALETTE = [
@@ -66,33 +66,34 @@ export type CatTheme = (typeof THEME_PALETTE)[number];
 
 export type RarityId = 'common' | 'uncommon' | 'rare' | 'exceptional';
 
+/** Figma rarity: common · rare · epic · legendary — mapped to app rarity ids. */
 export const rarityTokens: Record<
   RarityId,
   { label: string; foreground: string; background: string; border: string }
 > = {
   common: {
     label: 'Commun',
-    foreground: '#667085',
-    background: '#F2F4F8',
-    border: '#E8EAF0',
+    foreground: '#6B7280',
+    background: 'rgba(107, 114, 128, 0.12)',
+    border: 'rgba(107, 114, 128, 0.28)',
   },
   uncommon: {
     label: 'Peu commun',
-    foreground: '#2E90FA',
-    background: 'rgba(46, 144, 250, 0.12)',
-    border: 'rgba(46, 144, 250, 0.28)',
+    foreground: '#3B82F6',
+    background: 'rgba(59, 130, 246, 0.12)',
+    border: 'rgba(59, 130, 246, 0.28)',
   },
   rare: {
     label: 'Rare',
-    foreground: '#7A5AF8',
-    background: 'rgba(122, 90, 248, 0.12)',
-    border: 'rgba(122, 90, 248, 0.28)',
+    foreground: '#8B5CF6',
+    background: 'rgba(139, 92, 246, 0.12)',
+    border: 'rgba(139, 92, 246, 0.28)',
   },
   exceptional: {
     label: 'Exceptionnel',
-    foreground: '#E8834A',
-    background: 'rgba(232, 131, 74, 0.12)',
-    border: 'rgba(232, 131, 74, 0.28)',
+    foreground: '#F59E0B',
+    background: 'rgba(245, 158, 11, 0.12)',
+    border: 'rgba(245, 158, 11, 0.28)',
   },
 };
 

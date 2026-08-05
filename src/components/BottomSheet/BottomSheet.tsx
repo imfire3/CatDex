@@ -36,7 +36,7 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
             borderTopWidth: 1,
             borderColor: colors.border,
           },
-          shadow.floating,
+          shadow.sheet,
           style,
         ]}
       >

@@ -4,7 +4,9 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before 
 
 # Design System
 
-CatDex UI must use tokens from `src/theme/` only (via `useTheme()`). Never invent hex colors, font sizes, spacing, or radii. White-first · navy brand (`#11145A`) · turquoise accent (`#2EC9C3`). Soft elevation via borders + `shadow.low|medium|floating`.
+CatDex UI must use tokens from `src/theme/` only (via `useTheme()`). Never invent hex colors, font sizes, spacing, or radii.
+
+**Source of truth:** Figma [Cat-DEX-UI](https://www.figma.com/design/qIYWbKuvILi9hjSmT60rmn/Cat-DEX-UI?node-id=218-40) · white-first · primary indigo `#6C63FF` · Inter typography · soft elevation `shadow.soft|card|lifted|sheet`.
 
 Full token tables, naming conventions, and good/bad examples: `.cursor/rules/design-system.mdc`
 

@@ -2,7 +2,18 @@ import { Platform, type ViewStyle } from 'react-native';
 
 import type { ThemeColors } from './colors';
 
-export type ShadowToken = 'none' | 'small' | 'medium' | 'large' | 'glow' | 'low' | 'floating';
+export type ShadowToken =
+  | 'none'
+  | 'soft'
+  | 'card'
+  | 'lifted'
+  | 'sheet'
+  | 'small'
+  | 'medium'
+  | 'large'
+  | 'glow'
+  | 'low'
+  | 'floating';
 
 type ShadowStyle = Pick<
   ViewStyle,
@@ -18,61 +29,114 @@ const NONE: ShadowStyle = {
   ...(Platform.OS === 'web' ? { boxShadow: 'none' } : null),
 };
 
+const INK = '#111827';
+
 /**
- * Soft navy-tinted elevation — borders remain primary depth cue.
- * Prefer elevation.low/medium/floating; small/medium/large kept as aliases.
+ * Soft Apple-style elevation from Figma:
+ * soft · card · lifted · sheet
+ * Aliases (low/medium/floating/…) kept for existing call sites.
  */
 export function createShadows(colors: ThemeColors): Record<ShadowToken, ShadowStyle> {
-  const ink = colors.shadowColor || '#6A69F8';
+  const ink = colors.shadowColor || INK;
 
   if (Platform.OS === 'web') {
     return {
       none: NONE,
-      small: { boxShadow: `0 1px 3px ${ink}14` },
-      low: { boxShadow: `0 1px 3px ${ink}14` },
-      medium: { boxShadow: `0 4px 12px ${ink}16` },
-      large: { boxShadow: `0 8px 24px ${ink}18` },
-      floating: { boxShadow: `0 8px 24px ${ink}18` },
+      soft: {
+        boxShadow: `0 4px 12px ${ink}0D, 0 1px 2px ${ink}0A`,
+      },
+      card: {
+        boxShadow: `0 12px 24px ${ink}14, 0 2px 8px ${ink}0D`,
+      },
+      lifted: {
+        boxShadow: `0 8px 24px ${ink}24`,
+      },
+      sheet: {
+        boxShadow: `0 -8px 40px ${ink}29`,
+      },
+      small: {
+        boxShadow: `0 4px 12px ${ink}0D, 0 1px 2px ${ink}0A`,
+      },
+      low: {
+        boxShadow: `0 4px 12px ${ink}0D, 0 1px 2px ${ink}0A`,
+      },
+      medium: {
+        boxShadow: `0 12px 24px ${ink}14, 0 2px 8px ${ink}0D`,
+      },
+      large: {
+        boxShadow: `0 8px 24px ${ink}24`,
+      },
+      floating: {
+        boxShadow: `0 -8px 40px ${ink}29`,
+      },
       glow: { boxShadow: `0 4px 16px ${colors.accent}40` },
     };
   }
 
   return {
     none: NONE,
+    soft: {
+      shadowColor: ink,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 12,
+      elevation: 2,
+    },
+    card: {
+      shadowColor: ink,
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.08,
+      shadowRadius: 24,
+      elevation: 4,
+    },
+    lifted: {
+      shadowColor: ink,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.14,
+      shadowRadius: 24,
+      elevation: 6,
+    },
+    sheet: {
+      shadowColor: ink,
+      shadowOffset: { width: 0, height: -8 },
+      shadowOpacity: 0.16,
+      shadowRadius: 40,
+      elevation: 8,
+    },
     small: {
       shadowColor: ink,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 3,
-      elevation: 1,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 12,
+      elevation: 2,
     },
     low: {
       shadowColor: ink,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 3,
-      elevation: 1,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 12,
+      elevation: 2,
     },
     medium: {
       shadowColor: ink,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 10,
-      elevation: 3,
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.08,
+      shadowRadius: 24,
+      elevation: 4,
     },
     large: {
       shadowColor: ink,
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.12,
-      shadowRadius: 20,
+      shadowOpacity: 0.14,
+      shadowRadius: 24,
       elevation: 6,
     },
     floating: {
       shadowColor: ink,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.12,
-      shadowRadius: 20,
-      elevation: 6,
+      shadowOffset: { width: 0, height: -8 },
+      shadowOpacity: 0.16,
+      shadowRadius: 40,
+      elevation: 8,
     },
     glow: {
       shadowColor: colors.accent,
@@ -89,11 +153,11 @@ export function createAccentShadow(colors: ThemeColors): ShadowStyle {
 }
 
 export const shadow = createShadows({
-  shadowColor: '#6A69F8',
-  accent: '#6A69F8',
+  shadowColor: INK,
+  accent: '#6C63FF',
 } as ThemeColors);
 
 export const accentShadow = createAccentShadow({
-  shadowColor: '#6A69F8',
-  accent: '#6A69F8',
+  shadowColor: INK,
+  accent: '#6C63FF',
 } as ThemeColors);

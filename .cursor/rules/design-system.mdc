@@ -6,77 +6,80 @@ alwaysApply: true
 
 # CatDex Design System
 
-**Source of truth:** `src/theme/` via `useTheme()` from `@/theme`. Never hardcode hex/rgba or ad-hoc spacing. Do not use tokens from `ChatDex Mobile App UI/` (Figma/web export).
+**Source of truth:** Figma Cat-DEX-UI (`qIYWbKuvILi9hjSmT60rmn` node `218:40`) implemented in `src/theme/` via `useTheme()`. Never hardcode hex/rgba or ad-hoc spacing. Do not use tokens from `ChatDex Mobile App UI/` (web export).
 
 ```ts
 import { useTheme } from '@/theme';
 const { colors, spacing, radius, typography, shadow, gradients, motion, iconSize } = useTheme();
 ```
 
-## Colors (white-first · navy brand · turquoise accent)
+## Colors (white-first · indigo primary `#6C63FF`)
 
 | Token | Value | Role |
 |---|---|---|
-| `brand` / `textBrand` | `#11145A` | Headings, active nav |
-| `brandPressed` | `#0C0F42` | Pressed navy |
-| `brandSoft` | `rgba(17,20,90,0.08)` | Soft navy tint |
-| `accent` / `primary` | `#2EC9C3` | Primary buttons, FAB, progress |
-| `accentPressed` | `#24A8A3` | Pressed turquoise |
-| `accentSoft` | `rgba(46,201,195,0.14)` | Soft turquoise tint |
-| `ctaSecondary` | `#F5F5F5` | Secondary CTA fill |
-| `ctaSecondaryBorder` | `#D0D0D0` | Secondary CTA border |
-| `ctaSecondaryLabel` | `#8F8F8F` | Secondary CTA label |
-| `background` / `surface` | `#FFFFFF` | App canvas |
-| `surfaceSecondary` | `#F7F8FC` | Inputs, muted cards |
-| `surfaceTertiary` / `surfaceMuted` | `#F2F4F8` | Nested surfaces |
-| `text` | `#15172B` | Primary ink |
-| `textBody` | `rgba(21,23,43,0.78)` | Body copy |
-| `textSecondary` | `#667085` | Supporting text |
-| `textMuted` / `placeholder` | `#98A2B3` | Metadata, placeholders |
-| `border` | `#E8EAF0` | Subtle borders |
-| `borderDefault` | `#D9DDE6` | Default control borders |
-| `focusRing` | `#2EC9C3` | Focus |
-| `success` / `warning` / `danger` / `info` | semantic | States (+ Soft variants) |
-| `tabBar` | `rgba(255,255,255,0.96)` | Bottom nav |
-| `onAccent` / `onPrimary` | `#FFFFFF` | On turquoise |
-| `onBrand` | `#FFFFFF` | On navy |
+| `brand` / `accent` / `primary` / `textBrand` | `#6C63FF` | Primary actions, FAB, headings, active nav |
+| `brandHover` / `primaryHover` | `#756CFF` | Hover |
+| `brandPressed` / `primaryPressed` / `accentPressed` | `#5C53F5` | Pressed |
+| `brandSoft` / `primarySoft` / `accentSoft` | `rgba(108,99,255,0.12)` | Soft indigo tint |
+| `background` | `#FFFFFF` | App canvas |
+| `surface` / `surfaceSecondary` | `#F8F9FC` | Muted panels, secondary fills |
+| `surfaceElevated` | `#FFFFFF` | Cards, sheets |
+| `border` / `borderDefault` | `#E5E7EB` | Borders |
+| `text` | `#111827` | Primary ink |
+| `textBody` | `rgba(17,24,39,0.78)` | Body copy |
+| `textSecondary` | `#6B7280` | Supporting text |
+| `textMuted` / `placeholder` | `#9CA3AF` | Metadata, placeholders |
+| `focusRing` | `#6C63FF` | Focus |
+| `success` | `#22C55E` | Success |
+| `warning` | `#F59E0B` | Warning |
+| `danger` | `#EF4444` | Danger / destructive |
+| `onAccent` / `onPrimary` / `onBrand` | `#FFFFFF` | On indigo / danger |
+| `tabBar` | `#FFFFFF` | Bottom nav |
 
-Coat / rarity accents: `src/lib/catTheme.ts` only — never as app chrome.
+Rarity (game only, `src/lib/catTheme.ts`): common `#6B7280` · rare `#3B82F6` · epic `#8B5CF6` · legendary `#F59E0B`.
 
-**Gradients:** `primary` turquoise, `xp` turquoise→green. Avoid heavy multi-stop gradients.
+**Gradients:** `primary` indigo, `xp` indigo→green. Avoid heavy multi-stop gradients.
 
 ## Typography
 
-Fonts: iOS System (SF); Android/web Syne (display) + Manrope (body).
-
-Use `<Text variant="…" color="…" />` — prefer `color="textBrand"` for titles.
+Font: **Inter** (all platforms). Use `<Text variant="…" color="…" />`.
 
 | Variant | Size / Line / Tracking |
 |---|---|
-| `display` | 40 / 48 / -1.2 |
-| `h1` | 32 / 40 / -0.8 |
-| `h2` | 24 / 32 / -0.4 |
-| `h3` | 20 / 28 / -0.2 |
-| `body` | 16 / 24 / -0.1 |
-| `bodySmall` | 14 / 20 / 0 |
-| `caption` | 12 / 16 / 0.1 |
-| `label` | 12 / 16 / 0.8 uppercase |
+| `display` | 34 / 40 / -0.68 (−2%) |
+| `h1` (Heading) | 28 / 34 / -0.56 (−2%) |
+| `h2` / `h3` (Title) | 20 / 26 / 0 |
+| `body` | 16 / 24 / 0 |
+| `bodySmall` / `caption` | 13 / 18 / 0 |
+| `button` | 15 / 22 / 0 |
+| `label` | 12 / 16 / +0.24 (+2%) |
 
-## Spacing — 8pt grid
+## Spacing — Figma 8pt system
 
-Allowed: `4 · 8 · 16 · 24 · 32 · 40 · 48 · 56 · 64 · 80 · 96`  
-Screen padding `24` · card padding `16`/`24` · section gap `32` · button height `56`.
+Allowed: `4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 48 · 56 · 64` (+ `80`/`96` for large layout gaps).  
+Screen padding `24` · card padding `16` · section gap `32` · button heights `36`/`48`/`56`.
 
 ## Radius
 
-Surfaces / inputs / cards: `8` (`radius.xs` / `sm` / `md` / `lg` / `sheet` → 8).  
-Auth & primary CTAs: `16` (`radius.cta` / `radius[16]` / `xl`).  
-Circles only: `pill` / `full` (FAB, avatar, badge, progress).
+| Token | Value | Use |
+|---|---|---|
+| `sm` / `xs` | 12 | Compact controls |
+| `md` / `cta` | 16 | Buttons, inputs |
+| `lg` | 20 | Cards, panels |
+| `xl` / `sheet` | 28 | Sheets, large media |
+| `pill` / `full` | 999 | Chips, FAB, avatar, badge |
 
 ## Elevation
 
-Prefer borders + soft navy-tinted shadows: `shadow.none | low | medium | floating | glow`.  
-Cards: border + `low`. FAB/nav: `medium`. Sheets: `floating`. Glow = turquoise FAB only.
+Apple-style soft shadows (neutral ink `#111827`):
+
+| Token | Use |
+|---|---|
+| `soft` / `low` | Buttons, chips |
+| `card` / `medium` | Cards, tiles |
+| `lifted` / `large` | Popovers, markers |
+| `sheet` / `floating` | Bottom sheets, nav |
+| `glow` | Primary FAB halo |
 
 ## Motion / Icons
 
@@ -85,7 +88,7 @@ Icons: inline `react-native-svg`; sizes `sm=16 md=24 lg=32 xl=40`.
 
 ## Components
 
-- Prefer shared: `Text`, `Button` (`primary|secondary|ghost|destructive|icon`), `TextInput`/`SearchInput`, `Card`/`PhotoCard`, `Chip`, `Badge`, `BottomSheet`, `EmptyState`, `Spinner`/`Skeleton`.
+- Prefer shared: `Text`, `Button` (`primary|secondary|outline|ghost|text|destructive|icon`), `TextInput`/`SearchInput`, `Card`/`PhotoCard`, `Chip`, `Badge`, `BottomSheet`, `EmptyState`, `Spinner`/`Skeleton`.
 - Brand: **CatDex** — “Ton quartier. Tes chats.”
 
 ```tsx
@@ -94,6 +97,6 @@ Icons: inline `react-native-svg`; sizes `sm=16 md=24 lg=32 xl=40`.
 
 // ✅ GOOD
 const { colors, spacing, radius, shadow } = useTheme();
-<View style={[{ backgroundColor: colors.surface, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border }, shadow.low]} />
-<Text variant="h3" color="textBrand">Title</Text>
+<View style={[{ backgroundColor: colors.surfaceElevated, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border }, shadow.card]} />
+<Text variant="h1" color="text">Title</Text>
 ```

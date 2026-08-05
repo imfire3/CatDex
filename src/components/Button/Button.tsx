@@ -16,43 +16,58 @@ import { useTheme } from '@/theme/ThemeProvider';
 export type ButtonVariant =
   | 'primary'
   | 'secondary'
+  | 'outline'
   | 'ghost'
+  | 'text'
   | 'destructive'
   | 'icon'
   | 'google'
   | 'apple';
+
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export type ButtonProps = {
   title?: string;
   children?: React.ReactNode;
   onPress?: (event: GestureResponderEvent) => void;
   variant?: ButtonVariant;
+  size?: ButtonSize;
   disabled?: boolean;
   loading?: boolean;
   icon?: React.ReactNode;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
   fullWidth?: boolean;
+  pill?: boolean;
+};
+
+const SIZE_HEIGHT: Record<ButtonSize, number> = {
+  sm: 36,
+  md: 48,
+  lg: 56,
 };
 
 /**
- * Primary = turquoise · Google / Apple = social auth · Secondary = gray · Ghost · Destructive · Icon
- * CTA corners use radius.cta (16).
+ * Figma Cat-DEX-UI buttons — primary indigo, secondary surface, outline, ghost, text, destructive.
+ * Heights: 36 / 48 / 56 · radius medium (16) or pill.
  */
 export function Button({
   title,
   children,
   onPress,
   variant = 'primary',
+  size = 'md',
   disabled = false,
   loading = false,
   icon,
   accessibilityLabel,
   style,
   fullWidth = variant !== 'icon',
+  pill = false,
 }: ButtonProps) {
-  const { colors, spacing, radius, fonts, motion, shadow } = useTheme();
+  const { colors, spacing, radius, motion, shadow } = useTheme();
   const isDisabled = disabled || loading;
+  const height = SIZE_HEIGHT[size];
 
   const handlePress = useCallback(
     (event: GestureResponderEvent) => {
@@ -78,41 +93,37 @@ export function Button({
         style={({ pressed }) => [
           styles.iconButton,
           {
-            backgroundColor: colors.ctaSecondary,
-            borderRadius: radius[8],
-            borderWidth: StyleSheet.hairlineWidth,
-            borderColor: colors.ctaSecondaryBorder,
-            opacity: isDisabled ? 0.5 : pressed ? 0.88 : 1,
-            width: spacing[48],
-            height: spacing[48],
+            backgroundColor: colors.surface,
+            borderRadius: radius.full,
+            borderWidth: 1,
+            borderColor: colors.border,
+            opacity: isDisabled ? 0.45 : pressed ? 0.88 : 1,
+            width: 44,
+            height: 44,
             transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           },
+          shadow.soft,
           style,
         ]}
       >
-        {loading ? <ActivityIndicator color={colors.accent} /> : icon}
+        {loading ? <ActivityIndicator color={colors.primary} /> : icon}
       </Pressable>
     );
   }
 
-  const labelColor =
-    variant === 'primary'
-      ? isDisabled
-        ? colors.textMuted
-        : colors.onAccent
-      : variant === 'google'
-        ? colors.authGoogleLabel
-        : variant === 'apple'
-          ? colors.authAppleLabel
-          : variant === 'secondary'
-            ? isDisabled
-              ? colors.textMuted
-              : colors.brand
-            : variant === 'destructive'
-              ? colors.danger
-              : colors.brand;
-
-  const labelWeight = fonts.bodySemi;
+  const labelColor = (() => {
+    if (isDisabled && variant === 'primary') return colors.textMuted;
+    if (variant === 'primary' || variant === 'destructive') return colors.onPrimary;
+    if (variant === 'google') return colors.authGoogleLabel;
+    if (variant === 'apple') return colors.authAppleLabel;
+    if (variant === 'secondary' || variant === 'outline') {
+      return isDisabled ? colors.textMuted : colors.text;
+    }
+    if (variant === 'ghost' || variant === 'text') {
+      return isDisabled ? colors.textMuted : colors.primary;
+    }
+    return colors.primary;
+  })();
 
   const content = (
     <View style={[styles.content, { gap: spacing[8] }]}>
@@ -122,13 +133,7 @@ export function Button({
         <>
           {icon}
           {title ? (
-            <Text
-              variant="body"
-              style={{
-                fontFamily: labelWeight,
-                color: labelColor,
-              }}
-            >
+            <Text variant="button" style={{ color: labelColor }}>
               {title}
             </Text>
           ) : (
@@ -141,43 +146,36 @@ export function Button({
 
   const primaryDisabled = variant === 'primary' && isDisabled;
 
-  const surfaceBg = primaryDisabled
-    ? colors.surfaceDisabled
-    : variant === 'primary'
-      ? colors.accent
-      : variant === 'google'
-        ? colors.surface
-        : variant === 'apple'
-          ? colors.authAppleBg
-          : variant === 'secondary'
-            ? colors.ctaSecondary
-            : variant === 'ghost'
-              ? colors.surfaceSecondary
-              : variant === 'destructive'
-                ? colors.dangerSoft
-                : 'transparent';
+  const surfaceBg = (() => {
+    if (primaryDisabled) return colors.surfaceDisabled;
+    if (variant === 'primary') return colors.primary;
+    if (variant === 'google') return colors.background;
+    if (variant === 'apple') return colors.authAppleBg;
+    if (variant === 'secondary') return colors.surface;
+    if (variant === 'outline') return colors.background;
+    if (variant === 'ghost' || variant === 'text') return 'transparent';
+    if (variant === 'destructive') return colors.danger;
+    return 'transparent';
+  })();
 
   const showBorder =
     primaryDisabled ||
     variant === 'secondary' ||
-    variant === 'destructive' ||
-    variant === 'google' ||
-    variant === 'ghost';
+    variant === 'outline' ||
+    variant === 'google';
 
-  const borderRadius = radius.cta;
+  const borderRadius = pill ? radius.pill : radius.cta;
 
-  const pressedBg =
-    variant === 'primary'
-      ? colors.accentPressed
-      : variant === 'google'
-        ? colors.authGooglePressed
-        : variant === 'apple'
-          ? colors.authApplePressed
-          : variant === 'secondary'
-            ? colors.ctaSecondaryPressed
-            : variant === 'destructive'
-              ? colors.dangerSoft
-              : colors.surfaceTertiary;
+  const pressedBg = (() => {
+    if (variant === 'primary') return colors.primaryPressed;
+    if (variant === 'google') return colors.authGooglePressed;
+    if (variant === 'apple') return colors.authApplePressed;
+    if (variant === 'secondary') return colors.ctaSecondaryPressed;
+    if (variant === 'outline') return colors.surface;
+    if (variant === 'destructive') return '#DC2626';
+    if (variant === 'ghost' || variant === 'text') return colors.primarySoft;
+    return colors.surface;
+  })();
 
   return (
     <Pressable
@@ -191,22 +189,21 @@ export function Button({
         fullWidth && styles.fullWidth,
         {
           borderRadius,
-          minHeight: spacing[56],
+          minHeight: height,
+          height,
           opacity: isDisabled && !primaryDisabled ? 0.45 : 1,
           transform: [{ scale: pressed && !isDisabled ? motion.pressScale : 1 }],
           overflow: 'hidden',
-          borderWidth: variant === 'google' ? 1 : showBorder ? (variant === 'secondary' || primaryDisabled ? StyleSheet.hairlineWidth : 1) : 0,
+          borderWidth: showBorder ? 1 : 0,
           borderColor:
             variant === 'google'
               ? colors.authGoogleBorder
-              : variant === 'destructive'
-                ? colors.danger
-                : variant === 'secondary' || primaryDisabled
-                  ? colors.ctaSecondaryBorder
-                  : colors.border,
+              : variant === 'outline' || variant === 'secondary' || primaryDisabled
+                ? colors.border
+                : colors.border,
           backgroundColor: pressed && !isDisabled ? pressedBg : surfaceBg,
         },
-        (variant === 'primary' && !isDisabled) || variant === 'apple' ? shadow.low : null,
+        (variant === 'primary' && !isDisabled) || variant === 'apple' ? shadow.soft : null,
         style,
       ]}
     >

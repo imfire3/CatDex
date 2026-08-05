@@ -1,21 +1,27 @@
 import { Platform, type TextStyle } from 'react-native';
 
 /**
- * Typography — SF Pro Display on iOS, Manrope/Syne elsewhere.
- * Large display hierarchy for premium feel.
+ * Typography — Inter (Figma Cat-DEX-UI).
+ * Display / Heading / Title / Body / Caption / Button / Label
  */
 
-const iosDisplay = 'System';
-const iosBody = 'System';
+const inter = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semi: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+} as const;
 
 export const fontFamilies = {
-  display: Platform.OS === 'ios' ? iosDisplay : 'Syne_700Bold',
-  displaySemi: Platform.OS === 'ios' ? iosDisplay : 'Syne_600SemiBold',
-  body: Platform.OS === 'ios' ? iosBody : 'Manrope_500Medium',
-  bodyMedium: Platform.OS === 'ios' ? iosBody : 'Manrope_600SemiBold',
-  bodySemi: Platform.OS === 'ios' ? iosBody : 'Manrope_700Bold',
-  bodyBold: Platform.OS === 'ios' ? iosBody : 'Manrope_700Bold',
-  bodyBlack: Platform.OS === 'ios' ? iosBody : 'Manrope_800ExtraBold',
+  display: inter.bold,
+  displaySemi: inter.semi,
+  body: inter.regular,
+  bodyMedium: inter.medium,
+  bodySemi: inter.semi,
+  bodyBold: inter.bold,
+  bodyBlack: inter.bold,
+  button: inter.semi,
+  label: inter.semi,
 } as const;
 
 export type TextVariant =
@@ -26,7 +32,8 @@ export type TextVariant =
   | 'body'
   | 'bodySmall'
   | 'caption'
-  | 'label';
+  | 'label'
+  | 'button';
 
 export type TypographyStyle = {
   fontFamily: string;
@@ -37,62 +44,78 @@ export type TypographyStyle = {
   textTransform?: 'none' | 'uppercase';
 };
 
+/** Letter-spacing from Figma % tracking → px (size * percent / 100) */
 export const typography: Record<TextVariant, TypographyStyle> = {
+  /** Display — Inter Bold · 34 / 40 · -2% */
   display: {
     fontFamily: fontFamilies.display,
-    fontSize: 40,
-    lineHeight: 48,
-    letterSpacing: -1.2,
-    fontWeight: Platform.OS === 'ios' ? '800' : undefined,
-  },
-  h1: {
-    fontFamily: fontFamilies.bodyBlack,
-    fontSize: 32,
+    fontSize: 34,
     lineHeight: 40,
-    letterSpacing: -0.8,
+    letterSpacing: -0.68,
     fontWeight: Platform.OS === 'ios' ? '700' : undefined,
   },
+  /** Heading — Inter Bold · 28 / 34 · -2% */
+  h1: {
+    fontFamily: fontFamilies.bodyBold,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.56,
+    fontWeight: Platform.OS === 'ios' ? '700' : undefined,
+  },
+  /** Title — Inter Semibold · 20 / 26 */
   h2: {
     fontFamily: fontFamilies.bodySemi,
-    fontSize: 24,
-    lineHeight: 32,
-    letterSpacing: -0.4,
+    fontSize: 20,
+    lineHeight: 26,
+    letterSpacing: 0,
     fontWeight: Platform.OS === 'ios' ? '600' : undefined,
   },
+  /** Title (compact screens) */
   h3: {
     fontFamily: fontFamilies.bodySemi,
     fontSize: 20,
-    lineHeight: 28,
-    letterSpacing: -0.2,
+    lineHeight: 26,
+    letterSpacing: 0,
     fontWeight: Platform.OS === 'ios' ? '600' : undefined,
   },
+  /** Body — Inter Regular · 16 / 24 */
   body: {
     fontFamily: fontFamilies.body,
     fontSize: 16,
     lineHeight: 24,
-    letterSpacing: -0.1,
-    fontWeight: Platform.OS === 'ios' ? '400' : undefined,
-  },
-  bodySmall: {
-    fontFamily: fontFamilies.body,
-    fontSize: 14,
-    lineHeight: 20,
     letterSpacing: 0,
     fontWeight: Platform.OS === 'ios' ? '400' : undefined,
   },
+  /** Caption — Inter Regular · 13 / 18 */
+  bodySmall: {
+    fontFamily: fontFamilies.body,
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: 0,
+    fontWeight: Platform.OS === 'ios' ? '400' : undefined,
+  },
+  /** Caption — Inter Regular · 13 / 18 */
   caption: {
     fontFamily: fontFamilies.body,
-    fontSize: 12,
-    lineHeight: 16,
-    letterSpacing: 0.1,
-    fontWeight: Platform.OS === 'ios' ? '500' : undefined,
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: 0,
+    fontWeight: Platform.OS === 'ios' ? '400' : undefined,
   },
+  /** Label — Inter Semibold · 12 / 16 · +2% */
   label: {
-    fontFamily: fontFamilies.bodySemi,
+    fontFamily: fontFamilies.label,
     fontSize: 12,
     lineHeight: 16,
-    letterSpacing: 0.8,
+    letterSpacing: 0.24,
     fontWeight: Platform.OS === 'ios' ? '600' : undefined,
-    textTransform: 'uppercase',
+  },
+  /** Button — Inter Semibold · 15 / 22 */
+  button: {
+    fontFamily: fontFamilies.button,
+    fontSize: 15,
+    lineHeight: 22,
+    letterSpacing: 0,
+    fontWeight: Platform.OS === 'ios' ? '600' : undefined,
   },
 };

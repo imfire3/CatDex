@@ -16,7 +16,7 @@ type CardBaseProps = {
   padded?: boolean;
 };
 
-/** Surface card — depth, soft border, 24 radius */
+/** Elevated card — white surface, large radius (20), soft card elevation */
 export function Card({ children, onPress, style, padded = true }: CardBaseProps) {
   const { colors, spacing, radius, shadow, motion } = useTheme();
 
@@ -24,14 +24,14 @@ export function Card({ children, onPress, style, padded = true }: CardBaseProps)
     <View
       style={[
         {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.surfaceElevated,
           borderRadius: radius.lg,
           borderWidth: 1,
           borderColor: colors.border,
-          padding: padded ? spacing[24] : 0,
+          padding: padded ? spacing[16] : 0,
           overflow: 'hidden',
         },
-        shadow.low,
+        shadow.card,
         style,
       ]}
     >
@@ -70,7 +70,7 @@ export function GlassCard({ children, onPress, style, padded = true }: CardBaseP
           borderWidth: 1,
           borderColor: colors.border,
         },
-        shadow.low,
+        shadow.card,
         style,
       ]}
     >
