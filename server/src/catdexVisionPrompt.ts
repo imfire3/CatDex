@@ -102,6 +102,69 @@ Puis complète toute la fiche.
 
 ---
 
+# RÈGLE N°2 - FIDÉLITÉ VISUELLE (PRIORITAIRE)
+
+Tu dois décrire UNIQUEMENT ce qui est visible sur la photo.
+
+Ordre d'analyse obligatoire :
+
+1. Couleur réelle du pelage
+2. Longueur et texture du pelage
+3. Forme de la tête / museau / oreilles
+4. Silhouette et corpulence
+5. Race probable cohérente avec 1–4
+6. Nom inspiré de ces traits (pas d'un inventaire aléatoire)
+
+## Couleur principale
+
+Choisis la couleur DOMINANTE réellement vue :
+
+- Noir → pelage noir, charbon, très sombre (même sous une lumière froide ou avec des reflets gris)
+- Gris → vraiment gris / bleu-gris
+- Roux → orange / ginger clairement visible
+- Blanc → majoritairement blanc
+- Écaille de tortue / Bicolore / Tricolore → motifs clairement visibles
+
+Interdits :
+
+- Ne jamais mettre "Roux", "Caramel", "Crème" ou "Miel" pour un chat noir ou très sombre
+- Ne jamais éclaircir un chat noir en "Gris" s'il est globalement noir
+- Ne jamais inventer une couleur absente de la photo
+- Ignore les reflets, gouttes d'eau, bulles, flou ou objets du décor : la couleur = celle du pelage
+
+## Longueur du pelage
+
+- Court → poil collé au corps, peu de volume
+- Mi-long → volume modéré
+- Long → fourrure abondante, touffue, "fluffy", collerette, queue plumeau
+
+Un chat très duveteux / nuageux = Long (pas Court).
+
+## Race probable — indices visuels
+
+Utilise les indices, ne default PAS à "Européen" par facilité.
+
+- Persan → poils longs très denses, silhouette ronde/compacte, tête ronde, museau court ou écrasé, oreilles petites, air "peluche"
+- Maine Coon → grand, poils mi-longs/longs, oreilles avec panaches, museau plus allongé
+- Norvégien / Sibérien → poils longs, plus athlétique que Persan, tête moins plate
+- British Shorthair → poils courts denses, joue ronde, corps massif
+- Siamois → poils courts, points colorés, corps élancé, yeux clairs
+- Européen / Domestique → seulement si aucun trait de race n'est convaincant
+
+Exemple : chat noir, poils longs abondants, tête ronde → breed "Persan", mainColor "Noir", coatLength "Long".
+
+## Nom
+
+Le nom DOIT coller à l'apparence :
+
+- Chat noir / sombre → Nox, Ombre, Encre, Panthère, Shadow, Jais, Minuit
+- Chat roux → Moka, Caramel, Roux, Flamme (pas pour un noir)
+- Chat fluffy / Persan → Velours, Nuage, Panache, Cotton (selon couleur)
+
+Interdit : donner un nom "gourmand clair" (Biscuit, Caramel, Praline, Miel) à un chat noir.
+
+---
+
 # Nom
 
 Invente un nom unique.
@@ -118,25 +181,25 @@ Le nom doit être court.
 
 Exemples
 
-Moka
+Nox
+
+Ombre
+
+Velours
 
 Pixel
-
-Nougat
 
 Brume
 
 Loki
-
-Nox
-
-Caramel
 
 Yuki
 
 Myrtille
 
 Sushi
+
+Panache
 
 Le nom doit donner envie de collectionner ce chat.
 
@@ -414,6 +477,8 @@ Exemple
 
 Toutes les informations doivent être cohérentes avec la photo.
 
+Priorité absolue : mainColor, coatLength, breed et name doivent matcher la photo.
+
 Ne jamais inventer une race impossible.
 
 Ne jamais inventer une couleur absente.
@@ -424,63 +489,67 @@ Toujours estimer lorsque nécessaire.
 
 La description doit être différente à chaque analyse.
 
+Si tu hésites entre deux couleurs, choisis celle du pelage majoritaire (pas celle des reflets).
+
+Si tu hésites entre Européen et une race à poils longs (Persan, Maine Coon…), choisis la race dont les indices sont visibles.
+
 ---
 
 # Format de sortie
 
 Retourne uniquement un JSON valide.
 
+Exemple de fiche correcte pour un chat noir à poils longs (adapté à LA photo analysée, pas à recopier tel quel) :
+
 \`\`\`json
 {
   "success": true,
   "catdexNumber": "#000284",
-  "name": "Moka",
-  "description": "Moka semble profiter du calme d'un petit jardin en observant attentivement son environnement. Son regard curieux et sa posture détendue lui donnent l'air d'un explorateur paisible.",
+  "name": "Nox",
+  "description": "Nox, masse de poils noirs soyeux, observe tranquillement depuis son coin. Sa silhouette ronde et sa fourrure abondante lui donnent l'allure d'un petit panthère d'intérieur.",
   "species": "Chat domestique",
-  "breed": "Européen",
+  "breed": "Persan",
   "gender": "Probablement mâle",
-  "estimatedAge": "3 à 5 ans",
+  "estimatedAge": "2 à 5 ans",
   "size": "Moyenne",
-  "estimatedWeight": "4,6 kg",
-  "bodyType": "Athlétique",
-  "mainColor": "Roux",
-  "secondaryColors": [
-    "Blanc"
-  ],
-  "coatPattern": "Bicolore",
-  "coatLength": "Court",
-  "coatTexture": "Lisse",
-  "eyeColor": "Vert",
-  "ears": "Dressées",
-  "tail": "Longue",
+  "estimatedWeight": "4,2 kg",
+  "bodyType": "Ronde",
+  "mainColor": "Noir",
+  "secondaryColors": [],
+  "coatPattern": "Uni",
+  "coatLength": "Long",
+  "coatTexture": "Soyeux",
+  "eyeColor": "Ambre",
+  "ears": "Petites",
+  "tail": "Touffue",
   "condition": "Bonne",
-  "confidence": 97,
+  "confidence": 96,
   "traits": [
-    "Curieux",
     "Calme",
+    "Majestueux",
+    "Doux",
     "Observateur",
-    "Patient",
-    "Élégant",
-    "Sociable"
+    "Posé",
+    "Indépendant"
   ],
   "distinctiveFeatures": [
-    "Museau blanc",
-    "Queue touffue"
+    "Poils longs abondants",
+    "Silhouette ronde"
   ],
-  "habitat": "Jardin",
-  "state": "Curieux",
-  "rarity": "Rare",
+  "habitat": "Maison",
+  "state": "Calme",
+  "rarity": "Épique",
   "stats": {
-    "timesSeen": 84,
-    "captures": 12,
-    "likes": 1473,
+    "timesSeen": 42,
+    "captures": 8,
+    "likes": 2104,
     "captured": true,
     "popularity": "Élevée"
   },
   "colorPalette": [
-    "#E28A2D",
-    "#F5E9D7",
-    "#6F4B2C"
+    "#0B0B0F",
+    "#2A2A32",
+    "#6E6E78"
   ],
   "discoveredAt": "2026-08-05"
 }
@@ -491,4 +560,4 @@ Le JSON doit être strictement valide.
 Aucun texte avant ou après le JSON.`;
 
 export const CATDEX_VISION_USER_TEXT =
-  'Analyse cette photo pour CatDex. Applique la validation chat + score de confiance, puis retourne uniquement le JSON demandé.';
+  "Analyse cette photo pour CatDex. Sois fidèle à la photo : couleur réelle du pelage, longueur du poil, indices de race (ex. Persan si poils longs denses et tête ronde), puis un nom cohérent. Ignore gouttes d'eau, reflets et décor. Retourne uniquement le JSON demandé.";

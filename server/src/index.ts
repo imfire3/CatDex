@@ -427,7 +427,8 @@ app.post('/analyze-cat', async (c) => {
   try {
     const [completion, cutoutBase64] = await Promise.all([
       openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+        model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+        temperature: 0.2,
         response_format: { type: 'json_object' },
         messages: [
           {
@@ -445,6 +446,7 @@ app.post('/analyze-cat', async (c) => {
                 type: 'image_url',
                 image_url: {
                   url: `data:${mimeType};base64,${imageBase64}`,
+                  detail: 'high',
                 },
               },
             ],
