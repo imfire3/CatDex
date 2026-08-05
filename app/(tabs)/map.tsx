@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -11,6 +11,7 @@ import { MapCatModal } from '@/components/maps/MapCatModal';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
 import { getMapSideToolsBottom } from '@/layout/tabBarMetrics';
 import { PARIS_20E } from '@/lib/constants';
+import { pullCommunityCatsForMap } from '@/lib/catSync';
 import {
   DISCOVERY_RADIUS_M,
   isRareCat,
@@ -47,6 +48,7 @@ export default function MapScreen() {
     return ids;
   }, [storedCats]);
 
+  const [communityCats, setCommunityCats] = useState<Cat[]>([]);
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [filter, setFilter] = useState<FilterId>('all');
@@ -62,10 +64,45 @@ export default function MapScreen() {
 
   const lastHapticCatRef = useRef<string | null>(null);
 
-  /** Pins only for cats already captured into the CatDex. */
-  const mapCats = useMemo(() => storedCats, [storedCats]);
+  const refreshCommunityCats = useCallback(async () => {
+    const remote = await pullCommunityCatsForMap();
+    setCommunityCats(remote);
+  }, []);
 
-  const selectedCaptured = selected ? capturedIds.has(selected.id) : false;
+  useEffect(() => {
+    void refreshCommunityCats();
+    const timer = setInterval(() => {
+      void refreshCommunityCats();
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [refreshCommunityCats, storedCats.length]);
+
+  /**
+   * Own CatDex pins + other players' captures (real photos) everywhere.
+   * Community pins disappear once you capture that same sighting id.
+   */
+  const mapCats = useMemo(() => {
+    const byId = new Map<string, Cat>();
+
+    for (const cat of communityCats) {
+      if (capturedIds.has(cat.id) || (cat.remoteId && capturedIds.has(cat.remoteId))) {
+        continue;
+      }
+      byId.set(cat.id, cat);
+    }
+
+    for (const cat of storedCats) {
+      byId.set(cat.remoteId || cat.id, cat);
+    }
+
+    return [...byId.values()];
+  }, [storedCats, communityCats, capturedIds]);
+
+  const selectedCaptured = selected
+    ? capturedIds.has(selected.id) ||
+      Boolean(selected.remoteId && capturedIds.has(selected.remoteId)) ||
+      storedCats.some((cat) => cat.id === selected.id || cat.remoteId === selected.id)
+    : false;
 
   const sortedCats = useMemo(
     () => sortCatsByDistance(mapCats, userCoordinate),
@@ -152,7 +189,8 @@ export default function MapScreen() {
     setSheetVisible(true);
   };
 
-  const filterPanelBottom = getMapSideToolsBottom(insets.bottom, spacing) + spacing[48] * 3 + spacing[32];
+  const filterPanelBottom =
+    getMapSideToolsBottom(insets.bottom, spacing) + spacing[48] * 3 + spacing[32];
 
   const mapCatList = useMemo(
     () => visibleCats.map(({ cat }) => cat),
@@ -253,12 +291,12 @@ export default function MapScreen() {
         }}
         onCapture={() => {
           if (!selected) return;
-          const worldId = selected.id.startsWith('world-') ? selected.id : undefined;
+          const sightingId = selected.id;
           setSheetVisible(false);
           setSelected(null);
           router.push({
             pathname: '/scanner',
-            params: worldId ? { worldId } : undefined,
+            params: { worldId: sightingId },
           });
         }}
       />

@@ -1,4 +1,4 @@
-import { createCat, getMyCats, mapRemoteCatToLocal } from '@/lib/supabaseQueries';
+import { createCat, getCommunityCats, getMyCats, mapRemoteCatToLocal } from '@/lib/supabaseQueries';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { uploadCatPhoto } from '@/lib/supabaseStorage';
 import type { Cat } from '@/types/cat';
@@ -49,6 +49,23 @@ export async function pullMyCatsFromSupabase(): Promise<Cat[]> {
     );
   } catch (error) {
     console.warn('[sync] pullMyCatsFromSupabase failed', error);
+    return [];
+  }
+}
+
+/**
+ * Other players' captures for Explorer pins (real photo_url, everywhere).
+ * Not written into the local CatDex store.
+ */
+export async function pullCommunityCatsForMap(): Promise<Cat[]> {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const rows = await getCommunityCats();
+    return rows
+      .filter((row) => Boolean(row.photo_url?.trim()))
+      .map((row, index) => mapRemoteCatToLocal(row, 8000 + index));
+  } catch (error) {
+    console.warn('[sync] pullCommunityCatsForMap failed', error);
     return [];
   }
 }
