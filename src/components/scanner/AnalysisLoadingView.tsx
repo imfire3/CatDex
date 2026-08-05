@@ -10,8 +10,6 @@ import { ProgressBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const ANALYSIS_CAT = require('../../../assets/models/lowpoly-tabby/pin.png');
-
 const ANALYSIS_STEPS = [
   'Détection du chat',
   'Couleur du pelage',
@@ -153,10 +151,10 @@ function AnalysisTab({
 }
 
 /**
- * Post-capture analysis UI — light card layout with low-poly hero,
+ * Post-capture analysis UI — light card layout with the scanned photo,
  * progress checklist and tip (product mock).
  */
-export function AnalysisLoadingView({ onBack }: Props) {
+export function AnalysisLoadingView({ photoUri, onBack }: Props) {
   const { colors, fonts, spacing, radius, shadow, iconStroke, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const [progress, setProgress] = useState(0.08);
@@ -281,12 +279,39 @@ export function AnalysisLoadingView({ onBack }: Props) {
             <Sparkle size={18} style={{ top: 16, right: 28 }} />
             <Sparkle size={12} style={{ top: 48, left: 24 }} />
             <Sparkle size={14} style={{ bottom: 36, right: 20 }} />
-            <Image
-              source={ANALYSIS_CAT}
-              accessibilityLabel="Chat en cours d’analyse"
-              resizeMode="contain"
-              style={{ width: 168, height: 168 }}
-            />
+            <View
+              style={{
+                width: 152,
+                height: 152,
+                borderRadius: radius.full,
+                overflow: 'hidden',
+                borderWidth: 3,
+                borderColor: colors.surface,
+                backgroundColor: colors.surfaceSecondary,
+              }}
+            >
+              {photoUri ? (
+                <Image
+                  source={{ uri: photoUri }}
+                  accessibilityLabel="Photo du chat en cours d’analyse"
+                  resizeMode="cover"
+                  style={{ width: '100%', height: '100%' }}
+                />
+              ) : (
+                <View
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: colors.brandSoft,
+                  }}
+                >
+                  <Text variant="caption" color="textBrand">
+                    Analyse…
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
