@@ -84,16 +84,16 @@ export default function RootLayout() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: palette.dark.background,
+          backgroundColor: palette.light.background,
         }}
       >
-        <Spinner color={palette.dark.accent} />
+        <Spinner color={palette.light.accent} />
       </View>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.light.background }}>
       <ThemeProvider>
         <RootNavigator />
       </ThemeProvider>

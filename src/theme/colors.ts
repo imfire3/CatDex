@@ -10,8 +10,8 @@ const BRAND = '#6A69F8';
 const BRAND_PRESSED = '#5554E0';
 const BRAND_SOFT = 'rgba(106, 105, 248, 0.12)';
 const SOFT_GRAY = '#EEF0F2';
-/** App canvas — behind white cards */
-const APP_BG = '#F2F2F2';
+/** App canvas — white-first (design system). */
+const APP_BG = '#FFFFFF';
 const CARD_BG = '#FFFFFF';
 
 const light = {
@@ -31,7 +31,7 @@ const light = {
   background: APP_BG,
   /** Default card / panel fill — white on the gray canvas. */
   surface: CARD_BG,
-  /** White cards and sheets on the app canvas (#F2F2F2). */
+  /** White cards and sheets on the white app canvas. */
   surfaceElevated: CARD_BG,
   surfaceSecondary: SOFT_GRAY,
   surfaceTertiary: SOFT_GRAY,
