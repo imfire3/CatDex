@@ -2,7 +2,7 @@
  * Local world cats for Explorer — appear on the map but are NOT in the CatDex
  * until the player captures them via the scanner.
  */
-import { Image } from 'react-native';
+import { Image, Platform } from 'react-native';
 
 import { generateCatAnalysis } from '@/lib/mockAnalysis';
 import type { Cat } from '@/types/cat';
@@ -26,10 +26,30 @@ const WORLD_PHOTOS: Record<string, number> = {
   'world-pixel': require('../../assets/world-cats/pixel.jpg'),
 };
 
+/**
+ * Metro may resolve assets to localhost — rewrite to the current origin on web
+ * so Cloudflare / LAN previews can load pin photos.
+ */
 function photoUriForSeed(seed: string): string {
   const asset = WORLD_PHOTOS[seed];
   if (!asset) return '';
-  return Image.resolveAssetSource(asset)?.uri ?? '';
+  const uri = Image.resolveAssetSource(asset)?.uri ?? '';
+  if (!uri) return '';
+
+  if (
+    Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    /localhost|127\.0\.0\.1/.test(uri)
+  ) {
+    try {
+      const parsed = new URL(uri);
+      return `${window.location.origin}${parsed.pathname}${parsed.search}`;
+    } catch {
+      return uri;
+    }
+  }
+
+  return uri;
 }
 
 /**
