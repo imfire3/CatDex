@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import {
   Image,
   Keyboard,
+  Platform,
   StyleSheet,
   View,
   type StyleProp,
@@ -11,7 +12,6 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { useKeyboardBottomInset } from '@/hooks/useKeyboardBottomInset';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const WELCOME_MAP = require('../../../assets/welcome-map-bg.jpg');
@@ -35,7 +35,7 @@ type AuthShellProps = {
   scroll?: boolean;
   /** Sticky top chrome (e.g. back button) — stays above the scroll area. */
   header?: ReactNode;
-  /** Sticky bottom actions (always visible above the keyboard / home indicator). */
+  /** Sticky bottom actions — pinned to the screen bottom (not lifted by keyboard). */
   footer?: ReactNode;
   /** Stretch the white sheet to fill the screen (login / form screens). */
   fullHeight?: boolean;
@@ -55,14 +55,7 @@ export function AuthShell({
 }: AuthShellProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
-  const keyboardInset = useKeyboardBottomInset();
-  const keyboardOpen = keyboardInset > 0;
-
-  // When the keyboard is open its frame already covers the home indicator —
-  // don't stack safe-area padding on top of the keyboard height.
-  const footerPadBottom = keyboardOpen
-    ? spacing[8]
-    : Math.max(insets.bottom, spacing[16]);
+  const footerPadBottom = Math.max(insets.bottom, spacing[16]);
 
   const sheetPadding = {
     paddingHorizontal: spacing[24],
@@ -85,8 +78,8 @@ export function AuthShell({
       }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
-      // Shell already lifts the sticky footer; avoid double keyboard insets.
-      automaticallyAdjustKeyboardInsets={!footer}
+      // Keep CTAs fixed at the screen bottom — do not lift layout with the keyboard.
+      automaticallyAdjustKeyboardInsets={false}
       onScrollBeginDrag={Keyboard.dismiss}
       showsVerticalScrollIndicator={false}
     >
@@ -135,7 +128,13 @@ export function AuthShell({
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: plain ? colors.background : colors.sky }]}>
+    <View
+      style={[
+        styles.root,
+        { backgroundColor: plain ? colors.background : colors.sky },
+        Platform.OS === 'web' ? styles.rootWeb : null,
+      ]}
+    >
       {plain ? null : (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <Image
@@ -154,18 +153,12 @@ export function AuthShell({
         </View>
       )}
 
-      {/*
-        Manual keyboard inset (native Keyboard + web visualViewport) keeps the
-        sticky footer above the keyboard. KeyboardAvoidingView is unreliable
-        across iOS / Android edge-to-edge / mobile web for sticky CTAs.
-      */}
       <View
         style={[
           styles.shellInner,
           fullHeight ? styles.shellFill : styles.shellEnd,
           {
             paddingTop: fullHeight || plain ? 0 : spacing[16],
-            paddingBottom: keyboardInset,
           },
         ]}
       >
@@ -196,7 +189,15 @@ export const authSecondaryOnLight = {
 } as ViewStyle;
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  /** Lock layout height on web so the soft keyboard does not resize/scroll the shell. */
+  rootWeb: {
+    height: '100%',
+    maxHeight: '100%',
+  } as ViewStyle,
   map: {
     position: 'absolute',
     top: 0,

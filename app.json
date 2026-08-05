@@ -49,6 +49,7 @@
     },
     "android": {
       "package": "com.catdex.app",
+      "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "CAMERA",
         "ACCESS_COARSE_LOCATION",
