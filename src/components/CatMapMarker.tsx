@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
 import Animated, {
@@ -44,9 +44,19 @@ function CatMapMarkerComponent({
 
   useEffect(() => {
     appear.value = withSpring(1, motionEasing.standard);
-    const freeze = setTimeout(() => setTracksViewChanges(false), 900);
+    setTracksViewChanges(true);
+  }, [appear, cat.id, cat.photoUri, isNearby]);
+
+  // Safety net if onLoad never fires (sprite-only pins settle via callback).
+  useEffect(() => {
+    if (!tracksViewChanges) return;
+    const freeze = setTimeout(() => setTracksViewChanges(false), 2500);
     return () => clearTimeout(freeze);
-  }, [appear, cat.id, cat.photoUri]);
+  }, [tracksViewChanges, cat.id, cat.photoUri]);
+
+  const onVisualSettled = useCallback(() => {
+    setTracksViewChanges(false);
+  }, []);
 
   const bodyStyle = useAnimatedStyle(() => ({
     opacity: appear.value,
@@ -73,6 +83,7 @@ function CatMapMarkerComponent({
           captured={captured}
           isNearby={isNearby}
           size={size}
+          onVisualSettled={onVisualSettled}
         />
       </Animated.View>
     </Marker>

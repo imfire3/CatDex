@@ -4,11 +4,19 @@ import { Keyboard, Platform, type KeyboardEvent } from 'react-native';
 /**
  * Bottom overlap from the software keyboard (native) or visual viewport (web).
  * Use as paddingBottom on a sticky footer shell so CTAs stay above the keyboard.
+ *
+ * Android: Expo defaults to window resize (`adjustResize`) — the layout already
+ * shrinks above the keyboard, so we must NOT add a second inset.
  */
 export function useKeyboardBottomInset(): number {
   const [inset, setInset] = useState(0);
 
   useEffect(() => {
+    if (Platform.OS === 'android') {
+      setInset(0);
+      return;
+    }
+
     if (Platform.OS === 'web') {
       if (typeof window === 'undefined' || !window.visualViewport) {
         return;
@@ -38,10 +46,8 @@ export function useKeyboardBottomInset(): number {
     };
     const onHide = () => setInset(0);
 
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvent, onShow);
-    const hideSub = Keyboard.addListener(hideEvent, onHide);
+    const showSub = Keyboard.addListener('keyboardWillShow', onShow);
+    const hideSub = Keyboard.addListener('keyboardWillHide', onHide);
     return () => {
       showSub.remove();
       hideSub.remove();

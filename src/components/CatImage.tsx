@@ -16,6 +16,7 @@ type Props = {
   accessibilityLabel?: string;
   accessibilityIgnoresInvertColors?: boolean;
   onError?: ImageProps['onError'];
+  onLoad?: ImageProps['onLoad'];
 };
 
 /**
@@ -28,6 +29,7 @@ export function CatImage({
   accessibilityLabel,
   accessibilityIgnoresInvertColors,
   onError,
+  onLoad,
 }: Props) {
   const [resolved, setResolved] = useState<string | null>(null);
 
@@ -54,8 +56,14 @@ export function CatImage({
         }
         objectUrl = next?.startsWith('blob:') ? next : null;
         setResolved(next);
+        if (!next && active) {
+          onError?.({ nativeEvent: { error: 'resolve failed' } } as never);
+        }
       } catch {
-        if (active) setResolved(null);
+        if (active) {
+          setResolved(null);
+          onError?.({ nativeEvent: { error: 'resolve failed' } } as never);
+        }
       }
     };
 
@@ -65,7 +73,7 @@ export function CatImage({
       active = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [uri]);
+  }, [uri, onError]);
 
   if (!resolved) return null;
 
@@ -77,6 +85,7 @@ export function CatImage({
       accessibilityLabel={accessibilityLabel}
       accessibilityIgnoresInvertColors={accessibilityIgnoresInvertColors}
       onError={onError}
+      onLoad={onLoad}
     />
   );
 }

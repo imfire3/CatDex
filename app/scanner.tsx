@@ -3,7 +3,7 @@ import { CameraView, useCameraPermissions, type CameraType, type FlashMode } fro
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Image,
@@ -103,11 +103,17 @@ function CameraCircleButton({
 export default function ScannerScreen() {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ worldId?: string }>();
+  const sourceWorldId =
+    typeof params.worldId === 'string' && params.worldId.startsWith('world-')
+      ? params.worldId
+      : undefined;
   const showToast = useToastStore((state) => state.show);
   const nextNumber = useCatsStore((state) => state.nextNumber);
   const addCat = useCatsStore((state) => state.addCat);
   const cameraRef = useRef<CameraView>(null);
   const addingRef = useRef(false);
+  const analysisGenRef = useRef(0);
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -189,6 +195,7 @@ export default function ScannerScreen() {
     imageUri: string,
     mimeType = 'image/jpeg',
   ) => {
+    const gen = ++analysisGenRef.current;
     setAnalyzing(true);
     setStep('analyzing');
     const startedAt = Date.now();
@@ -201,12 +208,15 @@ export default function ScannerScreen() {
       }
     };
 
+    const isStale = () => gen !== analysisGenRef.current;
+
     try {
       const { analysis: nextAnalysis, mocked, cutoutUri } = await analyzeCatPhoto(
         base64,
         mimeType,
       );
       await waitMinDuration();
+      if (isStale()) return;
       if (isNoCatFound(nextAnalysis)) {
         setPhotoUri(imageUri);
         setAnalysis(nextAnalysis);
@@ -220,6 +230,7 @@ export default function ScannerScreen() {
       );
     } catch (error) {
       await waitMinDuration();
+      if (isStale()) return;
       showToast({
         title: 'Analyse indisponible',
         description:
@@ -231,7 +242,7 @@ export default function ScannerScreen() {
       });
       setStep('review');
     } finally {
-      setAnalyzing(false);
+      if (!isStale()) setAnalyzing(false);
     }
   };
 
@@ -342,7 +353,9 @@ export default function ScannerScreen() {
   };
 
   const resetToCamera = () => {
+    analysisGenRef.current += 1;
     addingRef.current = false;
+    setAnalyzing(false);
     setStep('camera');
     setPhotoUri(null);
     setPhotoBase64(null);
@@ -371,6 +384,7 @@ export default function ScannerScreen() {
         longitude: coords.longitude,
         name,
         analysis: enrichAnalysis(analysis, nextNumber),
+        sourceWorldId,
       });
 
       if (Platform.OS !== 'web') {
@@ -487,6 +501,7 @@ export default function ScannerScreen() {
       <AnalysisLoadingView
         photoUri={photoUri}
         onBack={() => {
+          analysisGenRef.current += 1;
           setAnalyzing(false);
           setStep('camera');
         }}

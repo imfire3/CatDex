@@ -38,7 +38,15 @@ export default function MapScreen() {
   const missions = useMissionsStore((state) => state.missions);
   const openMissionCount = missions.filter((m) => !m.completed).length;
 
-  const capturedIds = useMemo(() => new Set(storedCats.map((cat) => cat.id)), [storedCats]);
+  const capturedIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const cat of storedCats) {
+      ids.add(cat.id);
+      if (cat.sourceWorldId) ids.add(cat.sourceWorldId);
+      if (cat.remoteId) ids.add(cat.remoteId);
+    }
+    return ids;
+  }, [storedCats]);
 
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -158,16 +166,22 @@ export default function MapScreen() {
 
   const filterPanelBottom = getMapSideToolsBottom(insets.bottom, spacing) + spacing[48] * 3 + spacing[32];
 
+  const mapCatList = useMemo(
+    () => visibleCats.map(({ cat }) => cat),
+    [visibleCats],
+  );
+  const capturedCatIdList = useMemo(() => [...capturedIds], [capturedIds]);
+
   return (
     <View style={styles.root}>
       <View style={StyleSheet.absoluteFill}>
         <CatMap
-          cats={visibleCats.map(({ cat }) => cat)}
+          cats={mapCatList}
           scheme="light"
           focusCoordinate={focusCoordinate}
           userCoordinate={userCoordinate}
           nearbyCatIds={nearbyCatIds}
-          capturedCatIds={[...capturedIds]}
+          capturedCatIds={capturedCatIdList}
           onSelectCat={(item) => {
             setSelected(item);
             setSheetVisible(true);
@@ -251,9 +265,13 @@ export default function MapScreen() {
         }}
         onCapture={() => {
           if (!selected) return;
+          const worldId = selected.id.startsWith('world-') ? selected.id : undefined;
           setSheetVisible(false);
           setSelected(null);
-          router.push('/scanner');
+          router.push({
+            pathname: '/scanner',
+            params: worldId ? { worldId } : undefined,
+          });
         }}
       />
     </View>

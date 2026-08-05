@@ -69,6 +69,7 @@ export function mergeRemoteCats(local: Cat[], remote: Cat[]): Cat[] {
       ...cat,
       photoUri: cat.photoUri || existing?.photoUri || '',
       remoteId: cat.remoteId || cat.id,
+      sourceWorldId: existing?.sourceWorldId ?? cat.sourceWorldId,
     });
   }
 

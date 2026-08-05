@@ -18,6 +18,11 @@ export type Cat = {
   id: string;
   /** Supabase UUID when synced */
   remoteId?: string;
+  /**
+   * World spawn id (e.g. `world-ombre`) this capture came from —
+   * used so the Explorer pin disappears after capture.
+   */
+  sourceWorldId?: string;
   number: number;
   name: string;
   photoUri: string;

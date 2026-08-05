@@ -2,7 +2,7 @@
  * Shared CatDex map pin — flat circular face + tip anchored to the ground.
  * Kept intentionally 2D so pins stay readable and stick to the map on zoom.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { CatImage } from '@/components/CatImage';
@@ -31,6 +31,8 @@ type PinVisualProps = {
   isNearby?: boolean;
   /** Override diameter of the face circle (default 40). */
   size?: number;
+  /** Fired once the photo settles (load or error) so native markers can freeze. */
+  onVisualSettled?: () => void;
 };
 
 /**
@@ -54,6 +56,7 @@ export function CatPinVisual({
   captured = true,
   isNearby = false,
   size = CAT_PIN_AVATAR,
+  onVisualSettled,
 }: PinVisualProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -65,6 +68,16 @@ export function CatPinVisual({
     Boolean(cat.photoUri) &&
     !photoFailed &&
     !cat.photoUri.startsWith('blob:');
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [cat.id, cat.photoUri]);
+
+  useEffect(() => {
+    if (!showPhoto) {
+      onVisualSettled?.();
+    }
+  }, [showPhoto, onVisualSettled]);
 
   return (
     <View style={styles.root} pointerEvents="none">
@@ -104,7 +117,11 @@ export function CatPinVisual({
               style={{ width: '100%', height: '100%' }}
               resizeMode="cover"
               accessibilityLabel={cat.name}
-              onError={() => setPhotoFailed(true)}
+              onError={() => {
+                setPhotoFailed(true);
+                onVisualSettled?.();
+              }}
+              onLoad={() => onVisualSettled?.()}
             />
           ) : (
             <View

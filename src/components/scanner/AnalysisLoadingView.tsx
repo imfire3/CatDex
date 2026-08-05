@@ -158,6 +158,15 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
   const { colors, fonts, spacing, radius, shadow, iconStroke, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const [progress, setProgress] = useState(0.08);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const showPhoto =
+    Boolean(photoUri) &&
+    !photoFailed &&
+    !photoUri!.startsWith('blob:');
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [photoUri]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -290,12 +299,13 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
                 backgroundColor: colors.surfaceSecondary,
               }}
             >
-              {photoUri ? (
+              {showPhoto ? (
                 <Image
-                  source={{ uri: photoUri }}
+                  source={{ uri: photoUri! }}
                   accessibilityLabel="Photo du chat en cours d’analyse"
                   resizeMode="cover"
                   style={{ width: '100%', height: '100%' }}
+                  onError={() => setPhotoFailed(true)}
                 />
               ) : (
                 <View

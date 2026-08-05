@@ -24,6 +24,8 @@ type AddCatInput = {
   name?: string;
   notes?: string;
   analysis: CatAnalysis;
+  /** World pin id being captured (`world-*`). */
+  sourceWorldId?: string;
 };
 
 type CatsState = {
@@ -37,6 +39,8 @@ type CatsState = {
   removeCat: (id: string) => void;
   getCat: (id: string) => Cat | undefined;
   syncFromRemote: () => Promise<void>;
+  /** Wipe local collection (call on sign-out to avoid cross-account leaks). */
+  clearLocal: () => void;
 };
 
 function isQuotaError(error: unknown): boolean {
@@ -113,6 +117,7 @@ export const useCatsStore = create<CatsState>()(
           views: 0,
           notes: input.notes?.trim() || undefined,
           analysis: input.analysis,
+          sourceWorldId: input.sourceWorldId,
         };
 
         if (isSupabaseConfigured) {
@@ -184,6 +189,8 @@ export const useCatsStore = create<CatsState>()(
           };
         });
       },
+
+      clearLocal: () => set({ cats: [], nextNumber: 1 }),
     }),
     {
       name: 'catdex-cats',

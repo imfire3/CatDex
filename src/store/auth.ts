@@ -121,6 +121,15 @@ async function syncCatsAfterAuth() {
   }
 }
 
+async function clearCatsOnSignOut() {
+  try {
+    const { useCatsStore } = await import('@/store/cats');
+    useCatsStore.getState().clearLocal();
+  } catch (error) {
+    console.warn('[auth] clear cats on sign-out failed', error);
+  }
+}
+
 /**
  * Always skip the automatic browser redirect: on web, supabase-js would
  * navigate to /authorize before any JS catch can run, and a disabled
@@ -148,45 +157,51 @@ async function startOAuth(provider: OAuthProviderId): Promise<void> {
     throw new Error('URL OAuth manquante');
   }
 
-  // Client only builds the URL; probe the authorize endpoint so a disabled
-  // provider never replaces the app with a JSON error page.
+  // Providers are opt-in via EXPO_PUBLIC_AUTH_*. On web, prefer navigating
+  // directly — a CORS-blocked probe would abort an otherwise valid OAuth.
   if (Platform.OS === 'web') {
-    const probe = await fetch(data.url, {
-      method: 'GET',
-      redirect: 'manual',
-      credentials: 'omit',
-    });
-    if (probe.status >= 400) {
-      let payload: unknown = null;
-      try {
-        payload = await probe.json();
-      } catch {
-        payload = { message: await probe.text() };
-      }
-      const msg =
-        payload &&
-        typeof payload === 'object' &&
-        ('msg' in payload || 'message' in payload || 'error_description' in payload)
-          ? String(
-              (payload as { msg?: string; message?: string; error_description?: string })
-                .msg ??
-                (payload as { message?: string }).message ??
-                (payload as { error_description?: string }).error_description ??
-                '',
-            )
-          : `OAuth HTTP ${probe.status}`;
-      const err = Object.assign(new Error(msg || `OAuth HTTP ${probe.status}`), {
-        code:
-          payload && typeof payload === 'object' && 'error_code' in payload
-            ? String((payload as { error_code?: unknown }).error_code ?? '')
-            : String(probe.status),
-        error_code:
-          payload && typeof payload === 'object' && 'error_code' in payload
-            ? String((payload as { error_code?: unknown }).error_code ?? '')
-            : undefined,
-        status: probe.status,
+    try {
+      const probe = await fetch(data.url, {
+        method: 'GET',
+        redirect: 'manual',
+        credentials: 'omit',
       });
-      throw err;
+      if (probe.status >= 400) {
+        let payload: unknown = null;
+        try {
+          payload = await probe.json();
+        } catch {
+          payload = { message: await probe.text() };
+        }
+        const msg =
+          payload &&
+          typeof payload === 'object' &&
+          ('msg' in payload || 'message' in payload || 'error_description' in payload)
+            ? String(
+                (payload as { msg?: string; message?: string; error_description?: string })
+                  .msg ??
+                  (payload as { message?: string }).message ??
+                  (payload as { error_description?: string }).error_description ??
+                  '',
+              )
+            : `OAuth HTTP ${probe.status}`;
+        const err = Object.assign(new Error(msg || `OAuth HTTP ${probe.status}`), {
+          code:
+            payload && typeof payload === 'object' && 'error_code' in payload
+              ? String((payload as { error_code?: unknown }).error_code ?? '')
+              : String(probe.status),
+          error_code:
+            payload && typeof payload === 'object' && 'error_code' in payload
+              ? String((payload as { error_code?: unknown }).error_code ?? '')
+              : undefined,
+          status: probe.status,
+        });
+        if (isOAuthProviderDisabledError(err)) throw err;
+        // Non-provider HTTP errors: still try the redirect.
+      }
+    } catch (probeError) {
+      if (isOAuthProviderDisabledError(probeError)) throw probeError;
+      // Network / CORS — continue to authorize URL.
     }
     window.location.assign(data.url);
     return;
@@ -382,6 +397,11 @@ export const useAuthStore = create<AuthState>()(
 
           // Empty identities = e-mail already registered (Supabase anti-enumeration).
           const isNewUser = (data.user.identities?.length ?? 0) > 0;
+          if (!isNewUser) {
+            throw new Error(
+              'Un compte existe déjà avec cet e-mail. Connecte-toi.',
+            );
+          }
 
           // With "Confirm email" disabled, signUp returns a session. If not,
           // sign in immediately so the user is logged in without a second step.
@@ -395,14 +415,12 @@ export const useAuthStore = create<AuthState>()(
 
             if (signInError) {
               const message = signInError.message || '';
-              if (/email not confirmed/i.test(message)) {
+              if (
+                /email not confirmed/i.test(message) ||
+                /invalid login credentials/i.test(message)
+              ) {
                 throw new Error(
                   'Compte créé, mais Supabase exige une confirmation e-mail. Désactive Authentication → Providers → Email → Confirm email pour te connecter directement.',
-                );
-              }
-              if (!isNewUser || /invalid login credentials/i.test(message)) {
-                throw new Error(
-                  'Un compte existe déjà avec cet e-mail. Connecte-toi.',
                 );
               }
               throw signInError;
@@ -537,6 +555,7 @@ export const useAuthStore = create<AuthState>()(
           if (supabase) {
             await supabase.auth.signOut();
           }
+          await clearCatsOnSignOut();
           set({
             user: null,
             session: null,
@@ -600,7 +619,7 @@ export function getAuthErrorMessage(error: AuthError | string | null | undefined
     return 'Limite d’e-mails Supabase atteinte. Désactive Confirm email (Auth → Providers → Email), attends un peu, puis recrée ton compte.';
   }
   if (/invalid login credentials/i.test(message) || code === 'invalid_credentials') {
-    return 'E-mail ou mot de passe incorrect. Si tu viens de t’inscrire : le compte n’a peut‑être pas été créé (Confirm email / limite d’e-mails Supabase). Désactive Confirm email puis recrée le compte.';
+    return 'E-mail ou mot de passe incorrect.';
   }
   if (/email not confirmed/i.test(message) || code === 'email_not_confirmed') {
     return 'E-mail non confirmé. Dans Supabase, désactive Authentication → Providers → Email → Confirm email, puis recrée ton compte.';
