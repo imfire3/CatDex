@@ -54,6 +54,44 @@ const NAMES = [
   'Pêche',
 ] as const;
 
+const DARK_NAMES = [
+  'Nox',
+  'Ombre',
+  'Encre',
+  'Shadow',
+  'Jais',
+  'Minuit',
+  'Panthère',
+  'Cendre',
+] as const;
+
+const WARM_NAMES = [
+  'Moka',
+  'Caramel',
+  'Flamme',
+  'Praline',
+  'Biscuit',
+  'Pêche',
+  'Miel',
+  'Roux',
+] as const;
+
+function namesForColor(color: string): readonly string[] {
+  const c = color.toLowerCase();
+  if (
+    c.includes('noir') ||
+    c.includes('charbon') ||
+    c.includes('minuit') ||
+    c.includes('ombre')
+  ) {
+    return DARK_NAMES;
+  }
+  if (c.includes('roux') || c.includes('orange') || c.includes('caramel')) {
+    return WARM_NAMES;
+  }
+  return NAMES;
+}
+
 const TAG_SETS = [
   ['Ombre', 'Mystère', 'Discret'],
   ['Soleil', 'Curieux', 'Vif'],
@@ -101,7 +139,7 @@ export function generateCatAnalysis(seedInput: string): CatAnalysis {
   const eyes = pick(EYES, seed, 4);
   const size = pick(SIZES, seed, 5);
   const gender = pick(GENDERS, seed, 6);
-  const suggestedName = pick(NAMES, seed, 7);
+  const suggestedName = pick(namesForColor(color), seed, 7);
   const tags = [...pick(TAG_SETS, seed, 8)];
 
   return {
@@ -172,7 +210,8 @@ export function ensureCatIdentity(
       ? analysis.coat.trim()
       : generated.coat;
   const suggestedName =
-    analysis.suggestedName?.trim() || generated.suggestedName;
+    analysis.suggestedName?.trim() ||
+    pick(namesForColor(color), hashSeed(seedInput || color), 7);
   const tags =
     analysis.tags && analysis.tags.length > 0
       ? analysis.tags.slice(0, 8)
