@@ -418,7 +418,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Sign in error:', error);
           set({ loading: false, error: error as AuthError });
-          throw error;
+          // Surface via store — avoid uncaught AuthApiError in Expo Go LogBox.
         }
       },
 
@@ -539,7 +539,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Sign up error:', error);
           set({ loading: false, error: error as AuthError });
-          throw error;
+          // Surface via store — avoid uncaught AuthApiError in Expo Go LogBox.
         }
       },
 
