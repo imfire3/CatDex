@@ -73,23 +73,132 @@ const WARM_NAMES = [
   'Biscuit',
   'Pêche',
   'Miel',
-  'Roux',
+  'Ambre',
 ] as const;
 
-function namesForColor(color: string): readonly string[] {
+const PALE_NAMES = [
+  'Neige',
+  'Nuage',
+  'Perle',
+  'Luna',
+  'Coton',
+  'Iris',
+  'Suki',
+  'Nori',
+] as const;
+
+const GREY_NAMES = [
+  'Brume',
+  'Argent',
+  'Cendre',
+  'Grisou',
+  'Mistral',
+  'Storm',
+  'Graphite',
+  'Fumée',
+] as const;
+
+const WARM_NAME_SET = new Set(WARM_NAMES.map((n) => n.toLowerCase()));
+const DARK_NAME_SET = new Set(DARK_NAMES.map((n) => n.toLowerCase()));
+
+const DARK_TAGS = ['Ombre', 'Mystère', 'Nuit', 'Furtif'] as const;
+const WARM_TAGS = ['Soleil', 'Flamme', 'Miel', 'Vif'] as const;
+const PALE_TAGS = ['Velours', 'Doux', 'Câlin', 'Poète'] as const;
+const GREY_TAGS = ['Brume', 'Discret', 'Observateur', 'Calme'] as const;
+
+function colorFamily(color: string): 'dark' | 'warm' | 'pale' | 'grey' | 'neutral' {
   const c = color.toLowerCase();
   if (
     c.includes('noir') ||
     c.includes('charbon') ||
     c.includes('minuit') ||
-    c.includes('ombre')
+    c.includes('ombre') ||
+    c.includes('ébène')
   ) {
-    return DARK_NAMES;
+    return 'dark';
   }
-  if (c.includes('roux') || c.includes('orange') || c.includes('caramel')) {
-    return WARM_NAMES;
+  if (
+    c.includes('roux') ||
+    c.includes('orange') ||
+    c.includes('caramel') ||
+    c.includes('cannelle') ||
+    c.includes('fauve') ||
+    c.includes('ginger')
+  ) {
+    return 'warm';
   }
-  return NAMES;
+  if (
+    c.includes('blanc') ||
+    c.includes('crème') ||
+    c.includes('ivoire') ||
+    c.includes('neige') ||
+    c.includes('siamois')
+  ) {
+    return 'pale';
+  }
+  if (c.includes('gris') || c.includes('argent') || c.includes('bleu') || c.includes('chartreux')) {
+    return 'grey';
+  }
+  return 'neutral';
+}
+
+/** Names that fit the coat color — used for AI gaps and mock data. */
+export function namesForColor(color: string): readonly string[] {
+  switch (colorFamily(color)) {
+    case 'dark':
+      return DARK_NAMES;
+    case 'warm':
+      return WARM_NAMES;
+    case 'pale':
+      return PALE_NAMES;
+    case 'grey':
+      return GREY_NAMES;
+    default:
+      return NAMES;
+  }
+}
+
+function tagsForColor(color: string): readonly string[] {
+  switch (colorFamily(color)) {
+    case 'dark':
+      return DARK_TAGS;
+    case 'warm':
+      return WARM_TAGS;
+    case 'pale':
+      return PALE_TAGS;
+    case 'grey':
+      return GREY_TAGS;
+    default:
+      return TAG_SETS[0]!;
+  }
+}
+
+/** True when a suggested name clashes with coat color (e.g. Caramel on a black cat). */
+export function nameFitsColor(name: string, color: string): boolean {
+  const n = name.trim().toLowerCase();
+  if (!n) return false;
+  const family = colorFamily(color);
+  if (family === 'dark' && WARM_NAME_SET.has(n)) return false;
+  if (family === 'warm' && DARK_NAME_SET.has(n)) return false;
+  if (family === 'pale' && DARK_NAME_SET.has(n)) return false;
+  return true;
+}
+
+/** Pick a poetic name consistent with color (and optionally breed). */
+export function suggestNameForAppearance(
+  color: string,
+  breed = '',
+  seedInput = color,
+): string {
+  const seed = hashSeed(`${seedInput}:${color}:${breed}`);
+  const pool = [...namesForColor(color)];
+  const b = breed.toLowerCase();
+  if (b.includes('bengal')) pool.unshift('Pixel', 'Ziggy', 'Tigrou');
+  if (b.includes('persan') || b.includes('ragdoll')) pool.unshift('Velours', 'Nuage', 'Perle');
+  if (b.includes('siamois')) pool.unshift('Suki', 'Nori', 'Iris');
+  if (b.includes('maine') || b.includes('norvégien')) pool.unshift('Mistral', 'Storm', 'Gus');
+  const unique = [...new Set(pool)];
+  return pick(unique, seed, 7);
 }
 
 const TAG_SETS = [
@@ -139,8 +248,8 @@ export function generateCatAnalysis(seedInput: string): CatAnalysis {
   const eyes = pick(EYES, seed, 4);
   const size = pick(SIZES, seed, 5);
   const gender = pick(GENDERS, seed, 6);
-  const suggestedName = pick(namesForColor(color), seed, 7);
-  const tags = [...pick(TAG_SETS, seed, 8)];
+  const suggestedName = suggestNameForAppearance(color, breed, seedInput || String(seed));
+  const tags = [...tagsForColor(color)].slice(0, 3);
 
   return {
     color,
@@ -209,13 +318,16 @@ export function ensureCatIdentity(
     analysis.coat?.trim() && !/indétermin|inconnu/i.test(analysis.coat)
       ? analysis.coat.trim()
       : generated.coat;
-  const suggestedName =
+  const suggestedNameRaw =
     analysis.suggestedName?.trim() ||
-    pick(namesForColor(color), hashSeed(seedInput || color), 7);
+    suggestNameForAppearance(color, breed, seedInput || color);
+  const suggestedName = nameFitsColor(suggestedNameRaw, color)
+    ? suggestedNameRaw
+    : suggestNameForAppearance(color, breed, seedInput || color);
   const tags =
     analysis.tags && analysis.tags.length > 0
       ? analysis.tags.slice(0, 8)
-      : generated.tags;
+      : [...tagsForColor(color)].slice(0, 3);
   const gender = analysis.gender ?? generated.gender;
   const eyes = analysis.eyes?.trim() || generated.eyes;
   const size = analysis.size?.trim() || generated.size;
@@ -223,7 +335,7 @@ export function ensureCatIdentity(
     analysis.description?.trim() &&
     !/aucun chat clairement visible/i.test(analysis.description)
       ? analysis.description.trim()
-      : buildDescription(suggestedName!, color, breed, tags ?? []);
+      : buildDescription(suggestedName, color, breed, tags ?? []);
 
   return {
     ...analysis,

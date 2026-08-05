@@ -117,33 +117,48 @@ async function idbDelete(catId: string): Promise<void> {
 }
 
 async function persistNativeFile(catId: string, dataUri: string): Promise<string> {
-  const FileSystem = await import('expo-file-system');
-  const legacy = FileSystem as typeof FileSystem & {
-    documentDirectory?: string | null;
-    writeAsStringAsync?: (
-      uri: string,
-      contents: string,
-      options?: { encoding?: string },
-    ) => Promise<void>;
-    makeDirectoryAsync?: (uri: string, options?: { intermediates?: boolean }) => Promise<void>;
-  };
-
-  const root = legacy.documentDirectory;
-  if (!root || !legacy.writeAsStringAsync) {
-    // Web/native fallback — keep compressed data URI only if tiny
+  // SDK 54+: legacy APIs throw if imported from `expo-file-system` root.
+  const FileSystem = await import('expo-file-system/legacy');
+  const root = FileSystem.documentDirectory;
+  if (!root) {
+    // Last resort — keep a small data URI so the tile still shows a photo.
     return dataUri.length < 180_000 ? dataUri : '';
   }
 
   const dir = `${root}cat-photos/`;
   try {
-    await legacy.makeDirectoryAsync?.(dir, { intermediates: true });
+    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
   } catch {
     // exists
   }
 
   const { base64 } = stripDataUrl(dataUri);
   const path = `${dir}${catId}.jpg`;
-  await legacy.writeAsStringAsync(path, base64, { encoding: 'base64' });
+  await FileSystem.writeAsStringAsync(path, base64, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  return path;
+}
+
+/** Copy a temporary camera/gallery file into durable app storage. */
+async function persistNativeCopy(catId: string, fileUri: string): Promise<string> {
+  const FileSystem = await import('expo-file-system/legacy');
+  const root = FileSystem.documentDirectory;
+  if (!root) return fileUri;
+
+  const dir = `${root}cat-photos/`;
+  try {
+    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+  } catch {
+    // exists
+  }
+
+  const path = `${dir}${catId}.jpg`;
+  if (fileUri === path || fileUri.includes('/cat-photos/')) {
+    return fileUri;
+  }
+
+  await FileSystem.copyAsync({ from: fileUri, to: path });
   return path;
 }
 
@@ -155,22 +170,18 @@ export async function persistCatPhoto(catId: string, photoUri: string): Promise<
   if (!photoUri || photoUri.startsWith('blob:')) {
     throw new Error('Photo éphémère — impossible à sauvegarder');
   }
-  if (isCatPhotoRef(photoUri) || photoUri.startsWith('file:')) {
-    return isCatPhotoRef(photoUri) ? photoUri : photoUri;
+  if (isCatPhotoRef(photoUri)) {
+    return photoUri;
   }
-
-  let dataUri = photoUri.startsWith('data:')
-    ? photoUri
-    : photoUri; // http(s) left as-is
   if (photoUri.startsWith('http://') || photoUri.startsWith('https://')) {
     return photoUri;
   }
-
-  if (!dataUri.startsWith('data:')) {
-    // Treat raw base64
-    dataUri = toDataUri(photoUri, 'image/jpeg');
+  if (photoUri.startsWith('file:')) {
+    if (Platform.OS === 'web') return photoUri;
+    return persistNativeCopy(catId, photoUri);
   }
 
+  let dataUri = photoUri.startsWith('data:') ? photoUri : toDataUri(photoUri, 'image/jpeg');
   dataUri = await compressPhotoDataUri(dataUri);
 
   if (Platform.OS === 'web' && typeof indexedDB !== 'undefined') {
@@ -210,11 +221,8 @@ export async function deleteCatPhoto(photoUri: string | null | undefined): Promi
   }
   if (photoUri.startsWith('file:') && Platform.OS !== 'web') {
     try {
-      const FileSystem = await import('expo-file-system');
-      const legacy = FileSystem as typeof FileSystem & {
-        deleteAsync?: (uri: string, options?: { idempotent?: boolean }) => Promise<void>;
-      };
-      await legacy.deleteAsync?.(photoUri, { idempotent: true });
+      const FileSystem = await import('expo-file-system/legacy');
+      await FileSystem.deleteAsync(photoUri, { idempotent: true });
     } catch {
       // ignore
     }

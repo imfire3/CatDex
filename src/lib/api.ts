@@ -18,7 +18,22 @@ type AnalyzeApiPayload = {
   cutoutMimeType?: string;
 };
 
-const ANALYZE_TIMEOUT_MS = 60_000;
+/** Local API should answer fast; remote (Render cold start) gets a shorter budget in DEV. */
+function analyzeTimeoutFor(apiBase: string): number {
+  if (!__DEV__) return 28_000;
+  try {
+    const host = new URL(apiBase).hostname;
+    const isLocal =
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host.startsWith('192.168.') ||
+      host.startsWith('10.');
+    return isLocal ? 6_000 : 5_000;
+  } catch {
+    return 6_000;
+  }
+}
+
 
 function stripDataUrl(imageBase64: string): { base64: string; mimeType?: string } {
   const match = /^data:([^;]+);base64,(.+)$/s.exec(imageBase64.trim());
@@ -107,7 +122,7 @@ export async function analyzeCatPhoto(
 
   for (const apiBase of candidates) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), analyzeTimeoutFor(apiBase));
 
     try {
       return await requestAnalyze(apiBase, stripped.base64, resolvedMime, controller.signal);

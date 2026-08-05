@@ -60,15 +60,15 @@ function PermIcon({ name, color }: { name: PermKey; color: string }) {
 const ROWS = [
   {
     key: 'location' as const,
-    title: 'Position',
-    body: 'Pour placer les chats sur la carte près de toi.',
+    title: 'Position (GPS)',
+    body: 'Pour te situer et placer les chats sur la carte près de toi.',
     softKey: 'skySoft' as const,
     tintKey: 'sky' as const,
   },
   {
     key: 'camera' as const,
-    title: 'Caméra',
-    body: 'Pour photographier et analyser les chats.',
+    title: 'Caméra / Photo',
+    body: 'Pour photographier et analyser les chats que tu rencontres.',
     softKey: 'orangeSoft' as const,
     tintKey: 'orange' as const,
   },
@@ -92,22 +92,23 @@ export default function PermissionsScreen() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const active = await isLocationActive();
-      if (!mounted) return;
-      // Location already on → nothing to ask; complete onboarding if needed.
-      if (active) {
-        if (!onboardingCompleted) completeOnboarding();
-        setNeedsPrompt(false);
+      // New users must always see GPS + camera before entering the app.
+      if (!onboardingCompleted) {
+        if (mounted) setNeedsPrompt(true);
         return;
       }
-      setNeedsPrompt(true);
+
+      // Returning users (e.g. from map banner): only re-prompt if location is off.
+      const active = await isLocationActive();
+      if (!mounted) return;
+      setNeedsPrompt(!active);
     })().catch(() => {
       if (mounted) setNeedsPrompt(true);
     });
     return () => {
       mounted = false;
     };
-  }, [completeOnboarding, onboardingCompleted]);
+  }, [onboardingCompleted]);
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
@@ -138,7 +139,7 @@ export default function PermissionsScreen() {
     setBusy(true);
     try {
       const loc = await requestLocationAccess();
-      const cam = await askCamera();
+      const cam = onboardingCompleted ? true : await askCamera();
       if (!loc) {
         Alert.alert(
           'Localisation requise',
@@ -192,7 +193,7 @@ export default function PermissionsScreen() {
         <Text variant="body" color="textSecondary">
           {locationOnly
             ? 'La localisation n’est pas active. Active-la pour placer les chats près de toi sur la carte.'
-            : 'CatDex a besoin de deux accès pour fonctionner pleinement. Tu peux tout activer d’un coup.'}
+            : 'CatDex a besoin du GPS et de la caméra pour fonctionner. Tu peux tout activer d’un coup.'}
         </Text>
       </View>
 

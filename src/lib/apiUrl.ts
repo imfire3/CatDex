@@ -24,6 +24,21 @@ function getExpoDevHost(): string | null {
   return null;
 }
 
+function isLocalApiUrl(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.endsWith('.local')
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Ordered list of API bases to try (deduped). */
 export function getApiCandidateUrls(): string[] {
   const candidates: string[] = [];
@@ -37,18 +52,24 @@ export function getApiCandidateUrls(): string[] {
   };
 
   const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (fromEnv) push(fromEnv);
 
   // Production / store builds must only hit the configured HTTPS API.
   if (!__DEV__) {
+    if (fromEnv) push(fromEnv);
     return candidates;
   }
 
+  // Dev: prefer local API first (fast), then optional remote fallback.
   const devHost = getExpoDevHost();
   if (devHost) push(`http://${devHost}:${API_PORT}`);
-
   push(`http://localhost:${API_PORT}`);
   push(`http://127.0.0.1:${API_PORT}`);
+
+  if (fromEnv && !isLocalApiUrl(fromEnv)) {
+    push(fromEnv);
+  } else if (fromEnv) {
+    push(fromEnv);
+  }
 
   return candidates;
 }

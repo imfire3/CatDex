@@ -57,7 +57,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
       onPress={onPress}
       style={({ pressed }) => [
         {
-          flex: 1,
+          width: '100%',
           borderRadius: radius.cta,
           backgroundColor: colors.surfaceElevated,
           overflow: 'hidden',
@@ -85,7 +85,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
             onError={() => setPhotoFailed(true)}
           />
         ) : (
-          <CatSprite colorLabel={analysis.color} seed={cat.number} size={112} />
+          <CatSprite colorLabel={analysis.color} seed={cat.number} size={80} />
         )}
 
         {onToggleFavorite ? (
@@ -125,7 +125,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
         ) : null}
       </View>
 
-      <View style={{ padding: spacing[16], gap: spacing[4] }}>
+      <View style={{ padding: spacing[8], gap: spacing[4] }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
           <Text
             variant="bodySmall"

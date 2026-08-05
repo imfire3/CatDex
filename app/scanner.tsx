@@ -41,8 +41,8 @@ import type { CatAnalysis } from '@/types/cat';
 
 type Step = 'camera' | 'analyzing' | 'review' | 'reveal' | 'problem';
 
-/** Keep the analysis loading screen visible long enough to read the checklist. */
-const MIN_ANALYSIS_MS = 4800;
+/** Brief pause so the loading UI can paint — never pad a slow API. */
+const MIN_ANALYSIS_MS = 600;
 
 const FLASH_CYCLE: FlashMode[] = ['auto', 'on', 'off'];
 const FLASH_LABELS: Record<FlashMode, string> = {
@@ -260,7 +260,8 @@ export default function ScannerScreen() {
     setCapturing(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.55,
+        // Lean JPEG → faster upload + Vision; storage still gets this capture.
+        quality: 0.35,
         base64: true,
         exif: false,
         shutterSound: false,
@@ -307,7 +308,7 @@ export default function ScannerScreen() {
   const handlePickFromLibrary = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.55,
+      quality: 0.35,
       base64: true,
       exif: false,
       preferredAssetRepresentationMode:
@@ -363,7 +364,10 @@ export default function ScannerScreen() {
     setAnalysis(null);
   };
 
-  const handleAddToCatDex = async () => {
+  const handleAddToCatDex = async (override?: {
+    name: string;
+    analysis: NonNullable<typeof analysis>;
+  }) => {
     if (!photoUri || !analysis || addingRef.current) return;
     addingRef.current = true;
 
@@ -377,7 +381,10 @@ export default function ScannerScreen() {
       }) ?? photoUri;
 
     const name =
-      analysis.suggestedName?.trim() || formatCatDefaultName(nextNumber);
+      override?.name.trim() ||
+      analysis.suggestedName?.trim() ||
+      formatCatDefaultName(nextNumber);
+    const nextAnalysis = enrichAnalysis(override?.analysis ?? analysis, nextNumber);
 
     try {
       const cat = await addCat({
@@ -385,7 +392,7 @@ export default function ScannerScreen() {
         latitude: coords.latitude,
         longitude: coords.longitude,
         name,
-        analysis: enrichAnalysis(analysis, nextNumber),
+        analysis: nextAnalysis,
         sourceWorldId,
       });
 
@@ -408,8 +415,8 @@ export default function ScannerScreen() {
       });
 
       router.replace({
-        pathname: '/(tabs)/catdex',
-        params: { justAdded: cat.id },
+        pathname: '/cat/[id]',
+        params: { id: cat.id },
       });
     } catch (error) {
       addingRef.current = false;
@@ -494,8 +501,8 @@ export default function ScannerScreen() {
         number={nextNumber}
         photoUri={photoUri}
         analysis={analysis}
-        onAdd={() => {
-          void handleAddToCatDex();
+        onAdd={(result) => {
+          void handleAddToCatDex(result);
         }}
         onRetake={resetToCamera}
       />

@@ -369,12 +369,15 @@ function keyLooksPlaceholder(apiKey?: string | null): boolean {
   );
 }
 
+const CUTOUT_BUDGET_MS = Number(process.env.CUTOUT_BUDGET_MS ?? 1200);
+const SKIP_CUTOUT = process.env.SKIP_CUTOUT === '1' || process.env.SKIP_CUTOUT === 'true';
+
 async function cutoutCatPng(imageBase64: string, mimeType: string): Promise<string | null> {
   try {
     const input = Buffer.from(imageBase64, 'base64');
     const blob = await removeBackground(new Blob([input], { type: mimeType }), {
       model: 'small',
-      output: { format: 'image/png', quality: 0.9, type: 'foreground' },
+      output: { format: 'image/png', quality: 0.85, type: 'foreground' },
     });
     const buffer = Buffer.from(await blob.arrayBuffer());
     return buffer.toString('base64');
@@ -382,6 +385,21 @@ async function cutoutCatPng(imageBase64: string, mimeType: string): Promise<stri
     console.error('[cutout]', error);
     return null;
   }
+}
+
+/** Never block analysis on rembg — drop cutout if it exceeds the budget. */
+async function cutoutWithinBudget(
+  imageBase64: string,
+  mimeType: string,
+): Promise<string | null> {
+  if (SKIP_CUTOUT || CUTOUT_BUDGET_MS <= 0) return null;
+
+  return Promise.race([
+    cutoutCatPng(imageBase64, mimeType),
+    new Promise<null>((resolve) => {
+      setTimeout(() => resolve(null), CUTOUT_BUDGET_MS);
+    }),
+  ]);
 }
 
 app.post('/analyze-cat', async (c) => {
@@ -410,50 +428,54 @@ app.post('/analyze-cat', async (c) => {
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
-  const cutoutPromise = cutoutCatPng(imageBase64, mimeType);
 
+  // Mock path: respond immediately — cutout is optional polish, not required for detection.
   if (keyLooksPlaceholder(apiKey)) {
-    const cutoutBase64 = await cutoutPromise;
     return c.json({
       analysis: buildFallbackAnalysis(analysisSeed),
       mocked: true,
-      cutoutBase64: cutoutBase64 ?? undefined,
-      cutoutMimeType: cutoutBase64 ? 'image/png' : undefined,
     });
   }
 
   const openai = new OpenAI({ apiKey: apiKey!.trim() });
 
   try {
-    const [completion, cutoutBase64] = await Promise.all([
-      openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL ?? 'gpt-4o',
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: CATDEX_VISION_PROMPT,
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: CATDEX_VISION_USER_TEXT,
+    // Vision first for snappy detection — attach cutout only if it finishes in time.
+    const cutoutPromise = cutoutWithinBudget(imageBase64, mimeType);
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+      temperature: 0.2,
+      max_tokens: 700,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: CATDEX_VISION_PROMPT,
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: CATDEX_VISION_USER_TEXT,
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${mimeType};base64,${imageBase64}`,
+                // low = much faster Vision round-trip; enough for color/breed tags
+                detail: 'low',
               },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${imageBase64}`,
-                  detail: 'high',
-                },
-              },
-            ],
-          },
-        ],
-      }),
+            },
+          ],
+        },
+      ],
+    });
+
+    // Use cutout only if it already finished during Vision — never wait extra.
+    const cutoutBase64 = await Promise.race([
       cutoutPromise,
+      Promise.resolve(null as string | null),
     ]);
 
     const raw = completion.choices[0]?.message?.content ?? '{}';
@@ -478,14 +500,11 @@ app.post('/analyze-cat', async (c) => {
     });
   } catch (error) {
     console.error('[analyze-cat]', error);
-    const cutoutBase64 = await cutoutPromise.catch(() => null);
     // Prefer 200 so public tunnels (Cloudflare) do not replace the JSON body.
     return c.json({
       error: 'Échec analyse OpenAI',
       analysis: buildFallbackAnalysis(analysisSeed),
       mocked: true,
-      cutoutBase64: cutoutBase64 ?? undefined,
-      cutoutMimeType: cutoutBase64 ? 'image/png' : undefined,
     });
   }
 });

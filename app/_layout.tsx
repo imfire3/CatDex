@@ -56,6 +56,7 @@ function RootNavigator() {
           animation: 'slide_from_right',
         }}
       />
+      <Stack.Screen name="settings" options={{ headerShown: false }} />
     </Stack>
   );
 }

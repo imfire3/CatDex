@@ -21,6 +21,17 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...ton_anon_key
 
 Cela crée : `profiles`, `cats`, `sightings`, `cat_analysis`, RLS, PostGIS nearby search, bucket Storage `cats`.
 
+### Si tu vois `PGRST200` / `cat_analysis`
+L’app joint `cats` → `cat_analysis`. Si la FK manque (projet créé avec un vieux schéma), tu auras :
+
+`Could not find a relationship between 'cats' and 'cat_analysis'`
+
+Fix rapide :
+1. SQL Editor → New query  
+2. Colle **tout** `supabase/migrations/20260805_ensure_cat_analysis.sql`  
+3. **Run** (recharge aussi le cache PostgREST)  
+4. Recharge l’app (`r` dans Expo)
+
 ## 3. Auth e-mail
 Authentication → Providers → Email : activé  
 

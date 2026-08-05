@@ -163,6 +163,11 @@ export function MainTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const focusedRoute = state.routes[state.index]?.name as TabKey;
 
+  // CatDex / Missions / Profil are full screens with sticky back header — no tab pill.
+  if (focusedRoute === 'catdex' || focusedRoute === 'missions' || focusedRoute === 'profile') {
+    return null;
+  }
+
   const handlePress = (routeName: TabKey) => {
     const route = state.routes.find((item) => item.name === routeName);
     if (!route) return;

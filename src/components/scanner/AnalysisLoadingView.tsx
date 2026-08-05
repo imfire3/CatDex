@@ -20,10 +20,33 @@ const ANALYSIS_STEPS = [
 const TIP =
   'Chaque chat a des caractéristiques uniques, comme nous les humains !';
 
+/** Shown once the checklist is done but the API is still working. */
+const WAITING_MESSAGES = [
+  'L’IA peaufine les détails…',
+  'Encore quelques secondes…',
+  'Presque prêt…',
+  'On finalise la fiche…',
+] as const;
+
 type Props = {
   photoUri?: string;
   onBack?: () => void;
 };
+
+/**
+ * Fake progress tuned for a quick analysis (~2–4s):
+ * climbs to ~90% fast, then crawls while the API finishes.
+ */
+function progressForElapsedMs(elapsedMs: number): number {
+  if (elapsedMs <= 0) return 0.12;
+  if (elapsedMs < 2_500) {
+    // 12% → ~90% in ~2.5s
+    return 0.12 + 0.78 * (1 - Math.exp(-elapsedMs / 900));
+  }
+  const extra = elapsedMs - 2_500;
+  // 90% → ~99% while waiting on a slow network / cold start
+  return Math.min(0.99, 0.9 + 0.09 * (1 - Math.exp(-extra / 8_000)));
+}
 
 function StepCheck({ done, active }: { done: boolean; active?: boolean }) {
   const { colors, radius } = useTheme();
@@ -158,6 +181,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
   const { colors, fonts, spacing, radius, shadow, iconStroke, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const [progress, setProgress] = useState(0.08);
+  const [waitingIndex, setWaitingIndex] = useState(0);
   const [photoFailed, setPhotoFailed] = useState(false);
   const showPhoto =
     Boolean(photoUri) &&
@@ -169,18 +193,25 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
   }, [photoUri]);
 
   useEffect(() => {
+    const startedAt = Date.now();
     const timer = setInterval(() => {
-      setProgress((value) => {
-        if (value >= 0.96) return value;
-        const step = value < 0.35 ? 0.035 : value < 0.7 ? 0.028 : 0.018;
-        return Math.min(0.96, value + step);
-      });
-    }, 180);
+      setProgress(progressForElapsedMs(Date.now() - startedAt));
+    }, 120);
     return () => clearInterval(timer);
   }, []);
 
+  const isWaitingOnApi = progress >= 0.85;
+
+  useEffect(() => {
+    if (!isWaitingOnApi) return;
+    const timer = setInterval(() => {
+      setWaitingIndex((index) => (index + 1) % WAITING_MESSAGES.length);
+    }, 2200);
+    return () => clearInterval(timer);
+  }, [isWaitingOnApi]);
+
   const completedSteps = useMemo(() => {
-    const thresholds = [0.18, 0.4, 0.62, 0.84];
+    const thresholds = [0.2, 0.45, 0.65, 0.85];
     return ANALYSIS_STEPS.map((_, index) => progress >= thresholds[index]!);
   }, [progress]);
 
@@ -189,6 +220,9 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
     Math.max(0, completedSteps.lastIndexOf(true) + 1),
   );
   const percentLabel = `${Math.round(progress * 100)}%`;
+  const statusLabel = isWaitingOnApi
+    ? WAITING_MESSAGES[waitingIndex]!
+    : 'Détection rapide…';
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -231,6 +265,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
               left: 0,
               right: 0,
               alignItems: 'center',
+              paddingHorizontal: spacing[48],
             }}
           >
             <Text
@@ -241,8 +276,8 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
             >
               Analyse en cours
             </Text>
-            <Text variant="caption" color="textSecondary" align="center">
-              IA à l’œuvre
+            <Text variant="caption" color="textSecondary" align="center" numberOfLines={1}>
+              {statusLabel}
             </Text>
           </View>
           <View style={{ width: spacing[40] }} />
@@ -340,17 +375,24 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
               shadow.low,
             ]}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-              <View style={{ flex: 1 }}>
-                <ProgressBar progress={progress} height={10} />
+            <View style={{ gap: spacing[8] }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+                <View style={{ flex: 1 }}>
+                  <ProgressBar progress={progress} height={10} />
+                </View>
+                <Text
+                  variant="bodySmall"
+                  color="textBrand"
+                  style={{ fontFamily: fonts.bodySemi, minWidth: 40, textAlign: 'right' }}
+                >
+                  {percentLabel}
+                </Text>
               </View>
-              <Text
-                variant="bodySmall"
-                color="textBrand"
-                style={{ fontFamily: fonts.bodySemi, minWidth: 40, textAlign: 'right' }}
-              >
-                {percentLabel}
-              </Text>
+              {isWaitingOnApi ? (
+                <Text variant="caption" color="textMuted">
+                  Encore un instant si le réseau est lent…
+                </Text>
+              ) : null}
             </View>
 
             <View style={{ gap: spacing[16] }}>

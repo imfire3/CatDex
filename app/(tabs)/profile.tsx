@@ -7,6 +7,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
+import { Button } from '@/components/Button';
 import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
 import { EmptyState } from '@/components/EmptyState';
@@ -14,7 +15,7 @@ import { GlassIconButton } from '@/components/GlassIconButton';
 import { ProgressBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { getTabBarTotalHeight } from '@/layout/tabBarMetrics';
+import { TabStackHeader } from '@/layout/TabStackHeader';
 import { formatDexNumber } from '@/lib/constants';
 import {
   catDexRarityLabel,
@@ -320,11 +321,7 @@ export default function ProfileScreen() {
   const places = uniquePlaces(cats);
   const streak = Math.max(streakDays, cats.length > 0 ? 1 : 0);
 
-  const comingSoon = (feature: string) => {
-    showToast({ title: feature, description: 'Bientôt disponible.', tone: 'default' });
-  };
-
-  const listBottom = getTabBarTotalHeight(insets.bottom, spacing) + spacing[24];
+  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24];
   const coverHeight = spacing[80];
   const iconColor = colors.textSecondary;
 
@@ -338,13 +335,40 @@ export default function ProfileScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <TabStackHeader
+        title="Profil"
+        right={
+          <GlassIconButton
+            accessibilityLabel="Partager le profil"
+            onPress={() =>
+              showToast({
+                title: 'Partager',
+                description: 'Bientôt disponible.',
+                tone: 'default',
+              })
+            }
+          >
+            <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
+              <Circle cx="18" cy="5" r="2.5" stroke={colors.brand} strokeWidth={iconStroke.regular} />
+              <Circle cx="6" cy="12" r="2.5" stroke={colors.brand} strokeWidth={iconStroke.regular} />
+              <Circle cx="18" cy="19" r="2.5" stroke={colors.brand} strokeWidth={iconStroke.regular} />
+              <Path
+                d="M8.4 13.2 15.6 17.3M15.6 6.7 8.4 10.8"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </GlassIconButton>
+        }
+      />
       <ScrollView
         bounces={false}
         contentContainerStyle={{ paddingBottom: listBottom }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={enterHero}>
-          <View style={{ height: coverHeight + insets.top }}>
+          <View style={{ height: coverHeight }}>
             <Image
               source={COVER}
               resizeMode="cover"
@@ -353,7 +377,7 @@ export default function ProfileScreen() {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: coverHeight + insets.top,
+                height: coverHeight,
               }}
             />
             <LinearGradient
@@ -364,35 +388,9 @@ export default function ProfileScreen() {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: coverHeight + insets.top,
+                height: coverHeight,
               }}
             />
-            <View
-              style={{
-                paddingTop: insets.top + spacing[16],
-                paddingHorizontal: spacing[24],
-                flexDirection: 'row',
-                justifyContent: 'flex-end',
-                gap: spacing[8],
-              }}
-            >
-              <GlassIconButton
-                accessibilityLabel="Partager le profil"
-                onPress={() => comingSoon('Partager')}
-              >
-                <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
-                  <Circle cx="18" cy="5" r="2.5" stroke={colors.text} strokeWidth={iconStroke.regular} />
-                  <Circle cx="6" cy="12" r="2.5" stroke={colors.text} strokeWidth={iconStroke.regular} />
-                  <Circle cx="18" cy="19" r="2.5" stroke={colors.text} strokeWidth={iconStroke.regular} />
-                  <Path
-                    d="M8.4 13.2 15.6 17.3M15.6 6.7 8.4 10.8"
-                    stroke={colors.text}
-                    strokeWidth={iconStroke.regular}
-                    strokeLinecap="round"
-                  />
-                </Svg>
-              </GlassIconButton>
-            </View>
           </View>
         </Animated.View>
 
@@ -575,7 +573,7 @@ export default function ProfileScreen() {
             >
               <ProfileMenuRow
                 label="Modifier le profil"
-                onPress={() => comingSoon('Modifier le profil')}
+                onPress={() => router.push('/settings/edit-profile')}
                 icon={
                   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
                     <Circle
@@ -596,7 +594,7 @@ export default function ProfileScreen() {
               />
               <ProfileMenuRow
                 label="Notifications"
-                onPress={() => comingSoon('Notifications')}
+                onPress={() => router.push('/settings/notifications')}
                 icon={
                   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
                     <Path
@@ -617,7 +615,7 @@ export default function ProfileScreen() {
               <ProfileMenuRow
                 label="Aide & support"
                 showDivider={false}
-                onPress={() => comingSoon('Aide & support')}
+                onPress={() => router.push('/settings/help')}
                 icon={
                   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
                     <Circle cx="12" cy="12" r="8" stroke={iconColor} strokeWidth={iconStroke.regular} />
@@ -634,23 +632,19 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Se déconnecter"
+          <Button
+            title="Se déconnecter"
+            variant="destructive"
             onPress={() => {
-              signOut();
-              router.replace('/(auth)/welcome');
+              void (async () => {
+                try {
+                  await signOut();
+                } finally {
+                  router.replace('/(auth)/welcome');
+                }
+              })();
             }}
-            style={({ pressed }) => ({
-              alignItems: 'center',
-              paddingVertical: spacing[16],
-              opacity: pressed ? 0.88 : 1,
-            })}
-          >
-            <Text variant="bodySmall" color="danger" style={{ fontFamily: fonts.bodySemi }}>
-              Se déconnecter
-            </Text>
-          </Pressable>
+          />
         </Animated.View>
       </ScrollView>
     </View>

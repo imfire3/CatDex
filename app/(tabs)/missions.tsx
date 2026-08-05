@@ -6,7 +6,7 @@ import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
 import { ProgressBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
-import { getTabBarTotalHeight } from '@/layout/tabBarMetrics';
+import { TabStackHeader } from '@/layout/TabStackHeader';
 import {
   buildCollections,
   buildDailyQuests,
@@ -155,27 +155,23 @@ export default function MissionsScreen() {
   const collections = buildCollections(cats);
   const levelDef = LEVEL_DEFS.find((item) => item.level === level);
   const dexProgress = Math.min(1, cats.length / CATDEX_GOAL);
-  const listBottom = getTabBarTotalHeight(insets.bottom, spacing) + spacing[24];
+  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24];
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <TabStackHeader title="Missions" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: spacing[24],
-          paddingTop: spacing[24],
+          paddingTop: spacing[16],
           paddingBottom: listBottom,
           gap: spacing[32],
         }}
       >
-        <View style={{ gap: spacing[8] }}>
-          <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
-            Missions
-          </Text>
-          <Text variant="body" color="textBody">
-            Le moteur de ton CatDex — XP, défis et collections à compléter.
-          </Text>
-        </View>
+        <Text variant="body" color="textBody">
+          Le moteur de ton CatDex — XP, défis et collections à compléter.
+        </Text>
 
         <Card>
           <View style={{ gap: spacing[16] }}>

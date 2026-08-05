@@ -67,6 +67,7 @@ type AuthState = {
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   completeOnboarding: () => void;
+  updateProfile: (input: { displayName: string }) => Promise<void>;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
   handleAuthUrl: (url: string) => Promise<boolean>;
@@ -637,6 +638,51 @@ export const useAuthStore = create<AuthState>()(
         }));
       },
 
+      updateProfile: async ({ displayName }) => {
+        const trimmed = displayName.trim();
+        if (!trimmed) {
+          throw new Error('Le pseudo ne peut pas être vide.');
+        }
+        if (trimmed.length < 2) {
+          throw new Error('Le pseudo doit faire au moins 2 caractères.');
+        }
+        if (trimmed.length > 32) {
+          throw new Error('Le pseudo est trop long (32 caractères max).');
+        }
+
+        const current = get().user;
+        if (!current) {
+          throw new Error('Connecte-toi pour modifier ton profil.');
+        }
+
+        try {
+          set({ loading: true, error: null });
+
+          if (supabase && !current.id.startsWith('user_')) {
+            const { error } = await supabase
+              .from('profiles')
+              .upsert(
+                {
+                  id: current.id,
+                  email: current.email,
+                  display_name: trimmed,
+                },
+                { onConflict: 'id' },
+              );
+            if (error) throw error;
+          }
+
+          set({
+            user: { ...current, displayName: trimmed },
+            loading: false,
+          });
+        } catch (error) {
+          console.error('Update profile error:', error);
+          set({ loading: false, error: error as AuthError });
+          throw error;
+        }
+      },
+
       signOut: async () => {
         try {
           set({ loading: true, error: null });
@@ -695,6 +741,7 @@ export const useAuthStore = create<AuthState>()(
 );
 
 export function getPostAuthHref(onboardingCompleted: boolean) {
+  // New users → intro then permissions (GPS + camera).
   return onboardingCompleted ? '/(tabs)/map' : '/(auth)/intro';
 }
 

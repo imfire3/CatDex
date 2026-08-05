@@ -60,6 +60,91 @@ export type RemoteCatRow = {
     | null;
 };
 
+type AnalysisRow = NonNullable<
+  Exclude<RemoteCatRow['cat_analysis'], unknown[] | null>
+>;
+
+function isMissingRelationshipError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === 'PGRST200' ||
+    /could not find a relationship between ['"]cats['"] and ['"]cat_analysis['"]/i.test(
+      error.message ?? '',
+    )
+  );
+}
+
+/**
+ * Prefer PostgREST embed `cat_analysis (*)`.
+ * If the live DB lacks the FK (PGRST200), fetch analysis in a second query.
+ */
+async function attachCatAnalysis(rows: RemoteCatRow[]): Promise<RemoteCatRow[]> {
+  if (rows.length === 0) return rows;
+
+  const client = requireSupabase();
+  const ids = rows.map((row) => row.id);
+  const { data, error } = await client
+    .from('cat_analysis')
+    .select(
+      'cat_id, color, breed, coat, description, suggested_name, gender, eyes, size, tags',
+    )
+    .in('cat_id', ids);
+
+  if (error) {
+    // Table missing or RLS — keep cats usable with local fallbacks in analysisFromRow.
+    console.warn('[supabase] cat_analysis lookup failed', error);
+    return rows.map((row) => ({ ...row, cat_analysis: row.cat_analysis ?? null }));
+  }
+
+  const byCatId = new Map<string, AnalysisRow>();
+  for (const row of data ?? []) {
+    const catId = (row as { cat_id?: string }).cat_id;
+    if (!catId) continue;
+    byCatId.set(catId, {
+      color: row.color,
+      breed: row.breed,
+      coat: row.coat,
+      description: row.description,
+      suggested_name: row.suggested_name,
+      gender: row.gender,
+      eyes: row.eyes,
+      size: row.size,
+      tags: row.tags,
+    });
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    cat_analysis: row.cat_analysis ?? byCatId.get(row.id) ?? null,
+  }));
+}
+
+type CatsQueryResult = {
+  data: RemoteCatRow[] | null;
+  error: { code?: string; message?: string } | null;
+};
+
+async function selectCatsWithAnalysis(
+  build: (select: string) => PromiseLike<CatsQueryResult>,
+): Promise<RemoteCatRow[]> {
+  const embedded = await build(`
+      *,
+      cat_analysis (*)
+    `);
+
+  if (!embedded.error) {
+    return (embedded.data ?? []) as RemoteCatRow[];
+  }
+
+  if (!isMissingRelationshipError(embedded.error)) {
+    throw embedded.error;
+  }
+
+  const plain = await build('*');
+  if (plain.error) throw plain.error;
+  return attachCatAnalysis((plain.data ?? []) as RemoteCatRow[]);
+}
+
 function analysisFromRow(row: RemoteCatRow): CatAnalysis {
   const raw = Array.isArray(row.cat_analysis) ? row.cat_analysis[0] : row.cat_analysis;
   return {
@@ -141,7 +226,7 @@ export async function createCat(input: CreateCatInput) {
 
 export async function getCatById(catId: string) {
   const client = requireSupabase();
-  const { data, error } = await client
+  const embedded = await client
     .from('cats')
     .select(
       `
@@ -151,10 +236,32 @@ export async function getCatById(catId: string) {
     `,
     )
     .eq('id', catId)
-    .single();
+    .maybeSingle();
+
+  if (!embedded.error) {
+    return embedded.data;
+  }
+
+  if (!isMissingRelationshipError(embedded.error)) {
+    throw embedded.error;
+  }
+
+  const { data, error } = await client
+    .from('cats')
+    .select(
+      `
+      *,
+      profiles (display_name, avatar_url)
+    `,
+    )
+    .eq('id', catId)
+    .maybeSingle();
 
   if (error) throw error;
-  return data;
+  if (!data) return data;
+
+  const [withAnalysis] = await attachCatAnalysis([data as RemoteCatRow]);
+  return withAnalysis;
 }
 
 export async function getMyCats(): Promise<RemoteCatRow[]> {
@@ -167,19 +274,13 @@ export async function getMyCats(): Promise<RemoteCatRow[]> {
     throw new Error('User must be authenticated');
   }
 
-  const { data, error } = await client
-    .from('cats')
-    .select(
-      `
-      *,
-      cat_analysis (*)
-    `,
-    )
-    .eq('owner_id', user.id)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []) as RemoteCatRow[];
+  return selectCatsWithAnalysis((select) =>
+    client
+      .from('cats')
+      .select(select)
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: false }) as unknown as PromiseLike<CatsQueryResult>,
+  );
 }
 
 /**
@@ -192,25 +293,20 @@ export async function getCommunityCats(): Promise<RemoteCatRow[]> {
     data: { user },
   } = await client.auth.getUser();
 
-  let query = client
-    .from('cats')
-    .select(
-      `
-      *,
-      cat_analysis (*)
-    `,
-    )
-    .not('photo_url', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(500);
+  return selectCatsWithAnalysis((select) => {
+    let query = client
+      .from('cats')
+      .select(select)
+      .not('photo_url', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(500);
 
-  if (user?.id) {
-    query = query.neq('owner_id', user.id);
-  }
+    if (user?.id) {
+      query = query.neq('owner_id', user.id);
+    }
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []) as RemoteCatRow[];
+    return query as unknown as PromiseLike<CatsQueryResult>;
+  });
 }
 
 export async function findNearbyCats(
