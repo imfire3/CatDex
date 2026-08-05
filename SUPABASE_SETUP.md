@@ -26,13 +26,22 @@ Authentication → Providers → Email : activé
 Optionnel : désactive **Confirm email** pour tester plus vite.
 
 ### Google / Apple (sinon erreur `provider is not enabled`)
-Par défaut seuls **Email** est requis. Si tu cliques Google/Apple sans les activer,
-Supabase renvoie `Unsupported provider: provider is not enabled`.
+Par défaut seuls **Email** est requis. Les boutons Google/Apple sont **masqués**
+tant que tu n’actives pas les flags dans `.env` :
+
+```bash
+EXPO_PUBLIC_AUTH_GOOGLE=true
+EXPO_PUBLIC_AUTH_APPLE=true
+```
+
+Sans ces flags (et sans provider Supabase), un clic OAuth sur le web affichait
+`Unsupported provider: provider is not enabled` en JSON brut.
 
 Pour activer Google :
 1. Authentication → Providers → **Google** → Enable  
 2. Colle Client ID + Client Secret (Google Cloud Console)  
 3. Redirect URL Supabase : `https://ocmxluabuaexzsrjuwrk.supabase.co/auth/v1/callback`
+4. Mets `EXPO_PUBLIC_AUTH_GOOGLE=true` et redémarre Expo
 
 Sans OAuth, connecte-toi uniquement avec **e-mail / mot de passe**.
 

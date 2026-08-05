@@ -5,6 +5,7 @@ import type { Session, AuthError } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 
+import { isAppleAuthEnabled, isGoogleAuthEnabled } from '@/lib/authProviders';
 import type { User } from '@/types/cat';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
@@ -118,6 +119,80 @@ async function syncCatsAfterAuth() {
   } catch (error) {
     console.warn('[auth] cat sync failed', error);
   }
+}
+
+/**
+ * Always skip the automatic browser redirect: on web, supabase-js would
+ * navigate to /authorize before any JS catch can run, and a disabled
+ * provider shows raw JSON (`provider is not enabled`).
+ */
+async function startOAuth(provider: OAuthProviderId): Promise<void> {
+  if (!supabase) {
+    throw new Error('Supabase non configuré');
+  }
+
+  const redirectTo =
+    Platform.OS === 'web' && typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/callback`
+      : Linking.createURL('auth/callback');
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+    },
+  });
+  if (error) throw error;
+  if (!data.url) {
+    throw new Error('URL OAuth manquante');
+  }
+
+  // Client only builds the URL; probe the authorize endpoint so a disabled
+  // provider never replaces the app with a JSON error page.
+  if (Platform.OS === 'web') {
+    const probe = await fetch(data.url, {
+      method: 'GET',
+      redirect: 'manual',
+      credentials: 'omit',
+    });
+    if (probe.status >= 400) {
+      let payload: unknown = null;
+      try {
+        payload = await probe.json();
+      } catch {
+        payload = { message: await probe.text() };
+      }
+      const msg =
+        payload &&
+        typeof payload === 'object' &&
+        ('msg' in payload || 'message' in payload || 'error_description' in payload)
+          ? String(
+              (payload as { msg?: string; message?: string; error_description?: string })
+                .msg ??
+                (payload as { message?: string }).message ??
+                (payload as { error_description?: string }).error_description ??
+                '',
+            )
+          : `OAuth HTTP ${probe.status}`;
+      const err = Object.assign(new Error(msg || `OAuth HTTP ${probe.status}`), {
+        code:
+          payload && typeof payload === 'object' && 'error_code' in payload
+            ? String((payload as { error_code?: unknown }).error_code ?? '')
+            : String(probe.status),
+        error_code:
+          payload && typeof payload === 'object' && 'error_code' in payload
+            ? String((payload as { error_code?: unknown }).error_code ?? '')
+            : undefined,
+        status: probe.status,
+      });
+      throw err;
+    }
+    window.location.assign(data.url);
+    return;
+  }
+
+  await Linking.openURL(data.url);
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -325,6 +400,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithGoogle: async () => {
+        if (!isGoogleAuthEnabled) {
+          throw new Error(
+            'Google n’est pas activé. Utilise e-mail / mot de passe.',
+          );
+        }
         if (!supabase) {
           set({
             user: {
@@ -340,23 +420,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           set({ loading: true, error: null });
-          const redirectTo =
-            Platform.OS === 'web' && typeof window !== 'undefined'
-              ? `${window.location.origin}/auth/callback`
-              : Linking.createURL('auth/callback');
-
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo,
-              skipBrowserRedirect: Platform.OS !== 'web',
-            },
-          });
-          if (error) throw error;
-
-          if (Platform.OS !== 'web' && data.url) {
-            await Linking.openURL(data.url);
-          }
+          await startOAuth('google');
           set({ loading: false });
         } catch (error) {
           console.error('Google sign in error:', error);
@@ -364,7 +428,8 @@ export const useAuthStore = create<AuthState>()(
             set((state) => ({
               loading: false,
               oauthDisabled: { ...state.oauthDisabled, google: true },
-              error: 'Google n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',
+              error:
+                'Google n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',
             }));
             throw new Error(
               'Google n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',
@@ -376,6 +441,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithApple: async () => {
+        if (!isAppleAuthEnabled) {
+          throw new Error(
+            'Apple n’est pas activé. Utilise e-mail / mot de passe.',
+          );
+        }
         if (!supabase) {
           set({
             user: {
@@ -391,23 +461,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           set({ loading: true, error: null });
-          const redirectTo =
-            Platform.OS === 'web' && typeof window !== 'undefined'
-              ? `${window.location.origin}/auth/callback`
-              : Linking.createURL('auth/callback');
-
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'apple',
-            options: {
-              redirectTo,
-              skipBrowserRedirect: Platform.OS !== 'web',
-            },
-          });
-          if (error) throw error;
-
-          if (Platform.OS !== 'web' && data.url) {
-            await Linking.openURL(data.url);
-          }
+          await startOAuth('apple');
           set({ loading: false });
         } catch (error) {
           console.error('Apple sign in error:', error);
@@ -415,7 +469,8 @@ export const useAuthStore = create<AuthState>()(
             set((state) => ({
               loading: false,
               oauthDisabled: { ...state.oauthDisabled, apple: true },
-              error: 'Apple n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',
+              error:
+                'Apple n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',
             }));
             throw new Error(
               'Apple n’est pas activé sur ce projet Supabase. Utilise e-mail / mot de passe.',

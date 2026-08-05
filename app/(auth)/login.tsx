@@ -8,6 +8,10 @@ import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { TextInput } from '@/components/Input';
+import {
+  isAppleAuthEnabled,
+  isGoogleAuthEnabled,
+} from '@/lib/authProviders';
 import { validateEmail, validatePassword } from '@/lib/authValidation';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import {
@@ -60,8 +64,10 @@ export default function LoginScreen() {
   const signInWithApple = useAuthStore((state) => state.signInWithApple);
   const oauthDisabled = useAuthStore((state) => state.oauthDisabled);
   const clearError = useAuthStore((state) => state.clearError);
-  const googleEnabled = !oauthDisabled.google;
-  const appleEnabled = !oauthDisabled.apple;
+  // Opt-in via EXPO_PUBLIC_AUTH_GOOGLE / _APPLE — providers are off in Supabase
+  // by default and would otherwise show a raw JSON 400 on web.
+  const googleEnabled = isGoogleAuthEnabled && !oauthDisabled.google;
+  const appleEnabled = isAppleAuthEnabled && !oauthDisabled.apple;
   const showOAuth = googleEnabled || appleEnabled;
 
   const [email, setEmail] = useState('');
@@ -220,20 +226,9 @@ export default function LoginScreen() {
                 icon={<AppleGlyph color={colors.authAppleLabel} />}
               />
             ) : null}
-            {!googleEnabled || !appleEnabled ? (
-              <Text variant="caption" color="textSecondary" align="center">
-                Google / Apple doivent être activés dans Supabase (Authentication →
-                Providers). En attendant, utilise e-mail.
-              </Text>
-            ) : null}
           </View>
         </>
-      ) : (
-        <Text variant="caption" color="textSecondary" align="center">
-          Connexion sociale indisponible — utilise e-mail / mot de passe pour
-          ouvrir la carte.
-        </Text>
-      )}
+      ) : null}
     </AuthShell>
   );
 }
