@@ -14,6 +14,7 @@ import {
 } from '@/components/maps/CatPinVisual';
 import { mapPalette } from '@/components/maps/mapPalette';
 import { themeFromColorLabel } from '@/lib/catTheme';
+import { isCatPhotoRef, resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -265,10 +266,7 @@ function makePinElement(opts: {
     'box-sizing:border-box',
   ].join(';');
 
-  const showPhoto =
-    Boolean(opts.photoUri) &&
-    !opts.photoUri!.startsWith('blob:') &&
-    !opts.dimmed;
+  const showPhoto = Boolean(opts.photoUri) && !opts.dimmed;
 
   if (showPhoto) {
     const img = document.createElement('img');
@@ -436,47 +434,89 @@ export function CatMap({
     const maplibregl = maplibreRef.current;
     if (!mapReady || !map || !maplibregl) return;
 
+    let cancelled = false;
+    const objectUrls: string[] = [];
+
     catMarkersRef.current.forEach((marker) => marker.remove());
     catMarkersRef.current = [];
 
-    cats.forEach((cat) => {
-      const nearby = nearbyCatIds?.includes(cat.id) ?? false;
-      const captured = capturedCatIds?.includes(cat.id) ?? true;
-      const el = makePinElement({
-        label: cat.name,
-        brand: colors.brand,
-        brandSoft: colors.brandSoft,
-        accent: colors.accent,
-        size: nearby ? spacing[48] : CAT_PIN_AVATAR,
-        coatColor: cat.analysis?.color ?? 'Roux',
-        seed: cat.number,
-        photoUri: captured ? cat.photoUri : undefined,
-        dimmed: !captured,
-        nearby,
-      });
-      el.addEventListener('click', (event) => {
-        event.stopPropagation();
-        onSelectRef.current(cat);
-      });
+    const buildMarkers = async () => {
+      const nextMarkers: MapLibreMarker[] = [];
 
-      const marker = new maplibregl.Marker({
-        element: el,
-        anchor: 'bottom',
-        pitchAlignment: 'viewport',
-        rotationAlignment: 'viewport',
-      })
-        .setLngLat([cat.longitude, cat.latitude])
-        .addTo(map);
-      catMarkersRef.current.push(marker);
-    });
+      for (const cat of cats) {
+        if (cancelled) break;
+
+        const nearby = nearbyCatIds?.includes(cat.id) ?? false;
+        const captured = capturedCatIds?.includes(cat.id) ?? true;
+
+        let photoUri: string | undefined = captured ? cat.photoUri : undefined;
+        if (
+          photoUri &&
+          (isCatPhotoRef(photoUri) || photoUri.startsWith('data:') || photoUri.startsWith('http'))
+        ) {
+          if (isCatPhotoRef(photoUri)) {
+            const resolved = await resolveCatPhotoUri(photoUri);
+            if (cancelled) break;
+            if (resolved) {
+              if (resolved.startsWith('blob:')) objectUrls.push(resolved);
+              photoUri = resolved;
+            } else {
+              photoUri = undefined;
+            }
+          }
+        } else if (photoUri?.startsWith('blob:')) {
+          photoUri = undefined;
+        }
+
+        const el = makePinElement({
+          label: cat.name,
+          brand: colors.brand,
+          brandSoft: colors.brandSoft,
+          accent: colors.accent,
+          size: nearby ? spacing[48] : CAT_PIN_AVATAR,
+          coatColor: cat.analysis?.color ?? 'Roux',
+          seed: cat.number,
+          photoUri,
+          dimmed: !captured,
+          nearby,
+        });
+        el.addEventListener('click', (event) => {
+          event.stopPropagation();
+          onSelectRef.current(cat);
+        });
+
+        const marker = new maplibregl.Marker({
+          element: el,
+          anchor: 'bottom',
+          pitchAlignment: 'viewport',
+          rotationAlignment: 'viewport',
+        })
+          .setLngLat([cat.longitude, cat.latitude])
+          .addTo(map);
+        nextMarkers.push(marker);
+      }
+
+      if (cancelled) {
+        nextMarkers.forEach((marker) => marker.remove());
+        return;
+      }
+
+      catMarkersRef.current = nextMarkers;
+      applyMarkerZoomScale(map, catMarkersRef.current);
+    };
+
+    void buildMarkers();
 
     const syncScale = () => applyMarkerZoomScale(map, catMarkersRef.current);
-    syncScale();
     map.on('zoom', syncScale);
     map.on('zoomend', syncScale);
     return () => {
+      cancelled = true;
       map.off('zoom', syncScale);
       map.off('zoomend', syncScale);
+      catMarkersRef.current.forEach((marker) => marker.remove());
+      catMarkersRef.current = [];
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [cats, nearbyCatIds, capturedCatIds, colors, spacing, mapReady]);
 

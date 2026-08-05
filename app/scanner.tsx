@@ -368,8 +368,10 @@ export default function ScannerScreen() {
     addingRef.current = true;
 
     const durablePhoto =
+      // Prefer the original camera/gallery JPEG for CatDex tiles & map pins.
+      // Reveal may use a transparent cutout — that must not replace the real photo.
       resolvePersistentPhotoUri({
-        uri: photoUri,
+        uri: photoBase64 ? undefined : photoUri,
         base64: photoBase64,
         mimeType: photoMimeType,
       }) ?? photoUri;

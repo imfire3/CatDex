@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Image,
   type ImageProps,
@@ -32,6 +32,10 @@ export function CatImage({
   onLoad,
 }: Props) {
   const [resolved, setResolved] = useState<string | null>(null);
+  const onErrorRef = useRef(onError);
+  const onLoadRef = useRef(onLoad);
+  onErrorRef.current = onError;
+  onLoadRef.current = onLoad;
 
   useEffect(() => {
     let active = true;
@@ -56,13 +60,13 @@ export function CatImage({
         }
         objectUrl = next?.startsWith('blob:') ? next : null;
         setResolved(next);
-        if (!next && active) {
-          onError?.({ nativeEvent: { error: 'resolve failed' } } as never);
+        if (!next) {
+          onErrorRef.current?.({ nativeEvent: { error: 'resolve failed' } } as never);
         }
       } catch {
         if (active) {
           setResolved(null);
-          onError?.({ nativeEvent: { error: 'resolve failed' } } as never);
+          onErrorRef.current?.({ nativeEvent: { error: 'resolve failed' } } as never);
         }
       }
     };
@@ -73,7 +77,8 @@ export function CatImage({
       active = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [uri, onError]);
+    // Only re-resolve when the storage URI changes — not when parent re-creates callbacks.
+  }, [uri]);
 
   if (!resolved) return null;
 
@@ -84,8 +89,8 @@ export function CatImage({
       resizeMode={resizeMode}
       accessibilityLabel={accessibilityLabel}
       accessibilityIgnoresInvertColors={accessibilityIgnoresInvertColors}
-      onError={onError}
-      onLoad={onLoad}
+      onError={(event) => onErrorRef.current?.(event)}
+      onLoad={(event) => onLoadRef.current?.(event)}
     />
   );
 }
