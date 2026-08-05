@@ -14,8 +14,11 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Spinner } from '@/components/Loader';
 import { useMissionSync } from '@/hooks/useMissionSync';
+import { installImageResolveAssetSourcePolyfill } from '@/lib/imageResolvePolyfill';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/colors';
+
+installImageResolveAssetSourcePolyfill();
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 

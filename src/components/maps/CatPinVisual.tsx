@@ -3,15 +3,12 @@
  * Kept intentionally 2D so pins stay readable and stick to the map on zoom.
  */
 import { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
-
-/** @deprecated Kept for any residual imports — prefer flat CatSprite pins. */
-export const LOWPOLY_CAT_PIN = require('../../../assets/models/lowpoly-tabby/pin.png');
 
 export const CAT_PIN_AVATAR = 40;
 export const CAT_PIN_TIP_H = 8;
@@ -34,27 +31,6 @@ type PinVisualProps = {
   /** Fired once the photo settles (load or error) so native markers can freeze. */
   onVisualSettled?: () => void;
 };
-
-/**
- * Resolve a Metro `require()` image to a URL usable in DOM / MapLibre.
- * Safe on web where `Image.resolveAssetSource` is often missing.
- */
-export function resolveBundledImageUri(asset: number | string | { uri?: string }): string {
-  if (typeof asset === 'string') return asset;
-  if (asset && typeof asset === 'object' && typeof asset.uri === 'string') {
-    return asset.uri;
-  }
-  const resolve =
-    typeof Image.resolveAssetSource === 'function'
-      ? Image.resolveAssetSource.bind(Image)
-      : undefined;
-  if (!resolve) return '';
-  try {
-    return resolve(asset as number)?.uri ?? '';
-  } catch {
-    return '';
-  }
-}
 
 /**
  * Visual-only pin body (no Map Marker wrapper).
@@ -89,7 +65,6 @@ export function CatPinVisual({
 
   return (
     <View style={styles.root} pointerEvents="none">
-      {/* Soft ground disc — sits just above the tip point */}
       <View
         style={[
           styles.ground,
