@@ -46,3 +46,7 @@ ChatDex Mobile App UI/
 /ios
 /android
 .DS_Store
+
+# local archives
+web.zip
+*.zip
