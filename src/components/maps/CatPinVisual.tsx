@@ -37,14 +37,23 @@ type PinVisualProps = {
 
 /**
  * Resolve a Metro `require()` image to a URL usable in DOM / MapLibre.
+ * Safe on web where `Image.resolveAssetSource` is often missing.
  */
 export function resolveBundledImageUri(asset: number | string | { uri?: string }): string {
   if (typeof asset === 'string') return asset;
   if (asset && typeof asset === 'object' && typeof asset.uri === 'string') {
     return asset.uri;
   }
-  const resolved = Image.resolveAssetSource(asset as number);
-  return resolved?.uri ?? '';
+  const resolve =
+    typeof Image.resolveAssetSource === 'function'
+      ? Image.resolveAssetSource.bind(Image)
+      : undefined;
+  if (!resolve) return '';
+  try {
+    return resolve(asset as number)?.uri ?? '';
+  } catch {
+    return '';
+  }
 }
 
 /**
