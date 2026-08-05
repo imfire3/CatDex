@@ -174,20 +174,8 @@ export function MapExplorerHud({
           </Svg>
         </RoundTool>
 
+        {/* Navigation arrow = “ma position” (Maps convention). Never open a cat sheet here. */}
         <RoundTool label="Recentrer sur ma position" onPress={() => onRecenter?.()}>
-          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-            <Circle cx="12" cy="12" r="3" stroke={colors.brand} strokeWidth={stroke} />
-            <Path
-              d="M12 3v3M12 18v3M3 12h3M18 12h3"
-              stroke={colors.brand}
-              strokeWidth={stroke}
-              strokeLinecap="round"
-            />
-            <Circle cx="12" cy="12" r="8" stroke={colors.brand} strokeWidth={stroke} />
-          </Svg>
-        </RoundTool>
-
-        <RoundTool label="Aller au chat le plus proche" onPress={() => onNavigateNearest?.()}>
           <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
             <Path
               d="M12 3.5 20 19.5 12 15.8 4 19.5 12 3.5Z"
@@ -196,6 +184,19 @@ export function MapExplorerHud({
               strokeLinejoin="round"
               fill={colors.brandSoft}
             />
+          </Svg>
+        </RoundTool>
+
+        <RoundTool label="Aller au chat le plus proche" onPress={() => onNavigateNearest?.()}>
+          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 4.5c-2.6 0-4.7 2-4.7 4.5 0 3.4 4.7 8.5 4.7 8.5s4.7-5.1 4.7-8.5c0-2.5-2.1-4.5-4.7-4.5Z"
+              stroke={colors.brand}
+              strokeWidth={stroke}
+              strokeLinejoin="round"
+              fill={colors.brandSoft}
+            />
+            <Circle cx="12" cy="9" r="1.6" fill={colors.brand} />
           </Svg>
         </RoundTool>
       </View>

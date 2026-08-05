@@ -195,12 +195,11 @@ export default function MapScreen() {
   const goToNearestCat = () => {
     const nearest = sortedCats[0]?.cat;
     if (!nearest) return;
+    // Fly the camera only — sheet opens when the user taps the marker.
     setFocusCoordinate({
       latitude: nearest.latitude,
       longitude: nearest.longitude,
     });
-    setSelected(nearest);
-    setSheetVisible(true);
   };
 
   const filterPanelBottom =

@@ -1,0 +1,101 @@
+{
+  "base": "http://127.0.0.1:8099",
+  "generatedAt": "2026-08-05T22:48:48.270Z",
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "deviceScaleFactor": 2
+  },
+  "screens": [
+    {
+      "id": "01-welcome",
+      "route": "/welcome",
+      "title": "Welcome",
+      "file": "screenshots/app/01-welcome.png"
+    },
+    {
+      "id": "02-login",
+      "route": "/login",
+      "title": "Connexion",
+      "file": "screenshots/app/02-login.png"
+    },
+    {
+      "id": "03-signup",
+      "route": "/signup",
+      "title": "Inscription",
+      "file": "screenshots/app/03-signup.png"
+    },
+    {
+      "id": "04-intro",
+      "route": "/intro",
+      "title": "Intro",
+      "file": "screenshots/app/04-intro.png"
+    },
+    {
+      "id": "05-permissions",
+      "route": "/permissions",
+      "title": "Permissions",
+      "file": "screenshots/app/05-permissions.png"
+    },
+    {
+      "id": "06-map",
+      "route": "/map",
+      "title": "Explorer (carte)",
+      "file": "screenshots/app/06-map.png"
+    },
+    {
+      "id": "07-catdex",
+      "route": "/catdex",
+      "title": "CatDex",
+      "file": "screenshots/app/07-catdex.png"
+    },
+    {
+      "id": "08-missions",
+      "route": "/missions",
+      "title": "Missions",
+      "file": "screenshots/app/08-missions.png"
+    },
+    {
+      "id": "09-profile",
+      "route": "/profile",
+      "title": "Profil",
+      "file": "screenshots/app/09-profile.png"
+    },
+    {
+      "id": "10-scanner",
+      "route": "/scanner",
+      "title": "Scanner / Capture",
+      "file": "screenshots/app/10-scanner.png"
+    },
+    {
+      "id": "11-discovery",
+      "route": "/discovery",
+      "title": "Discovery",
+      "file": "screenshots/app/11-discovery.png"
+    },
+    {
+      "id": "12-settings-profile",
+      "route": "/settings/edit-profile",
+      "title": "Réglages · Profil",
+      "file": "screenshots/app/12-settings-profile.png"
+    },
+    {
+      "id": "13-settings-notifications",
+      "route": "/settings/notifications",
+      "title": "Réglages · Notifs",
+      "file": "screenshots/app/13-settings-notifications.png"
+    },
+    {
+      "id": "14-settings-help",
+      "route": "/settings/help",
+      "title": "Réglages · Aide",
+      "file": "screenshots/app/14-settings-help.png"
+    },
+    {
+      "id": "15-cat-detail",
+      "route": "/cat/demo_1",
+      "title": "Fiche chat",
+      "file": "screenshots/app/15-cat-detail.png"
+    }
+  ]
+}
