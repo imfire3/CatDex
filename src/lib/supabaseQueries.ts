@@ -182,6 +182,37 @@ export async function getMyCats(): Promise<RemoteCatRow[]> {
   return (data ?? []) as RemoteCatRow[];
 }
 
+/**
+ * All other players' captures (with photos) for the Explorer map.
+ * RLS allows public SELECT on cats — no owner filter required for read.
+ */
+export async function getCommunityCats(): Promise<RemoteCatRow[]> {
+  const client = requireSupabase();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+
+  let query = client
+    .from('cats')
+    .select(
+      `
+      *,
+      cat_analysis (*)
+    `,
+    )
+    .not('photo_url', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(500);
+
+  if (user?.id) {
+    query = query.neq('owner_id', user.id);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as RemoteCatRow[];
+}
+
 export async function findNearbyCats(
   latitude: number,
   longitude: number,
