@@ -8,6 +8,8 @@ import { Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -21,6 +23,7 @@ import { palette } from '@/theme/colors';
 installImageResolveAssetSourcePolyfill();
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+void SystemUI.setBackgroundColorAsync(palette.light.background);
 
 function RootNavigator() {
   const { colors } = useTheme();
@@ -95,6 +98,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.light.background }}>
       <ThemeProvider>
+        <StatusBar style="dark" />
         <RootNavigator />
       </ThemeProvider>
     </GestureHandlerRootView>
