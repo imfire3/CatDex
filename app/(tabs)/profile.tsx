@@ -10,6 +10,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { CatImage } from '@/components/CatImage';
+import { EmptyState } from '@/components/EmptyState';
 import { GlassIconButton } from '@/components/GlassIconButton';
 import { ProgressBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
@@ -299,7 +300,7 @@ function ObjectiveRow({
             {progressLabel}
           </Text>
         </View>
-        <ProgressBar progress={progress} height={8} />
+        <ProgressBar progress={progress} height={spacing[8]} />
       </View>
     </View>
   );
@@ -634,12 +635,12 @@ export default function ProfileScreen() {
                 onPress={() => comingSoon('Paramètres')}
               >
                 <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
-                  <Circle cx="12" cy="12" r="2.5" stroke={colors.text} strokeWidth={iconStroke.regular} />
+                  <Circle cx="12" cy="12" r="3" stroke={colors.text} strokeWidth={iconStroke.regular} />
                   <Path
-                    d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"
+                    d="M19.4 13.1a1.7 1.7 0 0 0 .1-.9l1.6-1.2-1.5-2.6-1.9.4a1.7 1.7 0 0 0-.8-.5l-.3-2H10.4l-.3 2a1.7 1.7 0 0 0-.8.5l-1.9-.4-1.5 2.6 1.6 1.2a1.7 1.7 0 0 0 0 1.1L5.9 15l1.5 2.6 1.9-.4c.2.2.5.4.8.5l.3 2h3.2l.3-2c.3-.1.6-.3.8-.5l1.9.4 1.5-2.6-1.6-1.2c.1-.3.1-.6.1-.9Z"
                     stroke={colors.text}
                     strokeWidth={iconStroke.regular}
-                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                 </Svg>
               </GlassIconButton>
@@ -670,6 +671,11 @@ export default function ProfileScreen() {
                 {displayName}
               </Text>
               <Badge label={rankTitle(level)} variant="accent" />
+              <Text variant="bodySmall" color="textBody" style={{ marginTop: spacing[4] }}>
+                {catsCount > 0
+                  ? `Tout a commencé à Marseille. Depuis, ${catsCount} rencontre${catsCount > 1 ? 's' : ''} jalonnent ton CatDex.`
+                  : 'Ton histoire commence ici — chaque coin de rue cache une nouvelle rencontre.'}
+              </Text>
               <View style={{ gap: spacing[8], marginTop: spacing[8] }}>
                 <View
                   style={{
@@ -881,16 +887,31 @@ export default function ProfileScreen() {
                 </View>
               </Pressable>
             ) : (
-              <Card>
-                <View style={{ gap: spacing[8] }}>
-                  <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
-                    Pas encore de favori
-                  </Text>
-                  <Text variant="bodySmall" color="textBody">
-                    Capture ton premier chat pour commencer ton histoire.
-                  </Text>
-                </View>
-              </Card>
+              <EmptyState
+                title="Pas encore de favori"
+                description="Capture ton premier chat pour commencer ton histoire."
+                actionLabel="Explorer la carte"
+                onAction={() => router.push('/(tabs)/map')}
+                illustration={
+                  <View
+                    style={{
+                      width: spacing[64],
+                      height: spacing[64],
+                      borderRadius: radius.full,
+                      backgroundColor: colors.accentSoft,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Svg width={iconSize.lg} height={iconSize.lg} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M12 21s-7-4.2-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.8-7 10-7 10Z"
+                        fill={colors.accent}
+                      />
+                    </Svg>
+                  </View>
+                }
+              />
             )}
           </View>
 
