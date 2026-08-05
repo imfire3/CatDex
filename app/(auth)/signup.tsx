@@ -5,10 +5,13 @@ import { View } from 'react-native';
 import { AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
 import { AuthEmailConfigBanner } from '@/components/Auth/AuthEmailConfigBanner';
 import { AuthShell } from '@/components/Auth/AuthShell';
+import { PasswordRequirements } from '@/components/Auth/PasswordRequirements';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { TextInput } from '@/components/Input';
 import {
+  isPasswordStrong,
+  livePasswordConfirmError,
   validateEmail,
   validatePassword,
   validatePasswordConfirm,
@@ -38,24 +41,22 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const passwordOk = isPasswordStrong(password);
+  const confirmLiveError = livePasswordConfirmError(password, confirm);
+  const confirmMatches = Boolean(confirm) && !confirmLiveError && passwordOk;
+
   const errors = useMemo(() => {
-    if (!submitted) {
-      return {
-        pseudo: null as string | null,
-        email: null as string | null,
-        password: null as string | null,
-        confirm: null as string | null,
-        terms: null as string | null,
-      };
-    }
+    const confirmError =
+      confirmLiveError ??
+      (submitted ? validatePasswordConfirm(password, confirm) : null);
     return {
-      pseudo: validatePseudo(pseudo),
-      email: validateEmail(email),
-      password: validatePassword(password),
-      confirm: validatePasswordConfirm(password, confirm),
-      terms: accepted ? null : 'Tu dois accepter les conditions.',
+      pseudo: submitted ? validatePseudo(pseudo) : null,
+      email: submitted ? validateEmail(email) : null,
+      password: submitted ? validatePassword(password) : null,
+      confirm: confirmError,
+      terms: submitted && !accepted ? 'Tu dois accepter les conditions.' : null,
     };
-  }, [accepted, confirm, email, password, pseudo, submitted]);
+  }, [accepted, confirm, confirmLiveError, email, password, pseudo, submitted]);
 
   const canSubmit = useMemo(
     () =>
@@ -101,7 +102,7 @@ export default function SignupScreen() {
         );
         return;
       }
-      // Logged in immediately — continue onboarding (or map if already done).
+      // New accounts always continue to intro + permissions.
       router.replace(getPostAuthHref(state.onboardingCompleted));
     } catch (error) {
       setFormError(getAuthErrorMessage(error as never));
@@ -172,17 +173,20 @@ export default function SignupScreen() {
           placeholder="toi@email.com"
           error={errors.email ?? undefined}
         />
-        <TextInput
-          label="Mot de passe"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoComplete="new-password"
-          placeholder="••••••••"
-          helperText="6 à 100 caractères"
-          error={errors.password ?? undefined}
-        />
+        <View style={{ gap: spacing[8] }}>
+          <TextInput
+            label="Mot de passe"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            valid={passwordOk}
+            error={errors.password ?? undefined}
+          />
+          <PasswordRequirements password={password} />
+        </View>
         <TextInput
           label="Répéter le mot de passe"
           value={confirm}
@@ -191,6 +195,7 @@ export default function SignupScreen() {
           autoCapitalize="none"
           autoComplete="new-password"
           placeholder="••••••••"
+          valid={confirmMatches}
           error={errors.confirm ?? undefined}
         />
 

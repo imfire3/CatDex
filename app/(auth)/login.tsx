@@ -13,7 +13,7 @@ import {
   isAppleAuthEnabled,
   isGoogleAuthEnabled,
 } from '@/lib/authProviders';
-import { validateEmail, validatePassword } from '@/lib/authValidation';
+import { validateEmail, validateLoginPassword } from '@/lib/authValidation';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import {
   getAuthErrorMessage,
@@ -81,7 +81,7 @@ export default function LoginScreen() {
     if (!submitted) return { email: null as string | null, password: null as string | null };
     return {
       email: validateEmail(email),
-      password: validatePassword(password),
+      password: validateLoginPassword(password),
     };
   }, [email, password, submitted]);
 
@@ -93,7 +93,7 @@ export default function LoginScreen() {
     setSubmitted(true);
     clearError();
     setFormError(null);
-    if (validateEmail(email) || validatePassword(password)) return;
+    if (validateEmail(email) || validateLoginPassword(password)) return;
 
     setLoading(true);
     try {

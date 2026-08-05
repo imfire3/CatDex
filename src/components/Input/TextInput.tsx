@@ -148,7 +148,8 @@ function FieldShell({
         <View style={styles.inputWrap} pointerEvents="box-none">
           {children}
         </View>
-        {showValid ? <ValidCheck /> : rightIcon}
+        {showValid ? <ValidCheck /> : null}
+        {rightIcon}
       </Pressable>
       {error ? (
         <Text variant="caption" color="danger">
