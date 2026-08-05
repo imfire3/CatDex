@@ -450,21 +450,17 @@ export function CatMap({
         const captured = capturedCatIds?.includes(cat.id) ?? true;
 
         let photoUri: string | undefined = captured ? cat.photoUri : undefined;
-        if (
-          photoUri &&
-          (isCatPhotoRef(photoUri) || photoUri.startsWith('data:') || photoUri.startsWith('http'))
-        ) {
-          if (isCatPhotoRef(photoUri)) {
-            const resolved = await resolveCatPhotoUri(photoUri);
-            if (cancelled) break;
-            if (resolved) {
-              if (resolved.startsWith('blob:')) objectUrls.push(resolved);
-              photoUri = resolved;
-            } else {
-              photoUri = undefined;
-            }
+        if (photoUri && isCatPhotoRef(photoUri)) {
+          const resolved = await resolveCatPhotoUri(photoUri);
+          if (cancelled) break;
+          if (resolved) {
+            if (resolved.startsWith('blob:')) objectUrls.push(resolved);
+            photoUri = resolved;
+          } else {
+            photoUri = undefined;
           }
         } else if (photoUri?.startsWith('blob:')) {
+          // Stale camera blobs are not durable.
           photoUri = undefined;
         }
 
