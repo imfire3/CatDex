@@ -152,7 +152,7 @@ export function Button({
           : variant === 'secondary'
             ? colors.ctaSecondary
             : variant === 'ghost'
-              ? colors.surfaceSecondary
+              ? colors.surface
               : variant === 'destructive'
                 ? colors.dangerSoft
                 : 'transparent';

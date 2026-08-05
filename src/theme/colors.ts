@@ -1,5 +1,5 @@
 /**
- * CatDex Design System — white cards on soft gray canvas (#F2F2F2), indigo brand (#6A69F8)
+ * CatDex Design System — white cards/CTAs on soft canvas (#F9F9FB), indigo brand (#6A69F8)
  *
  * brand / accent → primary actions, headings, active nav
  * soft gray → muted fills, nested areas, photo placeholders
@@ -10,8 +10,8 @@ const BRAND = '#6A69F8';
 const BRAND_PRESSED = '#5554E0';
 const BRAND_SOFT = 'rgba(106, 105, 248, 0.12)';
 const SOFT_GRAY = '#EEF0F2';
-/** App canvas */
-const APP_BG = '#ECECFE';
+/** App canvas — behind white cards & CTAs */
+const APP_BG = '#F9F9FB';
 const CARD_BG = '#FFFFFF';
 
 const light = {
@@ -29,9 +29,9 @@ const light = {
   violetSoft: BRAND_SOFT,
 
   background: APP_BG,
-  /** Default card / panel fill — white on the gray canvas. */
+  /** Default card / panel fill — white on the soft canvas. */
   surface: CARD_BG,
-  /** White cards and sheets on the app canvas (#ECECFE). */
+  /** White cards and sheets on the app canvas (#F9F9FB). */
   surfaceElevated: CARD_BG,
   surfaceSecondary: SOFT_GRAY,
   surfaceTertiary: SOFT_GRAY,
