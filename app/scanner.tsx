@@ -425,8 +425,12 @@ export default function ScannerScreen() {
   if (step === 'problem') {
     return (
       <ProblemState
-        title="Oups"
-        description="Il y a un problème — aucun chat n'a été trouvé sur cette photo."
+        title={analysis?.errorTitle?.trim() || 'Aucun chat détecté 🐾'}
+        description={
+          analysis?.errorMessage?.trim() ||
+          analysis?.description?.trim() ||
+          'Cette photo ne semble pas contenir un chat. Essaie de prendre une photo plus nette d’un chat.'
+        }
         actionLabel="Retour"
         onAction={() => {
           if (router.canGoBack()) router.back();

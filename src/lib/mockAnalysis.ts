@@ -129,6 +129,8 @@ export function ensureCatIdentity(
   const description = (analysis.description ?? '').toLowerCase();
   const breedRaw = (analysis.breed ?? '').toLowerCase();
   const noCat =
+    analysis.notACat === true ||
+    analysis.errorCode === 'NOT_A_CAT' ||
     description.includes('aucun chat') ||
     (breedRaw === 'inconnu' && !(analysis.suggestedName ?? '').trim());
 
@@ -139,10 +141,18 @@ export function ensureCatIdentity(
       breed: analysis.breed?.trim() || 'Inconnu',
       coat: analysis.coat?.trim() || 'Indéterminée',
       description:
+        analysis.errorMessage?.trim() ||
         analysis.description?.trim() ||
         'Aucun chat clairement visible sur cette photo.',
       suggestedName: '',
       tags: [],
+      notACat: true,
+      errorCode: analysis.errorCode || 'NOT_A_CAT',
+      errorTitle: analysis.errorTitle || 'Aucun chat détecté 🐾',
+      errorMessage:
+        analysis.errorMessage?.trim() ||
+        analysis.description?.trim() ||
+        'Cette photo ne semble pas contenir un chat. Essaie de prendre une photo plus nette d’un chat.',
     };
   }
 
@@ -165,7 +175,7 @@ export function ensureCatIdentity(
     analysis.suggestedName?.trim() || generated.suggestedName;
   const tags =
     analysis.tags && analysis.tags.length > 0
-      ? analysis.tags.slice(0, 3)
+      ? analysis.tags.slice(0, 8)
       : generated.tags;
   const gender = analysis.gender ?? generated.gender;
   const eyes = analysis.eyes?.trim() || generated.eyes;
