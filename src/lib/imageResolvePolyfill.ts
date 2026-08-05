@@ -1,37 +1,50 @@
 import { Image, Platform } from 'react-native';
 
-type AssetLike = string | number | { uri?: string; width?: number; height?: number };
+type AssetLike =
+  | string
+  | number
+  | { uri?: string; width?: number; height?: number }
+  | null
+  | undefined;
+
+function polyfillResolveAssetSource(source: AssetLike): { uri: string } | null {
+  if (source == null) return null;
+  if (typeof source === 'string') return { uri: source };
+  if (typeof source === 'object' && typeof source.uri === 'string') {
+    return { uri: source.uri };
+  }
+  return { uri: '' };
+}
+
+function patchImageModule(image: unknown): void {
+  if (!image || typeof image !== 'object') return;
+  const target = image as {
+    resolveAssetSource?: typeof polyfillResolveAssetSource;
+    default?: { resolveAssetSource?: typeof polyfillResolveAssetSource };
+  };
+
+  if (typeof target.resolveAssetSource !== 'function') {
+    target.resolveAssetSource = polyfillResolveAssetSource;
+  }
+  if (target.default && typeof target.default.resolveAssetSource !== 'function') {
+    target.default.resolveAssetSource = target.resolveAssetSource;
+  }
+}
 
 /**
- * react-native-maps (and some Metro asset paths) call Image.resolveAssetSource.
- * On react-native-web that helper is often missing — polyfill before any map UI loads.
+ * react-native-maps calls Image.resolveAssetSource; on web it is often missing.
+ * Install before any map / marker module loads.
  */
 export function installImageResolveAssetSourcePolyfill(): void {
   if (Platform.OS !== 'web') return;
 
-  const image = Image as typeof Image & {
-    resolveAssetSource?: (source: AssetLike) => { uri: string } | null;
-    default?: { resolveAssetSource?: (source: AssetLike) => { uri: string } | null };
-  };
+  patchImageModule(Image);
 
-  const polyfill = (source: AssetLike): { uri: string } | null => {
-    if (source == null) return null;
-    if (typeof source === 'string') return { uri: source };
-    if (typeof source === 'object' && typeof source.uri === 'string') {
-      return { uri: source.uri, width: source.width, height: source.height } as {
-        uri: string;
-      };
-    }
-    // Metro numeric asset ids are not resolvable on web without the registry.
-    return { uri: '' };
-  };
-
-  if (typeof image.resolveAssetSource !== 'function') {
-    image.resolveAssetSource = polyfill;
-  }
-
-  // Some CJS interop paths call Image.default.resolveAssetSource(...)
-  if (image.default && typeof image.default.resolveAssetSource !== 'function') {
-    image.default.resolveAssetSource = image.resolveAssetSource ?? polyfill;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const rn = require('react-native') as { Image?: unknown };
+    patchImageModule(rn.Image);
+  } catch {
+    // ignore
   }
 }
