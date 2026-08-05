@@ -2,8 +2,6 @@ import type { ReactNode } from 'react';
 import {
   Image,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   View,
   type StyleProp,
@@ -13,6 +11,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { useKeyboardBottomInset } from '@/hooks/useKeyboardBottomInset';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const WELCOME_MAP = require('../../../assets/welcome-map-bg.jpg');
@@ -56,6 +55,14 @@ export function AuthShell({
 }: AuthShellProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardBottomInset();
+  const keyboardOpen = keyboardInset > 0;
+
+  // When the keyboard is open its frame already covers the home indicator —
+  // don't stack safe-area padding on top of the keyboard height.
+  const footerPadBottom = keyboardOpen
+    ? spacing[8]
+    : Math.max(insets.bottom, spacing[16]);
 
   const sheetPadding = {
     paddingHorizontal: spacing[24],
@@ -78,7 +85,8 @@ export function AuthShell({
       }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
-      automaticallyAdjustKeyboardInsets
+      // Shell already lifts the sticky footer; avoid double keyboard insets.
+      automaticallyAdjustKeyboardInsets={!footer}
       onScrollBeginDrag={Keyboard.dismiss}
       showsVerticalScrollIndicator={false}
     >
@@ -116,7 +124,7 @@ export function AuthShell({
           style={{
             gap: spacing[8],
             paddingTop: spacing[8],
-            paddingBottom: Math.max(insets.bottom, spacing[16]),
+            paddingBottom: footerPadBottom,
             backgroundColor: plain ? colors.background : colors.surfaceElevated,
           }}
         >
@@ -146,22 +154,23 @@ export function AuthShell({
         </View>
       )}
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? undefined : 'height'}
-        style={{ flex: 1 }}
-        enabled={Platform.OS !== 'ios'}
-        keyboardVerticalOffset={0}
+      {/*
+        Manual keyboard inset (native Keyboard + web visualViewport) keeps the
+        sticky footer above the keyboard. KeyboardAvoidingView is unreliable
+        across iOS / Android edge-to-edge / mobile web for sticky CTAs.
+      */}
+      <View
+        style={[
+          styles.shellInner,
+          fullHeight ? styles.shellFill : styles.shellEnd,
+          {
+            paddingTop: fullHeight || plain ? 0 : spacing[16],
+            paddingBottom: keyboardInset,
+          },
+        ]}
       >
-        <View
-          style={[
-            styles.shellInner,
-            fullHeight ? styles.shellFill : styles.shellEnd,
-            { paddingTop: fullHeight || plain ? 0 : spacing[16] },
-          ]}
-        >
-          {sheet}
-        </View>
-      </KeyboardAvoidingView>
+        {sheet}
+      </View>
     </View>
   );
 }
