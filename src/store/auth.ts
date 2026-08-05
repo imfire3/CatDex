@@ -348,6 +348,7 @@ export const useAuthStore = create<AuthState>()(
 
       signUp: async ({ email, password, displayName }) => {
         if (!supabase) {
+          // Keep onboardingCompleted — intro/permissions are device-level, not per-account.
           set({
             user: {
               id: `user_email_${Date.now()}`,
@@ -355,7 +356,6 @@ export const useAuthStore = create<AuthState>()(
               displayName: displayName.trim(),
               provider: 'email',
             },
-            onboardingCompleted: false,
             loading: false,
             error: null,
           });
@@ -445,6 +445,7 @@ export const useAuthStore = create<AuthState>()(
             { onConflict: 'id' },
           );
 
+          // Do not reset onboardingCompleted — skip intro/permissions if already done on device.
           set({
             session,
             user: {
@@ -453,7 +454,6 @@ export const useAuthStore = create<AuthState>()(
               displayName: trimmedName,
               provider: 'email',
             },
-            onboardingCompleted: false,
             loading: false,
             error: null,
           });
@@ -556,10 +556,10 @@ export const useAuthStore = create<AuthState>()(
             await supabase.auth.signOut();
           }
           await clearCatsOnSignOut();
+          // Keep onboardingCompleted so returning users skip “c’est quoi CatDex” / permissions.
           set({
             user: null,
             session: null,
-            onboardingCompleted: false,
             loading: false,
           });
         } catch (error) {
@@ -578,14 +578,14 @@ export const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (isGuestUser(state?.user)) {
-          useAuthStore.setState({ user: null, onboardingCompleted: false });
+          useAuthStore.setState({ user: null });
         }
-        // Drop stale mock users when Supabase is configured
+        // Drop stale mock users when Supabase is configured (keep onboarding flag).
         if (
           isSupabaseConfigured &&
           state?.user?.id?.startsWith('user_')
         ) {
-          useAuthStore.setState({ user: null, onboardingCompleted: false });
+          useAuthStore.setState({ user: null });
         }
         useAuthStore.getState().setHydrated(true);
         void useAuthStore.getState().initialize();
