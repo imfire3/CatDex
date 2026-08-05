@@ -51,7 +51,6 @@ export function MapCatModal({
     typeof distanceM === 'number' ? formatDistanceMeters(distanceM) : null;
 
   const canShowPhoto =
-    captured &&
     Boolean(cat.photoUri) &&
     !photoFailed &&
     !cat.photoUri.startsWith('blob:') &&

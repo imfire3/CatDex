@@ -266,7 +266,7 @@ function makePinElement(opts: {
     'box-sizing:border-box',
   ].join(';');
 
-  const showPhoto = Boolean(opts.photoUri) && !opts.dimmed;
+  const showPhoto = Boolean(opts.photoUri);
 
   if (showPhoto) {
     const img = document.createElement('img');
@@ -449,7 +449,7 @@ export function CatMap({
         const nearby = nearbyCatIds?.includes(cat.id) ?? false;
         const captured = capturedCatIds?.includes(cat.id) ?? true;
 
-        let photoUri: string | undefined = captured ? cat.photoUri : undefined;
+        let photoUri: string | undefined = cat.photoUri || undefined;
         if (photoUri && isCatPhotoRef(photoUri)) {
           const resolved = await resolveCatPhotoUri(photoUri);
           if (cancelled) break;
