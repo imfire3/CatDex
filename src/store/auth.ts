@@ -21,6 +21,8 @@ type AuthState = {
   user: User | null;
   session: Session | null;
   onboardingCompleted: boolean;
+  /** User ids that already finished intro + permissions on this device. */
+  onboardingCompletedUserIds: string[];
   hydrated: boolean;
   loading: boolean;
   error: AuthError | string | null;
@@ -37,6 +39,13 @@ type AuthState = {
   initialize: () => Promise<void>;
   handleAuthUrl: (url: string) => Promise<boolean>;
 };
+
+function hasCompletedOnboarding(
+  userId: string | undefined | null,
+  completedIds: string[],
+): boolean {
+  return Boolean(userId && completedIds.includes(userId));
+}
 
 function isOAuthProviderDisabledError(error: unknown): boolean {
   const message =
@@ -216,6 +225,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       session: null,
       onboardingCompleted: false,
+      onboardingCompletedUserIds: [],
       hydrated: false,
       loading: false,
       error: null,
@@ -242,9 +252,14 @@ export const useAuthStore = create<AuthState>()(
 
           if (session?.user) {
             const profile = await profileForUser(session.user.id, session.user.email);
+            const completedIds = get().onboardingCompletedUserIds;
             set({
               session,
               user: toAppUser(session.user, profile),
+              onboardingCompleted: hasCompletedOnboarding(
+                session.user.id,
+                completedIds,
+              ),
               loading: false,
             });
             void syncCatsAfterAuth();
@@ -258,13 +273,18 @@ export const useAuthStore = create<AuthState>()(
                 nextSession.user.id,
                 nextSession.user.email,
               );
+              const completedIds = get().onboardingCompletedUserIds;
               set({
                 session: nextSession,
                 user: toAppUser(nextSession.user, profile),
+                onboardingCompleted: hasCompletedOnboarding(
+                  nextSession.user.id,
+                  completedIds,
+                ),
               });
               void syncCatsAfterAuth();
             } else {
-              set({ session: null, user: null });
+              set({ session: null, user: null, onboardingCompleted: false });
             }
           });
         } catch (error) {
@@ -307,13 +327,16 @@ export const useAuthStore = create<AuthState>()(
       signInWithEmail: async (email, password) => {
         const normalizedEmail = email.trim().toLowerCase();
         if (!supabase) {
+          const mockId = `user_email_${Date.now()}`;
+          const completedIds = get().onboardingCompletedUserIds;
           set({
             user: {
-              id: `user_email_${Date.now()}`,
+              id: mockId,
               email: normalizedEmail,
               displayName: normalizedEmail.split('@')[0],
               provider: 'email',
             },
+            onboardingCompleted: hasCompletedOnboarding(mockId, completedIds),
             loading: false,
             error: null,
           });
@@ -330,9 +353,14 @@ export const useAuthStore = create<AuthState>()(
 
           if (data.user) {
             const profile = await profileForUser(data.user.id, data.user.email);
+            const completedIds = get().onboardingCompletedUserIds;
             set({
               session: data.session,
               user: toAppUser(data.user, profile),
+              onboardingCompleted: hasCompletedOnboarding(
+                data.user.id,
+                completedIds,
+              ),
               loading: false,
             });
             void syncCatsAfterAuth();
@@ -348,6 +376,7 @@ export const useAuthStore = create<AuthState>()(
 
       signUp: async ({ email, password, displayName }) => {
         if (!supabase) {
+          // New account → always show intro + permissions.
           set({
             user: {
               id: `user_email_${Date.now()}`,
@@ -445,6 +474,7 @@ export const useAuthStore = create<AuthState>()(
             { onConflict: 'id' },
           );
 
+          // New account → always show intro + permissions (not per-device skip).
           set({
             session,
             user: {
@@ -547,7 +577,17 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      completeOnboarding: () => set({ onboardingCompleted: true }),
+      completeOnboarding: () => {
+        const userId = get().user?.id;
+        set((state) => ({
+          onboardingCompleted: true,
+          onboardingCompletedUserIds: userId
+            ? state.onboardingCompletedUserIds.includes(userId)
+              ? state.onboardingCompletedUserIds
+              : [...state.onboardingCompletedUserIds, userId]
+            : state.onboardingCompletedUserIds,
+        }));
+      },
 
       signOut: async () => {
         try {
@@ -556,6 +596,7 @@ export const useAuthStore = create<AuthState>()(
             await supabase.auth.signOut();
           }
           await clearCatsOnSignOut();
+          // Keep onboardingCompletedUserIds so returning users skip intro.
           set({
             user: null,
             session: null,
@@ -575,17 +616,26 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         onboardingCompleted: state.onboardingCompleted,
+        onboardingCompletedUserIds: state.onboardingCompletedUserIds,
       }),
       onRehydrateStorage: () => (state) => {
         if (isGuestUser(state?.user)) {
-          useAuthStore.setState({ user: null, onboardingCompleted: false });
+          useAuthStore.setState({ user: null });
         }
-        // Drop stale mock users when Supabase is configured
+        // Drop stale mock users when Supabase is configured (keep onboarding ids).
         if (
           isSupabaseConfigured &&
           state?.user?.id?.startsWith('user_')
         ) {
-          useAuthStore.setState({ user: null, onboardingCompleted: false });
+          useAuthStore.setState({ user: null });
+        }
+        // Migrate legacy device-level flag → per-user for the persisted user.
+        const userId = state?.user?.id;
+        const ids = state?.onboardingCompletedUserIds ?? [];
+        if (state?.onboardingCompleted && userId && !ids.includes(userId)) {
+          useAuthStore.setState({
+            onboardingCompletedUserIds: [...ids, userId],
+          });
         }
         useAuthStore.getState().setHydrated(true);
         void useAuthStore.getState().initialize();

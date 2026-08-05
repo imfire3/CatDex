@@ -1,13 +1,17 @@
 import { Camera } from 'expo-camera';
-import * as Location from 'expo-location';
 import { Redirect, router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
+import { PageLoading } from '@/components/Loader';
 import { Text } from '@/components/Text';
+import {
+  isLocationActive,
+  requestLocationAccess,
+} from '@/lib/locationAccess';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -77,44 +81,76 @@ export default function PermissionsScreen() {
   const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
 
   const [busy, setBusy] = useState(false);
-
-  if (!user) {
-    return <Redirect href="/(auth)/welcome" />;
-  }
-  if (onboardingCompleted) {
-    return <Redirect href="/(tabs)/map" />;
-  }
-
-  const askLocation = async () => {
-    if (Platform.OS === 'web') {
-      return true;
-    }
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    return status === 'granted';
-  };
-
-  const askCamera = async () => {
-    if (Platform.OS === 'web') {
-      return true;
-    }
-    const { status } = await Camera.requestCameraPermissionsAsync();
-    return status === 'granted';
-  };
+  /** null = still checking whether we can skip this screen. */
+  const [needsPrompt, setNeedsPrompt] = useState<boolean | null>(null);
 
   const finish = () => {
     completeOnboarding();
     router.replace('/(tabs)/map');
   };
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const active = await isLocationActive();
+      if (!mounted) return;
+      // Location already on → nothing to ask; complete onboarding if needed.
+      if (active) {
+        if (!onboardingCompleted) completeOnboarding();
+        setNeedsPrompt(false);
+        return;
+      }
+      setNeedsPrompt(true);
+    })().catch(() => {
+      if (mounted) setNeedsPrompt(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [completeOnboarding, onboardingCompleted]);
+
+  if (!user) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+
+  if (needsPrompt === null) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <PageLoading label="Vérification…" />
+      </View>
+    );
+  }
+
+  if (!needsPrompt) {
+    return <Redirect href="/(tabs)/map" />;
+  }
+
+  const askCamera = async () => {
+    if (Platform.OS === 'web') {
+      // Web camera is requested at capture time; treat as optional here.
+      return true;
+    }
+    const { status } = await Camera.requestCameraPermissionsAsync();
+    return status === 'granted';
+  };
+
   const requestAll = async () => {
     setBusy(true);
     try {
-      const loc = await askLocation();
+      const loc = await requestLocationAccess();
       const cam = await askCamera();
-      if (!loc || !cam) {
+      if (!loc) {
         Alert.alert(
-          'Autorisations partielles',
-          'Tu pourras les activer plus tard dans les réglages. CatDex fonctionne mieux avec la position et la caméra.',
+          'Localisation requise',
+          'Active la position pour voir les chats près de toi. Tu pourras aussi l’activer plus tard depuis la carte.',
+          [{ text: 'Continuer', onPress: finish }],
+        );
+        return;
+      }
+      if (!cam) {
+        Alert.alert(
+          'Caméra non activée',
+          'Tu pourras l’autoriser plus tard au moment de capturer. CatDex fonctionne mieux avec la caméra.',
           [{ text: 'Continuer', onPress: finish }],
         );
         return;
@@ -125,6 +161,8 @@ export default function PermissionsScreen() {
     }
   };
 
+  const locationOnly = onboardingCompleted;
+
   return (
     <AuthShell
       plain
@@ -132,29 +170,34 @@ export default function PermissionsScreen() {
       footer={
         <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
           <Button
-            title="Autoriser et continuer"
+            title={locationOnly ? 'Activer la position' : 'Autoriser et continuer'}
             loading={busy}
             onPress={() => void requestAll()}
           />
-          <Button variant="secondary" title="Passer pour l’instant" onPress={finish} />
+          <Button
+            variant="secondary"
+            title={locationOnly ? 'Plus tard' : 'Passer pour l’instant'}
+            onPress={finish}
+          />
         </View>
       }
     >
       <View style={{ gap: spacing[8] }}>
         <Text variant="label" color="textMuted">
-          Dernière étape
+          {locationOnly ? 'Localisation' : 'Dernière étape'}
         </Text>
         <Text variant="h1" color="textBrand">
-          Autorisations
+          {locationOnly ? 'Position désactivée' : 'Autorisations'}
         </Text>
         <Text variant="body" color="textSecondary">
-          CatDex a besoin de deux accès pour fonctionner pleinement. Tu peux tout activer d’un
-          coup.
+          {locationOnly
+            ? 'La localisation n’est pas active. Active-la pour placer les chats près de toi sur la carte.'
+            : 'CatDex a besoin de deux accès pour fonctionner pleinement. Tu peux tout activer d’un coup.'}
         </Text>
       </View>
 
       <View style={{ gap: spacing[8] }}>
-        {ROWS.map((row) => (
+        {(locationOnly ? ROWS.filter((row) => row.key === 'location') : ROWS).map((row) => (
           <View
             key={row.key}
             style={{

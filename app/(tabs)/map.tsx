@@ -7,11 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Chip } from '@/components/Chip';
 import { CatMap } from '@/components/maps/CatMap';
+import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
 import { getMapSideToolsBottom } from '@/layout/tabBarMetrics';
 import { PARIS_20E } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
+import { isLocationActive, requestLocationAccess } from '@/lib/locationAccess';
 import {
   DISCOVERY_RADIUS_M,
   isRareCat,
@@ -133,19 +135,33 @@ export default function MapScreen() {
     [sortedCats],
   );
 
+  const refreshUserCoordinate = useCallback(async (opts?: { request?: boolean }) => {
+    if (opts?.request) {
+      const ok = await requestLocationAccess();
+      if (!ok) return false;
+    } else {
+      const active = await isLocationActive();
+      if (!active) return false;
+    }
+    const position = await Location.getCurrentPositionAsync({});
+    const next = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+    };
+    setUserCoordinate(next);
+    return true;
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted' || !mounted) return;
-      const position = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = position.coords;
-      if (mounted) setUserCoordinate({ latitude, longitude });
+      const ok = await refreshUserCoordinate();
+      if (!ok || !mounted) return;
     })().catch(() => undefined);
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshUserCoordinate]);
 
   useEffect(() => {
     if (!nearestForProximity || nearestForProximity.distanceM > PROXIMITY_ALERT_M) {
@@ -161,15 +177,13 @@ export default function MapScreen() {
 
   const recenterOnPlayer = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
+      const ok = await refreshUserCoordinate({ request: true });
+      if (ok) {
         const position = await Location.getCurrentPositionAsync({});
-        const next = {
+        setFocusCoordinate({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-        };
-        setUserCoordinate(next);
-        setFocusCoordinate(next);
+        });
         return;
       }
     } catch {
@@ -214,6 +228,20 @@ export default function MapScreen() {
           }}
         />
       </View>
+
+      <LocationInactiveBanner
+        onActivated={() => {
+          void refreshUserCoordinate({ request: true }).then((ok) => {
+            if (!ok) return;
+            void Location.getCurrentPositionAsync({}).then((position) => {
+              setFocusCoordinate({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              });
+            });
+          });
+        }}
+      />
 
       <MapExplorerHud
         missionCount={openMissionCount}
