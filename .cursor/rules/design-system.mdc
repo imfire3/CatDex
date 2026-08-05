@@ -13,33 +13,26 @@ import { useTheme } from '@/theme';
 const { colors, spacing, radius, typography, shadow, gradients, motion, iconSize } = useTheme();
 ```
 
-## Colors (white-first · navy brand · turquoise accent)
+## Colors (white-first · indigo brand `#6A69F8`)
 
 | Token | Value | Role |
 |---|---|---|
-| `brand` / `textBrand` | `#11145A` | Headings, active nav |
-| `brandPressed` | `#0C0F42` | Pressed navy |
-| `brandSoft` | `rgba(17,20,90,0.08)` | Soft navy tint |
-| `accent` / `primary` | `#2EC9C3` | Primary buttons, FAB, progress |
-| `accentPressed` | `#24A8A3` | Pressed turquoise |
-| `accentSoft` | `rgba(46,201,195,0.14)` | Soft turquoise tint |
-| `ctaSecondary` | `#F5F5F5` | Secondary CTA fill |
-| `ctaSecondaryBorder` | `#D0D0D0` | Secondary CTA border |
-| `ctaSecondaryLabel` | `#8F8F8F` | Secondary CTA label |
-| `background` / `surface` | `#FFFFFF` | App canvas |
-| `surfaceSecondary` | `#F7F8FC` | Inputs, muted cards |
-| `surfaceTertiary` / `surfaceMuted` | `#F2F4F8` | Nested surfaces |
+| `brand` / `accent` / `primary` / `textBrand` | `#6A69F8` | Primary actions, FAB, headings, active nav |
+| `brandPressed` / `primaryPressed` / `accentPressed` | `#5554E0` | Pressed |
+| `brandSoft` / `primarySoft` / `accentSoft` | `rgba(106,105,248,0.12)` | Soft indigo tint |
+| `background` | `#F9F9FB` | App canvas |
+| `surface` / `surfaceElevated` / `ctaSecondary` / `tabBar` | `#FFFFFF` | Cards, sheets, secondary CTAs, nav |
+| `surfaceSecondary` / `surfaceMuted` | `#EEF0F2` | Nested / muted fills |
+| `border` / `borderDefault` | `#EEF0F2` / `#D8DBDF` | Borders |
 | `text` | `#15172B` | Primary ink |
 | `textBody` | `rgba(21,23,43,0.78)` | Body copy |
 | `textSecondary` | `#667085` | Supporting text |
 | `textMuted` / `placeholder` | `#98A2B3` | Metadata, placeholders |
-| `border` | `#E8EAF0` | Subtle borders |
-| `borderDefault` | `#D9DDE6` | Default control borders |
-| `focusRing` | `#2EC9C3` | Focus |
-| `success` / `warning` / `danger` / `info` | semantic | States (+ Soft variants) |
-| `tabBar` | `rgba(255,255,255,0.96)` | Bottom nav |
-| `onAccent` / `onPrimary` | `#FFFFFF` | On turquoise |
-| `onBrand` | `#FFFFFF` | On navy |
+| `focusRing` | `#6A69F8` | Focus |
+| `success` | `#12B76A` | Success |
+| `warning` | `#F79009` | Warning |
+| `danger` | `#E5484D` | Danger / destructive |
+| `onAccent` / `onPrimary` / `onBrand` | `#FFFFFF` | On indigo / danger |
 
 Coat / rarity accents: `src/lib/catTheme.ts` only — never as app chrome.
 
