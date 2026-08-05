@@ -2,6 +2,8 @@
  * Local world cats for Explorer — appear on the map but are NOT in the CatDex
  * until the player captures them via the scanner.
  */
+import { Image } from 'react-native';
+
 import { generateCatAnalysis } from '@/lib/mockAnalysis';
 import type { Cat } from '@/types/cat';
 
@@ -13,6 +15,22 @@ const WORLD_OFFSETS_M: Array<{ dLat: number; dLng: number; seed: string }> = [
   { dLat: 0.0006, dLng: 0.0028, seed: 'world-nuit' },
   { dLat: -0.0025, dLng: 0.0004, seed: 'world-pixel' },
 ];
+
+/** Bundled preview photos for uncaptured world spawns (pin + sheet). */
+const WORLD_PHOTOS: Record<string, number> = {
+  'world-ombre': require('../../assets/world-cats/ombre.jpg'),
+  'world-miel': require('../../assets/world-cats/miel.jpg'),
+  'world-eclair': require('../../assets/world-cats/eclair.jpg'),
+  'world-velours': require('../../assets/world-cats/velours.jpg'),
+  'world-nuit': require('../../assets/world-cats/nuit.jpg'),
+  'world-pixel': require('../../assets/world-cats/pixel.jpg'),
+};
+
+function photoUriForSeed(seed: string): string {
+  const asset = WORLD_PHOTOS[seed];
+  if (!asset) return '';
+  return Image.resolveAssetSource(asset)?.uri ?? '';
+}
 
 /**
  * Build stable world pins around an anchor (player or quartier center).
@@ -28,7 +46,7 @@ export function buildWorldCats(anchor: {
       id: spot.seed,
       number: 9000 + index,
       name: analysis.suggestedName ?? 'Chat mystère',
-      photoUri: '',
+      photoUri: photoUriForSeed(spot.seed),
       latitude: anchor.latitude + spot.dLat,
       longitude: anchor.longitude + spot.dLng,
       discoveredAt: new Date(0).toISOString(),

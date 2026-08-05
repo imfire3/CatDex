@@ -64,7 +64,6 @@ export function CatPinVisual({
   const tipH = CAT_PIN_TIP_H;
   const ring = spacing[4];
   const showPhoto =
-    captured &&
     Boolean(cat.photoUri) &&
     !photoFailed &&
     !cat.photoUri.startsWith('blob:');
