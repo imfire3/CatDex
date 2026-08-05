@@ -2,7 +2,7 @@
  * Collection tile — photo, favorite, rarity badge.
  * Opens the full cat fiche on press.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -32,6 +32,11 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
   const analysis = enrichAnalysis(cat.analysis, cat.number);
   const theme = themeFromColorLabel(analysis.color, cat.number);
   const [photoFailed, setPhotoFailed] = useState(false);
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [cat.id, cat.photoUri]);
+
   // blob: URIs die after web reload — skip and show sprite until the cat is re-scanned.
   const canShowPhoto =
     Boolean(cat.photoUri) &&
@@ -62,25 +67,26 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
         shadow.low,
       ]}
     >
-        <View
-          style={{
-            aspectRatio: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: colors.surfaceSecondary,
-            overflow: 'hidden',
-          }}
-        >
+      <View
+        style={{
+          aspectRatio: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.surfaceSecondary,
+          overflow: 'hidden',
+        }}
+      >
+        {canShowPhoto ? (
+          <CatImage
+            uri={cat.photoUri}
+            style={styles.photo}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+            onError={() => setPhotoFailed(true)}
+          />
+        ) : (
           <CatSprite colorLabel={analysis.color} seed={cat.number} size={112} />
-          {canShowPhoto ? (
-            <CatImage
-              uri={cat.photoUri}
-              style={styles.photo}
-              resizeMode="cover"
-              accessibilityIgnoresInvertColors
-              onError={() => setPhotoFailed(true)}
-            />
-          ) : null}
+        )}
 
         {onToggleFavorite ? (
           <Pressable

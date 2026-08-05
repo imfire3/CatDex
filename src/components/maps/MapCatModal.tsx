@@ -1,4 +1,5 @@
 import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
@@ -7,6 +8,7 @@ import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
 import { formatDistanceMeters } from '@/lib/constants';
+import { isCatPhotoRef } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -37,11 +39,26 @@ export function MapCatModal({
 }: Props) {
   const { colors, fonts, spacing, radius, iconStroke, motion } = useTheme();
   const insets = useSafeAreaInsets();
+  const [photoFailed, setPhotoFailed] = useState(false);
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [cat?.id, cat?.photoUri]);
 
   if (!cat) return null;
 
   const distanceLabel =
     typeof distanceM === 'number' ? formatDistanceMeters(distanceM) : null;
+
+  const canShowPhoto =
+    captured &&
+    Boolean(cat.photoUri) &&
+    !photoFailed &&
+    !cat.photoUri.startsWith('blob:') &&
+    (isCatPhotoRef(cat.photoUri) ||
+      cat.photoUri.startsWith('data:') ||
+      cat.photoUri.startsWith('http') ||
+      cat.photoUri.startsWith('file:'));
 
   return (
     <RNModal
@@ -120,12 +137,13 @@ export function MapCatModal({
               justifyContent: 'center',
             }}
           >
-            {captured && cat.photoUri ? (
+            {canShowPhoto ? (
               <CatImage
                 uri={cat.photoUri}
                 style={{ width: '100%', height: '100%' }}
                 resizeMode="cover"
                 accessibilityLabel={`Photo de ${cat.name}`}
+                onError={() => setPhotoFailed(true)}
               />
             ) : (
               <CatSprite

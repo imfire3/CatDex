@@ -14,6 +14,7 @@ import {
   persistCatPhoto,
   reclaimPhotoQuotaFromLocalStorage,
 } from '@/lib/photoStorage';
+import { isDurablePhotoUri } from '@/lib/photoUri';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import type { Cat, CatAnalysis } from '@/types/cat';
 
@@ -103,7 +104,8 @@ export const useCatsStore = create<CatsState>()(
           photoUri = await persistCatPhoto(id, input.photoUri);
         } catch (error) {
           console.warn('[cats] photo persist failed', error);
-          photoUri = '';
+          // Keep a durable URI so CatDex / map pins still show the capture.
+          photoUri = isDurablePhotoUri(input.photoUri) ? input.photoUri : '';
         }
 
         let cat: Cat = {

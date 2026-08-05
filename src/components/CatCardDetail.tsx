@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -201,6 +201,11 @@ export function CatCardDetail({
   const stars = starScore(views, number);
   const ageYears = displayAgeYears(number);
   const likesPct = 50 + ((number * 13) % 41);
+
+  useEffect(() => {
+    setPhotoFailed(false);
+  }, [photoUri]);
+
   const showPhoto =
     Boolean(photoUri) &&
     !photoFailed &&
@@ -297,7 +302,6 @@ export function CatCardDetail({
             borderColor: colors.border,
           }}
         >
-          <CatSprite colorLabel={analysis.color} seed={number} size={200} />
           {showPhoto ? (
             <CatImage
               uri={photoUri}
@@ -306,7 +310,9 @@ export function CatCardDetail({
               accessibilityLabel={`Photo de ${name}`}
               onError={() => setPhotoFailed(true)}
             />
-          ) : null}
+          ) : (
+            <CatSprite colorLabel={analysis.color} seed={number} size={200} />
+          )}
         </View>
 
         <View style={{ gap: spacing[8], width: '100%' }}>
