@@ -36,6 +36,33 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
     })
   : null;
 
+/**
+ * Drop a corrupt / expired local session so GoTrue’s boot recover does not
+ * surface an uncaught AuthApiError in Expo Go (LogBox red bar).
+ */
+export async function clearLocalSupabaseSession(): Promise<void> {
+  if (!supabase) return;
+  try {
+    await supabase.auth.signOut({ scope: 'local' });
+  } catch {
+    // ignore — storage may already be empty
+  }
+}
+
+if (supabase) {
+  void supabase.auth
+    .getSession()
+    .then(async ({ error }) => {
+      if (!error) return;
+      console.warn('[supabase] boot getSession error — clearing local auth', error.message);
+      await clearLocalSupabaseSession();
+    })
+    .catch(async (error: unknown) => {
+      console.warn('[supabase] boot getSession rejected — clearing local auth', error);
+      await clearLocalSupabaseSession();
+    });
+}
+
 export function requireSupabase(): SupabaseClient {
   if (!supabase) {
     throw new Error(

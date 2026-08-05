@@ -7,7 +7,39 @@ import { Platform } from 'react-native';
 
 import { isAppleAuthEnabled, isGoogleAuthEnabled } from '@/lib/authProviders';
 import type { User } from '@/types/cat';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import {
+  clearLocalSupabaseSession,
+  isSupabaseConfigured,
+  supabase,
+} from '@/lib/supabase';
+
+function authErrorMessage(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message?: unknown }).message ?? '');
+  }
+  return '';
+}
+
+/** Stale refresh token / bad key — clear local session instead of crashing Expo Go. */
+function isRecoverableAuthError(error: unknown): boolean {
+  const message = authErrorMessage(error);
+  const status =
+    error && typeof error === 'object' && 'status' in error
+      ? Number((error as { status?: unknown }).status)
+      : NaN;
+  return (
+    /invalid refresh token/i.test(message) ||
+    /refresh token not found/i.test(message) ||
+    /invalid jwt/i.test(message) ||
+    /invalid api key/i.test(message) ||
+    /jwt expired/i.test(message) ||
+    /session from session_id claim in jwt does not exist/i.test(message) ||
+    /user from sub claim in jwt does not exist/i.test(message) ||
+    status === 401 ||
+    status === 403
+  );
+}
 
 type SignUpInput = {
   email: string;
@@ -248,9 +280,12 @@ export const useAuthStore = create<AuthState>()(
             data: { session },
             error: sessionError,
           } = await supabase.auth.getSession();
-          if (sessionError) throw sessionError;
 
-          if (session?.user) {
+          if (sessionError) {
+            console.warn('[auth] getSession error — clearing local session', sessionError);
+            await clearLocalSupabaseSession();
+            set({ session: null, user: null, loading: false, error: null });
+          } else if (session?.user) {
             const profile = await profileForUser(session.user.id, session.user.email);
             const completedIds = get().onboardingCompletedUserIds;
             set({
@@ -268,27 +303,40 @@ export const useAuthStore = create<AuthState>()(
           }
 
           supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-            if (nextSession?.user) {
-              const profile = await profileForUser(
-                nextSession.user.id,
-                nextSession.user.email,
-              );
-              const completedIds = get().onboardingCompletedUserIds;
-              set({
-                session: nextSession,
-                user: toAppUser(nextSession.user, profile),
-                onboardingCompleted: hasCompletedOnboarding(
+            try {
+              if (nextSession?.user) {
+                const profile = await profileForUser(
                   nextSession.user.id,
-                  completedIds,
-                ),
-              });
-              void syncCatsAfterAuth();
-            } else {
-              set({ session: null, user: null, onboardingCompleted: false });
+                  nextSession.user.email,
+                );
+                const completedIds = get().onboardingCompletedUserIds;
+                set({
+                  session: nextSession,
+                  user: toAppUser(nextSession.user, profile),
+                  onboardingCompleted: hasCompletedOnboarding(
+                    nextSession.user.id,
+                    completedIds,
+                  ),
+                });
+                void syncCatsAfterAuth();
+              } else {
+                set({ session: null, user: null, onboardingCompleted: false });
+              }
+            } catch (error) {
+              console.warn('[auth] onAuthStateChange error', error);
+              if (isRecoverableAuthError(error)) {
+                await clearLocalSupabaseSession();
+                set({ session: null, user: null, onboardingCompleted: false });
+              }
             }
           });
         } catch (error) {
           console.error('Auth initialization error:', error);
+          if (isRecoverableAuthError(error)) {
+            await clearLocalSupabaseSession();
+            set({ session: null, user: null, loading: false, error: null });
+            return;
+          }
           set({ loading: false, error: error as AuthError });
         }
       },
@@ -638,7 +686,9 @@ export const useAuthStore = create<AuthState>()(
           });
         }
         useAuthStore.getState().setHydrated(true);
-        void useAuthStore.getState().initialize();
+        void useAuthStore.getState().initialize().catch((error) => {
+          console.warn('[auth] initialize rejected', error);
+        });
       },
     },
   ),
@@ -670,6 +720,12 @@ export function getAuthErrorMessage(error: AuthError | string | null | undefined
   }
   if (/invalid login credentials/i.test(message) || code === 'invalid_credentials') {
     return 'E-mail ou mot de passe incorrect.';
+  }
+  if (/invalid api key/i.test(message)) {
+    return 'Clé Supabase invalide. Vérifie EXPO_PUBLIC_SUPABASE_ANON_KEY dans .env.';
+  }
+  if (/invalid refresh token|refresh token not found/i.test(message)) {
+    return 'Session expirée. Reconnecte-toi.';
   }
   if (/email not confirmed/i.test(message) || code === 'email_not_confirmed') {
     return 'E-mail non confirmé. Dans Supabase, désactive Authentication → Providers → Email → Confirm email, puis recrée ton compte.';
