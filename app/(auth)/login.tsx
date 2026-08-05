@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { AuthDivider, AuthHeader } from '@/components/Auth/AuthChrome';
+import { AuthEmailConfigBanner } from '@/components/Auth/AuthEmailConfigBanner';
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
@@ -177,6 +178,7 @@ export default function LoginScreen() {
             Mode local — ajoute ta clé Supabase dans `.env` pour l’auth réelle.
           </Text>
         ) : null}
+        <AuthEmailConfigBanner />
         {formError ? (
           <Text variant="bodySmall" color="danger">
             {formError}

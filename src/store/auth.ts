@@ -290,12 +290,13 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithEmail: async (email, password) => {
+        const normalizedEmail = email.trim().toLowerCase();
         if (!supabase) {
           set({
             user: {
               id: `user_email_${Date.now()}`,
-              email: email.trim(),
-              displayName: email.split('@')[0],
+              email: normalizedEmail,
+              displayName: normalizedEmail.split('@')[0],
               provider: 'email',
             },
             loading: false,
@@ -307,7 +308,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ loading: true, error: null });
           const { data, error } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
+            email: normalizedEmail,
             password,
           });
           if (error) throw error;
@@ -335,7 +336,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: {
               id: `user_email_${Date.now()}`,
-              email: email.trim(),
+              email: email.trim().toLowerCase(),
               displayName: displayName.trim(),
               provider: 'email',
             },
@@ -346,7 +347,7 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
-        const trimmedEmail = email.trim();
+        const trimmedEmail = email.trim().toLowerCase();
         const trimmedName = displayName.trim();
 
         try {
@@ -358,7 +359,21 @@ export const useAuthStore = create<AuthState>()(
               data: { display_name: trimmedName },
             },
           });
-          if (error) throw error;
+          if (error) {
+            const code =
+              typeof error === 'object' && error && 'code' in error
+                ? String((error as { code?: unknown }).code ?? '')
+                : '';
+            if (
+              code === 'over_email_send_rate_limit' ||
+              /rate limit|over_email/i.test(error.message || '')
+            ) {
+              throw new Error(
+                'Limite d’e-mails Supabase atteinte (Confirm email est activé). Désactive Authentication → Providers → Email → Confirm email, attends quelques minutes, puis recrée ton compte.',
+              );
+            }
+            throw error;
+          }
 
           if (!data.user) {
             set({ loading: false });
@@ -573,16 +588,24 @@ export function getAuthErrorMessage(error: AuthError | string | null | undefined
     return error;
   }
   const message = error.message || 'Une erreur est survenue.';
+  const code =
+    'code' in error && error.code != null ? String(error.code) : '';
   if (isOAuthProviderDisabledError(error) || isOAuthProviderDisabledError(message)) {
     return 'Google / Apple ne sont pas activés dans Supabase. Connecte-toi avec e-mail.';
   }
-  if (/invalid login credentials/i.test(message)) {
-    return 'E-mail ou mot de passe incorrect.';
+  if (
+    code === 'over_email_send_rate_limit' ||
+    /rate limit|over_email/i.test(message)
+  ) {
+    return 'Limite d’e-mails Supabase atteinte. Désactive Confirm email (Auth → Providers → Email), attends un peu, puis recrée ton compte.';
   }
-  if (/email not confirmed/i.test(message)) {
-    return 'E-mail non confirmé. Dans Supabase, désactive Authentication → Providers → Email → Confirm email pour te connecter directement après inscription.';
+  if (/invalid login credentials/i.test(message) || code === 'invalid_credentials') {
+    return 'E-mail ou mot de passe incorrect. Si tu viens de t’inscrire : le compte n’a peut‑être pas été créé (Confirm email / limite d’e-mails Supabase). Désactive Confirm email puis recrée le compte.';
   }
-  if (/confirmation e-mail est activée/i.test(message)) {
+  if (/email not confirmed/i.test(message) || code === 'email_not_confirmed') {
+    return 'E-mail non confirmé. Dans Supabase, désactive Authentication → Providers → Email → Confirm email, puis recrée ton compte.';
+  }
+  if (/confirmation e-mail est activée|Limite d’e-mails/i.test(message)) {
     return message;
   }
   if (/already registered/i.test(message)) {

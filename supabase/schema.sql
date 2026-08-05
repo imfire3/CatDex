@@ -257,6 +257,26 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
+-- Instant login: confirm e-mail at insert time (pairs with disabling
+-- "Confirm email" in the dashboard to avoid mailer rate limits).
+CREATE OR REPLACE FUNCTION public.handle_auto_confirm()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  NEW.email_confirmed_at := COALESCE(NEW.email_confirmed_at, NOW());
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created_confirm ON auth.users;
+CREATE TRIGGER on_auth_user_created_confirm
+  BEFORE INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_auto_confirm();
+
 CREATE OR REPLACE FUNCTION find_nearby_cats(
   user_lat DOUBLE PRECISION,
   user_lon DOUBLE PRECISION,

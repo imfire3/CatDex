@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
+import { AuthEmailConfigBanner } from '@/components/Auth/AuthEmailConfigBanner';
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
@@ -145,6 +146,7 @@ export default function SignupScreen() {
             Mode local — ajoute ta clé Supabase dans `.env` pour l’auth réelle.
           </Text>
         ) : null}
+        <AuthEmailConfigBanner />
         {formError ? (
           <Text variant="bodySmall" color="danger">
             {formError}

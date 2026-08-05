@@ -24,10 +24,18 @@ Cela crée : `profiles`, `cats`, `sightings`, `cat_analysis`, RLS, PostGIS nearb
 ## 3. Auth e-mail
 Authentication → Providers → Email : activé  
 
-**Obligatoire pour login immédiat après inscription :**  
+**Obligatoire (sinon « e-mail ou mot de passe incorrect ») :**  
 Authentication → Providers → Email → **désactive « Confirm email »**  
-(`mailer_autoconfirm`). Sinon Supabase crée le compte sans session et
-l’app ne peut pas te connecter tout de suite.
+
+Si Confirm email reste ON :
+- chaque inscription envoie un e-mail (quota gratuit très bas) ;
+- au-delà du quota → `email rate limit exceeded` → **le compte n’est pas créé** ;
+- la connexion renvoie alors `Invalid login credentials`.
+
+Après avoir désactivé Confirm email : recrée le compte, tu es connecté tout de suite.
+
+Option SQL (backfill + auto-confirm) si besoin :  
+`supabase/migrations/20260805_auto_confirm_email.sql` dans le SQL Editor.
 
 ### Google / Apple (sinon erreur `provider is not enabled`)
 Par défaut seuls **Email** est requis. Les boutons Google/Apple sont **masqués**
