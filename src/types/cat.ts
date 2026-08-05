@@ -1,5 +1,13 @@
 export type CatGender = 'male' | 'female' | 'unknown';
 
+export type CatAnalysisStats = {
+  timesSeen?: number;
+  captures?: number;
+  likes?: number;
+  captured?: boolean;
+  popularity?: string;
+};
+
 export type CatAnalysis = {
   color: string;
   breed: string;
@@ -10,8 +18,32 @@ export type CatAnalysis = {
   gender?: CatGender;
   eyes?: string;
   size?: string;
-  /** Tags d’ambiance / personnalité (ex: Ombre, Mystère) */
+  /** Traits / personnalité (5–8 côté Vision) */
   tags?: string[];
+  species?: string;
+  estimatedAge?: string;
+  estimatedWeight?: string;
+  bodyType?: string;
+  secondaryColors?: string[];
+  coatPattern?: string;
+  coatTexture?: string;
+  ears?: string;
+  tail?: string;
+  condition?: string;
+  confidence?: number;
+  distinctiveFeatures?: string[];
+  habitat?: string;
+  state?: string;
+  /** Commun | Peu commun | Rare | Épique | Légendaire | Mythique */
+  rarity?: string;
+  colorPalette?: string[];
+  catdexNumber?: string;
+  stats?: CatAnalysisStats;
+  /** Vision rejected the photo (not a cat / low confidence). */
+  notACat?: boolean;
+  errorCode?: string;
+  errorTitle?: string;
+  errorMessage?: string;
 };
 
 export type Cat = {

@@ -158,9 +158,12 @@ export function dexNumberLabel(n: number) {
 
 /** Rarity for the post-scan reveal card. */
 export function resolveRevealRarity(
-  analysis: { color?: string; coat?: string; breed?: string },
+  analysis: { color?: string; coat?: string; breed?: string; rarity?: string },
   seed: number,
 ): RarityId {
+  const fromAi = mapVisionRarity(analysis.rarity);
+  if (fromAi) return fromAi;
+
   const coat = (analysis.coat ?? '').toLowerCase();
   const color = (analysis.color ?? '').toLowerCase();
   const breed = (analysis.breed ?? '').toLowerCase();
@@ -175,6 +178,28 @@ export function resolveRevealRarity(
     return 'uncommon';
   }
   return Math.abs(seed) % 6 === 0 ? 'uncommon' : 'common';
+}
+
+/** Map Vision rarity labels onto CatDex rarity tokens. */
+export function mapVisionRarity(label?: string | null): RarityId | null {
+  const text = (label ?? '').trim().toLowerCase();
+  if (!text) return null;
+  if (text.includes('mythique') || text.includes('légendaire') || text.includes('legendaire')) {
+    return 'exceptional';
+  }
+  if (text.includes('épique') || text.includes('epique')) {
+    return 'rare';
+  }
+  if (text === 'rare') {
+    return 'uncommon';
+  }
+  if (text.includes('peu commun') || text.includes('peu-commun')) {
+    return 'uncommon';
+  }
+  if (text.includes('commun')) {
+    return 'common';
+  }
+  return null;
 }
 
 export function revealRarityLabel(id: RarityId): string {
@@ -194,7 +219,7 @@ export function catDexRarityLabel(id: RarityId): string {
 export type CatDexRarityFilter = 'all' | RarityId;
 
 export function matchesCatDexRarityFilter(
-  analysis: { color?: string; coat?: string; breed?: string },
+  analysis: { color?: string; coat?: string; breed?: string; rarity?: string },
   seed: number,
   filter: CatDexRarityFilter,
 ): boolean {

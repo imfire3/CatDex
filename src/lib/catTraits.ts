@@ -58,7 +58,7 @@ export function enrichAnalysis(
 
   const tags =
     seeded.tags && seeded.tags.length > 0
-      ? seeded.tags.slice(0, 3)
+      ? seeded.tags.slice(0, 8)
       : [...TAG_SETS[Math.abs(seed) % TAG_SETS.length], 'Gourmand'].slice(0, 3);
 
   return {
@@ -81,6 +81,17 @@ export function genderSymbol(gender?: CatGender): string {
 
 /** True when Vision says the photo has no clearly visible cat. */
 export function isNoCatFound(analysis: CatAnalysis): boolean {
+  if (analysis.notACat === true) return true;
+  if (analysis.errorCode === 'NOT_A_CAT') return true;
+  if (
+    typeof analysis.confidence === 'number' &&
+    Number.isFinite(analysis.confidence) &&
+    analysis.confidence < 90 &&
+    !(analysis.suggestedName ?? '').trim()
+  ) {
+    return true;
+  }
+
   const description = (analysis.description ?? '').toLowerCase();
   const breed = (analysis.breed ?? '').toLowerCase();
   const color = (analysis.color ?? '').toLowerCase();
