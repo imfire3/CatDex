@@ -75,9 +75,10 @@ Cela créera :
 
 L'authentification par email/mot de passe est activée par défaut dans Supabase.
 
-Optionnel - Désactiver la confirmation email :
-1. Allez dans **Authentication** > **Settings**
-2. Décochez **Enable email confirmations**
+**Obligatoire** — désactiver la confirmation email (sinon pas de session
+après « Créer mon compte ») :
+1. Allez dans **Authentication** → **Providers** → **Email**
+2. Décochez **Confirm email** / **Enable email confirmations**
 
 ### 5. Configurer le Storage (pour les photos)
 

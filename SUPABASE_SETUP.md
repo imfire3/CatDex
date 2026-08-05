@@ -23,7 +23,11 @@ Cela crée : `profiles`, `cats`, `sightings`, `cat_analysis`, RLS, PostGIS nearb
 
 ## 3. Auth e-mail
 Authentication → Providers → Email : activé  
-Optionnel : désactive **Confirm email** pour tester plus vite.
+
+**Obligatoire pour login immédiat après inscription :**  
+Authentication → Providers → Email → **désactive « Confirm email »**  
+(`mailer_autoconfirm`). Sinon Supabase crée le compte sans session et
+l’app ne peut pas te connecter tout de suite.
 
 ### Google / Apple (sinon erreur `provider is not enabled`)
 Par défaut seuls **Email** est requis. Les boutons Google/Apple sont **masqués**

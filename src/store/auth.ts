@@ -346,52 +346,85 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
+        const trimmedEmail = email.trim();
+        const trimmedName = displayName.trim();
+
         try {
           set({ loading: true, error: null });
           const { data, error } = await supabase.auth.signUp({
-            email: email.trim(),
+            email: trimmedEmail,
             password,
             options: {
-              data: { display_name: displayName.trim() },
+              data: { display_name: trimmedName },
             },
           });
           if (error) throw error;
 
-          if (data.user) {
-            // Profile is created by DB trigger; upsert is best-effort only.
-            await supabase.from('profiles').upsert(
-              {
-                id: data.user.id,
-                email: email.trim(),
-                display_name: displayName.trim(),
-              },
-              { onConflict: 'id' },
-            );
-
-            if (!data.session) {
-              set({
-                loading: false,
-                error:
-                  'Compte créé — confirme ton e-mail puis reconnecte-toi.',
-              });
-              return;
-            }
-
-            set({
-              session: data.session,
-              user: {
-                id: data.user.id,
-                email: email.trim(),
-                displayName: displayName.trim(),
-                provider: 'email',
-              },
-              onboardingCompleted: false,
-              loading: false,
-            });
-            void syncCatsAfterAuth();
-          } else {
+          if (!data.user) {
             set({ loading: false });
+            throw new Error('Création du compte impossible.');
           }
+
+          // Empty identities = e-mail already registered (Supabase anti-enumeration).
+          const isNewUser = (data.user.identities?.length ?? 0) > 0;
+
+          // With "Confirm email" disabled, signUp returns a session. If not,
+          // sign in immediately so the user is logged in without a second step.
+          let session = data.session;
+          if (!session) {
+            const { data: signInData, error: signInError } =
+              await supabase.auth.signInWithPassword({
+                email: trimmedEmail,
+                password,
+              });
+
+            if (signInError) {
+              const message = signInError.message || '';
+              if (/email not confirmed/i.test(message)) {
+                throw new Error(
+                  'Compte créé, mais Supabase exige une confirmation e-mail. Désactive Authentication → Providers → Email → Confirm email pour te connecter directement.',
+                );
+              }
+              if (!isNewUser || /invalid login credentials/i.test(message)) {
+                throw new Error(
+                  'Un compte existe déjà avec cet e-mail. Connecte-toi.',
+                );
+              }
+              throw signInError;
+            }
+            session = signInData.session;
+          }
+
+          if (!session?.user) {
+            set({ loading: false });
+            throw new Error(
+              'Compte créé mais connexion impossible. Réessaie depuis Connexion.',
+            );
+          }
+
+          // Profile is created by DB trigger; upsert is best-effort only.
+          await supabase.from('profiles').upsert(
+            {
+              id: session.user.id,
+              email: trimmedEmail,
+              display_name: trimmedName,
+            },
+            { onConflict: 'id' },
+          );
+
+          set({
+            session,
+            user: {
+              id: session.user.id,
+              email: trimmedEmail,
+              displayName: trimmedName,
+              provider: 'email',
+            },
+            onboardingCompleted: false,
+            loading: false,
+            error: null,
+          });
+          void syncCatsAfterAuth();
         } catch (error) {
           console.error('Sign up error:', error);
           set({ loading: false, error: error as AuthError });
@@ -547,7 +580,10 @@ export function getAuthErrorMessage(error: AuthError | string | null | undefined
     return 'E-mail ou mot de passe incorrect.';
   }
   if (/email not confirmed/i.test(message)) {
-    return 'Confirme ton e-mail avant de te connecter.';
+    return 'E-mail non confirmé. Dans Supabase, désactive Authentication → Providers → Email → Confirm email pour te connecter directement après inscription.';
+  }
+  if (/confirmation e-mail est activée/i.test(message)) {
+    return message;
   }
   if (/already registered/i.test(message)) {
     return 'Un compte existe déjà avec cet e-mail.';

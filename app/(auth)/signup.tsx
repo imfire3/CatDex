@@ -93,13 +93,15 @@ export default function SignupScreen() {
       });
 
       const state = useAuthStore.getState();
-      if (state.user) {
-        router.replace('/(auth)/intro');
+      if (!state.user) {
+        setFormError(
+          getAuthErrorMessage(state.error) ||
+            'Compte créé mais connexion impossible. Réessaie.',
+        );
         return;
       }
-      if (state.error) {
-        setFormError(getAuthErrorMessage(state.error));
-      }
+      // Logged in immediately — continue onboarding (or map if already done).
+      router.replace(getPostAuthHref(state.onboardingCompleted));
     } catch (error) {
       setFormError(getAuthErrorMessage(error as never));
     } finally {
