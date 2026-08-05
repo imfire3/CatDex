@@ -98,7 +98,14 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await signInWithEmail(email.trim(), password);
-      router.replace(getPostAuthHref(useAuthStore.getState().onboardingCompleted));
+      const state = useAuthStore.getState();
+      if (!state.user) {
+        setFormError(
+          getAuthErrorMessage(state.error) || 'Connexion impossible. Réessaie.',
+        );
+        return;
+      }
+      router.replace(getPostAuthHref(state.onboardingCompleted));
     } catch (error) {
       setFormError(getAuthErrorMessage(error as never));
     } finally {
