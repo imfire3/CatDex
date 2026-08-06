@@ -12,9 +12,10 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 const ANALYSIS_STEPS = [
   'Détection du chat',
-  'Couleur du pelage',
-  'Race probable',
-  'Traits & prénom',
+  'Qualité de la photo',
+  'Type & pelage',
+  'Pose & environnement',
+  'Nom CatDex',
 ] as const;
 
 const TIP =

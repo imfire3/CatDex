@@ -17,6 +17,7 @@ import { AuthBackButton } from '@/components/Auth/AuthChrome';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
+import { recordAnalysisFeedback } from '@/lib/analysisFeedback';
 import { formatDexNumber } from '@/lib/constants';
 import {
   catDexRarityLabel,
@@ -28,11 +29,12 @@ import {
 import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
 import { suggestNameForAppearance } from '@/lib/mockAnalysis';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { CatAnalysis } from '@/types/cat';
+import type { AnalysisFieldCorrection, CatAnalysis } from '@/types/cat';
 
 export type CaptureRevealResult = {
   name: string;
   analysis: CatAnalysis;
+  corrections: AnalysisFieldCorrection[];
 };
 
 type Props = {
@@ -49,7 +51,7 @@ type FieldKey =
   | 'color'
   | 'breed'
   | 'coat'
-  | 'size'
+  | 'pattern'
   | 'tag'
   | 'description';
 
@@ -192,9 +194,55 @@ function EditableRow({
   );
 }
 
+function collectCorrections(args: {
+  predicted: {
+    type: string;
+    color: string;
+    coat: string;
+    pattern: string;
+    name: string;
+    description: string;
+    trait: string;
+  };
+  current: {
+    type: string;
+    color: string;
+    coat: string;
+    pattern: string;
+    name: string;
+    description: string;
+    trait: string;
+  };
+}): AnalysisFieldCorrection[] {
+  const fields: Array<{
+    field: AnalysisFieldCorrection['field'];
+    predicted: string;
+    corrected: string;
+  }> = [
+    { field: 'type', predicted: args.predicted.type, corrected: args.current.type },
+    { field: 'color', predicted: args.predicted.color, corrected: args.current.color },
+    { field: 'coat', predicted: args.predicted.coat, corrected: args.current.coat },
+    { field: 'pattern', predicted: args.predicted.pattern, corrected: args.current.pattern },
+    { field: 'name', predicted: args.predicted.name, corrected: args.current.name },
+    {
+      field: 'description',
+      predicted: args.predicted.description,
+      corrected: args.current.description,
+    },
+    { field: 'trait', predicted: args.predicted.trait, corrected: args.current.trait },
+  ];
+
+  return fields
+    .filter((f) => f.predicted.trim() !== f.corrected.trim())
+    .map((f) => ({
+      field: f.field,
+      predicted: f.predicted.trim(),
+      corrected: f.corrected.trim(),
+    }));
+}
+
 /**
- * Post-capture reveal — AI proposal shown as rows with edit icons.
- * Tap the pencil to open the keyboard and correct a field.
+ * Post-capture reveal — AI proposal with confirmation / labeled corrections.
  */
 export function CaptureReveal({
   name: initialName,
@@ -209,6 +257,19 @@ export function CaptureReveal({
   const seeded = useMemo(() => enrichAnalysis(rawAnalysis, number), [rawAnalysis, number]);
   const aiName = (seeded.suggestedName || initialName).trim();
 
+  const predicted = useMemo(
+    () => ({
+      type: seeded.breed || '',
+      color: seeded.color || '',
+      coat: seeded.coat || '',
+      pattern: seeded.coatPattern || '',
+      name: aiName || initialName,
+      description: seeded.description || '',
+      trait: seeded.tags?.[0] ?? '',
+    }),
+    [seeded, aiName, initialName],
+  );
+
   const [name, setName] = useState(aiName || initialName);
   const [nameTouched, setNameTouched] = useState(false);
   const [tag, setTag] = useState(seeded.tags?.[0] ?? '');
@@ -217,10 +278,11 @@ export function CaptureReveal({
     seeded.breed && seeded.breed !== 'Indéterminée' ? seeded.breed : '',
   );
   const [color, setColor] = useState(seeded.color || '');
-  const [size, setSize] = useState(seeded.size || '');
+  const [pattern, setPattern] = useState(seeded.coatPattern || '');
   const [description, setDescription] = useState(seeded.description || '');
   const [editingField, setEditingField] = useState<FieldKey | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -240,7 +302,10 @@ export function CaptureReveal({
   const theme = themeFromColorLabel(color || seeded.color, number);
   const soft = themeSoft(theme, scheme);
   const dexLabel = formatDexNumber(number);
-  const rarityId = resolveRevealRarity({ ...seeded, color, breed, coat }, number);
+  const rarityId = resolveRevealRarity(
+    { ...seeded, color, breed, coat, coatPattern: pattern },
+    number,
+  );
   const rarity = rarityTokens[rarityId];
   const symbol = genderSymbol(seeded.gender);
   const keyboardOpen = keyboardHeight > 0;
@@ -268,22 +333,60 @@ export function CaptureReveal({
     const nextColor = color.trim() || seeded.color;
     const nextBreed = breed.trim() || seeded.breed;
     const nextCoat = coat.trim() || seeded.coat;
+    const nextPattern = pattern.trim() || seeded.coatPattern;
+    const nextDescription =
+      description.trim() ||
+      seeded.description ||
+      `Un chat ${nextColor.toLowerCase()} prêt à rejoindre ton CatDex.`;
+
+    const corrections = collectCorrections({
+      predicted,
+      current: {
+        type: nextBreed,
+        color: nextColor,
+        coat: nextCoat,
+        pattern: nextPattern || '',
+        name: trimmedName,
+        description: nextDescription,
+        trait: tag.trim(),
+      },
+    });
+
     return {
       name: trimmedName,
+      corrections,
       analysis: {
         ...seeded,
         color: nextColor,
         breed: nextBreed,
         coat: nextCoat,
-        size: size.trim() || seeded.size,
-        description:
-          description.trim() ||
-          seeded.description ||
-          `Un chat ${nextColor.toLowerCase()} prêt à rejoindre ton CatDex.`,
+        coatPattern: nextPattern,
+        description: nextDescription,
         suggestedName: trimmedName,
         tags: nextTags.length > 0 ? nextTags : seeded.tags,
       },
     };
+  };
+
+  const handleValidate = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    const result = buildResult();
+    try {
+      await recordAnalysisFeedback({
+        predicted: {
+          type: predicted.type,
+          color: predicted.color,
+          coat: predicted.coat,
+          pattern: predicted.pattern,
+        },
+        corrections: result.corrections,
+        confirmed: true,
+      });
+    } catch {
+      // Non-blocking — still add the cat.
+    }
+    onAdd(result);
   };
 
   return (
@@ -371,9 +474,11 @@ export function CaptureReveal({
             ) : null}
           </View>
 
-          <Text variant="bodySmall" color="textSecondary">
-            Proposition de l’IA — appuie sur l’icône pour corriger un champ.
-          </Text>
+          {seeded.requiresUserConfirmation ? (
+            <Text variant="bodySmall" color="warning">
+              Confiance limitée — vérifie les champs ci-dessous.
+            </Text>
+          ) : null}
         </View>
 
         <View style={{ width: '100%', gap: spacing[16] }}>
@@ -387,40 +492,50 @@ export function CaptureReveal({
             onChangeText={handleNameChange}
             onEndEdit={() => setEditingField(null)}
           />
+
+          <View style={{ gap: spacing[8] }}>
+            <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.display }}>
+              Cette analyse est-elle correcte ?
+            </Text>
+            <Text variant="bodySmall" color="textSecondary">
+              Corrige un champ pour entraîner le futur modèle CatDex.
+            </Text>
+          </View>
+
           <EditableRow
-            label="Couleur"
-            value={color}
-            placeholder="Ex. Roux"
-            editing={editingField === 'color'}
-            onStartEdit={() => setEditingField('color')}
-            onChangeText={handleColorChange}
-            onEndEdit={() => setEditingField(null)}
-          />
-          <EditableRow
-            label="Race"
+            label="Type"
             value={breed}
-            placeholder="Ex. Européen"
+            placeholder="Ex. Chat domestique à poil court"
             editing={editingField === 'breed'}
             onStartEdit={() => setEditingField('breed')}
             onChangeText={setBreed}
             onEndEdit={() => setEditingField(null)}
           />
           <EditableRow
+            label="Couleur"
+            value={color}
+            placeholder="Ex. Roux et blanc"
+            editing={editingField === 'color'}
+            onStartEdit={() => setEditingField('color')}
+            onChangeText={handleColorChange}
+            onEndEdit={() => setEditingField(null)}
+          />
+          <EditableRow
             label="Pelage"
             value={coat}
-            placeholder="Ex. Court"
+            placeholder="Ex. Court et lisse"
             editing={editingField === 'coat'}
             onStartEdit={() => setEditingField('coat')}
             onChangeText={setCoat}
             onEndEdit={() => setEditingField(null)}
           />
           <EditableRow
-            label="Taille"
-            value={size}
-            placeholder="Ex. Moyenne"
-            editing={editingField === 'size'}
-            onStartEdit={() => setEditingField('size')}
-            onChangeText={setSize}
+            label="Motif"
+            value={pattern}
+            placeholder="Ex. Tigré et bicolore"
+            editing={editingField === 'pattern'}
+            onStartEdit={() => setEditingField('pattern')}
+            onChangeText={setPattern}
             onEndEdit={() => setEditingField(null)}
           />
           <EditableRow
@@ -457,7 +572,13 @@ export function CaptureReveal({
           gap: spacing[8],
         }}
       >
-        <Button title="Valider et ajouter" onPress={() => onAdd(buildResult())} />
+        <Button
+          title="Valider et ajouter"
+          onPress={() => {
+            void handleValidate();
+          }}
+          disabled={submitting}
+        />
         {!keyboardOpen ? (
           <Button title="Reprendre la photo" variant="secondary" onPress={onRetake} />
         ) : null}

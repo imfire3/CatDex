@@ -18,7 +18,7 @@ export type CatAnalysis = {
   gender?: CatGender;
   eyes?: string;
   size?: string;
-  /** Traits / personnalité (5–8 côté Vision) */
+  /** Traits / personnalité (max 3 côté Vision v1) */
   tags?: string[];
   species?: string;
   estimatedAge?: string;
@@ -30,6 +30,7 @@ export type CatAnalysis = {
   ears?: string;
   tail?: string;
   condition?: string;
+  /** 0–100 */
   confidence?: number;
   distinctiveFeatures?: string[];
   habitat?: string;
@@ -44,6 +45,18 @@ export type CatAnalysis = {
   errorCode?: string;
   errorTitle?: string;
   errorMessage?: string;
+  /** catdex.analysis.v1 */
+  requiresUserConfirmation?: boolean;
+  warnings?: string[];
+  catCount?: number;
+  analysisStatus?: string;
+};
+
+/** User correction of a Vision field — labeled training signal. */
+export type AnalysisFieldCorrection = {
+  field: 'type' | 'color' | 'coat' | 'pattern' | 'name' | 'description' | 'trait';
+  predicted: string;
+  corrected: string;
 };
 
 export type Cat = {
