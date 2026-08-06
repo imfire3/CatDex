@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +15,7 @@ import { GlassIconButton } from '@/components/GlassIconButton';
 import { ProgressBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { TAB_BAR_BODY_HEIGHT } from '@/layout/tabBarMetrics';
 import { TabStackHeader } from '@/layout/TabStackHeader';
 import { formatDexNumber } from '@/lib/constants';
 import {
@@ -321,7 +322,10 @@ export default function ProfileScreen() {
   const places = uniquePlaces(cats);
   const streak = Math.max(streakDays, cats.length > 0 ? 1 : 0);
 
-  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24];
+  const listBottom = spacing[32];
+  /** Sit flush above the floating tab pill — 8pt air, not a second dock. */
+  const stickyBottomPad =
+    insets.bottom + spacing[8] + TAB_BAR_BODY_HEIGHT;
   const coverHeight = spacing[80];
   const iconColor = colors.textSecondary;
 
@@ -631,22 +635,33 @@ export default function ProfileScreen() {
               />
             </View>
           </View>
-
-          <Button
-            title="Se déconnecter"
-            variant="destructive"
-            onPress={() => {
-              void (async () => {
-                try {
-                  await signOut();
-                } finally {
-                  router.replace('/(auth)/welcome');
-                }
-              })();
-            }}
-          />
         </Animated.View>
       </ScrollView>
+
+      <View
+        style={{
+          paddingHorizontal: spacing[24],
+          paddingTop: spacing[8],
+          paddingBottom: stickyBottomPad,
+          backgroundColor: colors.background,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.border,
+        }}
+      >
+        <Button
+          title="Se déconnecter"
+          variant="destructive"
+          onPress={() => {
+            void (async () => {
+              try {
+                await signOut();
+              } finally {
+                router.replace('/(auth)/welcome');
+              }
+            })();
+          }}
+        />
+      </View>
     </View>
   );
 }
