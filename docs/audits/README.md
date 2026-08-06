@@ -1,26 +1,16 @@
-# CatDex Audits
+# CatDex Audits — référence gelée
 
-Versionned quality audits. Source of truth: GitHub.
+Ces documents sont la **source de vérité** qualité pré-bêta.  
+On ne « corrige pas l’audit » en codant 80 points : on exécute le **backlog** ticket par ticket.
 
-```text
-docs/audits/
-├── engineering-audit-v1.md   ← audit Staff pré-bêta (2026-08-06)
-├── engineering/              ← suivis techniques / ADR audits
-├── product/
-├── ux/
-├── ui/
-├── performance/
-├── security/
-├── releases/
-└── postmortems/
-```
+| Document | Rôle |
+|----------|------|
+| [engineering-audit-v1.md](./engineering-audit-v1.md) | Tech / sécurité / dette / scores |
+| [product-audit-v1.md](./product-audit-v1.md) | Fit MVP, écrans, overpromises |
+| [ux-audit-v1.md](./ux-audit-v1.md) | Funnel, feedback, friction |
+| [ui-audit-v1.md](./ui-audit-v1.md) | Motion, states, composants |
+| [collection-game-review.md](./collection-game-review.md) | Boucle collection (Map→Scan→Reveal→CatDex) |
 
-## Convention
+Sous-dossiers `engineering/`, `product/`, … = suivis ultérieurs.
 
-| Type | Nom |
-|------|-----|
-| Audit complet | `{domain}-audit-v{N}.md` |
-| Suivi ciblé | `{domain}/{yyyy-mm-dd}-topic.md` |
-| Postmortem | `postmortems/{yyyy-mm-dd}-incident.md` |
-
-Ne jamais modifier le code dans un audit : constat + preuves + plan seulement.
+**Backlog exécutable :** [`docs/backlog/`](../backlog/)
