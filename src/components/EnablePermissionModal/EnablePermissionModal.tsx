@@ -83,7 +83,7 @@ export function EnablePermissionModal({
           style={StyleSheet.absoluteFill}
         />
         <View
-          accessibilityRole="summary"
+          accessibilityRole="none"
           accessibilityLabel={copy.title}
           style={[
             {

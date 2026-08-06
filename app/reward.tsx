@@ -171,6 +171,7 @@ export default function RewardScreen() {
             : 'Stockage plein — recharge l’app puis réessaie.',
         tone: 'danger',
       });
+      throw error;
     }
   };
 
@@ -192,9 +193,7 @@ export default function RewardScreen() {
         number={pending.nextNumber}
         photoUri={pending.photoUri}
         analysis={pending.analysis}
-        onAdd={(result) => {
-          void handleConfirm(result);
-        }}
+        onAdd={(result) => handleConfirm(result)}
         onRetake={handleRetake}
       />
     );

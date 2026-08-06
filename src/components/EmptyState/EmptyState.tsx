@@ -125,7 +125,7 @@ export function EmptyState({
 
   return (
     <View
-      accessibilityRole="summary"
+      accessibilityRole="none"
       style={{
         flexGrow: isPage ? 1 : undefined,
         backgroundColor: isPage ? 'transparent' : colors.surface,

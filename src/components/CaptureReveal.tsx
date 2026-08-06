@@ -40,7 +40,7 @@ type Props = {
   number: number;
   photoUri: string;
   analysis: CatAnalysis;
-  onAdd: (result: CaptureRevealResult) => void;
+  onAdd: (result: CaptureRevealResult) => void | Promise<void>;
   onRetake: () => void;
 };
 
@@ -382,7 +382,11 @@ export function CaptureReveal({
     } catch {
       // Non-blocking — still add the cat.
     }
-    onAdd(result);
+    try {
+      await onAdd(result);
+    } catch {
+      setSubmitting(false);
+    }
   };
 
   return (
