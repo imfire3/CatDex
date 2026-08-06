@@ -32,6 +32,8 @@ const BASE = (process.argv[2] || process.env.SCREENSHOT_BASE_URL || 'http://127.
 );
 
 const VIEWPORT = { width: 390, height: 844, deviceScaleFactor: 2 };
+/** Cap absurdly tall pages (infinite lists / maps). */
+const MAX_FULL_HEIGHT = 12_000;
 
 const PUBLIC_SCREENS = [
   { id: '01-welcome', route: '/welcome', title: 'Welcome' },
@@ -59,9 +61,92 @@ async function waitForApp(page, ms = 2200) {
   await page.waitForTimeout(ms);
 }
 
+/**
+ * Measure the tallest scrollable content so we capture the full screen,
+ * not just the iPhone viewport crop.
+ */
+async function measureContentHeight(page) {
+  return page.evaluate(() => {
+    let max = 0;
+
+    // Real overflow: scrollHeight beyond the visible client area.
+    for (const el of document.querySelectorAll('div, main, section, article')) {
+      const style = window.getComputedStyle(el);
+      const scrollable =
+        /(auto|scroll)/.test(style.overflowY) ||
+        /(auto|scroll)/.test(style.overflow);
+      if (!scrollable) continue;
+      if (el.scrollHeight <= el.clientHeight + 8) continue;
+      max = Math.max(max, el.scrollHeight);
+    }
+
+    // Bottom of meaningful UI (text, controls, images) — skips empty canvas.
+    const contentSel =
+      'p, h1, h2, h3, h4, span, label, button, a, input, textarea, img, svg, [role="button"], [role="switch"], [role="header"]';
+    let paintBottom = 0;
+    for (const el of document.querySelectorAll(contentSel)) {
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') continue;
+      if (Number(style.opacity) === 0) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.height < 1 || rect.width < 1) continue;
+      paintBottom = Math.max(paintBottom, rect.bottom + window.scrollY);
+    }
+
+    return Math.max(max, Math.ceil(paintBottom) + 16, 320);
+  });
+}
+
 async function shot(page, id) {
   const file = path.join(OUT_DIR, `${id}.png`);
-  await page.screenshot({ path: file, fullPage: false });
+
+  // Probe at phone height first.
+  await page.setViewportSize({
+    width: VIEWPORT.width,
+    height: VIEWPORT.height,
+  });
+  await page.waitForTimeout(200);
+
+  let contentH = await measureContentHeight(page);
+
+  // If content overflows the phone viewport, grow so lists lay out fully.
+  if (contentH > VIEWPORT.height + 40) {
+    const target = Math.min(MAX_FULL_HEIGHT, Math.ceil(contentH) + 48);
+    await page.setViewportSize({ width: VIEWPORT.width, height: target });
+    await page.waitForTimeout(500);
+    contentH = await measureContentHeight(page);
+
+    for (let i = 0; i < 2; i += 1) {
+      const next = Math.min(MAX_FULL_HEIGHT, Math.max(320, Math.ceil(contentH) + 48));
+      await page.setViewportSize({ width: VIEWPORT.width, height: next });
+      await page.waitForTimeout(300);
+      const again = await measureContentHeight(page);
+      if (again <= contentH + 8) {
+        contentH = again;
+        break;
+      }
+      contentH = again;
+    }
+  }
+
+  const finalH = Math.min(
+    MAX_FULL_HEIGHT,
+    Math.max(320, Math.ceil(contentH) + 24),
+  );
+  await page.setViewportSize({ width: VIEWPORT.width, height: finalH });
+  await page.waitForTimeout(250);
+
+  await page.screenshot({
+    path: file,
+    fullPage: true,
+    animations: 'disabled',
+  });
+
+  await page.setViewportSize({
+    width: VIEWPORT.width,
+    height: VIEWPORT.height,
+  });
+
   return path.relative(path.join(__dirname, '..'), file);
 }
 
@@ -195,7 +280,7 @@ function writeGallery(results) {
 </head>
 <body>
   <h1>CatDex — export screenshots</h1>
-  <p>${results.filter((r) => r.file).length} écrans · ${VIEWPORT.width}×${VIEWPORT.height}@${VIEWPORT.deviceScaleFactor} · ${new Date().toISOString()}</p>
+  <p>${results.filter((r) => r.file).length} écrans · largeur ${VIEWPORT.width}px · hauteur complète (full page) @${VIEWPORT.deviceScaleFactor}x · ${new Date().toISOString()}</p>
   <div class="grid">${cards}</div>
 </body>
 </html>`;
@@ -215,7 +300,10 @@ async function main() {
     process.exit(1);
   }
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    ...(process.env.PW_CHROME ? { executablePath: process.env.PW_CHROME } : {}),
+  });
   const context = await browser.newContext({
     viewport: { width: VIEWPORT.width, height: VIEWPORT.height },
     deviceScaleFactor: VIEWPORT.deviceScaleFactor,
