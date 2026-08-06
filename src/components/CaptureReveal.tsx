@@ -23,8 +23,6 @@ import {
   catDexRarityLabel,
   resolveRevealRarity,
   rarityTokens,
-  themeFromColorLabel,
-  themeSoft,
 } from '@/lib/catTheme';
 import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
 import { suggestNameForAppearance } from '@/lib/mockAnalysis';
@@ -242,7 +240,7 @@ function collectCorrections(args: {
 }
 
 /**
- * Post-capture reveal — AI proposal with confirmation / labeled corrections.
+ * « Nouveau chat découvert » — verify / correct AI fields before CatDex add.
  */
 export function CaptureReveal({
   name: initialName,
@@ -252,7 +250,7 @@ export function CaptureReveal({
   onAdd,
   onRetake,
 }: Props) {
-  const { colors, fonts, spacing, radius, scheme, shadow } = useTheme();
+  const { colors, fonts, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const seeded = useMemo(() => enrichAnalysis(rawAnalysis, number), [rawAnalysis, number]);
   const aiName = (seeded.suggestedName || initialName).trim();
@@ -299,11 +297,9 @@ export function CaptureReveal({
     };
   }, []);
 
-  const theme = themeFromColorLabel(color || seeded.color, number);
-  const soft = themeSoft(theme, scheme);
   const dexLabel = formatDexNumber(number);
   const rarityId = resolveRevealRarity(
-    { ...seeded, color, breed, coat, coatPattern: pattern },
+    { ...seeded, color, breed, coat },
     number,
   );
   const rarity = rarityTokens[rarityId];
@@ -404,7 +400,7 @@ export function CaptureReveal({
       >
         <AuthBackButton onPress={onRetake} />
         <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-          CatDex
+          {dexLabel}
         </Text>
         <View style={{ width: spacing[40], height: spacing[40] }} />
       </View>
@@ -417,27 +413,33 @@ export function CaptureReveal({
           paddingTop: spacing[8],
           paddingBottom: spacing[24],
           gap: spacing[24],
+          alignItems: 'center',
         }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        <Text variant="h1" color="text" style={{ fontFamily: fonts.display }}>
-          {dexLabel}
+        <Text
+          variant="h1"
+          color="text"
+          align="center"
+          style={{ fontFamily: fonts.display }}
+        >
+          Nouveau chat découvert !
         </Text>
 
         <View
           style={[
             {
-              width: '100%',
-              aspectRatio: 1,
-              borderRadius: radius[8],
-              borderWidth: 1,
-              borderColor: colors.border,
-              backgroundColor: soft,
+              width: 200,
+              height: 200,
+              borderRadius: radius.full,
+              borderWidth: 4,
+              borderColor: colors.brandSoft,
               overflow: 'hidden',
+              backgroundColor: colors.surfaceSecondary,
             },
-            shadow.low,
+            shadow.medium,
           ]}
         >
           <Image
@@ -448,12 +450,13 @@ export function CaptureReveal({
           />
         </View>
 
-        <View style={{ gap: spacing[8], width: '100%' }}>
+        <View style={{ gap: spacing[8], width: '100%', alignItems: 'center' }}>
           <View
             style={{
               flexDirection: 'row',
               flexWrap: 'wrap',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: spacing[8],
             }}
           >
@@ -463,7 +466,7 @@ export function CaptureReveal({
               backgroundColor={colors.brandSoft}
             />
             <Badge
-              label={catDexRarityLabel(rarityId).toUpperCase()}
+              label={catDexRarityLabel(rarityId)}
               color={rarity.foreground}
               backgroundColor={rarity.background}
             />
@@ -475,13 +478,22 @@ export function CaptureReveal({
           </View>
 
           {seeded.requiresUserConfirmation ? (
-            <Text variant="bodySmall" color="warning">
+            <Text variant="bodySmall" color="warning" align="center">
               Confiance limitée — vérifie les champs ci-dessous.
             </Text>
           ) : null}
         </View>
 
         <View style={{ width: '100%', gap: spacing[16] }}>
+          <View style={{ gap: spacing[8] }}>
+            <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.display }}>
+              Vérifie les informations
+            </Text>
+            <Text variant="bodySmall" color="textSecondary">
+              Corrige un champ si besoin avant d’ajouter ce chat à ton CatDex.
+            </Text>
+          </View>
+
           <EditableRow
             label="Nom"
             value={name}
@@ -492,16 +504,6 @@ export function CaptureReveal({
             onChangeText={handleNameChange}
             onEndEdit={() => setEditingField(null)}
           />
-
-          <View style={{ gap: spacing[8] }}>
-            <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.display }}>
-              Cette analyse est-elle correcte ?
-            </Text>
-            <Text variant="bodySmall" color="textSecondary">
-              Corrige un champ pour entraîner le futur modèle CatDex.
-            </Text>
-          </View>
-
           <EditableRow
             label="Type"
             value={breed}
@@ -573,7 +575,7 @@ export function CaptureReveal({
         }}
       >
         <Button
-          title="Valider et ajouter"
+          title="Confirmer et ajouter"
           onPress={() => {
             void handleValidate();
           }}

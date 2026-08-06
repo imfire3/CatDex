@@ -53,6 +53,10 @@ function RootNavigator() {
         options={{ presentation: 'fullScreenModal', animation: 'fade' }}
       />
       <Stack.Screen
+        name="reward"
+        options={{ presentation: 'fullScreenModal', animation: 'fade' }}
+      />
+      <Stack.Screen
         name="cat/[id]"
         options={{
           headerShown: false,

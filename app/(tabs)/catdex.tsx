@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CatDexCard } from '@/components/CatDexCard';
 import { EmptyState } from '@/components/EmptyState';
+import { SearchInput } from '@/components/Input';
 import { Text } from '@/components/Text';
 import { TabStackHeader } from '@/layout/TabStackHeader';
 import { CATDEX_TARGET } from '@/lib/constants';
@@ -20,8 +21,11 @@ import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-const RARITY_FILTERS: { id: CatDexRarityFilter; label: string }[] = [
+type ListFilter = CatDexRarityFilter | 'favorites';
+
+const RARITY_FILTERS: { id: ListFilter; label: string }[] = [
   { id: 'all', label: 'Tous' },
+  { id: 'favorites', label: 'Favoris' },
   { id: 'common', label: 'Commun' },
   { id: 'uncommon', label: 'Rare' },
   { id: 'rare', label: 'Épique' },
@@ -33,14 +37,36 @@ export default function CatDexScreen() {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const cats = useCatsStore((state) => state.cats);
-  const [rarityFilter, setRarityFilter] = useState<CatDexRarityFilter>('all');
+  const [listFilter, setListFilter] = useState<ListFilter>('all');
+  const [query, setQuery] = useState('');
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
 
+  const normalizedQuery = query.trim().toLowerCase();
+
   const filtered = useMemo(() => {
-    return cats.filter((cat) =>
-      matchesCatDexRarityFilter(cat.analysis, cat.number, rarityFilter),
-    );
-  }, [cats, rarityFilter]);
+    return cats.filter((cat) => {
+      if (listFilter === 'favorites') {
+        if (!favorites.has(cat.id)) return false;
+      } else if (
+        !matchesCatDexRarityFilter(cat.analysis, cat.number, listFilter)
+      ) {
+        return false;
+      }
+
+      if (!normalizedQuery) return true;
+      const haystack = [
+        cat.name,
+        cat.analysis?.breed,
+        cat.analysis?.color,
+        cat.analysis?.coat,
+        cat.notes,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [cats, favorites, listFilter, normalizedQuery]);
 
   const cardGap = spacing[16];
   const horizontalPad = spacing[24];
@@ -56,6 +82,60 @@ export default function CatDexScreen() {
     });
   };
 
+  const empty = (() => {
+    if (cats.length === 0) {
+      return (
+        <EmptyState
+          layout="page"
+          icon="cat"
+          title="Ton CatDex est vide"
+          description="Pars explorer ton quartier et capture ton premier chat !"
+          actionLabel="Explorer la carte"
+          onAction={() => router.push('/(tabs)/map')}
+        />
+      );
+    }
+    if (listFilter === 'favorites' && favorites.size === 0) {
+      return (
+        <EmptyState
+          layout="page"
+          icon="heart"
+          title="Aucun favori pour le moment"
+          description="Ajoute des chats à tes favoris en appuyant sur le ❤️ sur leur fiche."
+          actionLabel="Explorer des chats"
+          onAction={() => setListFilter('all')}
+        />
+      );
+    }
+    if (normalizedQuery.length > 0) {
+      return (
+        <EmptyState
+          layout="page"
+          icon="search"
+          title="Aucun résultat"
+          description="Aucun chat ne correspond à ta recherche."
+          actionLabel="Effacer les filtres"
+          actionVariant="secondary"
+          onAction={() => {
+            setQuery('');
+            setListFilter('all');
+          }}
+        />
+      );
+    }
+    return (
+      <EmptyState
+        layout="page"
+        icon="search"
+        title="Aucun chat ici"
+        description="Essaie un autre filtre de rareté."
+        actionLabel="Voir tous"
+        actionVariant="secondary"
+        onAction={() => setListFilter('all')}
+      />
+    );
+  })();
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <TabStackHeader
@@ -66,40 +146,50 @@ export default function CatDexScreen() {
           </Text>
         }
         below={
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: spacing[8], paddingRight: spacing[8] }}
-          >
-            {RARITY_FILTERS.map((filter) => {
-              const selected = rarityFilter === filter.id;
-              return (
-                <Pressable
-                  key={filter.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  onPress={() => setRarityFilter(filter.id)}
-                  style={({ pressed }) => ({
-                    height: spacing[40],
-                    paddingHorizontal: spacing[16],
-                    borderRadius: radius.full,
-                    backgroundColor: selected ? colors.brand : colors.surfaceElevated,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: pressed ? 0.9 : 1,
-                  })}
-                >
-                  <Text
-                    variant="bodySmall"
-                    color={selected ? 'onAccent' : 'textBrand'}
-                    style={{ fontFamily: fonts.bodySemi }}
+          <View style={{ gap: spacing[16] }}>
+            <SearchInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Rechercher un chat…"
+              clearButtonMode="while-editing"
+            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: spacing[8], paddingRight: spacing[8] }}
+            >
+              {RARITY_FILTERS.map((filter) => {
+                const selected = listFilter === filter.id;
+                return (
+                  <Pressable
+                    key={filter.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => setListFilter(filter.id)}
+                    style={({ pressed }) => ({
+                      height: spacing[40],
+                      paddingHorizontal: spacing[16],
+                      borderRadius: radius.full,
+                      backgroundColor: selected ? colors.brand : colors.surfaceElevated,
+                      borderWidth: selected ? 0 : 1,
+                      borderColor: colors.border,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: pressed ? 0.9 : 1,
+                    })}
                   >
-                    {filter.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+                    <Text
+                      variant="bodySmall"
+                      color={selected ? 'onAccent' : 'textBrand'}
+                      style={{ fontFamily: fonts.bodySemi }}
+                    >
+                      {filter.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
         }
       />
 
@@ -107,7 +197,7 @@ export default function CatDexScreen() {
         data={filtered}
         keyExtractor={(item: Cat) => item.id}
         numColumns={2}
-        columnWrapperStyle={{ gap: cardGap }}
+        columnWrapperStyle={filtered.length > 0 ? { gap: cardGap } : undefined}
         contentContainerStyle={{
           paddingHorizontal: horizontalPad,
           paddingTop: spacing[16],
@@ -115,14 +205,7 @@ export default function CatDexScreen() {
           gap: cardGap,
           flexGrow: 1,
         }}
-        ListEmptyComponent={
-          <EmptyState
-            title="Collection vide"
-            description="Scanne ton premier chat pour commencer ton CatDex."
-            actionLabel="Scanner"
-            onAction={() => router.push('/scanner')}
-          />
-        }
+        ListEmptyComponent={empty}
         renderItem={({ item }) => (
           <View style={{ width: cardWidth }}>
             <CatDexCard

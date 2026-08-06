@@ -1,6 +1,5 @@
 import { BlurView } from 'expo-blur';
 import { CameraView, useCameraPermissions, type CameraType, type FlashMode } from 'expo-camera';
-import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -17,29 +16,60 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { AnalysisLoadingView } from '@/components/scanner/AnalysisLoadingView';
-import { CaptureReveal } from '@/components/CaptureReveal';
 import { AuthBackButton } from '@/components/Auth/AuthChrome';
 import { Button } from '@/components/Button';
+import { EnablePermissionModal } from '@/components/EnablePermissionModal';
+import { ErrorState } from '@/components/ErrorState';
 import { PageLoading } from '@/components/Loader';
-import { ProblemState } from '@/components/ProblemState';
 import { ProgressBar } from '@/components/Progress';
 import { ScanFrame } from '@/components/ScanFrame';
 import { Text } from '@/components/Text';
 import { analyzeCatPhoto } from '@/lib/api';
 import {
-  CATDEX_TARGET,
-  formatCatDefaultName,
   isInParis20e,
   PARIS_20E,
 } from '@/lib/constants';
 import { enrichAnalysis, isNoCatFound } from '@/lib/catTraits';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import { useCatsStore } from '@/store/cats';
+import { usePendingCaptureStore } from '@/store/pendingCapture';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { CatAnalysis } from '@/types/cat';
 
-type Step = 'camera' | 'analyzing' | 'review' | 'reveal' | 'problem';
+type Step =
+  | 'camera'
+  | 'analyzing'
+  | 'review'
+  | 'problem'
+  | 'offline'
+  | 'server'
+  | 'analysisError';
+
+function classifyAnalysisError(error: unknown): 'offline' | 'server' | 'analysisError' {
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  if (
+    message.includes('network') ||
+    message.includes('offline') ||
+    message.includes('internet') ||
+    message.includes('failed to fetch') ||
+    message.includes('network request failed')
+  ) {
+    return 'offline';
+  }
+  if (
+    message.includes('503') ||
+    message.includes('502') ||
+    message.includes('504') ||
+    message.includes('unavailable') ||
+    message.includes('timeout') ||
+    message.includes('timed out')
+  ) {
+    return 'server';
+  }
+  return 'analysisError';
+}
 
 /** Brief pause so the loading UI can paint — never pad a slow API. */
 const MIN_ANALYSIS_MS = 600;
@@ -110,9 +140,8 @@ export default function ScannerScreen() {
       : undefined;
   const showToast = useToastStore((state) => state.show);
   const nextNumber = useCatsStore((state) => state.nextNumber);
-  const addCat = useCatsStore((state) => state.addCat);
+  const setPendingCapture = usePendingCaptureStore((state) => state.setPending);
   const cameraRef = useRef<CameraView>(null);
-  const addingRef = useRef(false);
   const analysisGenRef = useRef(0);
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
@@ -124,10 +153,6 @@ export default function ScannerScreen() {
   const [photoMimeType, setPhotoMimeType] = useState('image/jpeg');
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<CatAnalysis | null>(null);
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number }>({
-    latitude: PARIS_20E.center.latitude,
-    longitude: PARIS_20E.center.longitude,
-  });
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<FlashMode>('auto');
 
@@ -171,14 +196,14 @@ export default function ScannerScreen() {
   const enterReveal = async (
     nextAnalysis: CatAnalysis,
     imageUri: string,
-    mocked?: boolean,
+    options?: {
+      mocked?: boolean;
+      photoBase64?: string | null;
+      photoMimeType?: string;
+    },
   ) => {
     const position = await ensureLocation();
     const { latitude, longitude } = position.coords;
-    setCoords({ latitude, longitude });
-    setAnalysis(nextAnalysis);
-    setPhotoUri(imageUri);
-    setStep('reveal');
 
     if (!isInParis20e(latitude, longitude) && __DEV__) {
       showToast({
@@ -188,13 +213,26 @@ export default function ScannerScreen() {
       });
     }
 
-    if (mocked && __DEV__) {
+    if (options?.mocked && __DEV__) {
       showToast({
         title: 'Analyse simulée',
         description: 'API indisponible — Cat Card mock.',
         tone: 'warning',
       });
     }
+
+    setPendingCapture({
+      photoUri: imageUri,
+      photoBase64: options?.photoBase64 ?? photoBase64 ?? undefined,
+      photoMimeType: options?.photoMimeType ?? photoMimeType,
+      analysis: nextAnalysis,
+      latitude,
+      longitude,
+      nextNumber,
+      sourceWorldId,
+    });
+
+    router.replace('/reward');
   };
 
   const runAnalysis = async (
@@ -233,21 +271,17 @@ export default function ScannerScreen() {
       await enterReveal(
         enrichAnalysis(nextAnalysis, nextNumber),
         cutoutUri ?? imageUri,
-        mocked,
+        {
+          mocked,
+          photoBase64: base64,
+          photoMimeType: mimeType,
+        },
       );
     } catch (error) {
       await waitMinDuration();
       if (isStale()) return;
-      showToast({
-        title: 'Analyse indisponible',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Impossible de préparer la Cat Card. Réessaie.',
-        tone: 'danger',
-        durationMs: 4200,
-      });
-      setStep('review');
+      setPhotoUri(imageUri);
+      setStep(classifyAnalysisError(error));
     } finally {
       if (!isStale()) setAnalyzing(false);
     }
@@ -362,7 +396,6 @@ export default function ScannerScreen() {
 
   const resetToCamera = () => {
     analysisGenRef.current += 1;
-    addingRef.current = false;
     setAnalyzing(false);
     setStep('camera');
     setPhotoUri(null);
@@ -371,88 +404,126 @@ export default function ScannerScreen() {
     setAnalysis(null);
   };
 
-  const handleAddToCatDex = async (override?: {
-    name: string;
-    analysis: NonNullable<typeof analysis>;
-  }) => {
-    if (!photoUri || !analysis || addingRef.current) return;
-    addingRef.current = true;
-
-    const durablePhoto =
-      // Prefer the original camera/gallery JPEG for CatDex tiles & map pins.
-      // Reveal may use a transparent cutout — that must not replace the real photo.
-      resolvePersistentPhotoUri({
-        uri: photoBase64 ? undefined : photoUri,
-        base64: photoBase64,
-        mimeType: photoMimeType,
-      }) ?? photoUri;
-
-    const name =
-      override?.name.trim() ||
-      analysis.suggestedName?.trim() ||
-      formatCatDefaultName(nextNumber);
-    const nextAnalysis = enrichAnalysis(override?.analysis ?? analysis, nextNumber);
-
-    try {
-      const cat = await addCat({
-        photoUri: durablePhoto,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        name,
-        analysis: nextAnalysis,
-        sourceWorldId,
-      });
-
-      if (Platform.OS !== 'web') {
-        try {
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } catch {
-          // ignore
-        }
-      }
-
-      const remaining = Math.max(0, CATDEX_TARGET - cat.number);
-      showToast({
-        title: 'Ajouté au CatDex',
-        description:
-          remaining > 0
-            ? `${cat.name} · Plus que ${remaining} chat${remaining > 1 ? 's' : ''}`
-            : `${cat.name} · CatDex complet !`,
-        tone: 'success',
-      });
-
-      router.replace({
-        pathname: '/cat/[id]',
-        params: { id: cat.id },
-      });
-    } catch (error) {
-      addingRef.current = false;
-      showToast({
-        title: 'Ajout impossible',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Stockage plein — recharge l’app puis réessaie.',
-        tone: 'danger',
-      });
+  const retryLastPhoto = () => {
+    if (photoBase64 && photoUri) {
+      void runAnalysis(photoBase64, photoUri, photoMimeType);
+      return;
     }
+    resetToCamera();
   };
 
   if (step === 'problem') {
     return (
-      <ProblemState
-        title={analysis?.errorTitle?.trim() || 'Aucun chat détecté 🐾'}
-        description={
-          analysis?.errorMessage?.trim() ||
-          analysis?.description?.trim() ||
-          'Cette photo ne semble pas contenir un chat. Essaie de prendre une photo plus nette d’un chat.'
-        }
-        actionLabel="Retour"
-        onAction={() => {
-          if (router.canGoBack()) router.back();
-          else resetToCamera();
-        }}
-      />
+      <View
+        style={[
+          styles.root,
+          styles.centered,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            paddingHorizontal: spacing[24],
+          },
+        ]}
+      >
+        <ErrorState
+          icon="photo"
+          title={analysis?.errorTitle?.trim() || 'Photo invalide'}
+          description={
+            analysis?.errorMessage?.trim() ||
+            analysis?.description?.trim() ||
+            'Cette photo ne semble pas contenir de chat.'
+          }
+          primaryLabel="Reprendre la photo"
+          onPrimary={resetToCamera}
+          secondaryLabel="Fermer"
+          onSecondary={() => {
+            if (router.canGoBack()) router.back();
+            else resetToCamera();
+          }}
+        />
+      </View>
+    );
+  }
+
+  if (step === 'offline') {
+    return (
+      <View
+        style={[
+          styles.root,
+          styles.centered,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            paddingHorizontal: spacing[24],
+          },
+        ]}
+      >
+        <ErrorState
+          icon="offline"
+          title="Pas de connexion"
+          description="Vérifie ta connexion internet et réessaie."
+          primaryLabel="Réessayer"
+          onPrimary={retryLastPhoto}
+          secondaryLabel="Reprendre la photo"
+          onSecondary={resetToCamera}
+        />
+      </View>
+    );
+  }
+
+  if (step === 'server') {
+    return (
+      <View
+        style={[
+          styles.root,
+          styles.centered,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            paddingHorizontal: spacing[24],
+          },
+        ]}
+      >
+        <ErrorState
+          icon="server"
+          title="Serveur indisponible"
+          description="Nos serveurs font une pause. Réessaie dans quelques instants."
+          primaryLabel="Réessayer"
+          onPrimary={retryLastPhoto}
+          secondaryLabel="Reprendre la photo"
+          onSecondary={resetToCamera}
+        />
+      </View>
+    );
+  }
+
+  if (step === 'analysisError') {
+    return (
+      <View
+        style={[
+          styles.root,
+          styles.centered,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            paddingHorizontal: spacing[24],
+          },
+        ]}
+      >
+        <ErrorState
+          icon="analysis"
+          title="Analyse impossible"
+          description="Une erreur est survenue lors de l’analyse du chat."
+          primaryLabel="Réessayer"
+          onPrimary={retryLastPhoto}
+          secondaryLabel="Reprendre la photo"
+          onSecondary={resetToCamera}
+        />
+      </View>
     );
   }
 
@@ -466,53 +537,23 @@ export default function ScannerScreen() {
 
   if (permission && !permission.granted) {
     return (
-      <View
-        style={[
-          styles.root,
-          styles.centered,
-          {
-            backgroundColor: colors.background,
-            paddingTop: insets.top,
-            gap: spacing[16],
-            paddingHorizontal: spacing[24],
-          },
-        ]}
-      >
-        <Text variant="h3" align="center">
-          Autorise la caméra
-        </Text>
-        <Text variant="bodySmall" color="textSecondary" align="center">
-          Pour photographier les chats autour de toi.
-        </Text>
-        <Button title="Autoriser" onPress={requestPermission} />
-        {permission.canAskAgain === false ? (
-          <Button
-            title={Platform.OS === 'web' ? 'Réessayer' : 'Ouvrir les réglages'}
-            variant="secondary"
-            onPress={Platform.OS === 'web' ? requestPermission : handleOpenSettings}
-          />
-        ) : null}
-        <Button title="Galerie" variant="secondary" onPress={handlePickFromLibrary} />
-        <Button title="Fermer" variant="ghost" onPress={() => router.back()} />
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <EnablePermissionModal
+          visible
+          kind="camera"
+          onClose={() => {
+            if (router.canGoBack()) router.back();
+          }}
+          onRetry={() => {
+            void requestPermission();
+          }}
+          onOpenSettings={
+            Platform.OS === 'web' ? undefined : handleOpenSettings
+          }
+          onDismissLabel="Galerie"
+          onDismiss={handlePickFromLibrary}
+        />
       </View>
-    );
-  }
-
-  if (step === 'reveal' && photoUri && analysis) {
-    const displayName =
-      analysis.suggestedName?.trim() || formatCatDefaultName(nextNumber);
-
-    return (
-      <CaptureReveal
-        name={displayName}
-        number={nextNumber}
-        photoUri={photoUri}
-        analysis={analysis}
-        onAdd={(result) => {
-          void handleAddToCatDex(result);
-        }}
-        onRetake={resetToCamera}
-      />
     );
   }
 

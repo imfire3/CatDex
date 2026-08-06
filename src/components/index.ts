@@ -24,6 +24,12 @@ export { Chip, type ChipProps } from './Chip';
 export { BottomSheet, type BottomSheetProps } from './BottomSheet';
 export { Spinner, Skeleton, PageLoading } from './Loader';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
+export { ErrorState, type ErrorStateProps, type ErrorStateIcon } from './ErrorState';
+export {
+  EnablePermissionModal,
+  type EnablePermissionModalProps,
+  type EnablePermissionKind,
+} from './EnablePermissionModal';
 export { Toast, ToastHost, type ToastProps } from './Toast';
 export { Modal, type AppModalProps } from './Modal';
 export { ScanFrame } from './ScanFrame';
