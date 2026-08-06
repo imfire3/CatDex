@@ -130,9 +130,7 @@ function FieldShell({
           {
             backgroundColor: disabled
               ? colors.surfaceDisabled
-              : focused || filled
-                ? colors.surface
-                : colors.surfaceSecondary,
+              : colors.surface,
             borderColor,
             borderWidth,
             borderRadius: radius.xs,

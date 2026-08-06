@@ -385,12 +385,24 @@ export function CatMap({
 
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
         map.on('load', () => {
+          // Host may finish Flex layout after Map construct — force a redraw.
+          const maybeResize = map as MapLibreMap & { resize?: () => void };
+          maybeResize.resize?.();
           ensure3dBuildings(map);
           map.easeTo({ pitch: MAP_PITCH, bearing: -18, duration: 600 });
           if (!cancelled) setMapReady(true);
         });
 
         mapRef.current = map;
+
+        if (typeof ResizeObserver !== 'undefined' && hostRef.current) {
+          const ro = new ResizeObserver(() => {
+            const maybeResize = mapRef.current as (MapLibreMap & { resize?: () => void }) | null;
+            maybeResize?.resize?.();
+          });
+          ro.observe(hostRef.current);
+          (map as MapLibreMap & { __catdexRo?: ResizeObserver }).__catdexRo = ro;
+        }
       } catch (error) {
         console.error('[CatMap.web] MapLibre init failed', error);
       }
@@ -403,7 +415,9 @@ export function CatMap({
       catMarkersRef.current = [];
       playerMarkerRef.current?.remove();
       playerMarkerRef.current = null;
-      mapRef.current?.remove();
+      const map = mapRef.current as (MapLibreMap & { __catdexRo?: ResizeObserver }) | null;
+      map?.__catdexRo?.disconnect();
+      map?.remove();
       mapRef.current = null;
     };
   }, []);

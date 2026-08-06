@@ -5,6 +5,7 @@ import { Alert, Platform, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
+import { OnboardingStepper } from '@/components/Auth/OnboardingStepper';
 import { Button } from '@/components/Button';
 import { PageLoading } from '@/components/Loader';
 import { Text } from '@/components/Text';
@@ -168,8 +169,10 @@ export default function PermissionsScreen() {
     <AuthShell
       plain
       fullHeight
+      sheetStyle={{ backgroundColor: colors.surface }}
       footer={
         <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
+          {!locationOnly ? <OnboardingStepper step={1} /> : null}
           <Button
             title={locationOnly ? 'Activer la position' : 'Autoriser et continuer'}
             loading={busy}

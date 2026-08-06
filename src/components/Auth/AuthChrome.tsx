@@ -13,7 +13,7 @@ export function AuthBackButton({
   /** @deprecated Theme is light-first */
   light?: boolean;
 }) {
-  const { colors, spacing, radius, iconStroke, shadow } = useTheme();
+  const { colors, spacing, radius, iconStroke } = useTheme();
 
   return (
     <Pressable
@@ -27,21 +27,18 @@ export function AuthBackButton({
         if (router.canGoBack()) router.back();
         else router.replace('/(auth)/welcome');
       }}
-      style={({ pressed }) => [
-        {
-          width: spacing[40],
-          height: spacing[40],
-          borderRadius: radius[8],
-          backgroundColor: colors.surface,
-          borderWidth: 1,
-          borderColor: colors.border,
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-        },
-        shadow.low,
-      ]}
+      style={({ pressed }) => ({
+        width: spacing[40],
+        height: spacing[40],
+        borderRadius: radius[8],
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: pressed ? 0.85 : 1,
+        transform: [{ scale: pressed ? 0.98 : 1 }],
+      })}
     >
       <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
         <Path

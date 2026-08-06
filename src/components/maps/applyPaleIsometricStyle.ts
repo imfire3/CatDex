@@ -15,6 +15,7 @@ type StyleLayer = {
 
 type MapStyle = {
   layers?: StyleLayer[];
+  sources?: Record<string, unknown>;
   [key: string]: unknown;
 };
 
@@ -199,11 +200,60 @@ export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
 /** Liberty style URL used as the pale-isometric base. */
 export const LIBERTY_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
+type VectorTileJson = {
+  tiles?: string[];
+  minzoom?: number;
+  maxzoom?: number;
+};
+
+type StyleSource = {
+  type?: string;
+  url?: string;
+  tiles?: string[];
+  minzoom?: number;
+  maxzoom?: number;
+  [key: string]: unknown;
+};
+
+/**
+ * OpenFreeMap planet tops out at z14 and returns HTTP 200 + empty PBF above that.
+ * MapLibre will not overzoom empty 200s — so we must pin maxzoom from TileJSON
+ * (or MapLibre keeps requesting blank z15–19 tiles at MAP_ZOOM 16.6).
+ */
+async function resolveVectorSources(style: MapStyle): Promise<MapStyle> {
+  const sources = (style.sources ?? {}) as Record<string, StyleSource>;
+  const next: Record<string, StyleSource> = { ...sources };
+
+  await Promise.all(
+    Object.entries(sources).map(async ([id, source]) => {
+      if (source.type !== 'vector' || !source.url || source.tiles?.length) return;
+      try {
+        const res = await fetch(source.url);
+        if (!res.ok) return;
+        const tileJson = (await res.json()) as VectorTileJson;
+        if (!tileJson.tiles?.length) return;
+        const { url: _url, ...rest } = source;
+        next[id] = {
+          ...rest,
+          tiles: tileJson.tiles,
+          minzoom: tileJson.minzoom ?? 0,
+          maxzoom: tileJson.maxzoom ?? 14,
+        };
+      } catch {
+        // Keep original url source — Map init may still recover.
+      }
+    }),
+  );
+
+  return { ...style, sources: next };
+}
+
 export async function loadPaleIsometricStyle(): Promise<MapStyle> {
   const res = await fetch(LIBERTY_STYLE_URL);
   if (!res.ok) {
     throw new Error(`Failed to load map style (${res.status})`);
   }
   const base = (await res.json()) as MapStyle;
-  return buildPaleIsometricStyle(base);
+  const withTiles = await resolveVectorSources(base);
+  return buildPaleIsometricStyle(withTiles);
 }

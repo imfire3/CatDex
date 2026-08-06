@@ -118,8 +118,7 @@ export default function SignupScreen() {
       header={
         <AuthHeader
           inline
-          showBack
-          onBack={() => router.replace('/(auth)/welcome')}
+          showBack={false}
           title="Créer un compte"
           subtitle="Sauvegarde ta collection et retrouve ton CatDex partout."
         />
@@ -133,7 +132,7 @@ export default function SignupScreen() {
             onPress={() => void onSubmit()}
           />
           <Button
-            variant="secondary"
+            variant="tertiary"
             title="J’ai déjà un compte"
             disabled={loading}
             onPress={() => router.push('/(auth)/login')}

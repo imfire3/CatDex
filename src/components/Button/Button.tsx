@@ -16,6 +16,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 export type ButtonVariant =
   | 'primary'
   | 'secondary'
+  | 'tertiary'
   | 'ghost'
   | 'destructive'
   | 'icon'
@@ -36,7 +37,8 @@ export type ButtonProps = {
 };
 
 /**
- * Primary = turquoise · Google / Apple = social auth · Secondary = gray · Ghost · Destructive · Icon
+ * Primary = indigo · Secondary = white fill · Tertiary = text-only brand
+ * Ghost · Destructive · Icon · Google / Apple
  * CTA corners use radius.cta (16).
  */
 export function Button({
@@ -104,7 +106,7 @@ export function Button({
         ? colors.authGoogleLabel
         : variant === 'apple'
           ? colors.authAppleLabel
-          : variant === 'secondary'
+          : variant === 'secondary' || variant === 'tertiary'
             ? isDisabled
               ? colors.textMuted
               : colors.brand
@@ -127,6 +129,7 @@ export function Button({
               style={{
                 fontFamily: labelWeight,
                 color: labelColor,
+                textDecorationLine: variant === 'tertiary' ? 'underline' : 'none',
               }}
             >
               {title}
@@ -151,11 +154,13 @@ export function Button({
           ? colors.authAppleBg
           : variant === 'secondary'
             ? colors.ctaSecondary
-            : variant === 'ghost'
-              ? colors.surface
-              : variant === 'destructive'
-                ? colors.dangerSoft
-                : 'transparent';
+            : variant === 'tertiary'
+              ? 'transparent'
+              : variant === 'ghost'
+                ? colors.surface
+                : variant === 'destructive'
+                  ? colors.dangerSoft
+                  : 'transparent';
 
   const showBorder =
     primaryDisabled ||
@@ -175,9 +180,11 @@ export function Button({
           ? colors.authApplePressed
           : variant === 'secondary'
             ? colors.ctaSecondaryPressed
-            : variant === 'destructive'
-              ? colors.dangerSoft
-              : colors.surfaceTertiary;
+            : variant === 'tertiary'
+              ? colors.brandSoft
+              : variant === 'destructive'
+                ? colors.dangerSoft
+                : colors.surfaceTertiary;
 
   return (
     <Pressable
@@ -222,6 +229,9 @@ export const PrimaryButton = (props: Omit<ButtonProps, 'variant'>) => (
 );
 export const SecondaryButton = (props: Omit<ButtonProps, 'variant'>) => (
   <Button {...props} variant="secondary" />
+);
+export const TertiaryButton = (props: Omit<ButtonProps, 'variant'>) => (
+  <Button {...props} variant="tertiary" />
 );
 export const GhostButton = (props: Omit<ButtonProps, 'variant'>) => (
   <Button {...props} variant="ghost" />

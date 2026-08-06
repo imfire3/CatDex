@@ -148,7 +148,14 @@ export default function ScannerScreen() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
-        return Location.getCurrentPositionAsync({});
+        // Web geolocation can hang forever — fall back to Paris after 4s.
+        const position = await Promise.race([
+          Location.getCurrentPositionAsync({}).then((value) => ({ kind: 'ok' as const, value })),
+          new Promise<{ kind: 'timeout' }>((resolve) => {
+            setTimeout(() => resolve({ kind: 'timeout' }), 4_000);
+          }),
+        ]);
+        if (position.kind === 'ok') return position.value;
       }
     } catch {
       // fallback

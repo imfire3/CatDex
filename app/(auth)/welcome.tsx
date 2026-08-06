@@ -50,7 +50,7 @@ export default function WelcomeScreen() {
           pointerEvents="none"
         />
         <LinearGradient
-          colors={['transparent', 'rgba(255,255,255,0.45)', colors.surface]}
+          colors={['transparent', 'rgba(242,242,242,0.45)', colors.authSheet]}
           style={styles.bottomVeil}
           pointerEvents="none"
         />
@@ -95,7 +95,7 @@ export default function WelcomeScreen() {
             paddingTop: spacing[32],
             borderTopLeftRadius: radius.lg,
             borderTopRightRadius: radius.lg,
-            backgroundColor: colors.surface,
+            backgroundColor: colors.authSheet,
             borderTopWidth: 1,
             borderColor: colors.border,
           },
