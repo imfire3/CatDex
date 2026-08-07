@@ -94,7 +94,7 @@ export default function SettingsHubScreen() {
           <SettingsRow
             icon={<IconPalette />}
             title="Apparence"
-            subtitle="Choisis le thème de l’application."
+            subtitle="Couleur, forme des coins et thème de l’app."
             onPress={() => router.push('/settings/appearance')}
           />
           <SettingsRow

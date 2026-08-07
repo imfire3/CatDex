@@ -5,9 +5,7 @@ import {
   TextInput as RNTextInput,
   StyleSheet,
   View,
-  type NativeSyntheticEvent,
   type StyleProp,
-  type TextInputFocusEventData,
   type TextInputProps as RNTextInputProps,
   type TextInput as RNTextInputType,
   type ViewStyle,
@@ -187,12 +185,12 @@ export function TextInput({
   const isPassword = Boolean(secureTextEntry);
   const hidePassword = isPassword && !passwordVisible;
 
-  const handleFocus = (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+  const handleFocus: NonNullable<RNTextInputProps['onFocus']> = (event) => {
     setFocused(true);
     onFocus?.(event);
   };
 
-  const handleBlur = (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+  const handleBlur: NonNullable<RNTextInputProps['onBlur']> = (event) => {
     setFocused(false);
     onBlur?.(event);
   };

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -37,6 +38,14 @@ export function Avatar({
 }: AvatarProps) {
   const { colors, radius, typography, spacing, gradients, shadow } = useTheme();
   const dimension = hero ? spacing[96] : SIZE_MAP[size];
+  const [imageFailed, setImageFailed] = useState(false);
+  const label = (initials ?? '?').slice(0, 2);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [source]);
+
+  const showImage = Boolean(source) && !imageFailed;
 
   return (
     <View
@@ -55,8 +64,12 @@ export function Avatar({
         accentBorder ? shadow.glow : null,
       ]}
     >
-      {source ? (
-        <Image source={source} style={styles.image} />
+      {showImage && source ? (
+        <Image
+          source={source}
+          style={styles.image}
+          onError={() => setImageFailed(true)}
+        />
       ) : gradient ? (
         <LinearGradient
           colors={[gradients.primary[0], gradients.primary[1]]}
@@ -75,7 +88,7 @@ export function Avatar({
                     : typography.bodySmall.fontSize,
             }}
           >
-            {(initials ?? '?').slice(0, 2)}
+            {label}
           </Text>
         </LinearGradient>
       ) : (
@@ -87,7 +100,7 @@ export function Avatar({
             textTransform: 'uppercase',
           }}
         >
-          {(initials ?? '?').slice(0, 2)}
+          {label}
         </Text>
       )}
     </View>

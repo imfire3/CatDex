@@ -79,7 +79,7 @@ export default function CatDexScreen() {
     140,
     Math.floor((availableWidth - cardGap * (COLUMNS - 1)) / COLUMNS),
   );
-  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[96];
+  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24];
 
   const toggleFavorite = (catId: string) => {
     setFavorites((current) => {

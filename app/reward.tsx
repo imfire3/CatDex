@@ -22,7 +22,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Rect } from 'react-native-svg';
 
 import {
   CaptureReveal,
@@ -31,6 +30,7 @@ import {
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { pickCatRelatedBadgeCopy } from '@/lib/catBadgeTitle';
 import { CATDEX_TARGET, formatCatDefaultName, formatDexNumber } from '@/lib/constants';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import {
@@ -44,35 +44,6 @@ import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
 type Phase = 'verify' | 'badge' | 'share';
-
-function CameraBadgeIcon({ color }: { color: string }) {
-  const { iconStroke } = useTheme();
-  return (
-    <Svg width={48} height={48} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M4 9.5V8a2 2 0 0 1 2-2h1.5l1-1.5h7L16.5 6H18a2 2 0 0 1 2 2v1.5"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Rect
-        x="4"
-        y="9.5"
-        width="16"
-        height="10.5"
-        rx="2"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-      />
-      <Path
-        d="M12 12.2a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8Z"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-      />
-    </Svg>
-  );
-}
 
 function ConfettiBurst() {
   const { colors } = useTheme();
@@ -203,6 +174,15 @@ export default function RewardScreen() {
     );
   }, [pending]);
 
+  const badgeCopy = useMemo(
+    () => (cat ? pickCatRelatedBadgeCopy(cat) : null),
+    [cat],
+  );
+  const badgePhotoSize = spacing[96] + spacing[64];
+  const enter = reduceMotion ? undefined : FadeIn.duration(280);
+  const enterUp = reduceMotion ? undefined : FadeInUp.delay(80).duration(320);
+  const enterDown = reduceMotion ? undefined : FadeInDown.delay(120).duration(320);
+
   const finishToMap = () => {
     clearPending();
     router.replace('/(tabs)/map');
@@ -332,10 +312,6 @@ export default function RewardScreen() {
     );
   }
 
-  const enter = reduceMotion ? undefined : FadeIn.duration(280);
-  const enterUp = reduceMotion ? undefined : FadeInUp.delay(80).duration(320);
-  const enterDown = reduceMotion ? undefined : FadeInDown.delay(120).duration(320);
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <LinearGradient
@@ -354,7 +330,7 @@ export default function RewardScreen() {
           justifyContent: 'space-between',
         }}
       >
-        {phase === 'badge' ? (
+        {phase === 'badge' && badgeCopy && savedCat ? (
           <>
             <Animated.View
               entering={enter}
@@ -373,26 +349,32 @@ export default function RewardScreen() {
                 <View
                   style={[
                     {
-                      width: 160,
-                      height: 160,
+                      width: badgePhotoSize,
+                      height: badgePhotoSize,
                       borderRadius: radius.xl,
-                      backgroundColor: colors.brand,
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      backgroundColor: colors.surfaceSecondary,
+                      borderWidth: 3,
+                      borderColor: colors.brand,
+                      overflow: 'hidden',
                     },
                     shadow.glow,
                   ]}
                 >
-                  <CameraBadgeIcon color={colors.onAccent} />
+                  <Image
+                    source={{ uri: savedCat.photoUri }}
+                    style={{ width: badgePhotoSize, height: badgePhotoSize }}
+                    resizeMode="cover"
+                    accessibilityLabel={`Photo de ${savedCat.name}`}
+                  />
                 </View>
               </PulsingBadge>
 
               <View style={{ alignItems: 'center', gap: spacing[8] }}>
                 <Text variant="h2" color="textBrand" align="center">
-                  Photographe
+                  {badgeCopy.title}
                 </Text>
                 <Text variant="bodySmall" color="textBody" align="center">
-                  Premier cliché · Ami des chats
+                  {badgeCopy.subtitle}
                 </Text>
                 <Text
                   variant="h3"
@@ -447,13 +429,14 @@ export default function RewardScreen() {
                 <Image
                   source={{ uri: savedCat.photoUri }}
                   style={{
-                    width: 200,
-                    height: 200,
+                    width: badgePhotoSize,
+                    height: badgePhotoSize,
                     borderRadius: radius.cta,
                     borderWidth: 3,
                     borderColor: colors.brand,
                   }}
                   resizeMode="cover"
+                  accessibilityLabel={`Photo de ${savedCat.name}`}
                 />
               </Animated.View>
 

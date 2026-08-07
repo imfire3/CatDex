@@ -3,38 +3,25 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Chip } from '@/components/Chip';
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
-import { getMapSideToolsBottom } from '@/layout/tabBarMetrics';
 import { PARIS_20E } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
 import { isLocationActive, requestLocationAccess } from '@/lib/locationAccess';
-import {
-  DISCOVERY_RADIUS_M,
-  isRareCat,
-  PROXIMITY_ALERT_M,
-  sortCatsByDistance,
-} from '@/lib/mapExplore';
+import { PROXIMITY_ALERT_M, sortCatsByDistance } from '@/lib/mapExplore';
 import { useCatsStore } from '@/store/cats';
 import { useMapExploreStore } from '@/store/mapExplore';
 import { useMissionsStore } from '@/store/missions';
-import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-type FilterId = 'all' | 'mine' | 'discover' | 'nearby' | 'rare' | 'seen';
-
 /**
- * Explorer — map + HUD matching the product mock
- * (right tools, Missions/Capture/Collection cluster, floating tab bar).
+ * Explorer — map + HUD (profile avatar, Missions / Capture / CatDex).
+ * No bottom tab bar · no filter stack.
  */
 export default function MapScreen() {
-  const { colors, spacing, radius, shadow } = useTheme();
-  const insets = useSafeAreaInsets();
   const storedCats = useCatsStore((state) => state.cats);
   const setHasNearbyCat = useMapExploreStore((state) => state.setHasNearbyCat);
   const missions = useMissionsStore((state) => state.missions);
@@ -53,8 +40,6 @@ export default function MapScreen() {
   const [communityCats, setCommunityCats] = useState<Cat[]>([]);
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
-  const [filter, setFilter] = useState<FilterId>('all');
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [focusCoordinate, setFocusCoordinate] = useState<{
     latitude: number;
     longitude: number;
@@ -123,17 +108,6 @@ export default function MapScreen() {
     const match = sortedCats.find((item) => item.cat.id === selected.id);
     return match?.distanceM ?? null;
   }, [selected, sortedCats]);
-
-  const visibleCats = useMemo(() => {
-    return sortedCats.filter(({ cat, distanceM }) => {
-      if (filter === 'mine') return isOwnedCat(cat);
-      if (filter === 'discover') return !isOwnedCat(cat);
-      if (filter === 'rare') return isRareCat(cat);
-      if (filter === 'seen') return cat.views > 0;
-      if (filter === 'nearby') return distanceM <= DISCOVERY_RADIUS_M;
-      return true;
-    });
-  }, [filter, sortedCats, isOwnedCat]);
 
   const nearestForProximity = sortedCats[0] ?? null;
   const nearbyCatIds = useMemo(
@@ -233,22 +207,9 @@ export default function MapScreen() {
     flyToCoordinate({ ...PARIS_20E.center });
   };
 
-  const goToNearestCat = () => {
-    const nearest = sortedCats[0]?.cat;
-    if (!nearest) return;
-    // Fly the camera only — sheet opens when the user taps the marker.
-    flyToCoordinate({
-      latitude: nearest.latitude,
-      longitude: nearest.longitude,
-    });
-  };
-
-  const filterPanelBottom =
-    getMapSideToolsBottom(insets.bottom, spacing) + spacing[48] * 3 + spacing[32];
-
   const mapCatList = useMemo(
-    () => visibleCats.map(({ cat }) => cat),
-    [visibleCats],
+    () => sortedCats.map(({ cat }) => cat),
+    [sortedCats],
   );
   const capturedCatIdList = useMemo(() => [...capturedIds], [capturedIds]);
 
@@ -289,63 +250,9 @@ export default function MapScreen() {
       <MapExplorerHud
         missionCount={openMissionCount}
         collectionCount={storedCats.length}
-        filtersOpen={filtersOpen}
         captureHighlighted={Boolean(nearbyCatIds.length)}
-        onToggleFilters={() => setFiltersOpen((open) => !open)}
         onRecenter={() => void recenterOnPlayer()}
-        onNavigateNearest={goToNearestCat}
       />
-
-      {filtersOpen ? (
-        <View
-          pointerEvents="box-none"
-          style={{
-            position: 'absolute',
-            right: spacing[16],
-            bottom: filterPanelBottom,
-            left: spacing[16],
-            zIndex: 25,
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'flex-end',
-            gap: spacing[8],
-          }}
-        >
-          <View
-            style={[
-              {
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: spacing[8],
-                padding: spacing[8],
-                borderRadius: radius.cta,
-                backgroundColor: colors.surfaceElevated,
-                maxWidth: '100%',
-              },
-              shadow.medium,
-            ]}
-          >
-            <Chip label="Tous" selected={filter === 'all'} onPress={() => setFilter('all')} />
-            <Chip
-              label="Mes chats"
-              selected={filter === 'mine'}
-              onPress={() => setFilter('mine')}
-            />
-            <Chip
-              label="À découvrir"
-              selected={filter === 'discover'}
-              onPress={() => setFilter('discover')}
-            />
-            <Chip
-              label="À proximité"
-              selected={filter === 'nearby'}
-              onPress={() => setFilter('nearby')}
-            />
-            <Chip label="Rares" selected={filter === 'rare'} onPress={() => setFilter('rare')} />
-            <Chip label="Vus" selected={filter === 'seen'} onPress={() => setFilter('seen')} />
-          </View>
-        </View>
-      ) : null}
 
       <MapCatModal
         visible={sheetVisible}

@@ -17,4 +17,14 @@ export { createShadows, createAccentShadow, shadow, accentShadow, type ShadowTok
 export { motion, motionDuration, motionEasing, type MotionSpeed } from './motion';
 export { iconSize, iconStroke, type IconSize } from './icons';
 export { gradients } from './gradients';
-export { ThemeProvider, useTheme, type Theme } from './ThemeProvider';
+export { ThemeProvider, useTheme, type Theme } from './ThemeProvider'
+export {
+  BRAND_PRESETS,
+  SHAPE_PRESETS,
+  DEFAULT_THEME_LAB,
+  applyBrandToColors,
+  applyShapeToRadius,
+  type BrandPreset,
+  type ShapePreset,
+  type ThemeLabOverrides,
+} from './themeOverrides';

@@ -1,38 +1,34 @@
 /**
- * Floating map chrome — matches Explorer mock:
- * right tool stack + Missions / Capture / Collection cluster above the tab bar.
+ * Floating map chrome — profile avatar, optional recenter, Missions / Capture / CatDex.
+ * No bottom tab bar · no filter / nearest side tools.
  */
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import { Avatar } from '@/components/Avatar';
 import { Text } from '@/components/Text';
 import {
   getMapActionClusterBottom,
-  getMapSideToolsBottom,
   MAP_CAPTURE_FAB_SIZE,
 } from '@/layout/tabBarMetrics';
+import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 type Props = {
   missionCount?: number;
   collectionCount?: number;
-  filtersOpen?: boolean;
-  onToggleFilters?: () => void;
   onRecenter?: () => void;
-  onNavigateNearest?: () => void;
   captureHighlighted?: boolean;
 };
 
 function RoundTool({
   label,
-  active,
   onPress,
   children,
 }: {
   label: string;
-  active?: boolean;
   onPress: () => void;
   children: React.ReactNode;
 }) {
@@ -41,14 +37,13 @@ function RoundTool({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ selected: Boolean(active) }}
       onPress={onPress}
       style={({ pressed }) => [
         {
           width: spacing[48],
           height: spacing[48],
           borderRadius: radius.full,
-          backgroundColor: active ? colors.brand : colors.surfaceElevated,
+          backgroundColor: colors.surfaceElevated,
           alignItems: 'center',
           justifyContent: 'center',
           transform: [{ scale: pressed ? motion.pressScale : 1 }],
@@ -133,73 +128,84 @@ function HudPill({
 export function MapExplorerHud({
   missionCount = 0,
   collectionCount = 0,
-  filtersOpen = false,
-  onToggleFilters,
   onRecenter,
-  onNavigateNearest,
   captureHighlighted = false,
 }: Props) {
   const { colors, spacing, radius, shadow, iconStroke, iconSize, motion } = useTheme();
   const insets = useSafeAreaInsets();
+  const user = useAuthStore((state) => state.user);
   const clusterBottom = getMapActionClusterBottom(insets.bottom, spacing);
-  const toolsBottom = getMapSideToolsBottom(insets.bottom, spacing);
   const stroke = iconStroke.regular;
+  const initials = (
+    user?.displayName?.trim() ||
+    user?.email?.split('@')[0] ||
+    'CD'
+  )
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-      {/* Right tool stack */}
+      {/* Profile — top left */}
       <View
         pointerEvents="box-none"
         style={{
           position: 'absolute',
-          right: spacing[16],
-          bottom: toolsBottom,
-          gap: spacing[8],
-          alignItems: 'center',
-          zIndex: 20,
+          top: insets.top + spacing[8],
+          left: spacing[16],
+          zIndex: 24,
         }}
       >
-        <RoundTool
-          label="Filtres"
-          active={filtersOpen}
-          onPress={() => onToggleFilters?.()}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Ouvrir le profil"
+          onPress={() => router.push('/(tabs)/profile')}
+          style={({ pressed }) => [
+            {
+              borderRadius: radius.full,
+              borderWidth: 2,
+              borderColor: colors.surfaceElevated,
+              backgroundColor: colors.surfaceElevated,
+              transform: [{ scale: pressed ? motion.pressScale : 1 }],
+            },
+            shadow.medium,
+          ]}
         >
-          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M4 6h16l-6 7.5V18l-4 2v-6.5L4 6Z"
-              stroke={filtersOpen ? colors.onBrand : colors.brand}
-              strokeWidth={stroke}
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </RoundTool>
-
-        {/* Navigation arrow = “ma position” (Maps convention). Never open a cat sheet here. */}
-        <RoundTool label="Recentrer sur ma position" onPress={() => onRecenter?.()}>
-          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 3.5 20 19.5 12 15.8 4 19.5 12 3.5Z"
-              stroke={colors.brand}
-              strokeWidth={stroke}
-              strokeLinejoin="round"
-              fill={colors.brandSoft}
-            />
-          </Svg>
-        </RoundTool>
-
-        <RoundTool label="Aller au chat le plus proche" onPress={() => onNavigateNearest?.()}>
-          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 4.5c-2.6 0-4.7 2-4.7 4.5 0 3.4 4.7 8.5 4.7 8.5s4.7-5.1 4.7-8.5c0-2.5-2.1-4.5-4.7-4.5Z"
-              stroke={colors.brand}
-              strokeWidth={stroke}
-              strokeLinejoin="round"
-              fill={colors.brandSoft}
-            />
-            <Circle cx="12" cy="9" r="1.6" fill={colors.brand} />
-          </Svg>
-        </RoundTool>
+          <Avatar
+            size="L"
+            source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined}
+            initials={initials}
+            gradient={!user?.avatarUrl}
+            accessibilityLabel="Photo de profil"
+          />
+        </Pressable>
       </View>
+
+      {/* Recenter only — filters / nearest removed */}
+      {onRecenter ? (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: 'absolute',
+            right: spacing[16],
+            bottom: clusterBottom + MAP_CAPTURE_FAB_SIZE + spacing[16],
+            zIndex: 20,
+          }}
+        >
+          <RoundTool label="Recentrer sur ma position" onPress={onRecenter}>
+            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M12 4.5c-2.6 0-4.7 2-4.7 4.5 0 3.4 4.7 8.5 4.7 8.5s4.7-5.1 4.7-8.5c0-2.5-2.1-4.5-4.7-4.5Z"
+                stroke={colors.brand}
+                strokeWidth={stroke}
+                strokeLinejoin="round"
+                fill={colors.brandSoft}
+              />
+              <Circle cx="12" cy="9" r="1.6" fill={colors.brand} />
+            </Svg>
+          </RoundTool>
+        </View>
+      ) : null}
 
       {/* Missions · Capture · Collection */}
       <View
