@@ -23,7 +23,7 @@ import {
   resolveRevealRarity,
   rarityTokens,
 } from '@/lib/catTheme';
-import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
+import { genderSymbol } from '@/lib/catTraits';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { AnalysisFieldCorrection, CatAnalysis } from '@/types/cat';
 
@@ -215,8 +215,8 @@ export function CaptureReveal({
 }: Props) {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
-  // Vision data only — never invent fields for the form.
-  const vision = useMemo(() => enrichAnalysis(rawAnalysis, number), [rawAnalysis, number]);
+  // Vision data only — never invent / enrich fields for the form.
+  const vision = useMemo(() => rawAnalysis, [rawAnalysis]);
   const aiName = (vision.suggestedName || '').trim();
 
   const predicted = useMemo(

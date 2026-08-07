@@ -21,7 +21,7 @@ import {
   CATDEX_VISION_PROMPT,
   CATDEX_VISION_USER_TEXT,
 } from './catdexVisionPrompt';
-import { CATDEX_ANALYSIS_RESPONSE_FORMAT } from './catdexAnalysisSchema';
+import { CATDEX_FORM_RESPONSE_FORMAT } from './catdexFormSchema';
 import {
   NOT_A_CAT_MESSAGE,
   NOT_A_CAT_TITLE,
@@ -219,7 +219,7 @@ app.post('/analyze-cat', async (c) => {
       model,
       temperature: 0.2,
       max_tokens: 1400,
-      response_format: CATDEX_ANALYSIS_RESPONSE_FORMAT,
+      response_format: CATDEX_FORM_RESPONSE_FORMAT,
       messages: [
         {
           role: 'system',

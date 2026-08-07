@@ -32,7 +32,6 @@ import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { CATDEX_TARGET, formatCatDefaultName, formatDexNumber } from '@/lib/constants';
-import { enrichAnalysis } from '@/lib/catTraits';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import {
   estimateTotalXp,
@@ -229,7 +228,7 @@ export default function RewardScreen() {
       result.name.trim() ||
       pending.analysis.suggestedName?.trim() ||
       formatCatDefaultName(pending.nextNumber);
-    const nextAnalysis = enrichAnalysis(result.analysis, pending.nextNumber);
+    const nextAnalysis = result.analysis;
 
     try {
       const catsBefore = useCatsStore.getState().cats;

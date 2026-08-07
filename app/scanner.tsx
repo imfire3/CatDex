@@ -29,7 +29,7 @@ import {
   isInParis20e,
   PARIS_20E,
 } from '@/lib/constants';
-import { enrichAnalysis, isNoCatFound } from '@/lib/catTraits';
+import { isNoCatFound } from '@/lib/catTraits';
 import {
   classifyThrownAnalysisError,
   ERROR_CATALOG,
@@ -293,7 +293,7 @@ export default function ScannerScreen() {
         return;
       }
       await enterReveal(
-        enrichAnalysis(nextAnalysis, nextNumber),
+        nextAnalysis,
         cutoutUri ?? imageUri,
         {
           mocked,

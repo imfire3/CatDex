@@ -2,9 +2,11 @@ import { router } from 'expo-router'
 import { Pressable, ScrollView, View } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Svg, { Circle, Path } from 'react-native-svg'
 
 import { CatImage } from '@/components/CatImage'
 import { CatSprite } from '@/components/CatSprite'
+import { GlassIconButton } from '@/components/GlassIconButton'
 import {
   ProfileActivityTimeline,
   ProfileBadgeRow,
@@ -103,7 +105,7 @@ function FavoriteCompact({ cat, onPress }: { cat: Cat; onPress: () => void }) {
 }
 
 export default function ProfileScreen() {
-  const { colors, spacing, motion } = useTheme()
+  const { colors, spacing, iconStroke, iconSize, motion } = useTheme()
   const insets = useSafeAreaInsets()
   const reduceMotion = useReducedMotion()
   const user = useAuthStore((state) => state.user)
@@ -136,10 +138,32 @@ export default function ProfileScreen() {
     : FadeInDown.delay(100).duration(motion.duration.slow)
 
   const goExplore = () => router.push('/(tabs)/map')
+  const goSettings = () => router.push('/settings')
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <TabStackHeader title="Profil" />
+      <TabStackHeader
+        title="Profil"
+        right={
+          <GlassIconButton accessibilityLabel="Ouvrir les réglages" onPress={goSettings}>
+            <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
+              <Circle
+                cx="12"
+                cy="12"
+                r="3"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+              />
+              <Path
+                d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+                strokeLinecap="round"
+              />
+            </Svg>
+          </GlassIconButton>
+        }
+      />
       <ScrollView
         bounces={false}
         contentContainerStyle={{ paddingBottom: listBottom }}
@@ -194,7 +218,7 @@ export default function ProfileScreen() {
 
           <ProfileActivityTimeline items={activity} />
 
-          <ProfileSettingsLink onPress={() => router.push('/settings')} />
+          <ProfileSettingsLink onPress={goSettings} />
         </Animated.View>
       </ScrollView>
     </View>

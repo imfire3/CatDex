@@ -5,6 +5,7 @@
 import {
   resolveBreed,
   resolveCoatLength,
+  RACE_INCONNUE,
   type MorphologySnapshot,
 } from './breedPolicy';
 
@@ -70,6 +71,15 @@ export type VisionJson = {
   schema_version?: string;
   status?: string;
   is_cat?: boolean;
+  /** Flat form schema (catdex.form.v1) */
+  isCat?: boolean;
+  reason?: string | null;
+  name?: string;
+  breedConfidence?: number;
+  coatColor?: string;
+  furLength?: string;
+  sex?: string;
+  personalityTraits?: string[] | string;
   cat_count?: number;
   user_message?: string | null;
   image_quality?: {
@@ -88,7 +98,6 @@ export type VisionJson = {
   eyes?: string;
   coat?: string;
   catdexNumber?: string;
-  name?: string;
   description?: string;
   species?: string;
   breed?: string;
@@ -292,12 +301,124 @@ export function buildNoCatAnalysis(error?: VisionError) {
   };
 }
 
+function isFormSchema(json: VisionJson): boolean {
+  return (
+    typeof json.isCat === 'boolean' ||
+    typeof json.breedConfidence === 'number' ||
+    typeof json.coatColor === 'string' ||
+    typeof json.furLength === 'string'
+  );
+}
+
 function isV1Schema(json: VisionJson): boolean {
   return (
     json.schema_version === 'catdex.analysis.v1' ||
     typeof json.status === 'string' ||
-    typeof json.is_cat === 'boolean'
+    (typeof json.is_cat === 'boolean' && !isFormSchema(json))
   );
+}
+
+const FUR_LENGTH_FR: Record<string, string> = {
+  court: 'Court',
+  'mi-long': 'Mi-long',
+  milong: 'Mi-long',
+  medium: 'Mi-long',
+  long: 'Long',
+  short: 'Court',
+  hairless: 'Sans poils',
+};
+
+function mapFurLength(raw?: string | null): string {
+  const v = (raw ?? '').trim().toLowerCase();
+  if (!v || v === 'unknown') return '';
+  return FUR_LENGTH_FR[v] ?? raw!.trim();
+}
+
+function mapSize(raw?: string | null): string {
+  const v = (raw ?? '').trim().toLowerCase();
+  if (!v || v === 'unknown') return '';
+  if (v === 'petit' || v === 'petite' || v === 'small') return 'Petit';
+  if (v === 'moyen' || v === 'moyenne' || v === 'medium') return 'Moyen';
+  if (v === 'grand' || v === 'grande' || v === 'large') return 'Grand';
+  return raw!.trim();
+}
+
+/**
+ * Flat form JSON (isCat, coatColor, furLength…) → CatAnalysis for CaptureReveal.
+ * Never invents defaults.
+ */
+function normalizeFormAnalysis(json: VisionJson) {
+  if (json.isCat === false) {
+    return buildNoCatAnalysis({
+      code: 'NOT_A_CAT',
+      title: NOT_A_CAT_TITLE,
+      message:
+        json.reason?.trim() ||
+        json.user_message?.trim() ||
+        NOT_A_CAT_MESSAGE,
+    });
+  }
+
+  const breedConfidenceRaw =
+    typeof json.breedConfidence === 'number' && Number.isFinite(json.breedConfidence)
+      ? json.breedConfidence
+      : 0;
+  const breedConfidence =
+    breedConfidenceRaw <= 1 ? Math.round(breedConfidenceRaw * 100) : Math.round(breedConfidenceRaw);
+
+  let breed = (json.breed ?? '').trim();
+  if (breedConfidence < 60 || !breed || /^unknown$/i.test(breed)) {
+    breed = RACE_INCONNUE;
+  }
+
+  const coatColor = (json.coatColor ?? json.color ?? '').trim();
+  const furLength = mapFurLength(json.furLength ?? json.coatLength ?? json.coat);
+  const distinctiveFeatures = asStringList(json.distinctiveFeatures, 8);
+  const personalityTraits = asStringList(
+    json.personalityTraits ?? json.traits ?? json.tags,
+    3,
+  );
+  const description = (json.description ?? '').trim();
+  const name = (json.name ?? json.suggestedName ?? '').trim();
+  const eyeColor = (json.eyeColor ?? json.eyes ?? '').trim();
+  const size = mapSize(json.size);
+  const sex = normalizeGender(json.sex ?? json.gender);
+
+  const mapped = {
+    color: coatColor,
+    breed,
+    coat: furLength,
+    description,
+    suggestedName: name,
+    gender: sex,
+    eyes: eyeColor || undefined,
+    size: size || undefined,
+    tags: personalityTraits,
+    estimatedAge: (json.estimatedAge ?? '').trim() || undefined,
+    coatPattern:
+      distinctiveFeatures.length > 0
+        ? distinctiveFeatures.slice(0, 4).join(', ')
+        : (json.coatPattern ?? '').trim() || undefined,
+    confidence: breedConfidence,
+    distinctiveFeatures:
+      distinctiveFeatures.length > 0 ? distinctiveFeatures : undefined,
+    requiresUserConfirmation: breedConfidence < 60 || breed === RACE_INCONNUE,
+    analysisStatus: 'success',
+    notACat: false as const,
+  };
+
+  console.log('[vision-map:form]', {
+    name: mapped.suggestedName,
+    breed: mapped.breed,
+    breedConfidence,
+    coatColor: mapped.color,
+    furLength: mapped.coat,
+    distinctiveFeatures: mapped.distinctiveFeatures,
+    personalityTraits: mapped.tags,
+    description: mapped.description.slice(0, 120),
+  });
+
+  return mapped;
 }
 
 function composeCoatDisplay(lengthFr: string, textureFr: string): string {
@@ -657,6 +778,9 @@ function normalizeLegacyAnalysis(json: VisionJson) {
 
 /** Normalize Vision JSON → form DTO. Never invent missing fields. */
 export function normalizeAnalysis(json: VisionJson, _fallback?: unknown) {
+  if (isFormSchema(json)) {
+    return normalizeFormAnalysis(json);
+  }
   if (isV1Schema(json)) {
     return normalizeV1Analysis(json);
   }
