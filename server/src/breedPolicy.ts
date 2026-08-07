@@ -1,6 +1,6 @@
 /**
  * Server-side breed policy: observe → validate → deduce.
- * Demotes invented / low-confidence breeds to a credible domestic label.
+ * Low confidence (< 60%) or unknown → "Race inconnue" — never invent Européen/Roux/etc.
  */
 
 export type BreedKey =
@@ -27,6 +27,9 @@ export type MorphologySnapshot = {
 
 export type CoatLengthKey = 'hairless' | 'short' | 'medium' | 'long' | 'unknown';
 
+/** Precise breeds require ≥ 60% confidence + morphology where applicable. */
+export const BREED_CONFIDENCE_MIN = 0.6;
+
 const PRECISE_BREEDS = new Set<BreedKey>([
   'maine_coon',
   'siamese',
@@ -50,14 +53,23 @@ const BREED_LABEL_FR: Record<BreedKey, string> = {
   sphynx: 'Sphynx',
   ragdoll: 'Ragdoll',
   norwegian_forest: 'Norvégien',
-  unknown: 'Européen',
+  unknown: 'Race inconnue',
 };
+
+export const RACE_INCONNUE = 'Race inconnue';
 
 /** Map free-form / legacy labels to breed keys. */
 export function parseBreedKey(raw?: string | null): BreedKey | null {
   if (!raw) return null;
   const v = raw.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
-  if (!v || v === 'unknown' || v === 'indetermine' || v === 'indéterminée') {
+  if (
+    !v ||
+    v === 'unknown' ||
+    v === 'indetermine' ||
+    v === 'indeterminee' ||
+    v.includes('inconnue') ||
+    v === 'race inconnue'
+  ) {
     return 'unknown';
   }
   if (v === 'european' || v.includes('europeen') || v.includes('european')) {
@@ -87,7 +99,7 @@ export function parseBreedKey(raw?: string | null): BreedKey | null {
   if (v.includes('sphynx') || v.includes('sphinx')) return 'sphynx';
   if (v.includes('ragdoll')) return 'ragdoll';
   if (v.includes('norveg') || v.includes('norwegian')) return 'norwegian_forest';
-  if (v.includes('croise') || v.includes('mix')) return 'european';
+  if (v.includes('croise') || v.includes('mix')) return 'unknown';
   return null;
 }
 
@@ -104,15 +116,14 @@ function persianMorphologyOk(morphology?: MorphologySnapshot | null): boolean {
   return isFlat(morphology.face_profile) && isFlat(morphology.muzzle);
 }
 
-function domesticFromLength(length?: CoatLengthKey | string | null): BreedKey {
-  const len = (length ?? 'unknown').toLowerCase();
-  if (len === 'long' || len === 'medium') return 'domestic_longhair';
-  if (len === 'hairless') return 'sphynx';
-  return 'domestic_shorthair';
+function normalizeConfidence(raw?: number | null): number {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return 0;
+  return raw <= 1 ? raw : raw / 100;
 }
 
 /**
- * Resolve a player-facing breed after confidence + morphology gates.
+ * Resolve a player-facing breed.
+ * Confidence < 60% or unknown → "Race inconnue" (never invent Européen).
  */
 export function resolveBreed(input: {
   breedKey?: string | null;
@@ -121,74 +132,64 @@ export function resolveBreed(input: {
   coatLength?: string | null;
   morphology?: MorphologySnapshot | null;
   visibleEvidence?: string[] | null;
-}): { key: BreedKey; label: string; demoted: boolean } {
+}): { key: BreedKey; label: string; demoted: boolean; confidencePercent: number } {
   const fromKey = parseBreedKey(input.breedKey);
   const fromLabel = parseBreedKey(input.label);
-  let key: BreedKey = fromKey ?? fromLabel ?? 'european';
-
-  const confidence =
-    typeof input.confidence === 'number' && Number.isFinite(input.confidence)
-      ? input.confidence <= 1
-        ? input.confidence
-        : input.confidence / 100
-      : 0;
-
+  let key: BreedKey = fromKey ?? fromLabel ?? 'unknown';
+  const confidence = normalizeConfidence(input.confidence);
+  const confidencePercent = Math.round(confidence * 100);
   let demoted = false;
 
-  // Low confidence → never keep a precise breed.
+  if (confidence < BREED_CONFIDENCE_MIN) {
+    return {
+      key: 'unknown',
+      label: RACE_INCONNUE,
+      demoted: true,
+      confidencePercent,
+    };
+  }
+
   if (PRECISE_BREEDS.has(key) && confidence < 0.8) {
-    key = domesticFromLength(input.coatLength);
-    if (key === 'domestic_shorthair' || key === 'domestic_longhair') {
-      // Prefer Européen for MVP readability when short coat.
-      key = key === 'domestic_longhair' ? 'domestic_longhair' : 'european';
-    }
+    key = 'unknown';
     demoted = true;
   }
 
-  // Persian without flat face/muzzle → domestic.
   if (key === 'persian' && !persianMorphologyOk(input.morphology)) {
-    key = (input.coatLength ?? '').toLowerCase() === 'long'
-      ? 'domestic_longhair'
-      : 'european';
+    key = 'unknown';
     demoted = true;
   }
 
-  // Sphynx without hairless coat → demote.
   if (key === 'sphynx' && (input.coatLength ?? '').toLowerCase() !== 'hairless') {
-    key = 'european';
+    key = 'unknown';
     demoted = true;
   }
 
-  // Unknown / empty → european (MVP default).
   if (key === 'unknown') {
-    key = (input.coatLength ?? '').toLowerCase() === 'long'
-      ? 'domestic_longhair'
-      : 'european';
-    demoted = true;
+    return {
+      key: 'unknown',
+      label: RACE_INCONNUE,
+      demoted: true,
+      confidencePercent,
+    };
   }
 
-  return { key, label: labelForBreedKey(key), demoted };
+  return {
+    key,
+    label: labelForBreedKey(key),
+    demoted,
+    confidencePercent,
+  };
 }
 
 /**
- * Prefer short coat when uncertain — medium is over-used by Vision models.
+ * Keep Vision length when present; never invent "short" when unknown.
  */
 export function resolveCoatLength(
   length?: string | null,
-  confidence?: number | null,
+  _confidence?: number | null,
 ): CoatLengthKey {
   const raw = (length ?? 'unknown').toLowerCase().trim();
   const allowed: CoatLengthKey[] = ['hairless', 'short', 'medium', 'long', 'unknown'];
-  const key = (allowed.includes(raw as CoatLengthKey) ? raw : 'unknown') as CoatLengthKey;
-
-  const conf =
-    typeof confidence === 'number' && Number.isFinite(confidence)
-      ? confidence <= 1
-        ? confidence
-        : confidence / 100
-      : 0.5;
-
-  if (key === 'unknown') return 'short';
-  if (key === 'medium' && conf < 0.75) return 'short';
-  return key;
+  if (allowed.includes(raw as CoatLengthKey)) return raw as CoatLengthKey;
+  return 'unknown';
 }

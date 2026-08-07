@@ -24,7 +24,6 @@ import {
   rarityTokens,
 } from '@/lib/catTheme';
 import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
-import { suggestNameForAppearance } from '@/lib/mockAnalysis';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { AnalysisFieldCorrection, CatAnalysis } from '@/types/cat';
 
@@ -216,36 +215,48 @@ export function CaptureReveal({
 }: Props) {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
-  const seeded = useMemo(() => enrichAnalysis(rawAnalysis, number), [rawAnalysis, number]);
-  const aiName = (seeded.suggestedName || initialName).trim();
+  // Vision data only — never invent fields for the form.
+  const vision = useMemo(() => enrichAnalysis(rawAnalysis, number), [rawAnalysis, number]);
+  const aiName = (vision.suggestedName || '').trim();
 
   const predicted = useMemo(
     () => ({
-      type: seeded.breed || '',
-      color: seeded.color || '',
-      coat: seeded.coat || '',
-      pattern: seeded.coatPattern || '',
-      name: aiName || initialName,
-      description: seeded.description || '',
-      trait: seeded.tags?.[0] ?? '',
+      type: vision.breed || '',
+      color: vision.color || '',
+      coat: vision.coat || '',
+      pattern: vision.coatPattern || '',
+      name: aiName,
+      description: vision.description || '',
+      trait: vision.tags?.[0] ?? '',
     }),
-    [seeded, aiName, initialName],
+    [vision, aiName],
   );
 
-  const [name, setName] = useState(aiName || initialName);
-  const [nameTouched, setNameTouched] = useState(false);
-  const [tag, setTag] = useState(seeded.tags?.[0] ?? '');
-  const [coat, setCoat] = useState(seeded.coat || '');
-  const [breed, setBreed] = useState(
-    seeded.breed && seeded.breed !== 'Indéterminée' ? seeded.breed : '',
-  );
-  const [color, setColor] = useState(seeded.color || '');
+  useEffect(() => {
+    console.log('[CaptureReveal] form mapping from Vision', {
+      name: aiName,
+      breed: vision.breed,
+      color: vision.color,
+      coat: vision.coat,
+      particularite:
+        vision.distinctiveFeatures?.slice(0, 3).join(', ') || vision.coatPattern,
+      trait: vision.tags?.[0],
+      description: vision.description?.slice(0, 120),
+      confidence: vision.confidence,
+    });
+  }, [vision, aiName]);
+
+  const [name, setName] = useState(aiName);
+  const [tag, setTag] = useState(vision.tags?.[0] ?? '');
+  const [coat, setCoat] = useState(vision.coat || '');
+  const [breed, setBreed] = useState(vision.breed || '');
+  const [color, setColor] = useState(vision.color || '');
   const [pattern, setPattern] = useState(
-    seeded.distinctiveFeatures && seeded.distinctiveFeatures.length > 0
-      ? seeded.distinctiveFeatures.slice(0, 3).join(', ')
-      : seeded.coatPattern || '',
+    vision.distinctiveFeatures && vision.distinctiveFeatures.length > 0
+      ? vision.distinctiveFeatures.slice(0, 3).join(', ')
+      : vision.coatPattern || '',
   );
-  const [description, setDescription] = useState(seeded.description || '');
+  const [description, setDescription] = useState(vision.description || '');
   const [editingField, setEditingField] = useState<FieldKey | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -267,11 +278,11 @@ export function CaptureReveal({
 
   const dexLabel = formatDexNumber(number);
   const rarityId = resolveRevealRarity(
-    { ...seeded, color, breed, coat },
+    { ...vision, color, breed, coat },
     number,
   );
   const rarity = rarityTokens[rarityId];
-  const symbol = genderSymbol(seeded.gender);
+  const symbol = genderSymbol(vision.gender);
   const keyboardOpen = keyboardHeight > 0;
   const footerPadBottom = keyboardOpen
     ? spacing[16]
@@ -279,29 +290,30 @@ export function CaptureReveal({
 
   const handleColorChange = (nextColor: string) => {
     setColor(nextColor);
-    if (!nameTouched) {
-      setName(suggestNameForAppearance(nextColor, breed, `${number}:${nextColor}`));
-    }
   };
 
   const handleNameChange = (next: string) => {
-    setNameTouched(true);
     setName(next);
   };
 
   const buildResult = (): CaptureRevealResult => {
-    const trimmedName =
-      name.trim() ||
-      suggestNameForAppearance(color || seeded.color, breed, String(number));
-    const nextTags = [tag.trim(), ...(seeded.tags ?? []).slice(1)].filter(Boolean);
-    const nextColor = color.trim() || seeded.color;
-    const nextBreed = breed.trim() || seeded.breed;
-    const nextCoat = coat.trim() || seeded.coat;
-    const nextPattern = pattern.trim() || seeded.coatPattern;
-    const nextDescription =
-      description.trim() ||
-      seeded.description ||
-      `Un chat ${nextColor.toLowerCase()} prêt à rejoindre ton CatDex.`;
+    const trimmedName = name.trim() || aiName || initialName || 'Sans nom';
+    const nextTags = [tag.trim(), ...(vision.tags ?? []).slice(1)].filter(Boolean);
+    const nextColor = color.trim();
+    const nextBreed = breed.trim();
+    const nextCoat = coat.trim();
+    const nextPattern = pattern.trim();
+    const nextDescription = description.trim();
+
+    console.log('[CaptureReveal] submit mapping', {
+      name: trimmedName,
+      breed: nextBreed,
+      color: nextColor,
+      coat: nextCoat,
+      particularite: nextPattern,
+      trait: tag.trim(),
+      description: nextDescription.slice(0, 120),
+    });
 
     const corrections = collectCorrections({
       predicted,
@@ -320,14 +332,17 @@ export function CaptureReveal({
       name: trimmedName,
       corrections,
       analysis: {
-        ...seeded,
+        ...vision,
         color: nextColor,
         breed: nextBreed,
         coat: nextCoat,
-        coatPattern: nextPattern,
+        coatPattern: nextPattern || undefined,
+        distinctiveFeatures: nextPattern
+          ? nextPattern.split(',').map((s) => s.trim()).filter(Boolean)
+          : vision.distinctiveFeatures,
         description: nextDescription,
         suggestedName: trimmedName,
-        tags: nextTags.length > 0 ? nextTags : seeded.tags,
+        tags: nextTags,
       },
     };
   };
@@ -413,7 +428,7 @@ export function CaptureReveal({
               color="textBrand"
               style={{ fontFamily: fonts.display }}
             >
-              {name.trim() || initialName}
+              {name.trim() || aiName || 'Nouveau chat'}
               {symbol ? ` ${symbol}` : ''}
             </Text>
             <View
@@ -439,10 +454,10 @@ export function CaptureReveal({
             source={{ uri: photoUri }}
             resizeMode="cover"
             style={{ width: '100%', aspectRatio: 1 }}
-            accessibilityLabel={`Photo de ${name || initialName}`}
+            accessibilityLabel={`Photo de ${name || aiName || 'chat'}`}
           />
 
-          {seeded.requiresUserConfirmation ? (
+          {vision.requiresUserConfirmation ? (
             <Text
               variant="bodySmall"
               color="warning"

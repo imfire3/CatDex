@@ -1,9 +1,15 @@
-import * as Linking from 'expo-linking';
 import { View } from 'react-native';
 
-import { Button } from '@/components/Button';
-import { SettingsScreen } from '@/components/Settings/SettingsScreen';
+import {
+  IconDoc,
+  IconFlag,
+  IconHelp,
+  SettingsRow,
+  SettingsScreen,
+  SettingsSection,
+} from '@/components/Settings';
 import { Text } from '@/components/Text';
+import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const FAQ = [
@@ -13,37 +19,54 @@ const FAQ = [
   },
   {
     q: 'Pourquoi ma position est demandée ?',
-    a: 'Le GPS place tes captures sur la carte et montre les chats près de toi. Tu peux changer ça dans les réglages du téléphone.',
+    a: 'Le GPS place tes captures sur la carte et montre les chats près de toi.',
   },
   {
     q: 'Mes chats sont-ils sauvegardés ?',
-    a: 'Oui, avec un compte CatDex tes captures et ton profil sont synchronisés (quand Supabase est configuré).',
-  },
-  {
-    q: 'La photo n’apparaît pas dans le CatDex',
-    a: 'Rescanne le chat après une mise à jour : les photos sont maintenant enregistrées durablement sur l’appareil.',
+    a: 'Oui, avec un compte CatDex tes captures et ton profil sont synchronisés quand le cloud est actif.',
   },
 ];
 
-const SUPPORT_EMAIL = 'support@catdex.app';
-
-export default function HelpSupportScreen() {
+export default function HelpCenterScreen() {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
-
-  const openMail = () => {
-    void Linking.openURL(
-      `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Aide CatDex')}`,
-    );
-  };
+  const showToast = useToastStore((s) => s.show);
 
   return (
     <SettingsScreen
-      title="Aide & support"
-      subtitle="Questions fréquentes et contact si tu es bloqué."
-      footer={
-        <Button title="Contacter le support" variant="secondary" onPress={openMail} />
-      }
+      title="Centre d’aide"
+      subtitle="FAQ, tutoriel et guide du débutant."
     >
+      <SettingsSection title="Guides">
+        <SettingsRow
+          icon={<IconFlag />}
+          title="Tutoriel"
+          subtitle="Revois les gestes de base"
+          onPress={() =>
+            showToast({
+              title: 'Tutoriel',
+              description: 'Le parcours guidé revient bientôt depuis l’accueil.',
+              tone: 'default',
+            })
+          }
+        />
+        <SettingsRow
+          icon={<IconDoc />}
+          title="Guide du débutant"
+          subtitle="Ton premier chat en 5 minutes"
+          showDivider={false}
+          onPress={() =>
+            showToast({
+              title: 'Guide du débutant',
+              description: 'Scanne, confirme, collectionne — c’est tout.',
+              tone: 'default',
+            })
+          }
+        />
+      </SettingsSection>
+
+      <Text variant="h3" color="textBrand">
+        FAQ
+      </Text>
       <View style={{ gap: spacing[16] }}>
         {FAQ.map((item) => (
           <View
@@ -60,19 +83,22 @@ export default function HelpSupportScreen() {
               shadow.low,
             ]}
           >
-            <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
-              {item.q}
-            </Text>
+            <View style={{ flexDirection: 'row', gap: spacing[8], alignItems: 'flex-start' }}>
+              <IconHelp />
+              <Text
+                variant="body"
+                color="text"
+                style={{ fontFamily: fonts.bodySemi, flex: 1 }}
+              >
+                {item.q}
+              </Text>
+            </View>
             <Text variant="bodySmall" color="textBody">
               {item.a}
             </Text>
           </View>
         ))}
       </View>
-
-      <Text variant="caption" color="textMuted" align="center">
-        {SUPPORT_EMAIL}
-      </Text>
     </SettingsScreen>
   );
 }

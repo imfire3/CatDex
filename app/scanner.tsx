@@ -235,12 +235,14 @@ export default function ScannerScreen() {
       });
     }
 
-    if (options?.mocked && __DEV__) {
+    if (options?.mocked) {
       showToast({
-        title: 'Analyse simulée',
-        description: 'API indisponible — Cat Card mock.',
-        tone: 'warning',
+        title: 'Analyse refusée',
+        description: 'L’API a renvoyé des données simulées — capture annulée.',
+        tone: 'danger',
       });
+      setStep('analysisError');
+      return;
     }
 
     setPendingCapture({

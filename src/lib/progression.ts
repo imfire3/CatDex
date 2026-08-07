@@ -34,6 +34,19 @@ export type CollectionTrack = {
   match: (cat: Cat) => boolean;
 };
 
+export type VisibleCollection = CollectionTrack & {
+  locked: boolean;
+  unlockLevel: number;
+  unlockHint?: string;
+};
+
+export type LockedTeaser = {
+  id: string;
+  title: string;
+  subtitle: string;
+  unlocked: boolean;
+};
+
 export type LevelDef = {
   level: number;
   title: string;
@@ -44,7 +57,7 @@ export type LevelDef = {
 
 export type ActivityItem = {
   id: string;
-  when: 'Aujourd’hui' | 'Hier' | 'Cette semaine';
+  when: 'Aujourd’hui' | 'Hier' | 'Demain' | 'Cette semaine';
   title: string;
   subtitle: string;
 };
@@ -55,65 +68,156 @@ export type SuccessItem = {
   subtitle: string;
 };
 
-/** Milestone definitions for early levels (user brief). */
+export type ProfileBadge = {
+  id: string;
+  title: string;
+  subtitle: string;
+  unlocked: boolean;
+};
+
+/** XP earned from a single capture (same weights as estimateTotalXp). */
+export function xpForCat(cat: Cat): number {
+  let xp = 85;
+  const rarity = resolveRevealRarity(cat.analysis, cat.number);
+  if (rarity === 'uncommon') xp += 25;
+  if (rarity === 'rare') xp += 50;
+  if (rarity === 'exceptional') xp += 100;
+  xp += Math.min(40, (cat.views ?? 0) * 2);
+  return xp;
+}
+
+export function estimateTotalXp(cats: Cat[]): number {
+  let xp = 0;
+  for (const cat of cats) {
+    xp += xpForCat(cat);
+  }
+  return xp;
+}
+
+function dayKey(iso: string): string {
+  try {
+    return new Date(iso).toISOString().slice(0, 10);
+  } catch {
+    return '';
+  }
+}
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** XP from captures discovered today. */
+export function xpEarnedToday(cats: Cat[]): number {
+  const today = todayKey();
+  return cats
+    .filter((cat) => dayKey(cat.discoveredAt) === today)
+    .reduce((sum, cat) => sum + xpForCat(cat), 0);
+}
+
+/**
+ * Fixed badge showcase for the profile — always show slots (locked or not).
+ * 4 slots max on profile: Premier chat · 10 chats · Explorateur · Naturaliste
+ */
+export function buildProfileBadges(
+  cats: Cat[],
+  level: number,
+  _streakDays: number,
+): ProfileBadge[] {
+  const hasFirst = cats.length >= 1;
+  return [
+    {
+      id: 'premier-chat',
+      title: 'Premier chat',
+      subtitle: hasFirst ? cats[0]?.name ?? 'Débloqué' : 'Ta première découverte t’attend',
+      unlocked: hasFirst,
+    },
+    {
+      id: 'dix-chats',
+      title: '10 chats',
+      subtitle: cats.length >= 10 ? `${cats.length} captures` : 'Encore un peu de route…',
+      unlocked: cats.length >= 10,
+    },
+    {
+      id: 'explorateur',
+      title: 'Explorateur',
+      subtitle: level >= 3 || cats.length >= 3 ? 'Débloqué' : 'Le quartier t’appelle',
+      unlocked: level >= 3 || cats.length >= 3,
+    },
+    {
+      id: 'naturaliste',
+      title: 'Naturaliste',
+      subtitle: uniqueColors(cats) >= 5 ? '5 couleurs' : 'Les couleurs s’éveillent',
+      unlocked: uniqueColors(cats) >= 5 || level >= 7,
+    },
+  ];
+}
+
+export function countUnlockedBadges(
+  cats: Cat[],
+  level: number,
+  streakDays: number,
+): number {
+  return buildProfileBadges(cats, level, streakDays).filter((b) => b.unlocked).length;
+}
 export const LEVEL_DEFS: LevelDef[] = [
   {
     level: 1,
     title: 'Bienvenue',
-    goal: 'Photographier ton premier chat',
+    goal: 'Ton aventure commence avec une première découverte.',
     reward: 'Cadre débutant',
   },
   {
     level: 2,
     title: 'Découvreur',
-    goal: 'Découvrir 3 chats',
+    goal: 'Trois chats croisent déjà ton chemin.',
+    unlock: 'Favoris',
   },
   {
     level: 3,
     title: 'Curieux',
-    goal: 'Découvrir 2 races différentes',
+    goal: 'Deux races différentes pour élargir ton regard.',
   },
   {
     level: 4,
     title: 'Promeneur',
-    goal: 'Découvrir 3 lieux',
+    goal: 'Trois lieux, une carte qui s’ouvre.',
   },
   {
     level: 5,
     title: 'Photographe',
-    goal: 'Faire 10 découvertes',
-    unlock: 'Favoris',
+    goal: 'Dix découvertes — ton œil s’affine.',
+    unlock: 'Collections rares',
   },
   {
     level: 6,
     title: 'Collectionneur',
-    goal: 'Avoir 10 chats',
+    goal: 'Dix chats dans ton CatDex.',
   },
   {
     level: 7,
     title: 'Naturaliste',
-    goal: 'Découvrir 5 couleurs',
+    goal: 'Cinq couleurs pour peindre le quartier.',
   },
   {
     level: 8,
     title: 'Explorateur urbain',
-    goal: 'Visiter 5 quartiers',
+    goal: 'Cinq quartiers à explorer.',
   },
   {
     level: 9,
     title: 'Premier badge',
-    goal: 'Obtenir un badge',
+    goal: 'Un badge pour marquer le coup.',
   },
   {
     level: 10,
     title: 'Chasseur de chats',
-    goal: '20 chats capturés',
+    goal: 'Vingt chats — la légende commence.',
     unlock: 'Animation de capture',
   },
 ];
 
 const MILESTONE_REWARDS: Record<number, string> = {
-  5: 'Favoris débloqués',
+  5: 'Favoris',
   10: 'Animation de capture',
   15: 'Nouvel avatar',
   20: 'Nouveau fond',
@@ -129,20 +233,6 @@ const MILESTONE_REWARDS: Record<number, string> = {
 export function xpRequiredForLevel(level: number): number {
   const clamped = Math.max(1, Math.min(MAX_LEVEL, level));
   return 80 + clamped * 40 + Math.floor(clamped / 5) * 60;
-}
-
-/** Rough total XP earned from collection activity. */
-export function estimateTotalXp(cats: Cat[]): number {
-  let xp = 0;
-  for (const cat of cats) {
-    xp += 85;
-    const rarity = resolveRevealRarity(cat.analysis, cat.number);
-    if (rarity === 'uncommon') xp += 25;
-    if (rarity === 'rare') xp += 50;
-    if (rarity === 'exceptional') xp += 100;
-    xp += Math.min(40, (cat.views ?? 0) * 2);
-  }
-  return xp;
 }
 
 export function progressionFromTotalXp(totalXp: number): {
@@ -172,7 +262,7 @@ export function progressionFromTotalXp(totalXp: number): {
   const nextReward =
     MILESTONE_REWARDS[nextMilestone] ??
     LEVEL_DEFS.find((item) => item.level === level + 1)?.reward ??
-    'Récompense cosmétique';
+    'Une surprise t’attend';
 
   return {
     level,
@@ -244,7 +334,7 @@ export const COLLECTION_TRACKS: Omit<CollectionTrack, 'current'>[] = [
   },
   {
     id: 'roux',
-    label: 'Roux',
+    label: 'Chats roux',
     target: 12,
     rewardLabel: '+200 XP · Cadre exclusif',
     match: (cat) => colorMatch('roux')(cat) || colorMatch('orange')(cat),
@@ -289,18 +379,120 @@ export function buildCollections(cats: Cat[]): CollectionTrack[] {
   });
 }
 
+/** Preview tracks for Missions hub: Roux always open; Noirs L2+; Tigrés L3+. */
+const PREVIEW_COLLECTION_IDS = ['roux', 'black', 'tabby'] as const;
+
+export function buildVisibleCollections(
+  cats: Cat[],
+  level: number,
+): VisibleCollection[] {
+  const byId = new Map(buildCollections(cats).map((t) => [t.id, t]));
+  const rules: Record<(typeof PREVIEW_COLLECTION_IDS)[number], { minLevel: number; hint: string }> =
+    {
+      roux: { minLevel: 1, hint: '' },
+      black: {
+        minLevel: 2,
+        hint: 'Continue ton aventure pour révéler cette collection.',
+      },
+      tabby: {
+        minLevel: 3,
+        hint: 'Continue ton aventure pour révéler cette collection.',
+      },
+    };
+
+  return PREVIEW_COLLECTION_IDS.map((id) => {
+    const track = byId.get(id);
+    const rule = rules[id];
+    const locked = level < rule.minLevel;
+    return {
+      id,
+      label: track?.label ?? id,
+      current: locked ? 0 : (track?.current ?? 0),
+      target: track?.target ?? 8,
+      rewardLabel: track?.rewardLabel ?? '',
+      match: track?.match ?? (() => false),
+      locked,
+      unlockLevel: rule.minLevel,
+      unlockHint: locked ? rule.hint : undefined,
+    };
+  });
+}
+
+export function buildLockedTeasers(
+  level: number,
+  catsCount: number,
+): LockedTeaser[] {
+  // Max 4 teasers — blur creates desire; reveal one by one as the player grows.
+  return [
+    {
+      id: 'teaser-rares',
+      title: 'Collections rares',
+      subtitle:
+        level >= 5
+          ? 'Bientôt à portée de main…'
+          : 'Continue ton aventure pour révéler cette collection.',
+      unlocked: level >= 5,
+    },
+    {
+      id: 'teaser-legendaires',
+      title: 'Chats légendaires',
+      subtitle:
+        catsCount >= 100
+          ? 'Bientôt à portée de main…'
+          : 'Continue ton aventure pour révéler cette collection.',
+      unlocked: catsCount >= 100,
+    },
+    {
+      id: 'teaser-europeens',
+      title: 'Collection Européens',
+      subtitle:
+        catsCount >= 20
+          ? 'Bientôt à portée de main…'
+          : 'Continue ton aventure pour révéler cette collection.',
+      unlocked: catsCount >= 20,
+    },
+    {
+      id: 'teaser-events',
+      title: 'Événements',
+      subtitle: 'Continue ton aventure — quelque chose se prépare.',
+      unlocked: false,
+    },
+  ];
+}
+
+export function nextLevelReward(level: number): {
+  nextLevel: number;
+  label: string;
+  goal?: string;
+} {
+  const nextLevel = Math.min(MAX_LEVEL, level + 1);
+  const def = LEVEL_DEFS.find((item) => item.level === nextLevel);
+  const milestone = MILESTONE_REWARDS[nextLevel];
+  const label =
+    def?.unlock ??
+    def?.reward ??
+    milestone ??
+    def?.goal ??
+    'Une surprise t’attend';
+  return {
+    nextLevel,
+    label,
+    goal: def?.goal,
+  };
+}
+
 export function buildDailyQuests(cats: Cat[]): QuestItem[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayCats = cats.filter((cat) => new Date(cat.discoveredAt) >= today);
   const placesToday = uniquePlaces(todayCats);
-  const breedsToday = uniqueBreeds(todayCats);
-  const likes = cats.reduce((sum, cat) => sum + (cat.views ?? 0), 0);
+  const likesToday = todayCats.reduce((sum, cat) => sum + (cat.views ?? 0), 0);
 
+  // Max 3 daily quests — dopamine, not a checklist.
   return [
     {
       id: 'daily-scan',
-      title: 'Scanner un chat',
+      title: 'Capture un chat',
       current: Math.min(1, todayCats.length),
       target: 1,
       rewardLabel: '+20 XP',
@@ -309,7 +501,7 @@ export function buildDailyQuests(cats: Cat[]): QuestItem[] {
     },
     {
       id: 'daily-place',
-      title: 'Explorer un nouveau lieu',
+      title: 'Découvre un nouvel endroit',
       current: Math.min(1, placesToday),
       target: 1,
       rewardLabel: '+30 XP',
@@ -317,30 +509,12 @@ export function buildDailyQuests(cats: Cat[]): QuestItem[] {
       tone: 'info',
     },
     {
-      id: 'daily-share',
-      title: 'Partager une carte',
-      current: 0,
+      id: 'daily-likes',
+      title: 'Aime un chat',
+      current: Math.min(1, likesToday > 0 ? 1 : 0),
       target: 1,
       rewardLabel: '+15 XP',
-      completed: false,
-      tone: 'warning',
-    },
-    {
-      id: 'daily-species',
-      title: 'Identifier une nouvelle espèce',
-      current: Math.min(1, breedsToday),
-      target: 1,
-      rewardLabel: '+25 XP',
-      completed: breedsToday >= 1,
-      tone: 'success',
-    },
-    {
-      id: 'daily-likes',
-      title: 'Obtenir 10 likes',
-      current: Math.min(10, likes),
-      target: 10,
-      rewardLabel: '+40 XP',
-      completed: likes >= 10,
+      completed: likesToday > 0,
       tone: 'danger',
     },
   ];
@@ -354,7 +528,7 @@ export function buildWeeklyQuest(cats: Cat[]): QuestItem {
   return {
     id: 'weekly-places',
     title: 'Explorer 5 nouveaux lieux',
-    description: 'Objectif de la semaine',
+    description: 'Un objectif plus ambitieux. Tu as toute la semaine.',
     current: Math.min(places, target),
     target,
     rewardLabel: '250 XP',
@@ -428,47 +602,42 @@ export function buildRecentSuccesses(cats: Cat[], level: number): SuccessItem[] 
 }
 
 export function buildRecentActivity(cats: Cat[], level: number): ActivityItem[] {
-  const items: ActivityItem[] = [];
+  // Profile: 2 lines max — short & inviting.
+  if (cats.length === 0) {
+    return [
+      {
+        id: 'act-welcome',
+        when: 'Aujourd’hui',
+        title: 'Aucune découverte pour le moment.',
+        subtitle: 'Va capturer ton premier chat.',
+      },
+      {
+        id: 'act-tomorrow',
+        when: 'Demain',
+        title: 'Ton premier chat ?',
+        subtitle: 'L’aventure n’attend que toi.',
+      },
+    ];
+  }
+
   const sorted = [...cats].sort(
     (a, b) => new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime(),
   );
-  const latest = sorted[0];
-  if (latest) {
-    const rarity = catDexRarityLabel(resolveRevealRarity(latest.analysis, latest.number));
-    items.push({
+  const latest = sorted[0]!;
+  return [
+    {
       id: `act-${latest.id}`,
       when: 'Aujourd’hui',
-      title: `+${85} XP`,
-      subtitle: latest.name || rarity,
-    });
-  } else {
-    items.push({
-      id: 'act-empty',
-      when: 'Aujourd’hui',
-      title: 'Prêt à explorer',
-      subtitle: 'Scanne ton premier chat',
-    });
-  }
-
-  if (level >= 3 || cats.length >= 2) {
-    items.push({
-      id: 'act-badge',
-      when: 'Hier',
-      title: 'Badge obtenu',
-      subtitle: `Niveau ${Math.max(1, level - 1)}`,
-    });
-  }
-
-  if (cats.length >= 3) {
-    items.push({
-      id: 'act-level',
-      when: 'Cette semaine',
-      title: `Niveau ${level}`,
-      subtitle: progressionFromTotalXp(estimateTotalXp(cats)).title,
-    });
-  }
-
-  return items.slice(0, 4);
+      title: `Découverte · ${latest.name}`,
+      subtitle: `+${xpForCat(latest)} XP`,
+    },
+    {
+      id: 'act-next',
+      when: 'Demain',
+      title: level < MAX_LEVEL ? `En route vers le niveau ${level + 1}` : 'Légende du quartier',
+      subtitle: 'La suite t’attend dehors.',
+    },
+  ];
 }
 
 export function streakEstimate(cats: Cat[]): number {

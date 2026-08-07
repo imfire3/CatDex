@@ -1,75 +1,34 @@
 import type { CatAnalysis, CatGender } from '@/types/cat';
-import { ensureCatIdentity } from '@/lib/mockAnalysis';
-
-const TAG_SETS = [
-  ['Ombre', 'Mystère'],
-  ['Soleil', 'Curieux'],
-  ['Velours', 'Doux'],
-  ['Éclair', 'Vif'],
-  ['Nuit', 'Furtif'],
-  ['Miel', 'Câlin'],
-  ['Brume', 'Discret'],
-  ['Flamme', 'Audacieux'],
-] as const;
 
 /**
- * Fills optional analysis traits so UI screens always have mockup-ready fields,
- * including breed, color, random traits and a suggested name when missing.
+ * Pass-through for Vision analysis.
+ * Does NOT invent name / breed / color / coat / traits / description.
+ * Used by capture form and CatDex display alike.
  */
 export function enrichAnalysis(
   analysis: CatAnalysis | null | undefined,
-  seed = 0,
+  _seed = 0,
 ): CatAnalysis {
-  const base: CatAnalysis = analysis ?? {
-    color: 'Inconnue',
-    breed: 'Indéterminée',
-    coat: 'Indéterminée',
-    description: 'Chat repéré dans le quartier.',
-  };
-  const seeded = ensureCatIdentity(
-    base,
-    `${base.color ?? ''}:${base.breed ?? ''}:${seed}`,
-  );
-  const color = seeded.color || 'Inconnue';
-  const coat = seeded.coat || 'Indéterminée';
-  const lower = `${color} ${coat}`.toLowerCase();
-
-  const gender: CatGender =
-    seeded.gender ??
-    (seed % 3 === 0 ? 'female' : seed % 3 === 1 ? 'male' : 'unknown');
-
-  const eyes =
-    seeded.eyes ??
-    (lower.includes('noir')
-      ? 'Ambre'
-      : lower.includes('siamois') || lower.includes('blanc')
-        ? 'Bleus'
-        : lower.includes('roux')
-          ? 'Verts'
-          : 'Dorés');
-
-  const size =
-    seeded.size ??
-    (lower.includes('chaton') || lower.includes('petit')
-      ? 'Petite'
-      : lower.includes('gros') || lower.includes('grand')
-        ? 'Grande'
-        : 'Moyenne');
-
-  const tags =
-    seeded.tags && seeded.tags.length > 0
-      ? seeded.tags.slice(0, 8)
-      : [...TAG_SETS[Math.abs(seed) % TAG_SETS.length], 'Gourmand'].slice(0, 3);
+  if (!analysis) {
+    return {
+      color: '',
+      breed: '',
+      coat: '',
+      description: '',
+      suggestedName: '',
+      tags: [],
+    };
+  }
 
   return {
-    ...seeded,
-    color,
-    coat,
-    gender,
-    eyes,
-    size,
-    tags,
-    suggestedName: seeded.suggestedName,
+    ...analysis,
+    color: analysis.color?.trim() ?? '',
+    breed: analysis.breed?.trim() ?? '',
+    coat: analysis.coat?.trim() ?? '',
+    description: analysis.description?.trim() ?? '',
+    suggestedName: analysis.suggestedName?.trim() ?? '',
+    tags: analysis.tags?.filter(Boolean) ?? [],
+    distinctiveFeatures: analysis.distinctiveFeatures?.filter(Boolean),
   };
 }
 
@@ -95,24 +54,7 @@ export function isNoCatFound(analysis: CatAnalysis): boolean {
     return true;
   }
 
-  if (
-    typeof analysis.confidence === 'number' &&
-    Number.isFinite(analysis.confidence) &&
-    analysis.confidence < 90 &&
-    !(analysis.suggestedName ?? '').trim()
-  ) {
-    return true;
-  }
-
   const description = (analysis.description ?? '').toLowerCase();
-  const breed = (analysis.breed ?? '').toLowerCase();
-  const color = (analysis.color ?? '').toLowerCase();
-  const suggestedName = (analysis.suggestedName ?? '').trim();
-
   if (description.includes('aucun chat')) return true;
-  if (breed === 'inconnu' && suggestedName === '') return true;
-  if (breed === 'inconnu' && (color.includes('indétermin') || color.includes('indetermin'))) {
-    return true;
-  }
   return false;
 }

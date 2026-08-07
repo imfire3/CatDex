@@ -1,10 +1,8 @@
 import { useEffect } from 'react';
-import { View } from 'react-native';
 
 import {
-  IconFlame,
   IconFlag,
-  IconMegaphone,
+  IconFlame,
   IconSparkle,
   IconTrophy,
   SettingsRow,
@@ -26,7 +24,7 @@ export default function NotificationsSettingsScreen() {
   return (
     <SettingsScreen
       title="Notifications"
-      subtitle="Choisis ce que CatDex peut te rappeler."
+      subtitle="Choisis les alertes que tu souhaites recevoir."
     >
       <SettingsSection title="Alertes">
         <SettingsRow
@@ -63,20 +61,10 @@ export default function NotificationsSettingsScreen() {
           subtitle="Ne casse pas ta flamme"
           value={prefs.notifDailyStreak}
           disabled={!hydrated}
+          showDivider={false}
           onValueChange={(v) => setPref('notifDailyStreak', v)}
         />
-        <SettingsRow
-          kind="switch"
-          icon={<IconMegaphone />}
-          title="Marketing"
-          subtitle="Actus et offres CatDex"
-          value={prefs.notifMarketing}
-          disabled={!hydrated}
-          showDivider={false}
-          onValueChange={(v) => setPref('notifMarketing', v)}
-        />
       </SettingsSection>
-      <View />
     </SettingsScreen>
   );
 }

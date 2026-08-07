@@ -5,23 +5,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { resolveBreed, resolveCoatLength } from './breedPolicy';
+import { RACE_INCONNUE, resolveBreed, resolveCoatLength } from './breedPolicy';
 import { normalizeAnalysis } from './normalizeVisionAnalysis';
 
-const fallback = {
-  color: 'Roux',
-  breed: 'Européen',
-  coat: 'Court',
-  eyes: 'Verts',
-  size: 'Moyenne',
-  gender: 'unknown' as const,
-  tags: ['Curieux'],
-  suggestedName: 'Caramel',
-  description: 'Fallback',
-};
-
 describe('resolveBreed', () => {
-  it('demotes persian without flat morphology', () => {
+  it('demotes persian without flat morphology to Race inconnue', () => {
     const result = resolveBreed({
       breedKey: 'persian',
       label: 'Persian',
@@ -34,11 +22,11 @@ describe('resolveBreed', () => {
         ear_shape: 'pointed',
       },
     });
-    assert.equal(result.label, 'Européen');
+    assert.equal(result.label, RACE_INCONNUE);
     assert.equal(result.demoted, true);
   });
 
-  it('demotes precise breed when confidence < 0.80', () => {
+  it('returns Race inconnue when confidence < 60%', () => {
     const result = resolveBreed({
       breedKey: 'persian',
       confidence: 0.55,
@@ -50,7 +38,8 @@ describe('resolveBreed', () => {
         ear_shape: 'rounded',
       },
     });
-    assert.equal(result.key, 'european');
+    assert.equal(result.key, 'unknown');
+    assert.equal(result.label, RACE_INCONNUE);
     assert.equal(result.demoted, true);
   });
 
@@ -72,21 +61,21 @@ describe('resolveBreed', () => {
 });
 
 describe('resolveCoatLength', () => {
-  it('prefers short when unknown', () => {
-    assert.equal(resolveCoatLength('unknown', 0.4), 'short');
+  it('does not invent short when unknown', () => {
+    assert.equal(resolveCoatLength('unknown', 0.4), 'unknown');
   });
 
-  it('demotes uncertain medium to short', () => {
-    assert.equal(resolveCoatLength('medium', 0.5), 'short');
+  it('keeps medium when Vision says medium', () => {
+    assert.equal(resolveCoatLength('medium', 0.5), 'medium');
   });
 
-  it('keeps medium when confident', () => {
-    assert.equal(resolveCoatLength('medium', 0.9), 'medium');
+  it('keeps short', () => {
+    assert.equal(resolveCoatLength('short', 0.9), 'short');
   });
 });
 
 describe('normalizeAnalysis v1 — ginger bicolor domestic', () => {
-  it('maps orange+white to Roux et blanc, European, Court, markings', () => {
+  it('maps orange+white to Roux et blanc; low breed conf → Race inconnue; no invented description', () => {
     const json = {
       schema_version: 'catdex.analysis.v1',
       status: 'success',
@@ -144,19 +133,21 @@ describe('normalizeAnalysis v1 — ginger bicolor domestic', () => {
         },
         playful_traits: ['Curieux', 'Vif'],
         description:
-          'Un chat bicolore de type Persian, air curieux. Rouxie rejoint ton CatDex.',
+          'Chat roux et blanc à poils mi-longs, avec une poitrine blanche et des yeux verts. Il est assis et regarde l’objectif.',
       },
     };
 
-    const result = normalizeAnalysis(json, fallback);
+    const result = normalizeAnalysis(json);
 
     assert.equal(result.notACat, false);
-    assert.equal(result.breed, 'Européen');
+    assert.equal(result.breed, RACE_INCONNUE);
     assert.equal(result.color, 'Roux et blanc');
-    assert.equal(result.coat, 'Court');
+    assert.equal(result.coat, 'Mi-long');
     assert.match(result.coatPattern ?? '', /Poitrine blanche/i);
     assert.match(result.eyes ?? '', /Vert/i);
-    assert.ok(!/^Un chat .+ de type /i.test(result.description));
+    assert.equal(result.suggestedName, 'Rouxie');
+    assert.deepEqual(result.tags, ['Curieux', 'Vif']);
     assert.match(result.description.toLowerCase(), /roux et blanc/);
+    assert.ok(!/^Un chat .+ de type /i.test(result.description));
   });
 });

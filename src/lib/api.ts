@@ -1,5 +1,4 @@
 import { getApiCandidateUrls } from '@/lib/apiUrl';
-import { ensureCatIdentity, generateCatAnalysis } from '@/lib/mockAnalysis';
 import { supabase } from '@/lib/supabase';
 import type { CatAnalysis } from '@/types/cat';
 
@@ -19,9 +18,9 @@ type AnalyzeApiPayload = {
   cutoutMimeType?: string;
 };
 
-/** Local API should answer fast; remote (Render cold start) gets a shorter budget in DEV. */
+/** Vision needs real time — never fall back to mock on timeout. */
 function analyzeTimeoutFor(apiBase: string): number {
-  if (!__DEV__) return 28_000;
+  if (!__DEV__) return 45_000;
   try {
     const host = new URL(apiBase).hostname;
     const isLocal =
@@ -29,9 +28,9 @@ function analyzeTimeoutFor(apiBase: string): number {
       host === '127.0.0.1' ||
       host.startsWith('192.168.') ||
       host.startsWith('10.');
-    return isLocal ? 6_000 : 5_000;
+    return isLocal ? 45_000 : 40_000;
   } catch {
-    return 6_000;
+    return 45_000;
   }
 }
 
@@ -39,10 +38,6 @@ function stripDataUrl(imageBase64: string): { base64: string; mimeType?: string 
   const match = /^data:([^;]+);base64,(.+)$/s.exec(imageBase64.trim());
   if (!match) return { base64: imageBase64.trim() };
   return { mimeType: match[1], base64: match[2] };
-}
-
-function seedFromImage(base64: string): string {
-  return base64.slice(0, 1200);
 }
 
 async function getAccessToken(): Promise<string | null> {
@@ -68,6 +63,13 @@ async function requestAnalyze(
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
+
+  console.log('[analyzeCatPhoto] POST', {
+    apiBase,
+    mimeType,
+    bytesApprox: Math.round((base64.length * 3) / 4),
+    hasAuth: Boolean(accessToken),
+  });
 
   const response = await fetch(`${apiBase}/analyze-cat`, {
     method: 'POST',
@@ -101,11 +103,34 @@ async function requestAnalyze(
       data?.error || 'Image trop lourde. Compresse la photo et réessaie.',
     );
   }
+  if (response.status === 503 || response.status === 502) {
+    throw new Error(
+      data?.error || 'Analyse Vision indisponible. Réessaie dans un instant.',
+    );
+  }
+
+  if (data?.mocked) {
+    console.warn('[analyzeCatPhoto] Server returned mocked=true — rejecting');
+    throw new Error(
+      'Analyse simulée refusée. L’API doit utiliser OpenAI Vision.',
+    );
+  }
 
   if (data?.analysis) {
+    console.log('[analyzeCatPhoto] Vision analysis received', {
+      suggestedName: data.analysis.suggestedName,
+      breed: data.analysis.breed,
+      color: data.analysis.color,
+      coat: data.analysis.coat,
+      tags: data.analysis.tags,
+      distinctiveFeatures: data.analysis.distinctiveFeatures,
+      description: data.analysis.description?.slice(0, 120),
+      confidence: data.analysis.confidence,
+      notACat: data.analysis.notACat,
+    });
     return {
-      analysis: ensureCatIdentity(data.analysis, seedFromImage(base64)),
-      mocked: data.mocked,
+      analysis: data.analysis,
+      mocked: false,
       error: data.error,
       cutoutUri: data.cutoutBase64
         ? `data:${data.cutoutMimeType ?? 'image/png'};base64,${data.cutoutBase64}`
@@ -129,6 +154,10 @@ function isNetworkError(error: unknown): boolean {
   return false;
 }
 
+/**
+ * Send photo to OpenAI Vision via API.
+ * Never fills the form with mock / random data.
+ */
 export async function analyzeCatPhoto(
   base64Image: string,
   mimeType = 'image/jpeg',
@@ -136,11 +165,10 @@ export async function analyzeCatPhoto(
   const stripped = stripDataUrl(base64Image);
   const resolvedMime = stripped.mimeType ?? mimeType;
   const candidates = getApiCandidateUrls();
-  const seed = seedFromImage(stripped.base64);
 
-  if (!__DEV__ && candidates.length === 0) {
+  if (candidates.length === 0) {
     throw new Error(
-      'EXPO_PUBLIC_API_URL manquant. Configure l’URL HTTPS de l’API pour les builds store.',
+      'EXPO_PUBLIC_API_URL manquant. Configure l’URL de l’API Vision.',
     );
   }
 
@@ -155,7 +183,7 @@ export async function analyzeCatPhoto(
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         lastError = new Error(
-          `L’analyse a pris trop de temps. Vérifie que l’API tourne (${candidates.join(', ')}).`,
+          `L’analyse Vision a pris trop de temps (${apiBase}). Réessaie.`,
         );
       } else if (isNetworkError(error)) {
         lastError = new Error(`Impossible de joindre l’API (${apiBase}).`);
@@ -172,18 +200,10 @@ export async function analyzeCatPhoto(
     }
   }
 
-  if (__DEV__) {
-    return {
-      analysis: generateCatAnalysis(seed),
-      mocked: true,
-      error: lastError?.message,
-    };
-  }
-
   throw (
     lastError ??
     new Error(
-      `Impossible de joindre l’API. Vérifie EXPO_PUBLIC_API_URL (${candidates[0] ?? 'non défini'}).`,
+      `Impossible de joindre l’API Vision (${candidates[0] ?? 'non défini'}).`,
     )
   );
 }

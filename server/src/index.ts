@@ -92,103 +92,6 @@ const analyzeSchema = z.object({
   mimeType: z.string().default('image/jpeg'),
 });
 
-const COLORS = [
-  'Noir',
-  'Roux',
-  'Roux et blanc',
-  'Gris',
-  'Gris tigré',
-  'Blanc',
-  'Écaille de tortue',
-  'Crème',
-  'Noir et blanc',
-] as const;
-
-const BREEDS = [
-  'Européen',
-  'Chat domestique à poil court',
-  'Siamois',
-  'Maine Coon',
-  'British Shorthair',
-  'Bengal',
-  'Ragdoll',
-  'Norvégien',
-] as const;
-
-const COATS = ['Court', 'Mi-long', 'Long'] as const;
-const EYES = ['Ambre', 'Verts', 'Bleus', 'Dorés', 'Noisette', 'Cuivre'] as const;
-const SIZES = ['Petite', 'Moyenne', 'Grande'] as const;
-const GENDERS = ['male', 'female', 'unknown'] as const;
-const NAMES = [
-  'Nori',
-  'Caramel',
-  'Mistral',
-  'Suki',
-  'Olive',
-  'Pixel',
-  'Moka',
-  'Luna',
-  'Tigrou',
-  'Cendre',
-  'Wasabi',
-  'Praline',
-  'Ziggy',
-  'Félix',
-  'Mina',
-  'Gus',
-  'Nala',
-  'Biscuit',
-  'Shadow',
-  'Pêche',
-] as const;
-const TAG_SETS = [
-  ['Ombre', 'Mystère', 'Discret'],
-  ['Soleil', 'Curieux', 'Vif'],
-  ['Velours', 'Doux', 'Câlin'],
-  ['Éclair', 'Audacieux', 'Joueur'],
-  ['Nuit', 'Furtif', 'Calme'],
-  ['Miel', 'Gourmand', 'Affectueux'],
-  ['Brume', 'Poète', 'Observateur'],
-  ['Flamme', 'Têtu', 'Explorateur'],
-] as const;
-
-function hashSeed(input: string): number {
-  let hash = 2166136261;
-  for (let i = 0; i < input.length; i += 1) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return Math.abs(hash >>> 0);
-}
-
-function pick<T>(items: readonly T[], seed: number, salt: number): T {
-  return items[(seed + salt * 97) % items.length]!;
-}
-
-/** Varied mock analysis when OpenAI is unavailable — always has breed/color/name/traits. */
-function buildFallbackAnalysis(seedInput: string) {
-  const seed = hashSeed(seedInput || 'fallback');
-  const color = pick(COLORS, seed, 1);
-  const breed = pick(BREEDS, seed, 2);
-  const coat = pick(COATS, seed, 3);
-  const eyes = pick(EYES, seed, 4);
-  const size = pick(SIZES, seed, 5);
-  const gender = pick(GENDERS, seed, 6);
-  const suggestedName = pick(NAMES, seed, 7);
-  const tags = [...pick(TAG_SETS, seed, 8)];
-  return {
-    color,
-    breed,
-    coat,
-    eyes,
-    size,
-    gender,
-    tags,
-    suggestedName,
-    description: `Ce chat ${color.toLowerCase()} t'observe avec curiosité. ${suggestedName} est prêt·e à rejoindre ton CatDex.`,
-  };
-}
-
 function stripDataUrl(imageBase64: string, mimeType: string) {
   const dataUrl = /^data:([^;]+);base64,(.+)$/s.exec(imageBase64);
   if (!dataUrl) return { imageBase64, mimeType };
@@ -249,7 +152,6 @@ app.post('/analyze-cat', async (c) => {
   }
 
   let { imageBase64, mimeType } = stripDataUrl(parsed.data.imageBase64, parsed.data.mimeType);
-  const analysisSeed = imageBase64.slice(0, 1200);
 
   if (!isAllowedMime(mimeType)) {
     return c.json(
@@ -286,24 +188,35 @@ app.post('/analyze-cat', async (c) => {
 
   const apiKey = process.env.OPENAI_API_KEY;
 
-  // Mock path: respond immediately — cutout is optional polish, not required for detection.
+  // Mock path DISABLED — form must never be filled with invented data.
   if (keyLooksPlaceholder(apiKey)) {
-    if (isProductionRuntime() && !allowUnauthAnalyze()) {
-      return c.json({ error: 'Service d’analyse indisponible.' }, 503);
-    }
-    return c.json({
-      analysis: buildFallbackAnalysis(analysisSeed),
-      mocked: true,
-    });
+    console.error('[analyze-cat] OPENAI_API_KEY missing or placeholder');
+    return c.json(
+      {
+        error:
+          'Service d’analyse indisponible. Configure OPENAI_API_KEY pour analyser les photos.',
+        mocked: false,
+      },
+      503,
+    );
   }
 
   const openai = new OpenAI({ apiKey: apiKey!.trim() });
+  const model = process.env.OPENAI_MODEL ?? 'gpt-4o';
 
   try {
-    // Vision first for snappy detection — attach cutout only if it finishes in time.
+    console.log('[analyze-cat] Vision request', {
+      model,
+      mimeType,
+      imageBytes: estimateDecodedBytes(imageBase64),
+      imageBase64Prefix: imageBase64.slice(0, 48),
+      promptChars: CATDEX_VISION_PROMPT.length,
+      userText: CATDEX_VISION_USER_TEXT,
+    });
+
     const cutoutPromise = cutoutWithinBudget(imageBase64, mimeType);
     const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+      model,
       temperature: 0.2,
       max_tokens: 1400,
       response_format: CATDEX_ANALYSIS_RESPONSE_FORMAT,
@@ -323,7 +236,7 @@ app.post('/analyze-cat', async (c) => {
               type: 'image_url',
               image_url: {
                 url: `data:${mimeType};base64,${imageBase64}`,
-                detail: 'low',
+                detail: 'high',
               },
             },
           ],
@@ -331,15 +244,26 @@ app.post('/analyze-cat', async (c) => {
       ],
     });
 
-    // Use cutout only if it already finished during Vision — never wait extra.
     const cutoutBase64 = await Promise.race([
       cutoutPromise,
       Promise.resolve(null as string | null),
     ]);
 
     const raw = completion.choices[0]?.message?.content ?? '{}';
+    console.log('[analyze-cat] Vision raw JSON', raw);
     const json = JSON.parse(raw) as VisionJson;
-    const analysis = normalizeAnalysis(json, buildFallbackAnalysis(analysisSeed));
+    const analysis = normalizeAnalysis(json);
+    console.log('[analyze-cat] Mapped analysis', {
+      suggestedName: analysis.suggestedName,
+      breed: analysis.breed,
+      color: analysis.color,
+      coat: analysis.coat,
+      tags: analysis.tags,
+      distinctiveFeatures: analysis.distinctiveFeatures,
+      description: analysis.description?.slice(0, 160),
+      confidence: analysis.confidence,
+      notACat: analysis.notACat,
+    });
 
     return c.json({
       analysis,
@@ -358,13 +282,14 @@ app.post('/analyze-cat', async (c) => {
         : {}),
     });
   } catch (error) {
-    console.error('[analyze-cat]', error);
-    // Prefer 200 so public tunnels (Cloudflare) do not replace the JSON body.
-    return c.json({
-      error: 'Échec analyse OpenAI',
-      analysis: buildFallbackAnalysis(analysisSeed),
-      mocked: true,
-    });
+    console.error('[analyze-cat] OpenAI failure — no mock fill', error);
+    return c.json(
+      {
+        error: 'Échec analyse OpenAI. Réessaie avec une photo plus nette.',
+        mocked: false,
+      },
+      502,
+    );
   }
 });
 

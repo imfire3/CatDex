@@ -262,13 +262,13 @@ export function generateCatAnalysis(seedInput: string): CatAnalysis {
 }
 
 /**
- * Ensure analysis always has breed, color, random-feeling traits and a name.
- * Keeps AI-detected color/breed when present; fills gaps from the seed pool.
+ * Pass-through for Vision analysis identity fields.
+ * Never invents name / breed / color / coat / traits — capture form stays empty when unknown.
  * Does not invent a cat when Vision reported none.
  */
 export function ensureCatIdentity(
   analysis: CatAnalysis,
-  seedInput: string,
+  _seedInput = '',
 ): CatAnalysis {
   const description = (analysis.description ?? '').toLowerCase();
   const breedRaw = (analysis.breed ?? '').toLowerCase();
@@ -281,9 +281,9 @@ export function ensureCatIdentity(
   if (noCat) {
     return {
       ...analysis,
-      color: analysis.color?.trim() || 'Indéterminée',
+      color: analysis.color?.trim() || '',
       breed: analysis.breed?.trim() || 'Inconnu',
-      coat: analysis.coat?.trim() || 'Indéterminée',
+      coat: analysis.coat?.trim() || '',
       description:
         analysis.errorMessage?.trim() ||
         analysis.description?.trim() ||
@@ -300,51 +300,14 @@ export function ensureCatIdentity(
     };
   }
 
-  const generated = generateCatAnalysis(seedInput);
-  const color =
-    analysis.color?.trim() &&
-    !/indétermin|inconnu|unknown|n\/a/i.test(analysis.color)
-      ? analysis.color.trim()
-      : generated.color;
-  const breed =
-    analysis.breed?.trim() &&
-    !/indétermin|inconnu|unknown|n\/a/i.test(analysis.breed)
-      ? analysis.breed.trim()
-      : generated.breed;
-  const coat =
-    analysis.coat?.trim() && !/indétermin|inconnu/i.test(analysis.coat)
-      ? analysis.coat.trim()
-      : generated.coat;
-  const suggestedNameRaw =
-    analysis.suggestedName?.trim() ||
-    suggestNameForAppearance(color, breed, seedInput || color);
-  const suggestedName = nameFitsColor(suggestedNameRaw, color)
-    ? suggestedNameRaw
-    : suggestNameForAppearance(color, breed, seedInput || color);
-  const tags =
-    analysis.tags && analysis.tags.length > 0
-      ? analysis.tags.slice(0, 8)
-      : [...tagsForColor(color)].slice(0, 3);
-  const gender = analysis.gender ?? generated.gender;
-  const eyes = analysis.eyes?.trim() || generated.eyes;
-  const size = analysis.size?.trim() || generated.size;
-  const nextDescription =
-    analysis.description?.trim() &&
-    !/aucun chat clairement visible/i.test(analysis.description)
-      ? analysis.description.trim()
-      : buildDescription(suggestedName, color, breed, tags ?? []);
-
   return {
     ...analysis,
-    color,
-    breed,
-    coat,
-    eyes,
-    size,
-    gender,
-    tags,
-    suggestedName,
-    description: nextDescription,
+    color: analysis.color?.trim() ?? '',
+    breed: analysis.breed?.trim() ?? '',
+    coat: analysis.coat?.trim() ?? '',
+    description: analysis.description?.trim() ?? '',
+    suggestedName: analysis.suggestedName?.trim() ?? '',
+    tags: analysis.tags?.filter(Boolean) ?? [],
   };
 }
 
