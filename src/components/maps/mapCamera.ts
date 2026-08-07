@@ -20,7 +20,7 @@ export const MAP_MIN_ZOOM = 13;
 export const MAP_MAX_ZOOM = 19;
 
 /** Min meters before soft follow re-centers on the player. */
-export const MAP_FOLLOW_THRESHOLD_M = 28;
+export const MAP_FOLLOW_THRESHOLD_M = 8;
 
 export function buildMapCamera(
   coordinate: { latitude: number; longitude: number },

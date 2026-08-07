@@ -16,7 +16,8 @@ import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const DEMO_CAT = require('../../../assets/world-cats/miel.jpg');
+/** Baseline JPEG demo cat — used for onboarding previews (must render in Expo Go). */
+const DEMO_CAT = require('../../../assets/onboarding-demo-cat.jpg');
 
 export type OnboardingGlyph = 'paw' | 'capture' | 'star';
 
@@ -148,15 +149,22 @@ export function OnboardingSightingPreview() {
         shadow.low,
       ]}
     >
-      <Image
-        source={DEMO_CAT}
+      <View
         style={{
           width: spacing[64],
           height: spacing[64],
           borderRadius: radius[8],
+          overflow: 'hidden',
           backgroundColor: colors.surfaceSecondary,
         }}
-      />
+      >
+        <Image
+          source={DEMO_CAT}
+          resizeMode="cover"
+          style={{ width: spacing[64], height: spacing[64] }}
+          accessibilityIgnoresInvertColors
+        />
+      </View>
       <View style={{ flex: 1, gap: spacing[4] }}>
         <Text variant="caption" color="textMuted">
           Chat aperçu
@@ -210,7 +218,12 @@ export function OnboardingScanPreview() {
           borderColor: colors.orange,
         }}
       >
-        <Image source={DEMO_CAT} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        <Image
+          source={DEMO_CAT}
+          style={{ width: spacing[64], height: spacing[64] }}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
         <View
           style={{
             position: 'absolute',
@@ -279,7 +292,12 @@ export function OnboardingMiniDexPreview() {
           backgroundColor: colors.surfaceSecondary,
         }}
       >
-        <Image source={DEMO_CAT} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        <Image
+          source={DEMO_CAT}
+          style={{ width: spacing[64], height: spacing[80] }}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
         <LinearGradient
           colors={['transparent', 'rgba(21,23,43,0.72)']}
           style={{

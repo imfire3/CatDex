@@ -52,6 +52,13 @@ export default function AuthCallbackScreen() {
   }, [handleAuthUrl, params]);
 
   if (user && done) {
+    const typeParam = params.type;
+    const isRecovery =
+      typeParam === 'recovery' ||
+      (Array.isArray(typeParam) && typeParam.includes('recovery'));
+    if (isRecovery) {
+      return <Redirect href="/settings/edit-profile" />;
+    }
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
   }
 

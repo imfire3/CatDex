@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
@@ -28,6 +28,8 @@ export default function EditProfileScreen() {
   const user = useAuthStore((state) => state.user);
   const loading = useAuthStore((state) => state.loading);
   const updateProfile = useAuthStore((state) => state.updateProfile);
+  const updatePassword = useAuthStore((state) => state.updatePassword);
+  const sendPasswordResetEmail = useAuthStore((state) => state.sendPasswordResetEmail);
   const showToast = useToastStore((state) => state.show);
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
@@ -36,6 +38,10 @@ export default function EditProfileScreen() {
   const [avatarUri, setAvatarUri] = useState<string | undefined>(user?.avatarUrl);
   const [error, setError] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -56,6 +62,10 @@ export default function EditProfileScreen() {
     };
   }, [user?.id]);
 
+  useEffect(() => {
+    setAvatarUri(user?.avatarUrl);
+  }, [user?.avatarUrl]);
+
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
   }
@@ -63,6 +73,15 @@ export default function EditProfileScreen() {
   const initials = (displayName || user.displayName || 'EX').slice(0, 2).toUpperCase();
 
   const handlePickAvatar = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        'Photos indisponibles',
+        'Autorise l’accès à ta galerie pour changer ta photo de profil.',
+      );
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -83,13 +102,13 @@ export default function EditProfileScreen() {
           : state,
       );
       showToast({
-        title: 'Avatar mis à jour',
+        title: 'Photo mise à jour',
         tone: 'success',
       });
     } catch {
       showToast({
-        title: 'Avatar local',
-        description: 'Photo prête ici. La sync cloud n’est pas disponible pour le moment.',
+        title: 'Photo enregistrée ici',
+        description: 'La sync cloud n’est pas disponible pour le moment.',
         tone: 'default',
       });
     } finally {
@@ -119,10 +138,69 @@ export default function EditProfileScreen() {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (newPassword.trim().length < 8) {
+      showToast({
+        title: 'Mot de passe trop court',
+        description: '8 caractères minimum.',
+        tone: 'danger',
+      });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast({
+        title: 'Confirmation incorrecte',
+        description: 'Les deux mots de passe doivent être identiques.',
+        tone: 'danger',
+      });
+      return;
+    }
+    setPasswordBusy(true);
+    try {
+      await updatePassword(newPassword);
+      setNewPassword('');
+      setConfirmPassword('');
+      showToast({
+        title: 'Mot de passe mis à jour',
+        tone: 'success',
+      });
+    } catch (err) {
+      showToast({
+        title: 'Impossible de modifier',
+        description:
+          err instanceof Error ? err.message : 'Réessaie dans un instant.',
+        tone: 'danger',
+      });
+    } finally {
+      setPasswordBusy(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setResetBusy(true);
+    try {
+      await sendPasswordResetEmail();
+      showToast({
+        title: 'E-mail envoyé',
+        description: `Ouvre le lien reçu sur ${user.email}.`,
+        tone: 'success',
+      });
+    } catch (err) {
+      showToast({
+        title: 'Envoi impossible',
+        description:
+          err instanceof Error ? err.message : 'Réessaie dans un instant.',
+        tone: 'danger',
+      });
+    } finally {
+      setResetBusy(false);
+    }
+  };
+
   return (
     <SettingsScreen
       title="Modifier le profil"
-      subtitle="Change ton pseudo, ton avatar et ta bio."
+      subtitle="Change ton pseudo, ta photo et ton mot de passe."
       footer={
         <Button
           title="Enregistrer"
@@ -152,9 +230,12 @@ export default function EditProfileScreen() {
             accessibilityLabel="Avatar"
           />
         </Pressable>
-        <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-          {uploadingAvatar ? 'Envoi…' : 'Changer la photo'}
-        </Text>
+        <Button
+          variant="secondary"
+          title={uploadingAvatar ? 'Envoi…' : 'Modifier la photo'}
+          loading={uploadingAvatar}
+          onPress={() => void handlePickAvatar()}
+        />
       </View>
 
       <View
@@ -199,6 +280,56 @@ export default function EditProfileScreen() {
         <Text variant="caption" color="textMuted">
           E-mail : {user.email || '—'}
         </Text>
+      </View>
+
+      <View
+        style={[
+          {
+            backgroundColor: colors.surfaceElevated,
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: spacing[16],
+            gap: spacing[16],
+          },
+          shadow.low,
+        ]}
+      >
+        <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.display }}>
+          Mot de passe
+        </Text>
+        <Text variant="bodySmall" color="textSecondary">
+          Change-le ici, ou reçois un e-mail de réinitialisation.
+        </Text>
+        <TextInput
+          label="Nouveau mot de passe"
+          value={newPassword}
+          onChangeText={setNewPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="••••••••"
+        />
+        <TextInput
+          label="Confirmer"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="••••••••"
+        />
+        <Button
+          title="Mettre à jour le mot de passe"
+          loading={passwordBusy}
+          onPress={() => void handleChangePassword()}
+        />
+        <Button
+          variant="secondary"
+          title="Envoyer un e-mail de réinitialisation"
+          loading={resetBusy}
+          onPress={() => void handleResetPassword()}
+        />
       </View>
     </SettingsScreen>
   );

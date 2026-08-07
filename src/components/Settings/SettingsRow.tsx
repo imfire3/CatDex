@@ -167,8 +167,9 @@ export function SettingsRow(props: SettingsRowProps) {
               value={value}
               onValueChange={onValueChange}
               disabled={disabled}
-              trackColor={{ false: colors.border, true: colors.brandSoft }}
-              thumbColor={value ? colors.brand : colors.surfaceElevated}
+              trackColor={{ false: colors.brandSoft, true: colors.success }}
+              thumbColor={value ? colors.onAccent : colors.brand}
+              ios_backgroundColor={colors.brandSoft}
               accessibilityLabel={title}
             />
           }

@@ -68,6 +68,10 @@ type AuthState = {
   signInWithApple: () => Promise<void>;
   completeOnboarding: () => void;
   updateProfile: (input: { displayName: string }) => Promise<void>;
+  /** Update password for the signed-in user (Supabase session required). */
+  updatePassword: (newPassword: string) => Promise<void>;
+  /** Send a password-reset email to the current account. */
+  sendPasswordResetEmail: () => Promise<void>;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
   handleAuthUrl: (url: string) => Promise<boolean>;
@@ -693,6 +697,59 @@ export const useAuthStore = create<AuthState>()(
             current?.email,
           ),
         }));
+      },
+
+      updatePassword: async (newPassword) => {
+        const trimmed = newPassword.trim();
+        if (trimmed.length < 8) {
+          throw new Error('Le mot de passe doit faire au moins 8 caractères.');
+        }
+        const current = get().user;
+        if (!current) {
+          throw new Error('Connecte-toi pour modifier ton mot de passe.');
+        }
+        if (!supabase || current.id.startsWith('user_')) {
+          throw new Error(
+            'La modification du mot de passe nécessite un compte cloud connecté.',
+          );
+        }
+        try {
+          set({ error: null });
+          const { error } = await supabase.auth.updateUser({ password: trimmed });
+          if (error) throw error;
+        } catch (error) {
+          console.error('Update password error:', error);
+          set({ error: error as AuthError });
+          throw error;
+        }
+      },
+
+      sendPasswordResetEmail: async () => {
+        const current = get().user;
+        if (!current?.email) {
+          throw new Error('Aucune adresse e-mail associée à ce compte.');
+        }
+        if (!supabase || current.id.startsWith('user_')) {
+          throw new Error(
+            'La réinitialisation nécessite un compte cloud connecté.',
+          );
+        }
+        try {
+          set({ error: null });
+          const redirectTo =
+            Platform.OS === 'web' && typeof window !== 'undefined'
+              ? `${window.location.origin}/auth/callback`
+              : Linking.createURL('auth/callback');
+          const { error } = await supabase.auth.resetPasswordForEmail(
+            current.email,
+            { redirectTo },
+          );
+          if (error) throw error;
+        } catch (error) {
+          console.error('Password reset email error:', error);
+          set({ error: error as AuthError });
+          throw error;
+        }
       },
 
       updateProfile: async ({ displayName }) => {

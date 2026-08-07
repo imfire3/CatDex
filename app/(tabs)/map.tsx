@@ -153,7 +153,7 @@ export default function MapScreen() {
       if (!active) return null;
     }
     const position = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
+      accuracy: Location.Accuracy.High,
     });
     const next = {
       latitude: position.coords.latitude,
@@ -176,13 +176,35 @@ export default function MapScreen() {
 
   useEffect(() => {
     let mounted = true;
+    let subscription: Location.LocationSubscription | null = null;
+
     (async () => {
       const next = await refreshUserCoordinate({ request: true });
       if (!next || !mounted) return;
       flyToCoordinate(next);
+
+      const active = await isLocationActive();
+      if (!active || !mounted) return;
+
+      subscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 1200,
+          distanceInterval: 8,
+        },
+        (position) => {
+          if (!mounted) return;
+          setUserCoordinate({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+      );
     })().catch(() => undefined);
+
     return () => {
       mounted = false;
+      subscription?.remove();
     };
   }, [flyToCoordinate, refreshUserCoordinate]);
 

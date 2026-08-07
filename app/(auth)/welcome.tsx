@@ -1,5 +1,12 @@
 import { Redirect, router } from 'expo-router';
-import { Image, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import {
+  Dimensions,
+  ImageBackground,
+  StyleSheet,
+  View,
+  type ImageSourcePropType,
+} from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,10 +19,12 @@ import { useAuthStore, getPostAuthHref } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const WELCOME_MAP = require('../../assets/welcome-map-bg.jpg');
+const WELCOME_CAT = require('../../assets/welcome-cat.jpg');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 /**
  * Welcome — map wallpaper + white auth sheet.
- * No floating cards · no sheet drag handle · clear CTA hierarchy.
+ * Explicit screen-sized ImageBackground so the hero never collapses to brand fill.
  */
 export default function WelcomeScreen() {
   const { colors, fonts, spacing, radius, motion, shadow } = useTheme();
@@ -23,6 +32,7 @@ export default function WelcomeScreen() {
   const reduceMotion = useReducedMotion();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
+  const [heroSource, setHeroSource] = useState<ImageSourcePropType>(WELCOME_MAP);
 
   if (user) {
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
@@ -37,23 +47,30 @@ export default function WelcomeScreen() {
     : FadeInUp.delay(160).duration(motion.duration.normal);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.sky }]}>
-      <Animated.View entering={enter} style={StyleSheet.absoluteFill}>
-        <Image
-          source={WELCOME_MAP}
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <Animated.View entering={enter} style={styles.heroWrap} pointerEvents="none">
+        <ImageBackground
+          source={heroSource}
           resizeMode="cover"
-          style={[styles.map, mapWebStyle as object]}
-        />
-        <LinearGradient
-          colors={['rgba(255,255,255,0.55)', 'transparent', 'transparent']}
-          style={[styles.topVeil, { height: insets.top + spacing[96] }]}
-          pointerEvents="none"
-        />
-        <LinearGradient
-          colors={['transparent', 'rgba(249,249,251,0.45)', colors.authSheet]}
-          style={styles.bottomVeil}
-          pointerEvents="none"
-        />
+          style={styles.heroImage}
+          imageStyle={styles.heroImageInner}
+          onError={() => {
+            if (heroSource !== WELCOME_CAT) setHeroSource(WELCOME_CAT);
+          }}
+          accessibilityRole="image"
+          accessibilityLabel="Carte du quartier CatDex"
+        >
+          <LinearGradient
+            colors={['rgba(255,255,255,0.45)', 'transparent', 'transparent']}
+            style={[styles.topVeil, { height: insets.top + spacing[96] }]}
+            pointerEvents="none"
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(249,249,251,0.35)', colors.authSheet]}
+            style={styles.bottomVeil}
+            pointerEvents="none"
+          />
+        </ImageBackground>
       </Animated.View>
 
       <Animated.View
@@ -129,12 +146,16 @@ export default function WelcomeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  map: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  heroWrap: {
+    ...StyleSheet.absoluteFillObject,
+    width: SCREEN_W,
+    height: SCREEN_H,
+  },
+  heroImage: {
+    width: SCREEN_W,
+    height: SCREEN_H,
+  },
+  heroImageInner: {
     width: '100%',
     height: '100%',
   },
@@ -163,8 +184,3 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
 });
-
-const mapWebStyle = {
-  objectFit: 'cover' as const,
-  objectPosition: 'center 40%',
-};
