@@ -18,5 +18,5 @@ Travail en **tickets**. Un ticket à la fois. Review → commit → ticket suiva
 
 ## Ticket actif
 
-→ **Sprint 0 / Ticket 1** — Sécuriser `/analyze-cat`  
-Plan : [tickets/S0-T1-secure-analyze-cat.md](./tickets/S0-T1-secure-analyze-cat.md) — ⏳ attente validation
+→ **Sprint 0 / Ticket 3** — ToastHost (attente GO)  
+Lot 0 sécurité (T1+T2) : [audits/engineering/lot0-security-done.md](../audits/engineering/lot0-security-done.md)

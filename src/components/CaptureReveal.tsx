@@ -11,7 +11,6 @@ import {
   type TextInput as RNTextInputType,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
 import { AuthBackButton } from '@/components/Auth/AuthChrome';
 import { Badge } from '@/components/Badge';
@@ -53,26 +52,6 @@ type FieldKey =
   | 'tag'
   | 'description';
 
-function EditIcon({ color }: { color: string }) {
-  const { iconStroke } = useTheme();
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden>
-      <Path
-        d="M4 20h4.5L19 9.5 14.5 5 4 15.5V20Z"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M12.5 7.5 16.5 11.5"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
 function EditableRow({
   label,
   value,
@@ -104,8 +83,8 @@ function EditableRow({
   }, [editing]);
 
   return (
-    <View style={{ gap: spacing[8] }}>
-      <Text variant="label" color="textSecondary">
+    <View style={{ gap: spacing[4] }}>
+      <Text variant="bodySmall" color="textBody" style={{ fontFamily: fonts.bodySemi }}>
         {label}
       </Text>
       {editing ? (
@@ -153,9 +132,7 @@ function EditableRow({
           onPress={onStartEdit}
           style={({ pressed }) => ({
             minHeight: multiline ? spacing[80] : spacing[48],
-            flexDirection: 'row',
-            alignItems: multiline ? 'flex-start' : 'center',
-            gap: spacing[16],
+            justifyContent: multiline ? 'flex-start' : 'center',
             paddingHorizontal: spacing[16],
             paddingVertical: multiline ? spacing[16] : 0,
             borderRadius: radius.md,
@@ -168,24 +145,11 @@ function EditableRow({
           <Text
             variant="body"
             color={value.trim() ? 'text' : 'textMuted'}
-            style={{ flex: 1, fontFamily: fonts.body }}
+            style={{ fontFamily: fonts.body }}
             numberOfLines={multiline ? 4 : 1}
           >
             {value.trim() || placeholder}
           </Text>
-          <View
-            style={{
-              width: spacing[32],
-              height: spacing[32],
-              borderRadius: radius.full,
-              backgroundColor: colors.brandSoft,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: multiline ? 0 : undefined,
-            }}
-          >
-            <EditIcon color={colors.brand} />
-          </View>
         </Pressable>
       )}
     </View>
@@ -276,7 +240,11 @@ export function CaptureReveal({
     seeded.breed && seeded.breed !== 'Indéterminée' ? seeded.breed : '',
   );
   const [color, setColor] = useState(seeded.color || '');
-  const [pattern, setPattern] = useState(seeded.coatPattern || '');
+  const [pattern, setPattern] = useState(
+    seeded.distinctiveFeatures && seeded.distinctiveFeatures.length > 0
+      ? seeded.distinctiveFeatures.slice(0, 3).join(', ')
+      : seeded.coatPattern || '',
+  );
   const [description, setDescription] = useState(seeded.description || '');
   const [editingField, setEditingField] = useState<FieldKey | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -419,80 +387,86 @@ export function CaptureReveal({
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        <Text
-          variant="h1"
-          color="text"
-          align="center"
-          style={{ fontFamily: fonts.display }}
-        >
-          Nouveau chat découvert !
-        </Text>
-
         <View
           style={[
             {
-              width: 200,
-              height: 200,
-              borderRadius: radius.full,
-              borderWidth: 4,
-              borderColor: colors.brandSoft,
+              width: '100%',
+              borderRadius: radius.cta,
+              backgroundColor: colors.surfaceElevated,
+              borderWidth: 1,
+              borderColor: colors.border,
               overflow: 'hidden',
-              backgroundColor: colors.surfaceSecondary,
             },
             shadow.medium,
           ]}
         >
+          <View
+            style={{
+              paddingHorizontal: spacing[16],
+              paddingTop: spacing[16],
+              paddingBottom: spacing[8],
+              gap: spacing[4],
+            }}
+          >
+            <Text
+              variant="h1"
+              color="textBrand"
+              style={{ fontFamily: fonts.display }}
+            >
+              {name.trim() || initialName}
+              {symbol ? ` ${symbol}` : ''}
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: spacing[8],
+                alignItems: 'center',
+              }}
+            >
+              <Badge
+                label={catDexRarityLabel(rarityId)}
+                color={rarity.foreground}
+                backgroundColor={rarity.background}
+              />
+              <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+                {dexLabel}
+              </Text>
+            </View>
+          </View>
+
           <Image
             source={{ uri: photoUri }}
             resizeMode="cover"
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: '100%', aspectRatio: 1 }}
             accessibilityLabel={`Photo de ${name || initialName}`}
           />
-        </View>
-
-        <View style={{ gap: spacing[8], width: '100%', alignItems: 'center' }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: spacing[8],
-            }}
-          >
-            <Badge
-              label="Nouveau"
-              color={colors.textBrand}
-              backgroundColor={colors.brandSoft}
-            />
-            <Badge
-              label={catDexRarityLabel(rarityId)}
-              color={rarity.foreground}
-              backgroundColor={rarity.background}
-            />
-            {symbol ? (
-              <Text variant="body" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-                {symbol}
-              </Text>
-            ) : null}
-          </View>
 
           {seeded.requiresUserConfirmation ? (
-            <Text variant="bodySmall" color="warning" align="center">
-              Confiance limitée — vérifie les champs ci-dessous.
+            <Text
+              variant="bodySmall"
+              color="warning"
+              align="center"
+              style={{ padding: spacing[16] }}
+            >
+              Confiance limitée — vérifie les infos ci-dessous.
             </Text>
-          ) : null}
+          ) : (
+            <Text
+              variant="caption"
+              color="textMuted"
+              align="center"
+              style={{ padding: spacing[16] }}
+            >
+              Tape une ligne pour corriger
+            </Text>
+          )}
         </View>
 
         <View style={{ width: '100%', gap: spacing[16] }}>
-          <View style={{ gap: spacing[8] }}>
-            <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.display }}>
-              Vérifie les informations
-            </Text>
-            <Text variant="bodySmall" color="textSecondary">
-              Corrige un champ si besoin avant d’ajouter ce chat à ton CatDex.
-            </Text>
-          </View>
+          <Text variant="h3" color="text" style={{ fontFamily: fonts.display }}>
+            Modifier les informations
+          </Text>
 
           <EditableRow
             label="Nom"
@@ -505,9 +479,9 @@ export function CaptureReveal({
             onEndEdit={() => setEditingField(null)}
           />
           <EditableRow
-            label="Type"
+            label="Race"
             value={breed}
-            placeholder="Ex. Chat domestique à poil court"
+            placeholder="Ex. Européen"
             editing={editingField === 'breed'}
             onStartEdit={() => setEditingField('breed')}
             onChangeText={setBreed}
@@ -532,9 +506,9 @@ export function CaptureReveal({
             onEndEdit={() => setEditingField(null)}
           />
           <EditableRow
-            label="Motif"
+            label="Particularité"
             value={pattern}
-            placeholder="Ex. Tigré et bicolore"
+            placeholder="Ex. Poitrine blanche, queue rayée"
             editing={editingField === 'pattern'}
             onStartEdit={() => setEditingField('pattern')}
             onChangeText={setPattern}
@@ -575,14 +549,14 @@ export function CaptureReveal({
         }}
       >
         <Button
-          title="Confirmer et ajouter"
+          title="Ajouter à mon CatDex"
           onPress={() => {
             void handleValidate();
           }}
           disabled={submitting}
         />
         {!keyboardOpen ? (
-          <Button title="Reprendre la photo" variant="secondary" onPress={onRetake} />
+          <Button title="Réessayer avec une autre photo" variant="secondary" onPress={onRetake} />
         ) : null}
       </View>
     </View>

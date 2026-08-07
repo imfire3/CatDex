@@ -1,9 +1,14 @@
 /**
  * Shared CatDex map pin — flat circular face + tip anchored to the ground.
  * Kept intentionally 2D so pins stay readable and stick to the map on zoom.
+ *
+ * Ownership:
+ * - owned (ton CatDex) → photo + anneau brand
+ * - mystery (autre joueur, pas encore capturé) → silhouette + anneau muted, sans photo
  */
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
@@ -24,6 +29,7 @@ export function pinScaleForZoom(zoom: number): number {
 
 type PinVisualProps = {
   cat: Cat;
+  /** True when this cat is already in the player's CatDex. */
   captured?: boolean;
   isNearby?: boolean;
   /** Override diameter of the face circle (default 40). */
@@ -31,6 +37,22 @@ type PinVisualProps = {
   /** Fired once the photo settles (load or error) so native markers can freeze. */
   onVisualSettled?: () => void;
 };
+
+function MysteryFace({ size, color }: { size: number; color: string }) {
+  const icon = Math.max(16, Math.round(size * 0.45));
+  return (
+    <Svg width={icon} height={icon} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={1.75} />
+      <Path
+        d="M9.2 9.2a2.8 2.8 0 0 1 5.4.9c0 1.6-1.4 2.2-2.1 2.7-.6.4-.9.9-.9 1.6"
+        stroke={color}
+        strokeWidth={1.75}
+        strokeLinecap="round"
+      />
+      <Circle cx="12" cy="17.2" r="1.1" fill={color} />
+    </Svg>
+  );
+}
 
 /**
  * Visual-only pin body (no Map Marker wrapper).
@@ -48,7 +70,16 @@ export function CatPinVisual({
   const tipW = spacing[16];
   const tipH = CAT_PIN_TIP_H;
   const ring = spacing[4];
+  const owned = captured;
+  const ringColor = owned
+    ? isNearby
+      ? colors.success
+      : colors.brand
+    : colors.textMuted;
+  const tipColor = ringColor;
+  const groundColor = owned ? colors.brandSoft : colors.surfaceMuted;
   const showPhoto =
+    owned &&
     Boolean(cat.photoUri) &&
     !photoFailed &&
     !cat.photoUri.startsWith('blob:');
@@ -72,7 +103,7 @@ export function CatPinVisual({
             width: size + spacing[8],
             height: spacing[8],
             borderRadius: radius.full,
-            backgroundColor: colors.brandSoft,
+            backgroundColor: groundColor,
             opacity: isNearby ? 0.9 : 0.55,
           },
         ]}
@@ -87,9 +118,8 @@ export function CatPinVisual({
               height: size,
               borderRadius: radius.full,
               borderWidth: ring,
-              borderColor: isNearby ? colors.accent : colors.brand,
-              backgroundColor: colors.surfaceElevated,
-              opacity: captured ? 1 : 0.82,
+              borderColor: ringColor,
+              backgroundColor: owned ? colors.surfaceElevated : colors.surfaceSecondary,
             },
             shadow.low,
           ]}
@@ -106,7 +136,7 @@ export function CatPinVisual({
               }}
               onLoad={() => onVisualSettled?.()}
             />
-          ) : (
+          ) : owned ? (
             <View
               style={{
                 flex: 1,
@@ -122,6 +152,17 @@ export function CatPinVisual({
                 faceOnly
               />
             </View>
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surfaceSecondary,
+              }}
+            >
+              <MysteryFace size={size} color={colors.textMuted} />
+            </View>
           )}
         </View>
 
@@ -135,7 +176,7 @@ export function CatPinVisual({
             borderTopWidth: tipH,
             borderLeftColor: 'transparent',
             borderRightColor: 'transparent',
-            borderTopColor: isNearby ? colors.accent : colors.brand,
+            borderTopColor: tipColor,
           }}
         />
       </View>

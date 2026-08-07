@@ -30,12 +30,19 @@ import {
   PARIS_20E,
 } from '@/lib/constants';
 import { enrichAnalysis, isNoCatFound } from '@/lib/catTraits';
+import {
+  classifyThrownAnalysisError,
+  ERROR_CATALOG,
+  formatAlreadyCapturedDescription,
+  resolvePhotoProblemCopy,
+} from '@/lib/errorCatalog';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
+import { sendAnalysisErrorReport } from '@/lib/sendErrorReport';
 import { useCatsStore } from '@/store/cats';
 import { usePendingCaptureStore } from '@/store/pendingCapture';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { CatAnalysis } from '@/types/cat';
+import type { Cat, CatAnalysis } from '@/types/cat';
 
 type Step =
   | 'camera'
@@ -44,32 +51,8 @@ type Step =
   | 'problem'
   | 'offline'
   | 'server'
-  | 'analysisError';
-
-function classifyAnalysisError(error: unknown): 'offline' | 'server' | 'analysisError' {
-  const message =
-    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-  if (
-    message.includes('network') ||
-    message.includes('offline') ||
-    message.includes('internet') ||
-    message.includes('failed to fetch') ||
-    message.includes('network request failed')
-  ) {
-    return 'offline';
-  }
-  if (
-    message.includes('503') ||
-    message.includes('502') ||
-    message.includes('504') ||
-    message.includes('unavailable') ||
-    message.includes('timeout') ||
-    message.includes('timed out')
-  ) {
-    return 'server';
-  }
-  return 'analysisError';
-}
+  | 'analysisError'
+  | 'alreadyCaptured';
 
 /** Brief pause so the loading UI can paint — never pad a slow API. */
 const MIN_ANALYSIS_MS = 600;
@@ -88,6 +71,8 @@ function CameraCircleButton({
   size,
   colors,
   radius,
+  /** Solid fill — no translucent overlay / blur. */
+  solid = false,
 }: {
   onPress: () => void;
   accessibilityLabel: string;
@@ -95,7 +80,10 @@ function CameraCircleButton({
   size: number;
   colors: ReturnType<typeof useTheme>['colors'];
   radius: ReturnType<typeof useTheme>['radius'];
+  solid?: boolean;
 }) {
+  const fill = solid ? colors.brand : colors.overlay;
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -110,13 +98,13 @@ function CameraCircleButton({
         transform: [{ scale: pressed ? 0.96 : 1 }],
       })}
     >
-      {Platform.OS === 'web' ? (
+      {Platform.OS === 'web' || solid ? (
         <View
           style={{
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: colors.overlay,
+            backgroundColor: fill,
           }}
         >
           {children}
@@ -134,15 +122,20 @@ export default function ScannerScreen() {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ worldId?: string }>();
+  // Any sighting id (world spawn or community UUID) so the pin can clear after capture.
   const sourceWorldId =
-    typeof params.worldId === 'string' && params.worldId.startsWith('world-')
-      ? params.worldId
+    typeof params.worldId === 'string' && params.worldId.trim().length > 0
+      ? params.worldId.trim()
       : undefined;
   const showToast = useToastStore((state) => state.show);
   const nextNumber = useCatsStore((state) => state.nextNumber);
+  const cats = useCatsStore((state) => state.cats);
   const setPendingCapture = usePendingCaptureStore((state) => state.setPending);
   const cameraRef = useRef<CameraView>(null);
   const analysisGenRef = useRef(0);
+  const runAnalysisRef = useRef<
+    ((base64: string, imageUri: string, mimeType?: string) => Promise<void>) | null
+  >(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -153,8 +146,21 @@ export default function ScannerScreen() {
   const [photoMimeType, setPhotoMimeType] = useState('image/jpeg');
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<CatAnalysis | null>(null);
+  const [existingCat, setExistingCat] = useState<Cat | null>(null);
+  const [allowRecapture, setAllowRecapture] = useState(false);
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<FlashMode>('auto');
+
+  const alreadyCaptured = sourceWorldId
+    ? cats.find((cat) => cat.sourceWorldId === sourceWorldId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (alreadyCaptured && !allowRecapture) {
+      setExistingCat(alreadyCaptured);
+      setStep('alreadyCaptured');
+    }
+  }, [alreadyCaptured, allowRecapture]);
 
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain !== false) {
@@ -168,6 +174,22 @@ export default function ScannerScreen() {
       setCameraError(null);
     }
   }, [step]);
+
+  // US-03: auto-retry analysis when connectivity returns.
+  useEffect(() => {
+    if (step !== 'offline' || !photoBase64 || !photoUri) return;
+
+    const retry = () => {
+      void runAnalysisRef.current?.(photoBase64, photoUri, photoMimeType);
+    };
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('online', retry);
+      return () => window.removeEventListener('online', retry);
+    }
+
+    return undefined;
+  }, [step, photoBase64, photoUri, photoMimeType]);
 
   const ensureLocation = async () => {
     try {
@@ -281,11 +303,16 @@ export default function ScannerScreen() {
       await waitMinDuration();
       if (isStale()) return;
       setPhotoUri(imageUri);
-      setStep(classifyAnalysisError(error));
+      const kind = classifyThrownAnalysisError(error);
+      setStep(
+        kind === 'offline' ? 'offline' : kind === 'server' ? 'server' : 'analysisError',
+      );
     } finally {
       if (!isStale()) setAnalyzing(false);
     }
   };
+
+  runAnalysisRef.current = runAnalysis;
 
   const handleTakePicture = async () => {
     if (capturing) return;
@@ -412,7 +439,8 @@ export default function ScannerScreen() {
     resetToCamera();
   };
 
-  if (step === 'problem') {
+  if (step === 'alreadyCaptured' && existingCat) {
+    const copy = ERROR_CATALOG.alreadyCaptured;
     return (
       <View
         style={[
@@ -427,26 +455,32 @@ export default function ScannerScreen() {
         ]}
       >
         <ErrorState
-          icon="photo"
-          title={analysis?.errorTitle?.trim() || 'Photo invalide'}
-          description={
-            analysis?.errorMessage?.trim() ||
-            analysis?.description?.trim() ||
-            'Cette photo ne semble pas contenir de chat.'
+          icon={copy.icon}
+          title={copy.title}
+          description={formatAlreadyCapturedDescription({
+            discoveredAt: existingCat.discoveredAt,
+            views: existingCat.views,
+          })}
+          primaryLabel={copy.primaryLabel}
+          onPrimary={() =>
+            router.replace({
+              pathname: '/cat/[id]',
+              params: { id: existingCat.id },
+            })
           }
-          primaryLabel="Reprendre la photo"
-          onPrimary={resetToCamera}
-          secondaryLabel="Fermer"
+          secondaryLabel={copy.secondaryLabel}
           onSecondary={() => {
-            if (router.canGoBack()) router.back();
-            else resetToCamera();
+            setAllowRecapture(true);
+            setExistingCat(null);
+            resetToCamera();
           }}
         />
       </View>
     );
   }
 
-  if (step === 'offline') {
+  if (step === 'problem') {
+    const copy = resolvePhotoProblemCopy(analysis);
     return (
       <View
         style={[
@@ -461,19 +495,44 @@ export default function ScannerScreen() {
         ]}
       >
         <ErrorState
-          icon="offline"
-          title="Pas de connexion"
-          description="Vérifie ta connexion internet et réessaie."
-          primaryLabel="Réessayer"
+          icon={copy.icon}
+          title={copy.title}
+          description={copy.description}
+          primaryLabel={copy.primaryLabel}
+          onPrimary={resetToCamera}
+        />
+      </View>
+    );
+  }
+
+  if (step === 'offline') {
+    const copy = ERROR_CATALOG.offline;
+    return (
+      <View
+        style={[
+          styles.root,
+          styles.centered,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            paddingHorizontal: spacing[24],
+          },
+        ]}
+      >
+        <ErrorState
+          icon={copy.icon}
+          title={copy.title}
+          description={copy.description}
+          primaryLabel={copy.primaryLabel}
           onPrimary={retryLastPhoto}
-          secondaryLabel="Reprendre la photo"
-          onSecondary={resetToCamera}
         />
       </View>
     );
   }
 
   if (step === 'server') {
+    const copy = ERROR_CATALOG.server;
     return (
       <View
         style={[
@@ -488,19 +547,18 @@ export default function ScannerScreen() {
         ]}
       >
         <ErrorState
-          icon="server"
-          title="Serveur indisponible"
-          description="Nos serveurs font une pause. Réessaie dans quelques instants."
-          primaryLabel="Réessayer"
+          icon={copy.icon}
+          title={copy.title}
+          description={copy.description}
+          primaryLabel={copy.primaryLabel}
           onPrimary={retryLastPhoto}
-          secondaryLabel="Reprendre la photo"
-          onSecondary={resetToCamera}
         />
       </View>
     );
   }
 
   if (step === 'analysisError') {
+    const copy = ERROR_CATALOG.analysis;
     return (
       <View
         style={[
@@ -515,13 +573,25 @@ export default function ScannerScreen() {
         ]}
       >
         <ErrorState
-          icon="analysis"
-          title="Analyse impossible"
-          description="Une erreur est survenue lors de l’analyse du chat."
-          primaryLabel="Réessayer"
+          icon={copy.icon}
+          title={copy.title}
+          description={copy.description}
+          primaryLabel={copy.primaryLabel}
           onPrimary={retryLastPhoto}
-          secondaryLabel="Reprendre la photo"
-          onSecondary={resetToCamera}
+          secondaryLabel={copy.secondaryLabel}
+          onSecondary={() => {
+            void (async () => {
+              await sendAnalysisErrorReport({
+                errorKind: 'analysis',
+                message: 'Impossible d’identifier ce chat',
+              });
+              showToast({
+                title: 'Rapport envoyé',
+                description: 'Merci — on regarde ça.',
+                tone: 'success',
+              });
+            })();
+          }}
         />
       </View>
     );
@@ -641,7 +711,7 @@ export default function ScannerScreen() {
               title="Relancer l’analyse"
               onPress={() => photoBase64 && photoUri && runAnalysis(photoBase64, photoUri)}
             />
-            <Button title="Reprendre la photo" variant="secondary" onPress={resetToCamera} />
+            <Button title="Réessayer avec une autre photo" variant="secondary" onPress={resetToCamera} />
           </View>
         </View>
       </View>
@@ -779,10 +849,11 @@ export default function ScannerScreen() {
 
             <CameraCircleButton
               accessibilityLabel="Fermer"
-              onPress={() => router.back()}
+              onPress={() => router.replace('/(tabs)/map')}
               size={cameraControlSize}
               colors={colors}
               radius={radius}
+              solid
             >
               <Text color="onAccent" style={{ fontSize: 18, lineHeight: 20 }}>
                 ✕

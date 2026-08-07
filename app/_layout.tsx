@@ -15,6 +15,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Spinner } from '@/components/Loader';
+import { ToastHost } from '@/components/Toast/ToastHost';
 import { useMissionSync } from '@/hooks/useMissionSync';
 import { installImageResolveAssetSourcePolyfill } from '@/lib/imageResolvePolyfill';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -104,6 +105,7 @@ export default function RootLayout() {
       <ThemeProvider>
         <StatusBar style="dark" />
         <RootNavigator />
+        <ToastHost />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

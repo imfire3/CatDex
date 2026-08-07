@@ -2,6 +2,12 @@
  * Normalize Vision JSON (v1 Structured Outputs + legacy flat) → CatDex analysis DTO.
  */
 
+import {
+  resolveBreed,
+  resolveCoatLength,
+  type MorphologySnapshot,
+} from './breedPolicy';
+
 export type VisionError = {
   code?: string;
   title?: string;
@@ -40,6 +46,7 @@ type VisionV1Physical = {
 type VisionV1Cat = {
   generated_name?: string | null;
   type?: {
+    breed_key?: string | null;
     label?: string | null;
     category?: string | null;
     confidence?: number | null;
@@ -48,6 +55,7 @@ type VisionV1Cat = {
   } | null;
   coat?: VisionV1Coat | null;
   physical_features?: VisionV1Physical | null;
+  morphology?: MorphologySnapshot | null;
   pose?: { label?: string | null; confidence?: number | null } | null;
   environment?: {
     label?: string | null;
@@ -109,9 +117,9 @@ export type VisionJson = {
   discoveredAt?: string;
 };
 
-export const NOT_A_CAT_TITLE = 'Aucun chat détecté 🐾';
+export const NOT_A_CAT_TITLE = 'Photo invalide';
 export const NOT_A_CAT_MESSAGE =
-  'Aucun chat détecté. Essaie de prendre une nouvelle photo d’un vrai chat 🐾';
+  'Cette photo ne semble pas contenir de chat.';
 
 const COLOR_FR: Record<string, string> = {
   black: 'Noir',
@@ -293,21 +301,42 @@ function isV1Schema(json: VisionJson): boolean {
 }
 
 function composeCoatDisplay(lengthFr: string, textureFr: string): string {
-  if (textureFr && textureFr !== 'Indéterminée') {
-    if (lengthFr && lengthFr !== 'Indéterminée') {
-      return `${lengthFr} et ${textureFr.toLowerCase()}`;
+  // Player-facing coat: length first. Texture is secondary polish.
+  if (lengthFr && lengthFr !== 'Indéterminée') {
+    if (textureFr && textureFr !== 'Indéterminée' && textureFr !== 'Lisse') {
+      return `${lengthFr} · ${textureFr.toLowerCase()}`;
     }
-    return textureFr;
+    return lengthFr;
   }
-  return lengthFr || 'Indéterminée';
+  if (textureFr && textureFr !== 'Indéterminée') return textureFr;
+  return 'Court';
 }
 
 function composeColorDisplay(primary: string, secondaryColors: string[]): string {
-  const extras = secondaryColors.filter(
-    (c) => c && c !== 'Indéterminée' && c.toLowerCase() !== primary.toLowerCase(),
-  );
-  if (extras.length === 0) return primary;
-  return `${primary} et ${extras[0]!.toLowerCase()}`;
+  const cleanedPrimary = sanitizeColorToken(primary);
+  const extras = secondaryColors
+    .map(sanitizeColorToken)
+    .filter(
+      (c) =>
+        c &&
+        c !== 'Indéterminée' &&
+        c.toLowerCase() !== cleanedPrimary.toLowerCase(),
+    );
+  if (!cleanedPrimary || cleanedPrimary === 'Indéterminée') {
+    return extras[0] ?? 'Indéterminée';
+  }
+  if (extras.length === 0) return cleanedPrimary;
+  return `${cleanedPrimary} et ${extras[0]!.toLowerCase()}`;
+}
+
+/** Reject pattern jargon leaking into the color field. */
+function sanitizeColorToken(value: string): string {
+  const v = value.trim();
+  if (!v) return 'Indéterminée';
+  if (/^(bicolore|tricolore|tuxedo|tabby|tigré|calico|colorpoint|unknown|indétermin)/i.test(v)) {
+    return 'Indéterminée';
+  }
+  return v;
 }
 
 function composePatternDisplay(patternFr: string, tabby?: string | null): string {
@@ -315,10 +344,91 @@ function composePatternDisplay(patternFr: string, tabby?: string | null): string
   if (patternFr === 'Tigré' && tabby && tabby !== 'unknown') {
     return `Tigré (${tabby})`;
   }
-  if (patternFr === 'Bicolore' || patternFr === 'Tigré') {
-    return patternFr;
-  }
   return patternFr;
+}
+
+/**
+ * Particularité joueur : marques visibles d'abord, motif en secours.
+ * Évite d'afficher seulement « Bicolore » quand des marques existent.
+ */
+function composeParticularite(
+  markings: string[],
+  patternDisplay: string,
+  secondaryColors: string[],
+): string | undefined {
+  const cleanMarkings = markings
+    .map((m) => m.trim())
+    .filter((m) => m && !/^aucune$/i.test(m) && m.toLowerCase() !== 'unknown');
+
+  if (cleanMarkings.length > 0) {
+    return cleanMarkings.slice(0, 4).join(', ');
+  }
+
+  const inferred: string[] = [];
+  if (secondaryColors.some((c) => /blanc/i.test(c))) {
+    inferred.push('Marques blanches');
+  }
+  if (patternDisplay === 'Tigré' || patternDisplay.startsWith('Tigré')) {
+    inferred.push('Pelage tigré');
+  }
+  if (inferred.length > 0) return inferred.join(', ');
+
+  if (
+    patternDisplay &&
+    patternDisplay !== 'Indéterminé' &&
+    !/^bicolore$/i.test(patternDisplay)
+  ) {
+    return patternDisplay;
+  }
+
+  // Bicolore alone is weak as a "particularité" — skip if nothing else.
+  return undefined;
+}
+
+function isRoboticDescription(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  if (!t) return true;
+  if (/^un chat .+ de type /.test(t)) return true;
+  if (/de type (persian|persan|siamois|bengal)/i.test(t)) return true;
+  if (/fiche technique|race probable|morpholog/i.test(t)) return true;
+  return false;
+}
+
+function buildStoryDescription(input: {
+  color: string;
+  eyes: string;
+  pose: string;
+  markings: string[];
+  traits: string[];
+  name: string;
+}): string {
+  const color = input.color !== 'Indéterminée' ? input.color.toLowerCase() : 'du quartier';
+  const eyes =
+    input.eyes && input.eyes !== 'Indéterminée'
+      ? `ses yeux ${input.eyes.toLowerCase()}`
+      : null;
+  const poseBit =
+    input.pose && input.pose !== 'Indéterminée'
+      ? input.pose.toLowerCase() === 'assis'
+        ? 'assis'
+        : input.pose.toLowerCase()
+      : null;
+  const mark = input.markings[0]?.toLowerCase();
+  const trait = input.traits[0]?.toLowerCase();
+
+  const first = poseBit
+    ? `Ce chat ${color} t'observe, ${poseBit}, la tête légèrement tournée vers toi.`
+    : `Ce chat ${color} t'observe avec attention.`;
+
+  const detailParts = [mark, eyes, trait ? `un air ${trait}` : null].filter(
+    Boolean,
+  ) as string[];
+  const second =
+    detailParts.length > 0
+      ? `${detailParts.join(', ').replace(/^./, (c) => c.toUpperCase())} — parfait pour ton CatDex.`
+      : `${input.name} est prêt·e à rejoindre ton CatDex.`;
+
+  return `${first} ${second}`;
 }
 
 type FallbackAnalysis = {
@@ -340,36 +450,63 @@ function normalizeV1Analysis(json: VisionJson, fallback: FallbackAnalysis) {
   const noFiche =
     json.is_cat === false ||
     status === 'not_a_cat' ||
-    !cat ||
-    (status === 'multiple_cats' && !cat.generated_name && !cat.description);
+    status === 'low_quality' ||
+    status === 'multiple_cats' ||
+    !cat;
 
   if (noFiche) {
+    if (status === 'multiple_cats') {
+      return buildNoCatAnalysis({
+        code: 'MULTIPLE_CATS',
+        title: 'Plusieurs chats détectés',
+        message:
+          userMessage ||
+          'Plusieurs chats ont été détectés. Photographie un seul chat à la fois.',
+      });
+    }
+    if (status === 'low_quality') {
+      return buildNoCatAnalysis({
+        code: 'LOW_QUALITY',
+        title: 'Photo trop floue',
+        message:
+          userMessage ||
+          'La photo est trop floue pour identifier ce chat. Reprends-en une plus nette.',
+      });
+    }
     return buildNoCatAnalysis({
-      code: status === 'multiple_cats' ? 'MULTIPLE_CATS' : 'NOT_A_CAT',
-      title:
-        status === 'multiple_cats'
-          ? 'Plusieurs chats détectés 🐾'
-          : NOT_A_CAT_TITLE,
-      message: userMessage,
+      code: 'NOT_A_CAT',
+      title: 'Photo invalide',
+      message:
+        userMessage || 'Cette photo ne semble pas contenir de chat.',
     });
   }
 
   const coat = cat.coat ?? {};
   const physical = cat.physical_features ?? {};
-  const typeLabel = cat.type?.label?.trim() || fallback.breed;
+  const morphology = cat.morphology ?? null;
+
+  const lengthKey = resolveCoatLength(coat.length, coat.confidence);
+  const resolvedBreed = resolveBreed({
+    breedKey: cat.type?.breed_key,
+    label: cat.type?.label,
+    confidence: cat.type?.confidence,
+    coatLength: lengthKey,
+    morphology,
+    visibleEvidence: asStringList(cat.type?.visible_evidence, 8),
+  });
+
   const primaryColor = labelFr(COLOR_FR, coat.primary_color, fallback.color);
   const secondary = labelFr(COLOR_FR, coat.secondary_color, '');
   const additional = asStringList(coat.additional_colors, 4)
     .map((c) => labelFr(COLOR_FR, c, ''))
     .filter(Boolean);
   const secondaryColors = [secondary, ...additional].filter(
-    (c) => c && c !== 'Indéterminée' && c !== primaryColor,
+    (c) => c && c !== 'Indéterminée' && c !== primaryColor && sanitizeColorToken(c) !== 'Indéterminée',
   );
-  const lengthFr = labelFr(LENGTH_FR, coat.length, fallback.coat);
+  const lengthFr = labelFr(LENGTH_FR, lengthKey, 'Court');
   const textureFr = labelFr(TEXTURE_FR, coat.texture, '');
   const patternFr = labelFr(PATTERN_FR, coat.pattern, '');
   const suggestedName = cat.generated_name?.trim() || fallback.suggestedName;
-  const description = cat.description?.trim() || '';
   const traits = asStringList(cat.playful_traits, 3);
   const markings = asStringList(physical.distinctive_markings, 8).filter(
     (f) => !/^aucune$/i.test(f) && f.toLowerCase() !== 'unknown',
@@ -380,11 +517,15 @@ function normalizeV1Analysis(json: VisionJson, fallback: FallbackAnalysis) {
     ...evidence.filter((e) => !markings.includes(e)),
   ];
   const warnings = asStringList(json.warnings, 6);
+  if (resolvedBreed.demoted) {
+    warnings.push('Race imprécise → classification domestique / européenne.');
+  }
   const habitat =
     cat.environment?.description?.trim() ||
     labelFr(ENV_FR, cat.environment?.label, '') ||
     undefined;
   const pose = labelFr(POSE_FR, cat.pose?.label, '');
+  const eyes = labelFr(EYE_FR, physical.eye_color, fallback.eyes);
   const confidence =
     scoreToPercent(json.image_quality?.score) ??
     scoreToPercent(cat.type?.confidence) ??
@@ -393,17 +534,32 @@ function normalizeV1Analysis(json: VisionJson, fallback: FallbackAnalysis) {
   const colorDisplay = composeColorDisplay(primaryColor, secondaryColors);
   const coatDisplay = composeCoatDisplay(lengthFr, textureFr);
   const patternDisplay = composePatternDisplay(patternFr, coat.tabby_pattern);
+  const particularite = composeParticularite(
+    distinctiveFeatures,
+    patternDisplay,
+    secondaryColors,
+  );
+
+  const rawDescription = cat.description?.trim() || '';
+  const description = !isRoboticDescription(rawDescription)
+    ? rawDescription
+    : buildStoryDescription({
+        color: colorDisplay,
+        eyes,
+        pose,
+        markings: distinctiveFeatures,
+        traits: traits.length > 0 ? traits : fallback.tags.slice(0, 3),
+        name: suggestedName,
+      });
 
   return {
     color: colorDisplay,
-    breed: typeLabel,
+    breed: resolvedBreed.label,
     coat: coatDisplay,
-    description:
-      description ||
-      `Un chat ${primaryColor.toLowerCase()} de type ${typeLabel}. ${suggestedName} rejoint ton CatDex.`,
+    description,
     suggestedName,
     gender: 'unknown' as const,
-    eyes: labelFr(EYE_FR, physical.eye_color, fallback.eyes),
+    eyes,
     size: physical.body_shape?.trim() || fallback.size,
     tags: traits.length > 0 ? traits : fallback.tags.slice(0, 3),
     species: 'Chat domestique',
@@ -411,7 +567,7 @@ function normalizeV1Analysis(json: VisionJson, fallback: FallbackAnalysis) {
     bodyType:
       physical.face_shape?.trim() || physical.body_shape?.trim() || undefined,
     secondaryColors: secondaryColors.length > 0 ? secondaryColors : undefined,
-    coatPattern: patternDisplay !== 'Indéterminé' ? patternDisplay : undefined,
+    coatPattern: particularite,
     coatTexture:
       textureFr && textureFr !== 'Indéterminée' ? textureFr : undefined,
     ears: physical.ears?.trim() || undefined,
@@ -422,7 +578,8 @@ function normalizeV1Analysis(json: VisionJson, fallback: FallbackAnalysis) {
       distinctiveFeatures.length > 0 ? distinctiveFeatures : undefined,
     habitat: habitat || undefined,
     state: pose && pose !== 'Indéterminée' ? pose : undefined,
-    requiresUserConfirmation: json.requires_user_confirmation === true,
+    requiresUserConfirmation:
+      json.requires_user_confirmation === true || resolvedBreed.demoted,
     warnings: warnings.length > 0 ? warnings : undefined,
     catCount: typeof json.cat_count === 'number' ? json.cat_count : undefined,
     analysisStatus: status || 'success',
@@ -463,24 +620,62 @@ function normalizeLegacyAnalysis(json: VisionJson, fallback: FallbackAnalysis) {
     });
   }
 
-  const color = json.mainColor?.trim() || json.color?.trim() || fallback.color;
-  const breed = json.breed?.trim() || fallback.breed;
-  const coat = json.coatLength?.trim() || json.coat?.trim() || fallback.coat;
+  const primaryRaw = json.mainColor?.trim() || json.color?.trim() || fallback.color;
+  // If legacy already composed "Roux et blanc", keep structure via split.
+  const composedParts = primaryRaw.split(/\s+et\s+/i).map((p) => p.trim()).filter(Boolean);
+  const primaryPart = sanitizeColorToken(composedParts[0] ?? fallback.color);
+  const secondaryFromColor = composedParts.slice(1).map(sanitizeColorToken);
+  const secondaryColors = [
+    ...secondaryFromColor,
+    ...asStringList(json.secondaryColors, 6).map(sanitizeColorToken),
+  ].filter((c) => c && c !== 'Indéterminée' && c.toLowerCase() !== primaryPart.toLowerCase());
+
+  const resolvedBreed = resolveBreed({
+    label: json.breed?.trim() || fallback.breed,
+    confidence:
+      typeof rawConfidence === 'number'
+        ? rawConfidence > 1
+          ? rawConfidence / 100
+          : rawConfidence
+        : 0.5,
+    coatLength: json.coatLength?.trim() || json.coat?.trim(),
+  });
+  const lengthKey = resolveCoatLength(
+    json.coatLength?.trim() || json.coat?.trim(),
+    typeof rawConfidence === 'number' ? rawConfidence : undefined,
+  );
+  const coat = labelFr(LENGTH_FR, lengthKey, 'Court');
   const suggestedName = name || fallback.suggestedName;
   const traits = asStringList(json.traits ?? json.tags, 8);
   const tags = traits.length > 0 ? traits : fallback.tags;
-  const secondaryColors = asStringList(json.secondaryColors, 6);
   const distinctiveFeatures = asStringList(json.distinctiveFeatures, 8).filter(
     (f) => !/^aucune$/i.test(f),
   );
+  const colorDisplay = composeColorDisplay(
+    primaryPart === 'Indéterminée' ? fallback.color : primaryPart,
+    secondaryColors,
+  );
+  const particularite = composeParticularite(
+    distinctiveFeatures,
+    json.coatPattern?.trim() || '',
+    secondaryColors,
+  );
+  const nextDescription = !isRoboticDescription(description)
+    ? description
+    : buildStoryDescription({
+        color: colorDisplay,
+        eyes: json.eyeColor?.trim() || json.eyes?.trim() || fallback.eyes,
+        pose: json.state?.trim() || '',
+        markings: distinctiveFeatures,
+        traits: tags.slice(0, 3),
+        name: suggestedName,
+      });
 
   return {
-    color,
-    breed,
+    color: colorDisplay,
+    breed: resolvedBreed.label,
     coat,
-    description:
-      description ||
-      `Un chat ${color.toLowerCase()} de type ${breed}. ${suggestedName} rejoint ton CatDex.`,
+    description: nextDescription,
     suggestedName,
     gender: normalizeGender(json.gender),
     eyes: json.eyeColor?.trim() || json.eyes?.trim() || fallback.eyes,
@@ -491,7 +686,7 @@ function normalizeLegacyAnalysis(json: VisionJson, fallback: FallbackAnalysis) {
     estimatedWeight: json.estimatedWeight?.trim() || undefined,
     bodyType: json.bodyType?.trim() || undefined,
     secondaryColors: secondaryColors.length > 0 ? secondaryColors : undefined,
-    coatPattern: json.coatPattern?.trim() || undefined,
+    coatPattern: particularite || json.coatPattern?.trim() || undefined,
     coatTexture: json.coatTexture?.trim() || undefined,
     ears: json.ears?.trim() || undefined,
     tail: json.tail?.trim() || undefined,

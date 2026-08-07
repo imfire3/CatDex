@@ -14,8 +14,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 type TabKey = 'map' | 'catdex' | 'missions' | 'profile';
 
 const TABS: { route: TabKey; label: string }[] = [
-  { route: 'map', label: 'Explorer' },
-  { route: 'catdex', label: 'CatDex' },
+  { route: 'map', label: 'Découvrir' },
+  { route: 'catdex', label: 'Mon CatDex' },
   { route: 'missions', label: 'Missions' },
   { route: 'profile', label: 'Profil' },
 ];

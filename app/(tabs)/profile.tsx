@@ -7,7 +7,6 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
-import { Button } from '@/components/Button';
 import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
 import { EmptyState } from '@/components/EmptyState';
@@ -44,66 +43,6 @@ import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
 const COVER = require('../../assets/welcome-map-bg.jpg');
-
-function ProfileMenuRow({
-  label,
-  icon,
-  onPress,
-  showDivider = true,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  onPress: () => void;
-  showDivider?: boolean;
-}) {
-  const { colors, spacing, iconStroke, motion } = useTheme();
-
-  return (
-    <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        onPress={onPress}
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing[16],
-          paddingVertical: spacing[16],
-          opacity: pressed ? 0.88 : 1,
-          transform: [{ scale: pressed ? motion.pressScale : 1 }],
-        })}
-      >
-        <View
-          style={{
-            width: spacing[40],
-            height: spacing[40],
-            borderRadius: spacing[8],
-            backgroundColor: colors.surfaceSecondary,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {icon}
-        </View>
-        <Text variant="body" color="text" style={{ flex: 1 }}>
-          {label}
-        </Text>
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M9 6l6 6-6 6"
-            stroke={colors.textMuted}
-            strokeWidth={iconStroke.regular}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </Pressable>
-      {showDivider ? (
-        <View style={{ height: 1, backgroundColor: colors.border, marginLeft: spacing[56] }} />
-      ) : null}
-    </>
-  );
-}
 
 function SuccessChip({ title, subtitle }: { title: string; subtitle: string }) {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
@@ -298,7 +237,6 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const user = useAuthStore((state) => state.user);
-  const signOut = useAuthStore((state) => state.signOut);
   const cats = useCatsStore((state) => state.cats);
   const streakDays = useMissionsStore((state) => state.streakDays);
   const showToast = useToastStore((state) => state.show);
@@ -490,7 +428,7 @@ export default function ProfileScreen() {
               <EmptyState
                 title="Pas encore de favori"
                 description="Ta carte signature apparaîtra ici après ta première capture."
-                actionLabel="Explorer la carte"
+                actionLabel="Découvrir la carte"
                 onAction={() => router.push('/(tabs)/map')}
                 illustration={
                   <View
@@ -566,85 +504,71 @@ export default function ProfileScreen() {
                   borderRadius: radius.lg,
                   borderWidth: 1,
                   borderColor: colors.border,
-                  paddingHorizontal: spacing[16],
+                  overflow: 'hidden',
                 },
                 shadow.low,
               ]}
             >
-              <ProfileMenuRow
-                label="Modifier le profil"
-                onPress={() => router.push('/settings/edit-profile')}
-                icon={
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ouvrir les paramètres"
+                onPress={() => router.push('/settings')}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing[16],
+                  paddingVertical: spacing[16],
+                  paddingHorizontal: spacing[16],
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? motion.pressScale : 1 }],
+                })}
+              >
+                <View
+                  style={{
+                    width: spacing[40],
+                    height: spacing[40],
+                    borderRadius: spacing[8],
+                    backgroundColor: colors.surfaceSecondary,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
                   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
                     <Circle
                       cx="12"
-                      cy="8"
-                      r="3.5"
+                      cy="12"
+                      r="3"
                       stroke={iconColor}
                       strokeWidth={iconStroke.regular}
                     />
                     <Path
-                      d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"
+                      d="M12 3.5v2.2M12 18.3v2.2M4.9 6.5l1.6 1.5M17.5 16l1.6 1.5M3.5 12h2.2M18.3 12h2.2M4.9 17.5l1.6-1.5M17.5 8l1.6-1.5"
                       stroke={iconColor}
                       strokeWidth={iconStroke.regular}
                       strokeLinecap="round"
                     />
                   </Svg>
-                }
-              />
-              <ProfileMenuRow
-                label="Notifications"
-                onPress={() => router.push('/settings/notifications')}
-                icon={
-                  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                    <Path
-                      d="M6 17h12l-1.2-1.2V11a4.8 4.8 0 1 0-9.6 0v4.8L6 17Z"
-                      stroke={iconColor}
-                      strokeWidth={iconStroke.regular}
-                      strokeLinejoin="round"
-                    />
-                    <Path
-                      d="M10 17a2 2 0 0 0 4 0"
-                      stroke={iconColor}
-                      strokeWidth={iconStroke.regular}
-                      strokeLinecap="round"
-                    />
-                  </Svg>
-                }
-              />
-              <ProfileMenuRow
-                label="Aide & support"
-                showDivider={false}
-                onPress={() => router.push('/settings/help')}
-                icon={
-                  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                    <Circle cx="12" cy="12" r="8" stroke={iconColor} strokeWidth={iconStroke.regular} />
-                    <Path
-                      d="M9.5 9.5a2.5 2.5 0 1 1 4.2 1.8c-.8.7-1.7 1.4-1.7 2.7"
-                      stroke={iconColor}
-                      strokeWidth={iconStroke.regular}
-                      strokeLinecap="round"
-                    />
-                    <Circle cx="12" cy="17.2" r="0.9" fill={iconColor} />
-                  </Svg>
-                }
-              />
+                </View>
+                <View style={{ flex: 1, gap: spacing[4] }}>
+                  <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
+                    Tous les réglages
+                  </Text>
+                  <Text variant="caption" color="textSecondary">
+                    Compte, notifications, carte, confidentialité…
+                  </Text>
+                </View>
+                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M9 6l6 6-6 6"
+                    stroke={colors.textMuted}
+                    strokeWidth={iconStroke.regular}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </Pressable>
             </View>
           </View>
-
-          <Button
-            title="Se déconnecter"
-            variant="destructive"
-            onPress={() => {
-              void (async () => {
-                try {
-                  await signOut();
-                } finally {
-                  router.replace('/(auth)/welcome');
-                }
-              })();
-            }}
-          />
         </Animated.View>
       </ScrollView>
     </View>

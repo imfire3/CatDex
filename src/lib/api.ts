@@ -1,5 +1,6 @@
-import { getApiCandidateUrls, getApiSecret } from '@/lib/apiUrl';
+import { getApiCandidateUrls } from '@/lib/apiUrl';
 import { ensureCatIdentity, generateCatAnalysis } from '@/lib/mockAnalysis';
+import { supabase } from '@/lib/supabase';
 import type { CatAnalysis } from '@/types/cat';
 
 type AnalyzeResponse = {
@@ -34,7 +35,6 @@ function analyzeTimeoutFor(apiBase: string): number {
   }
 }
 
-
 function stripDataUrl(imageBase64: string): { base64: string; mimeType?: string } {
   const match = /^data:([^;]+);base64,(.+)$/s.exec(imageBase64.trim());
   if (!match) return { base64: imageBase64.trim() };
@@ -43,6 +43,16 @@ function stripDataUrl(imageBase64: string): { base64: string; mimeType?: string 
 
 function seedFromImage(base64: string): string {
   return base64.slice(0, 1200);
+}
+
+async function getAccessToken(): Promise<string | null> {
+  if (!supabase) return null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token?.trim() || null;
+  } catch {
+    return null;
+  }
 }
 
 async function requestAnalyze(
@@ -54,9 +64,9 @@ async function requestAnalyze(
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  const apiSecret = getApiSecret();
-  if (apiSecret) {
-    headers['x-api-key'] = apiSecret;
+  const accessToken = await getAccessToken();
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
   }
 
   const response = await fetch(`${apiBase}/analyze-cat`, {
@@ -76,6 +86,22 @@ async function requestAnalyze(
     data = null;
   }
 
+  if (response.status === 401) {
+    throw new Error(
+      data?.error || 'Connecte-toi pour identifier un chat.',
+    );
+  }
+  if (response.status === 429) {
+    throw new Error(
+      data?.error || 'Trop de demandes. Réessaie dans une heure.',
+    );
+  }
+  if (response.status === 413) {
+    throw new Error(
+      data?.error || 'Image trop lourde. Compresse la photo et réessaie.',
+    );
+  }
+
   if (data?.analysis) {
     return {
       analysis: ensureCatIdentity(data.analysis, seedFromImage(base64)),
@@ -90,7 +116,7 @@ async function requestAnalyze(
   if (!response.ok) {
     throw new Error(
       data?.error ||
-        `Analyse IA impossible (${response.status}). Vérifie que le serveur tourne sur ${apiBase}.`,
+        `Identification impossible (${response.status}). Vérifie que le serveur tourne sur ${apiBase}.`,
     );
   }
 

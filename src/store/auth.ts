@@ -76,8 +76,43 @@ type AuthState = {
 function hasCompletedOnboarding(
   userId: string | undefined | null,
   completedIds: string[],
+  email?: string | null,
 ): boolean {
-  return Boolean(userId && completedIds.includes(userId));
+  if (!userId) return false;
+  if (completedIds.includes(userId)) return true;
+  const normalizedEmail = email?.trim().toLowerCase();
+  if (normalizedEmail && completedIds.includes(`email:${normalizedEmail}`)) {
+    return true;
+  }
+  return false;
+}
+
+/** Stable mock ids so returning logins skip intro on devices without Supabase. */
+function mockEmailUserId(email: string): string {
+  return `user_email_${email.trim().toLowerCase()}`;
+}
+
+function onboardingKeysForUser(
+  userId: string | undefined | null,
+  email?: string | null,
+): string[] {
+  const keys: string[] = [];
+  if (userId) keys.push(userId);
+  const normalizedEmail = email?.trim().toLowerCase();
+  if (normalizedEmail) keys.push(`email:${normalizedEmail}`);
+  return keys;
+}
+
+function withOnboardingCompleted(
+  completedIds: string[],
+  userId: string | undefined | null,
+  email?: string | null,
+): string[] {
+  const next = [...completedIds];
+  for (const key of onboardingKeysForUser(userId, email)) {
+    if (!next.includes(key)) next.push(key);
+  }
+  return next;
 }
 
 function isOAuthProviderDisabledError(error: unknown): boolean {
@@ -295,6 +330,7 @@ export const useAuthStore = create<AuthState>()(
               onboardingCompleted: hasCompletedOnboarding(
                 session.user.id,
                 completedIds,
+                session.user.email,
               ),
               loading: false,
             });
@@ -317,6 +353,7 @@ export const useAuthStore = create<AuthState>()(
                   onboardingCompleted: hasCompletedOnboarding(
                     nextSession.user.id,
                     completedIds,
+                    nextSession.user.email,
                   ),
                 });
                 void syncCatsAfterAuth();
@@ -376,7 +413,7 @@ export const useAuthStore = create<AuthState>()(
       signInWithEmail: async (email, password) => {
         const normalizedEmail = email.trim().toLowerCase();
         if (!supabase) {
-          const mockId = `user_email_${Date.now()}`;
+          const mockId = mockEmailUserId(normalizedEmail);
           const completedIds = get().onboardingCompletedUserIds;
           set({
             user: {
@@ -385,7 +422,11 @@ export const useAuthStore = create<AuthState>()(
               displayName: normalizedEmail.split('@')[0],
               provider: 'email',
             },
-            onboardingCompleted: hasCompletedOnboarding(mockId, completedIds),
+            onboardingCompleted: hasCompletedOnboarding(
+              mockId,
+              completedIds,
+              normalizedEmail,
+            ),
             loading: false,
             error: null,
           });
@@ -409,6 +450,7 @@ export const useAuthStore = create<AuthState>()(
               onboardingCompleted: hasCompletedOnboarding(
                 data.user.id,
                 completedIds,
+                data.user.email ?? normalizedEmail,
               ),
               loading: false,
             });
@@ -426,10 +468,11 @@ export const useAuthStore = create<AuthState>()(
       signUp: async ({ email, password, displayName }) => {
         if (!supabase) {
           // New account → always show intro + permissions.
+          const normalizedEmail = email.trim().toLowerCase();
           set({
             user: {
-              id: `user_email_${Date.now()}`,
-              email: email.trim().toLowerCase(),
+              id: mockEmailUserId(normalizedEmail),
+              email: normalizedEmail,
               displayName: displayName.trim(),
               provider: 'email',
             },
@@ -551,13 +594,20 @@ export const useAuthStore = create<AuthState>()(
           );
         }
         if (!supabase) {
+          const mockId = 'user_google_stable';
+          const completedIds = get().onboardingCompletedUserIds;
           set({
             user: {
-              id: `user_google_${Date.now()}`,
+              id: mockId,
               email: 'google@catdex.app',
               displayName: 'Google User',
               provider: 'google',
             },
+            onboardingCompleted: hasCompletedOnboarding(
+              mockId,
+              completedIds,
+              'google@catdex.app',
+            ),
             loading: false,
           });
           return;
@@ -592,13 +642,20 @@ export const useAuthStore = create<AuthState>()(
           );
         }
         if (!supabase) {
+          const mockId = 'user_apple_stable';
+          const completedIds = get().onboardingCompletedUserIds;
           set({
             user: {
-              id: `user_apple_${Date.now()}`,
+              id: mockId,
               email: 'apple@catdex.app',
               displayName: 'Apple User',
               provider: 'apple',
             },
+            onboardingCompleted: hasCompletedOnboarding(
+              mockId,
+              completedIds,
+              'apple@catdex.app',
+            ),
             loading: false,
           });
           return;
@@ -627,14 +684,14 @@ export const useAuthStore = create<AuthState>()(
       },
 
       completeOnboarding: () => {
-        const userId = get().user?.id;
+        const current = get().user;
         set((state) => ({
           onboardingCompleted: true,
-          onboardingCompletedUserIds: userId
-            ? state.onboardingCompletedUserIds.includes(userId)
-              ? state.onboardingCompletedUserIds
-              : [...state.onboardingCompletedUserIds, userId]
-            : state.onboardingCompletedUserIds,
+          onboardingCompletedUserIds: withOnboardingCompleted(
+            state.onboardingCompletedUserIds,
+            current?.id,
+            current?.email,
+          ),
         }));
       },
 
@@ -725,11 +782,19 @@ export const useAuthStore = create<AuthState>()(
         }
         // Migrate legacy device-level flag → per-user for the persisted user.
         const userId = state?.user?.id;
+        const email = state?.user?.email;
         const ids = state?.onboardingCompletedUserIds ?? [];
-        if (state?.onboardingCompleted && userId && !ids.includes(userId)) {
+        if (state?.onboardingCompleted && userId) {
           useAuthStore.setState({
-            onboardingCompletedUserIds: [...ids, userId],
+            onboardingCompletedUserIds: withOnboardingCompleted(
+              ids,
+              userId,
+              email,
+            ),
+            onboardingCompleted: true,
           });
+        } else if (userId && hasCompletedOnboarding(userId, ids, email)) {
+          useAuthStore.setState({ onboardingCompleted: true });
         }
         useAuthStore.getState().setHydrated(true);
         void useAuthStore.getState().initialize().catch((error) => {

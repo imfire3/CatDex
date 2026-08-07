@@ -259,7 +259,7 @@ export function MapExplorerHud({
         </Pressable>
 
         <HudPill
-          label="Collection"
+          label="Mon CatDex"
           badge={collectionCount}
           onPress={() => router.push('/(tabs)/catdex')}
           icon={

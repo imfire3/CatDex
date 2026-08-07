@@ -74,6 +74,44 @@ function isMissingRelationshipError(error: { code?: string; message?: string } |
   );
 }
 
+export type ProfileCard = {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+};
+
+/**
+ * Public-safe profile fields via `profile_cards` (no email).
+ * Used instead of embedding `profiles` after Lot 0 RLS (own-row SELECT only).
+ */
+async function fetchProfileCards(
+  ids: Array<string | null | undefined>,
+): Promise<Map<string, ProfileCard>> {
+  const unique = [...new Set(ids.filter((id): id is string => Boolean(id)))];
+  const map = new Map<string, ProfileCard>();
+  if (unique.length === 0) return map;
+
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('profile_cards')
+    .select('id, display_name, avatar_url')
+    .in('id', unique);
+
+  if (error) {
+    console.warn('[supabase] profile_cards lookup failed', error);
+    return map;
+  }
+
+  for (const row of data ?? []) {
+    map.set(row.id, {
+      id: row.id,
+      display_name: row.display_name,
+      avatar_url: row.avatar_url,
+    });
+  }
+  return map;
+}
+
 /**
  * Prefer PostgREST embed `cat_analysis (*)`.
  * If the live DB lacks the FK (PGRST200), fetch analysis in a second query.
@@ -231,37 +269,41 @@ export async function getCatById(catId: string) {
     .select(
       `
       *,
-      cat_analysis (*),
-      profiles (display_name, avatar_url)
+      cat_analysis (*)
     `,
     )
     .eq('id', catId)
     .maybeSingle();
+
+  let row: RemoteCatRow | null = null;
 
   if (!embedded.error) {
-    return embedded.data;
-  }
-
-  if (!isMissingRelationshipError(embedded.error)) {
+    row = embedded.data as RemoteCatRow | null;
+  } else if (!isMissingRelationshipError(embedded.error)) {
     throw embedded.error;
+  } else {
+    const { data, error } = await client
+      .from('cats')
+      .select('*')
+      .eq('id', catId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return data;
+    const [withAnalysis] = await attachCatAnalysis([data as RemoteCatRow]);
+    row = withAnalysis;
   }
 
-  const { data, error } = await client
-    .from('cats')
-    .select(
-      `
-      *,
-      profiles (display_name, avatar_url)
-    `,
-    )
-    .eq('id', catId)
-    .maybeSingle();
+  if (!row) return row;
 
-  if (error) throw error;
-  if (!data) return data;
-
-  const [withAnalysis] = await attachCatAnalysis([data as RemoteCatRow]);
-  return withAnalysis;
+  const cards = await fetchProfileCards([row.owner_id]);
+  const card = cards.get(row.owner_id);
+  return {
+    ...row,
+    profiles: card
+      ? { display_name: card.display_name, avatar_url: card.avatar_url }
+      : null,
+  };
 }
 
 export async function getMyCats(): Promise<RemoteCatRow[]> {
@@ -447,17 +489,27 @@ export async function getCatSightings(catId: string) {
   const client = requireSupabase();
   const { data, error } = await client
     .from('sightings')
-    .select(
-      `
-      *,
-      profiles (display_name, avatar_url)
-    `,
-    )
+    .select('*')
     .eq('cat_id', catId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+
+  const rows = data ?? [];
+  const cards = await fetchProfileCards(
+    rows.map((row) => (row as { user_id?: string }).user_id),
+  );
+
+  return rows.map((row) => {
+    const userId = (row as { user_id?: string }).user_id;
+    const card = userId ? cards.get(userId) : undefined;
+    return {
+      ...row,
+      profiles: card
+        ? { display_name: card.display_name, avatar_url: card.avatar_url }
+        : null,
+    };
+  });
 }
 
 export async function getMySightings() {

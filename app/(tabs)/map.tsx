@@ -26,7 +26,7 @@ import { useMissionsStore } from '@/store/missions';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-type FilterId = 'nearby' | 'rare' | 'seen' | 'all';
+type FilterId = 'all' | 'mine' | 'discover' | 'nearby' | 'rare' | 'seen';
 
 /**
  * Explorer — map + HUD matching the product mock
@@ -81,7 +81,7 @@ export default function MapScreen() {
   }, [refreshCommunityCats, storedCats.length]);
 
   /**
-   * Own CatDex pins + other players' captures (real photos) everywhere.
+   * Own CatDex pins (photo) + other players' sightings (mystery until you capture them).
    * Community pins disappear once you capture that same sighting id.
    */
   const mapCats = useMemo(() => {
@@ -101,11 +101,17 @@ export default function MapScreen() {
     return [...byId.values()];
   }, [storedCats, communityCats, capturedIds]);
 
-  const selectedCaptured = selected
-    ? capturedIds.has(selected.id) ||
-      Boolean(selected.remoteId && capturedIds.has(selected.remoteId)) ||
-      storedCats.some((cat) => cat.id === selected.id || cat.remoteId === selected.id)
-    : false;
+  const isOwnedCat = useCallback(
+    (cat: Cat) =>
+      capturedIds.has(cat.id) ||
+      Boolean(cat.remoteId && capturedIds.has(cat.remoteId)) ||
+      storedCats.some(
+        (owned) => owned.id === cat.id || owned.remoteId === cat.id,
+      ),
+    [capturedIds, storedCats],
+  );
+
+  const selectedCaptured = selected ? isOwnedCat(selected) : false;
 
   const sortedCats = useMemo(
     () => sortCatsByDistance(mapCats, userCoordinate),
@@ -120,12 +126,14 @@ export default function MapScreen() {
 
   const visibleCats = useMemo(() => {
     return sortedCats.filter(({ cat, distanceM }) => {
+      if (filter === 'mine') return isOwnedCat(cat);
+      if (filter === 'discover') return !isOwnedCat(cat);
       if (filter === 'rare') return isRareCat(cat);
       if (filter === 'seen') return cat.views > 0;
       if (filter === 'nearby') return distanceM <= DISCOVERY_RADIUS_M;
       return true;
     });
-  }, [filter, sortedCats]);
+  }, [filter, sortedCats, isOwnedCat]);
 
   const nearestForProximity = sortedCats[0] ?? null;
   const nearbyCatIds = useMemo(
@@ -296,6 +304,16 @@ export default function MapScreen() {
             ]}
           >
             <Chip label="Tous" selected={filter === 'all'} onPress={() => setFilter('all')} />
+            <Chip
+              label="Mes chats"
+              selected={filter === 'mine'}
+              onPress={() => setFilter('mine')}
+            />
+            <Chip
+              label="À découvrir"
+              selected={filter === 'discover'}
+              onPress={() => setFilter('discover')}
+            />
             <Chip
               label="À proximité"
               selected={filter === 'nearby'}

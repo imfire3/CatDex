@@ -55,6 +55,60 @@ function isQuotaError(error: unknown): boolean {
   );
 }
 
+/** Prefer the richer record when the same cat appears twice (by id / remoteId). */
+function pickRicherCat(a: Cat, b: Cat): Cat {
+  const aScore =
+    (a.photoUri ? 2 : 0) + (a.remoteId ? 1 : 0) + (a.analysis ? 1 : 0);
+  const bScore =
+    (b.photoUri ? 2 : 0) + (b.remoteId ? 1 : 0) + (b.analysis ? 1 : 0);
+  if (bScore > aScore) {
+    return {
+      ...a,
+      ...b,
+      photoUri: b.photoUri || a.photoUri,
+      remoteId: b.remoteId || a.remoteId,
+      sourceWorldId: a.sourceWorldId ?? b.sourceWorldId,
+    };
+  }
+  return {
+    ...b,
+    ...a,
+    photoUri: a.photoUri || b.photoUri,
+    remoteId: a.remoteId || b.remoteId,
+    sourceWorldId: a.sourceWorldId ?? b.sourceWorldId,
+  };
+}
+
+function mergeCatsById(primary: Cat[], secondary: Cat[]): Cat[] {
+  const byKey = new Map<string, Cat>();
+
+  const upsert = (cat: Cat) => {
+    const keys = [cat.id, cat.remoteId].filter(Boolean) as string[];
+    let existing: Cat | undefined;
+    for (const key of keys) {
+      existing = byKey.get(key);
+      if (existing) break;
+    }
+    const next = existing ? pickRicherCat(existing, cat) : cat;
+    byKey.set(next.id, next);
+    if (next.remoteId) byKey.set(next.remoteId, next);
+  };
+
+  for (const cat of primary) upsert(cat);
+  for (const cat of secondary) upsert(cat);
+
+  const unique = new Map<string, Cat>();
+  for (const cat of byKey.values()) {
+    unique.set(cat.id, cat);
+  }
+  return Array.from(unique.values()).sort((a, b) => b.number - a.number);
+}
+
+function maxNextNumber(cats: Cat[], fallback: number): number {
+  const maxNumber = cats.reduce((max, cat) => Math.max(max, cat.number || 0), 0);
+  return Math.max(fallback, maxNumber + 1);
+}
+
 const safeCatsStorage: StateStorage = {
   getItem: (name) => AsyncStorage.getItem(name),
   setItem: async (name, value) => {
@@ -96,6 +150,9 @@ export const useCatsStore = create<CatsState>()(
       setHydrated: (value) => set({ hydrated: value }),
 
       addCat: async (input) => {
+        // Avoid losing the capture to a late persist rehydrate overwrite.
+        await waitForCatsHydration();
+
         const number = get().nextNumber;
         const id = `cat_${Date.now()}_${number}`;
 
@@ -134,8 +191,8 @@ export const useCatsStore = create<CatsState>()(
         }
 
         set((state) => ({
-          cats: [cat, ...state.cats],
-          nextNumber: state.nextNumber + 1,
+          cats: mergeCatsById([cat], state.cats),
+          nextNumber: Math.max(state.nextNumber, number + 1),
         }));
 
         return cat;
@@ -181,13 +238,9 @@ export const useCatsStore = create<CatsState>()(
 
         set((state) => {
           const merged = mergeRemoteCats(state.cats, remote);
-          const maxNumber = merged.reduce(
-            (max, cat) => Math.max(max, cat.number || 0),
-            0,
-          );
           return {
             cats: merged,
-            nextNumber: Math.max(state.nextNumber, maxNumber + 1),
+            nextNumber: maxNextNumber(merged, state.nextNumber),
           };
         });
       },
@@ -201,22 +254,69 @@ export const useCatsStore = create<CatsState>()(
         cats: state.cats,
         nextNumber: state.nextNumber,
       }),
-      onRehydrateStorage: () => (state) => {
+      // Keep in-flight captures when persisted state lands late.
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState ?? {}) as Partial<CatsState>;
+        const mergedCats = mergeCatsById(
+          Array.isArray(persisted.cats) ? persisted.cats : [],
+          currentState.cats,
+        );
+        return {
+          ...currentState,
+          ...persisted,
+          cats: mergedCats,
+          nextNumber: maxNextNumber(
+            mergedCats,
+            Math.max(persisted.nextNumber ?? 1, currentState.nextNumber),
+          ),
+          hydrated: currentState.hydrated,
+        };
+      },
+      onRehydrateStorage: () => (state, error) => {
+        // Unblock CatDex immediately; migrate photos in the background.
+        useCatsStore.setState({ hydrated: true });
+        if (error || !state?.cats?.length) return;
+
         void (async () => {
           try {
-            if (state?.cats?.length) {
-              const migrated = await migrateInlineCatPhotos(state.cats);
-              if (migrated !== state.cats) {
-                useCatsStore.setState({ cats: migrated });
-              }
-            }
-          } catch (error) {
-            console.warn('[cats] photo migration failed', error);
-          } finally {
-            useCatsStore.getState().setHydrated(true);
+            const migrated = await migrateInlineCatPhotos(state.cats);
+            const live = useCatsStore.getState().cats;
+            const next = mergeCatsById(migrated, live);
+            useCatsStore.setState({
+              cats: next,
+              nextNumber: maxNextNumber(
+                next,
+                useCatsStore.getState().nextNumber,
+              ),
+            });
+          } catch (migrationError) {
+            console.warn('[cats] photo migration failed', migrationError);
           }
         })();
       },
     },
   ),
 );
+
+async function waitForCatsHydration(): Promise<void> {
+  if (useCatsStore.getState().hydrated) return;
+
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      unsub();
+      resolve();
+    };
+    const unsub = useCatsStore.subscribe((state) => {
+      if (state.hydrated) finish();
+    });
+    if (useCatsStore.getState().hydrated) {
+      finish();
+      return;
+    }
+    // Safety valve — never block capture forever if rehydrate hangs.
+    setTimeout(finish, 2500);
+  });
+}

@@ -177,11 +177,14 @@ function makePinElement(opts: {
   brand: string;
   brandSoft: string;
   accent: string;
+  muted: string;
+  surfaceSecondary: string;
   size: number;
   coatColor: string;
   seed: number;
   photoUri?: string;
-  dimmed?: boolean;
+  /** Player already owns this cat in their CatDex. */
+  owned?: boolean;
   nearby?: boolean;
 }): HTMLButtonElement {
   const size = opts.size;
@@ -190,7 +193,12 @@ function makePinElement(opts: {
   const ring = 4;
   const wrapW = size + 16;
   const wrapH = size + tipH;
-  const ringColor = opts.nearby ? opts.accent : opts.brand;
+  const owned = opts.owned !== false;
+  const ringColor = owned
+    ? opts.nearby
+      ? opts.accent
+      : opts.brand
+    : opts.muted;
   const theme = themeFromColorLabel(opts.coatColor, opts.seed);
   const fill = theme.hex;
   const dark = shadeHex(fill, -0.22);
@@ -212,7 +220,7 @@ function makePinElement(opts: {
     'align-items:flex-end',
     'justify-content:center',
     'overflow:visible',
-    opts.dimmed ? 'opacity:0.82' : 'opacity:1',
+    'opacity:1',
   ].join(';');
 
   // Inner scales with zoom from the tip (bottom center).
@@ -236,7 +244,7 @@ function makePinElement(opts: {
     `width:${size + 8}px`,
     'height:8px',
     'border-radius:999px',
-    `background:${opts.brandSoft}`,
+    `background:${owned ? opts.brandSoft : opts.surfaceSecondary}`,
     'bottom:2px',
     'left:50%',
     'margin-left:' + `${-((size + 8) / 2)}px`,
@@ -259,7 +267,7 @@ function makePinElement(opts: {
     `height:${size}px`,
     'border-radius:999px',
     `border:${ring}px solid ${ringColor}`,
-    'background:#fff',
+    `background:${owned ? '#fff' : opts.surfaceSecondary}`,
     'overflow:hidden',
     'display:flex',
     'align-items:center',
@@ -267,7 +275,7 @@ function makePinElement(opts: {
     'box-sizing:border-box',
   ].join(';');
 
-  const showPhoto = Boolean(opts.photoUri);
+  const showPhoto = owned && Boolean(opts.photoUri);
 
   if (showPhoto) {
     const img = document.createElement('img');
@@ -281,8 +289,10 @@ function makePinElement(opts: {
       avatar.appendChild(faceSvg(face, fill, dark, light));
     };
     avatar.appendChild(img);
-  } else {
+  } else if (owned) {
     avatar.appendChild(faceSvg(face, fill, dark, light));
+  } else {
+    avatar.appendChild(mysteryFaceSvg(face, opts.muted));
   }
 
   const tip = document.createElement('span');
@@ -301,6 +311,21 @@ function makePinElement(opts: {
   scaleRoot.appendChild(column);
   btn.appendChild(scaleRoot);
   return btn;
+}
+
+function mysteryFaceSvg(size: number, color: string): SVGSVGElement {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.style.cssText = 'display:block;pointer-events:none';
+  svg.innerHTML = [
+    `<circle cx="12" cy="12" r="9" fill="none" stroke="${color}" stroke-width="1.75" />`,
+    `<path d="M9.2 9.2a2.8 2.8 0 0 1 5.4.9c0 1.6-1.4 2.2-2.1 2.7-.6.4-.9.9-.9 1.6" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" />`,
+    `<circle cx="12" cy="17.2" r="1.1" fill="${color}" />`,
+  ].join('');
+  return svg;
 }
 
 function faceSvg(size: number, fill: string, dark: string, light: string): SVGSVGElement {
@@ -475,7 +500,10 @@ export function CatMap({
         if (cancelled) break;
 
         const nearby = nearbyCatIds?.includes(cat.id) ?? false;
-        const captured = capturedCatIds?.includes(cat.id) ?? true;
+        const captured = capturedCatIds
+          ? capturedCatIds.includes(cat.id) ||
+            Boolean(cat.remoteId && capturedCatIds.includes(cat.remoteId))
+          : true;
 
         let photoUri: string | undefined = cat.photoUri || undefined;
         if (photoUri && isCatPhotoRef(photoUri)) {
@@ -493,15 +521,17 @@ export function CatMap({
         }
 
         const el = makePinElement({
-          label: cat.name,
+          label: captured ? cat.name : 'Chat mystère',
           brand: colors.brand,
           brandSoft: colors.brandSoft,
-          accent: colors.accent,
+          accent: colors.success,
+          muted: colors.textMuted,
+          surfaceSecondary: colors.surfaceSecondary,
           size: nearby ? spacing[48] : CAT_PIN_AVATAR,
           coatColor: cat.analysis?.color ?? 'Roux',
           seed: cat.number,
           photoUri,
-          dimmed: !captured,
+          owned: captured,
           nearby,
         });
         el.addEventListener('click', (event) => {

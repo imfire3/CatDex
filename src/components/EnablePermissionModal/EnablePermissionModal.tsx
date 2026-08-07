@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { ErrorState, type ErrorStateIcon } from '@/components/ErrorState';
+import { ERROR_CATALOG } from '@/lib/errorCatalog';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export type EnablePermissionKind = 'camera' | 'location';
@@ -25,14 +26,14 @@ const COPY: Record<
   { icon: ErrorStateIcon; title: string; description: string }
 > = {
   camera: {
-    icon: 'camera',
-    title: 'Accès à la caméra requis',
-    description: 'CatDex a besoin de la caméra pour capturer des chats.',
+    icon: ERROR_CATALOG.cameraPermission.icon,
+    title: ERROR_CATALOG.cameraPermission.title,
+    description: ERROR_CATALOG.cameraPermission.description,
   },
   location: {
-    icon: 'location',
-    title: 'Accès à la localisation requis',
-    description: 'La localisation permet de trouver les chats autour de toi.',
+    icon: ERROR_CATALOG.locationPermission.icon,
+    title: ERROR_CATALOG.locationPermission.title,
+    description: ERROR_CATALOG.locationPermission.description,
   },
 };
 

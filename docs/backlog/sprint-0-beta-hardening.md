@@ -2,12 +2,13 @@
 
 | Champ | Valeur |
 |-------|--------|
-| **Statut** | En cours — Ticket 1 en attente de validation |
+| **Statut** | En cours — Ticket 1 ✅ ; Suite Ticket 2+ |
 | **Objectif** | Lever les **vrais bloqueurs** avant toute feature |
 | **Règle** | Un ticket → review → commit → STOP jusqu’au suivant |
 | **Après Sprint 0** | STOP technique → Sprint 1 core loop produit |
 
-Réf. : `docs/audits/engineering-audit-v1.md` (H1–H7, M3)
+Réf. : `docs/audits/engineering-audit-v1.md` (H1–H7, M3)  
+Lot 0 résumé : `docs/audits/engineering/lot0-security-done.md`
 
 ---
 
@@ -15,9 +16,9 @@ Réf. : `docs/audits/engineering-audit-v1.md` (H1–H7, M3)
 
 | # | Ticket | Statut |
 |---|--------|--------|
-| 1 | Sécuriser `/analyze-cat` | ⏳ Plan prêt — **attente GO** |
-| 2 | Corriger policies Supabase | 🔒 Bloqué |
-| 3 | Monter ToastHost | 🔒 Bloqué |
+| 1 | Sécuriser `/analyze-cat` | ✅ Fait (Lot 0) |
+| 2 | Corriger policies Supabase | ✅ Fait (Lot 0 migration) — confirmer apply prod |
+| 3 | Monter ToastHost | 🔒 Suivant — **attente GO** |
 | 4 | Supprimer fichiers `* 2.*` | 🔒 Bloqué |
 | 5 | Ajouter CI GitHub | 🔒 Bloqué |
 | 6 | Corriger `eas.json` | 🔒 Bloqué |

@@ -1,29 +1,46 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import Animated, {
+  Easing,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { AuthBackButton } from '@/components/Auth/AuthChrome';
 import { ProgressBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const ANALYSIS_STEPS = [
-  'Détection du chat',
+  'Repérage du chat',
   'Qualité de la photo',
-  'Type & pelage',
+  'Race & pelage',
   'Pose & environnement',
   'Nom CatDex',
 ] as const;
 
-const TIP =
-  'Chaque chat a des caractéristiques uniques, comme nous les humains !';
+const TIPS = [
+  'Les chats roux sont majoritairement des mâles.',
+  'Les yeux des chatons changent de couleur en grandissant.',
+  'Certains chats reconnaissent leur prénom.',
+  'Les chats utilisent leur queue pour communiquer.',
+  'Un chat dort en moyenne 12 à 16 heures par jour.',
+  'Chaque chat a des caractéristiques uniques, comme nous !',
+] as const;
 
 /** Shown once the checklist is done but the API is still working. */
 const WAITING_MESSAGES = [
-  'L’IA peaufine les détails…',
+  'On peaufine les détails…',
   'Encore quelques secondes…',
   'Presque prêt…',
   'On finalise la fiche…',
@@ -51,18 +68,35 @@ function progressForElapsedMs(elapsedMs: number): number {
 
 function StepCheck({ done, active }: { done: boolean; active?: boolean }) {
   const { colors, radius } = useTheme();
+  const scale = useSharedValue(done ? 1 : 0.85);
+
+  useEffect(() => {
+    if (!done) return;
+    scale.value = withSequence(
+      withTiming(1.2, { duration: 140 }),
+      withTiming(1, { duration: 160 }),
+    );
+  }, [done, scale]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   if (done) {
     return (
-      <View
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: radius.full,
-          backgroundColor: colors.success,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+      <Animated.View
+        entering={FadeIn.duration(160)}
+        style={[
+          {
+            width: 22,
+            height: 22,
+            borderRadius: radius.full,
+            backgroundColor: colors.success,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          animStyle,
+        ]}
       >
         <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
           <Path
@@ -73,7 +107,7 @@ function StepCheck({ done, active }: { done: boolean; active?: boolean }) {
             strokeLinejoin="round"
           />
         </Svg>
-      </View>
+      </Animated.View>
     );
   }
 
@@ -100,23 +134,185 @@ function StepCheck({ done, active }: { done: boolean; active?: boolean }) {
   );
 }
 
-function Sparkle({
+function OrbitSparkle({
   size,
-  style,
+  orbit,
+  duration,
+  phase = 0,
 }: {
   size: number;
-  style: { top?: number; left?: number; right?: number; bottom?: number };
+  orbit: number;
+  duration: number;
+  phase?: number;
 }) {
   const { colors } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const spin = useSharedValue(phase);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    spin.value = withRepeat(
+      withTiming(phase + 1, { duration, easing: Easing.linear }),
+      -1,
+      false,
+    );
+  }, [duration, phase, reduceMotion, spin]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value * 360}deg` }, { translateY: -orbit }],
+  }));
+
   return (
-    <View pointerEvents="none" style={[{ position: 'absolute', width: size, height: size }, style]}>
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: 'absolute',
+          width: size,
+          height: size,
+          marginLeft: -size / 2,
+          marginTop: -size / 2,
+        },
+        style,
+      ]}
+    >
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
         <Path
           d="M12 2.5 13.8 9l6.7 1.2-5 4.4 1.4 6.4L12 17.8 7.1 21l1.4-6.4-5-4.4L10.2 9 12 2.5Z"
           fill={colors.brand}
-          opacity={0.55}
         />
       </Svg>
+    </Animated.View>
+  );
+}
+
+function ScanningHero({
+  photoUri,
+  showPhoto,
+  onPhotoError,
+}: {
+  photoUri?: string;
+  showPhoto: boolean;
+  onPhotoError: () => void;
+}) {
+  const { colors, radius } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const rotate = useSharedValue(0);
+  const halo = useSharedValue(0.7);
+  const scan = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    rotate.value = withRepeat(
+      withSequence(
+        withTiming(2.5, { duration: 2200 }),
+        withTiming(-2.5, { duration: 2200 }),
+      ),
+      -1,
+      true,
+    );
+    halo.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 900 }),
+        withTiming(0.65, { duration: 900 }),
+      ),
+      -1,
+      false,
+    );
+    scan.value = withRepeat(
+      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+  }, [halo, reduceMotion, rotate, scan]);
+
+  const photoStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotate.value}deg` }],
+  }));
+  const haloStyle = useAnimatedStyle(() => ({
+    opacity: halo.value * 0.9,
+    transform: [{ scale: 0.92 + halo.value * 0.12 }],
+  }));
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: 0.35 + scan.value * 0.45,
+    transform: [{ scale: 0.95 + scan.value * 0.08 }],
+  }));
+
+  return (
+    <View
+      style={{
+        width: 200,
+        height: 200,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            width: 180,
+            height: 180,
+            borderRadius: radius.full,
+            backgroundColor: colors.brandSoft,
+          },
+          haloStyle,
+        ]}
+      />
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            width: 168,
+            height: 168,
+            borderRadius: radius.full,
+            borderWidth: 2,
+            borderColor: colors.brand,
+            borderStyle: 'dashed',
+          },
+          ringStyle,
+        ]}
+      />
+      <OrbitSparkle size={16} orbit={88} duration={4200} phase={0} />
+      <OrbitSparkle size={12} orbit={78} duration={3600} phase={0.33} />
+      <OrbitSparkle size={14} orbit={92} duration={5000} phase={0.66} />
+      <Animated.View
+        style={[
+          {
+            width: 152,
+            height: 152,
+            borderRadius: radius.full,
+            overflow: 'hidden',
+            borderWidth: 3,
+            borderColor: colors.surface,
+            backgroundColor: colors.surfaceSecondary,
+          },
+          photoStyle,
+        ]}
+      >
+        {showPhoto ? (
+          <Image
+            source={{ uri: photoUri! }}
+            accessibilityLabel="Photo du chat en cours d’analyse"
+            resizeMode="cover"
+            style={{ width: '100%', height: '100%' }}
+            onError={onPhotoError}
+          />
+        ) : (
+          <View
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.brandSoft,
+            }}
+          >
+            <Text variant="caption" color="textBrand">
+              Analyse…
+            </Text>
+          </View>
+        )}
+      </Animated.View>
     </View>
   );
 }
@@ -183,7 +379,9 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
   const insets = useSafeAreaInsets();
   const [progress, setProgress] = useState(0.08);
   const [waitingIndex, setWaitingIndex] = useState(0);
+  const [tipIndex, setTipIndex] = useState(0);
   const [photoFailed, setPhotoFailed] = useState(false);
+  const prevDoneCount = useRef(0);
   const showPhoto =
     Boolean(photoUri) &&
     !photoFailed &&
@@ -211,10 +409,25 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
     return () => clearInterval(timer);
   }, [isWaitingOnApi]);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTipIndex((index) => (index + 1) % TIPS.length);
+    }, 4200);
+    return () => clearInterval(timer);
+  }, []);
+
   const completedSteps = useMemo(() => {
     const thresholds = [0.2, 0.45, 0.65, 0.85];
     return ANALYSIS_STEPS.map((_, index) => progress >= thresholds[index]!);
   }, [progress]);
+
+  useEffect(() => {
+    const doneCount = completedSteps.filter(Boolean).length;
+    if (doneCount > prevDoneCount.current && Platform.OS !== 'web') {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    prevDoneCount.current = doneCount;
+  }, [completedSteps]);
 
   const activeIndex = Math.min(
     ANALYSIS_STEPS.length - 1,
@@ -275,7 +488,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
               align="center"
               style={{ fontFamily: fonts.display }}
             >
-              Analyse en cours
+              Découverte en cours
             </Text>
             <Text variant="caption" color="textSecondary" align="center" numberOfLines={1}>
               {statusLabel}
@@ -293,72 +506,11 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
             marginBottom: spacing[16],
           }}
         >
-          <View
-            style={{
-              width: 200,
-              height: 200,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <View
-              style={{
-                position: 'absolute',
-                width: 180,
-                height: 180,
-                borderRadius: radius.full,
-                backgroundColor: colors.brandSoft,
-                opacity: 0.85,
-              }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                width: 150,
-                height: 150,
-                borderRadius: radius.full,
-                borderWidth: 2,
-                borderColor: colors.brandSoft,
-              }}
-            />
-            <Sparkle size={18} style={{ top: 16, right: 28 }} />
-            <Sparkle size={12} style={{ top: 48, left: 24 }} />
-            <Sparkle size={14} style={{ bottom: 36, right: 20 }} />
-            <View
-              style={{
-                width: 152,
-                height: 152,
-                borderRadius: radius.full,
-                overflow: 'hidden',
-                borderWidth: 3,
-                borderColor: colors.surface,
-                backgroundColor: colors.surfaceSecondary,
-              }}
-            >
-              {showPhoto ? (
-                <Image
-                  source={{ uri: photoUri! }}
-                  accessibilityLabel="Photo du chat en cours d’analyse"
-                  resizeMode="cover"
-                  style={{ width: '100%', height: '100%' }}
-                  onError={() => setPhotoFailed(true)}
-                />
-              ) : (
-                <View
-                  style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: colors.brandSoft,
-                  }}
-                >
-                  <Text variant="caption" color="textBrand">
-                    Analyse…
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
+          <ScanningHero
+            photoUri={photoUri}
+            showPhoto={showPhoto}
+            onPhotoError={() => setPhotoFailed(true)}
+          />
         </View>
 
         <View style={{ flex: 1, paddingHorizontal: spacing[24], gap: spacing[16] }}>
@@ -458,8 +610,12 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
               <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
                 Le savais-tu ?
               </Text>
-              <Text variant="bodySmall" color="textBody">
-                {TIP}
+              <Text
+                key={tipIndex}
+                variant="bodySmall"
+                color="textBody"
+              >
+                {TIPS[tipIndex]}
               </Text>
             </View>
           </View>
@@ -482,9 +638,13 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
             shadow.low,
           ]}
         >
-          <AnalysisTab label="Analyse" active>
+          <AnalysisTab label="Découverte" active>
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-              <Circle cx="11" cy="11" r="6.5" stroke={colors.brand} strokeWidth={iconStroke.regular} />
+              <Path
+                d="M11 4.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Z"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.regular}
+              />
               <Path
                 d="M16 16.5 20 20.5"
                 stroke={colors.brand}
@@ -493,7 +653,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
               />
             </Svg>
           </AnalysisTab>
-          <AnalysisTab label="Résultats">
+          <AnalysisTab label="Fiche">
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
               <Path
                 d="M7 4h10a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z"
@@ -513,7 +673,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
               />
             </Svg>
           </AnalysisTab>
-          <AnalysisTab label="Collection" onPress={() => router.replace('/(tabs)/catdex')}>
+          <AnalysisTab label="Mon CatDex" onPress={() => router.replace('/(tabs)/catdex')}>
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
               <Path
                 d="M12 18c-3.5 0-6-2.2-6-5.2C6 9.5 8.2 7 10.2 5.6c.7-.5 1.6-.5 2.3 0C14.5 7 16.8 9.5 16.8 12.8 16.8 15.8 14.3 18 12 18Z"
@@ -521,8 +681,13 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
                 strokeWidth={iconStroke.regular}
                 strokeLinejoin="round"
               />
-              <Circle cx="9.5" cy="12" r="1" fill={colors.textMuted} />
-              <Circle cx="14.5" cy="12" r="1" fill={colors.textMuted} />
+              <Path
+                d="M9.5 12a1 1 0 1 0 0.01 0M14.5 12a1 1 0 1 0 0.01 0"
+                fill={colors.textMuted}
+                stroke={colors.textMuted}
+                strokeWidth={1.5}
+                strokeLinecap="round"
+              />
             </Svg>
           </AnalysisTab>
         </View>

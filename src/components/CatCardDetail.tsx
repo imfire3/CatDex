@@ -47,10 +47,6 @@ function starScore(views: number, number: number) {
   return Math.max(1, (number % 3) + 1);
 }
 
-function displayAgeYears(number: number) {
-  return (number % 7) + 1;
-}
-
 function genderLabel(gender?: CatAnalysis['gender']) {
   if (gender === 'male') return 'Mâle';
   if (gender === 'female') return 'Femelle';
@@ -111,8 +107,16 @@ function InfoSection({
   );
 }
 
-function TraitStat({ label, value }: { label: string; value: string }) {
-  const { colors, fonts, spacing, radius } = useTheme();
+function TraitStat({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon?: 'eye' | 'paint' | 'paw' | 'size';
+}) {
+  const { colors, fonts, spacing, radius, iconStroke } = useTheme();
   return (
     <View
       accessibilityRole="text"
@@ -125,12 +129,56 @@ function TraitStat({ label, value }: { label: string; value: string }) {
         backgroundColor: colors.surfaceElevated,
         borderWidth: 1,
         borderColor: colors.border,
-        gap: spacing[4],
+        gap: spacing[8],
       }}
     >
-      <Text variant="caption" color="textSecondary" style={{ fontFamily: fonts.bodySemi }}>
-        {label}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+        {icon === 'eye' ? (
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"
+              stroke={colors.brand}
+              strokeWidth={iconStroke.regular}
+            />
+            <Path
+              d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+              stroke={colors.brand}
+              strokeWidth={iconStroke.regular}
+            />
+          </Svg>
+        ) : null}
+        {icon === 'paint' ? (
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 3c4.5 0 8 3 8 7.2 0 2.8-1.6 4.3-3.4 4.3-1.2 0-1.9-.8-2.7-.8-.9 0-1.5.9-2.7.9C8.4 14.6 7 13 7 10.4 7 6.4 9.6 3 12 3Z"
+              stroke={colors.brand}
+              strokeWidth={iconStroke.regular}
+            />
+          </Svg>
+        ) : null}
+        {icon === 'paw' ? (
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 17.5c-2.2 0-4-1.2-4-2.4 0-.7.8-1 1.5-.7.5.2 1.2.3 2.5.3s2-.1 2.5-.3c.7-.3 1.5.1 1.5.7 0 1.2-1.8 2.4-4 2.4Z"
+              fill={colors.brand}
+            />
+            <Path d="M7.5 11.2a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Zm9 0a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2ZM9.5 8a1.4 1.4 0 1 0 0-2.8A1.4 1.4 0 0 0 9.5 8Zm5 0a1.4 1.4 0 1 0 0-2.8A1.4 1.4 0 0 0 14.5 8Z" fill={colors.brand} />
+          </Svg>
+        ) : null}
+        {icon === 'size' ? (
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M7 17V7m0 10h10M7 7h10"
+              stroke={colors.brand}
+              strokeWidth={iconStroke.regular}
+              strokeLinecap="round"
+            />
+          </Svg>
+        ) : null}
+        <Text variant="caption" color="textBody" style={{ fontFamily: fonts.bodySemi }}>
+          {label}
+        </Text>
+      </View>
       <Text variant="body" color="textBrand" numberOfLines={1} style={{ fontFamily: fonts.bodySemi }}>
         {value}
       </Text>
@@ -199,7 +247,6 @@ export function CatCardDetail({
   const symbol = genderSymbol(analysis.gender);
   const gender = genderLabel(analysis.gender);
   const stars = starScore(views, number);
-  const ageYears = displayAgeYears(number);
   const likesPct = 50 + ((number * 13) % 41);
 
   useEffect(() => {
@@ -316,14 +363,6 @@ export function CatCardDetail({
         </View>
 
         <View style={{ gap: spacing[8], width: '100%' }}>
-          {gender ? (
-            <Badge
-              label={gender.toUpperCase()}
-              color={colors.onBrand}
-              backgroundColor={colors.brand}
-            />
-          ) : null}
-
           <View
             style={{
               flexDirection: 'row',
@@ -335,7 +374,7 @@ export function CatCardDetail({
             <Text
               variant="h2"
               color="textBrand"
-              style={{ fontFamily: fonts.display, textTransform: 'uppercase' }}
+              style={{ fontFamily: fonts.display }}
             >
               {name}
             </Text>
@@ -344,23 +383,22 @@ export function CatCardDetail({
                 {symbol}
               </Text>
             ) : null}
-            <Text variant="bodySmall" color="textSecondary">
-              {ageYears} ans
-            </Text>
           </View>
 
+          <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+            {traitTags[0] ? `${traitTags[0]} · ` : ''}
+            Découvert {formatPlaceDate(discoveredAt)}
+            {locationLabel ? ` · ${locationLabel.split(',')[0]}` : ''}
+          </Text>
+
           <PillRow
-            items={[analysis.color, analysis.breed].filter(Boolean)}
+            items={[analysis.color, analysis.breed, gender].filter(Boolean) as string[]}
             tone="mixed"
           />
         </View>
 
         <View style={{ gap: spacing[16], width: '100%' }}>
           <InfoSection title="Description" body={analysis.description} />
-          <InfoSection
-            title="Emplacement"
-            body={`${locationLabel} · ${formatPlaceDate(discoveredAt)}`}
-          />
         </View>
 
         <View style={{ gap: spacing[16], width: '100%' }}>
@@ -369,19 +407,19 @@ export function CatCardDetail({
           </Text>
           <View style={{ gap: spacing[8] }}>
             <View style={{ flexDirection: 'row', gap: spacing[8] }}>
-              <TraitStat label="Couleur" value={analysis.color} />
-              <TraitStat label="Yeux" value={analysis.eyes ?? '—'} />
+              <TraitStat label="Couleur" value={analysis.color} icon="paint" />
+              <TraitStat label="Yeux" value={analysis.eyes ?? '—'} icon="eye" />
             </View>
             <View style={{ flexDirection: 'row', gap: spacing[8] }}>
-              <TraitStat label="Pelage" value={analysis.coat} />
-              <TraitStat label="Taille" value={analysis.size ?? '—'} />
+              <TraitStat label="Pelage" value={analysis.coat} icon="paw" />
+              <TraitStat label="Taille" value={analysis.size ?? '—'} icon="size" />
             </View>
           </View>
         </View>
 
         <View style={{ gap: spacing[16], width: '100%' }}>
           <Text variant="h3" color="textBrand">
-            Traits
+            Personnalité
           </Text>
           <PillRow items={traitTags.slice(0, 3)} tone="soft" />
         </View>
@@ -390,10 +428,14 @@ export function CatCardDetail({
           <Text variant="h3" color="textBrand">
             Stats
           </Text>
-          <PillRow
-            items={[`${likesPct}% de j’aime`, `Vu ${views} fois`, 'Capturé']}
-            tone="brand"
-          />
+          <View style={{ gap: spacing[8] }}>
+            <Text variant="bodySmall" color="textBody">
+              Aimé par {likesPct} % · Observé {views === 1 ? 'une fois' : `${views} fois`} · Découvert
+            </Text>
+            <Text variant="caption" color="textMuted">
+              Première apparition · {formatPlaceDate(discoveredAt)}
+            </Text>
+          </View>
         </View>
       </ScrollView>
 

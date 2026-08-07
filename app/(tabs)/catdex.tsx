@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-  FlatList,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CatDexCard } from '@/components/CatDexCard';
 import { EmptyState } from '@/components/EmptyState';
+import { PageLoading } from '@/components/Loader';
 import { SearchInput } from '@/components/Input';
 import { Text } from '@/components/Text';
 import { TabStackHeader } from '@/layout/TabStackHeader';
@@ -19,7 +19,6 @@ import { CATDEX_TARGET } from '@/lib/constants';
 import { type CatDexRarityFilter, matchesCatDexRarityFilter } from '@/lib/catTheme';
 import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { Cat } from '@/types/cat';
 
 type ListFilter = CatDexRarityFilter | 'favorites';
 
@@ -32,11 +31,14 @@ const RARITY_FILTERS: { id: ListFilter; label: string }[] = [
   { id: 'exceptional', label: 'Légendaire' },
 ];
 
+const COLUMNS = 2;
+
 export default function CatDexScreen() {
   const { colors, fonts, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const cats = useCatsStore((state) => state.cats);
+  const hydrated = useCatsStore((state) => state.hydrated);
   const [listFilter, setListFilter] = useState<ListFilter>('all');
   const [query, setQuery] = useState('');
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
@@ -45,10 +47,12 @@ export default function CatDexScreen() {
 
   const filtered = useMemo(() => {
     return cats.filter((cat) => {
+      if (!cat?.id) return false;
+
       if (listFilter === 'favorites') {
         if (!favorites.has(cat.id)) return false;
       } else if (
-        !matchesCatDexRarityFilter(cat.analysis, cat.number, listFilter)
+        !matchesCatDexRarityFilter(cat.analysis ?? {}, cat.number ?? 0, listFilter)
       ) {
         return false;
       }
@@ -70,8 +74,12 @@ export default function CatDexScreen() {
 
   const cardGap = spacing[16];
   const horizontalPad = spacing[24];
-  const cardWidth = (windowWidth - horizontalPad * 2 - cardGap) / 2;
-  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24];
+  const availableWidth = Math.max(0, windowWidth - horizontalPad * 2);
+  const cardWidth = Math.max(
+    140,
+    Math.floor((availableWidth - cardGap * (COLUMNS - 1)) / COLUMNS),
+  );
+  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[96];
 
   const toggleFavorite = (catId: string) => {
     setFavorites((current) => {
@@ -82,6 +90,14 @@ export default function CatDexScreen() {
     });
   };
 
+  if (!hydrated) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <PageLoading label="Chargement du CatDex…" />
+      </View>
+    );
+  }
+
   const empty = (() => {
     if (cats.length === 0) {
       return (
@@ -90,7 +106,7 @@ export default function CatDexScreen() {
           icon="cat"
           title="Ton CatDex est vide"
           description="Pars explorer ton quartier et capture ton premier chat !"
-          actionLabel="Explorer la carte"
+          actionLabel="Découvrir la carte"
           onAction={() => router.push('/(tabs)/map')}
         />
       );
@@ -101,8 +117,8 @@ export default function CatDexScreen() {
           layout="page"
           icon="heart"
           title="Aucun favori pour le moment"
-          description="Ajoute des chats à tes favoris en appuyant sur le ❤️ sur leur fiche."
-          actionLabel="Explorer des chats"
+          description="Ajoute des chats à tes favoris en appuyant sur le cœur sur leur carte."
+          actionLabel="Découvrir des chats"
           onAction={() => setListFilter('all')}
         />
       );
@@ -193,39 +209,47 @@ export default function CatDexScreen() {
         }
       />
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item: Cat) => item.id}
-        numColumns={2}
-        columnWrapperStyle={filtered.length > 0 ? { gap: cardGap } : undefined}
+      <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: horizontalPad,
           paddingTop: spacing[16],
           paddingBottom: listBottom,
-          gap: cardGap,
           flexGrow: 1,
         }}
-        ListEmptyComponent={empty}
-        renderItem={({ item }) => (
-          <View style={{ width: cardWidth }}>
-            <CatDexCard
-              cat={item}
-              isFavorite={favorites.has(item.id)}
-              onToggleFavorite={() => toggleFavorite(item.id)}
-              onPress={() =>
-                router.push({
-                  pathname: '/cat/[id]',
-                  params: { id: item.id },
-                })
-              }
-            />
+        showsVerticalScrollIndicator={false}
+      >
+        {filtered.length === 0 ? (
+          empty
+        ) : (
+          <View style={styles.grid}>
+            {filtered.map((item) => (
+              <View key={item.id} style={{ width: cardWidth, marginBottom: cardGap }}>
+                <CatDexCard
+                  cat={item}
+                  isFavorite={favorites.has(item.id)}
+                  onToggleFavorite={() => toggleFavorite(item.id)}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/cat/[id]',
+                      params: { id: item.id },
+                    })
+                  }
+                />
+              </View>
+            ))}
           </View>
         )}
-      />
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
 });

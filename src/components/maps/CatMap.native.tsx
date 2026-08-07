@@ -147,15 +147,21 @@ export function CatMap({
       >
         <MapWorldDecor cats={cats} />
         {userCoordinate ? <DiscoveryRadius coordinate={userCoordinate} /> : null}
-        {cats.map((cat) => (
+        {cats.map((cat) => {
+          const owned = capturedCatIds
+            ? capturedCatIds.includes(cat.id) ||
+              Boolean(cat.remoteId && capturedCatIds.includes(cat.remoteId))
+            : true;
+          return (
           <CatMapMarker
             key={cat.id}
             cat={cat}
             onPress={onSelectCat}
             isNearby={nearbyCatIds?.includes(cat.id) ?? false}
-            captured={capturedCatIds?.includes(cat.id) ?? true}
+            captured={owned}
           />
-        ))}
+          );
+        })}
         {userCoordinate ? (
           <PlayerLocationMarker coordinate={userCoordinate} />
         ) : null}

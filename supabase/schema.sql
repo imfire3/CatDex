@@ -164,16 +164,28 @@ ALTER TABLE public.sightings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cat_analysis ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
-CREATE POLICY "Public profiles are viewable by everyone"
-  ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+CREATE POLICY "Users can view own profile"
+  ON public.profiles FOR SELECT
+  USING (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
-  ON public.profiles FOR UPDATE USING (auth.uid() = id);
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
   ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Public-safe profile fields (no email). Bypass own-only RLS for cards only.
+CREATE OR REPLACE VIEW public.profile_cards
+WITH (security_invoker = false) AS
+SELECT id, display_name, avatar_url, bio, created_at
+FROM public.profiles;
+
+GRANT SELECT ON public.profile_cards TO anon, authenticated;
 
 DROP POLICY IF EXISTS "Cats are viewable by everyone" ON public.cats;
 CREATE POLICY "Cats are viewable by everyone"
@@ -185,7 +197,9 @@ CREATE POLICY "Users can insert their own cats"
 
 DROP POLICY IF EXISTS "Users can update their own cats" ON public.cats;
 CREATE POLICY "Users can update their own cats"
-  ON public.cats FOR UPDATE USING (auth.uid() = owner_id);
+  ON public.cats FOR UPDATE
+  USING (auth.uid() = owner_id)
+  WITH CHECK (auth.uid() = owner_id);
 
 DROP POLICY IF EXISTS "Users can delete their own cats" ON public.cats;
 CREATE POLICY "Users can delete their own cats"
@@ -327,7 +341,11 @@ CREATE POLICY "Public read access"
 DROP POLICY IF EXISTS "Authenticated users can upload" ON storage.objects;
 CREATE POLICY "Authenticated users can upload"
   ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'cats' AND auth.role() = 'authenticated');
+  WITH CHECK (
+    bucket_id = 'cats'
+    AND auth.role() = 'authenticated'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
 
 DROP POLICY IF EXISTS "Users can update own photos" ON storage.objects;
 CREATE POLICY "Users can update own photos"
@@ -360,7 +378,7 @@ ALTER TABLE public.analysis_feedback ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can insert own analysis feedback" ON public.analysis_feedback;
 CREATE POLICY "Users can insert own analysis feedback"
   ON public.analysis_feedback FOR INSERT
-  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+  WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can read own analysis feedback" ON public.analysis_feedback;
 CREATE POLICY "Users can read own analysis feedback"

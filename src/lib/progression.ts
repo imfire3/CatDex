@@ -60,28 +60,28 @@ export const LEVEL_DEFS: LevelDef[] = [
   {
     level: 1,
     title: 'Bienvenue',
-    goal: 'Scanner ton premier chat',
+    goal: 'Photographier ton premier chat',
     reward: 'Cadre débutant',
   },
   {
     level: 2,
-    title: 'Explorer',
+    title: 'Découvreur',
     goal: 'Découvrir 3 chats',
   },
   {
     level: 3,
     title: 'Curieux',
-    goal: 'Découvrir 2 espèces différentes',
+    goal: 'Découvrir 2 races différentes',
   },
   {
     level: 4,
     title: 'Promeneur',
-    goal: 'Explorer 3 lieux',
+    goal: 'Découvrir 3 lieux',
   },
   {
     level: 5,
     title: 'Photographe',
-    goal: 'Faire 10 captures',
+    goal: 'Faire 10 découvertes',
     unlock: 'Favoris',
   },
   {

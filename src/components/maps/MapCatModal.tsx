@@ -1,7 +1,7 @@
 import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button } from '@/components/Button';
 import { CatImage } from '@/components/CatImage';
@@ -26,6 +26,8 @@ type Props = {
 
 /**
  * Full-screen cat preview from the map — same canvas background as the app.
+ *
+ * Owned pins reveal identity; community sightings stay mystery until captured.
  */
 export function MapCatModal({
   visible,
@@ -51,6 +53,7 @@ export function MapCatModal({
     typeof distanceM === 'number' ? formatDistanceMeters(distanceM) : null;
 
   const canShowPhoto =
+    captured &&
     Boolean(cat.photoUri) &&
     !photoFailed &&
     !cat.photoUri.startsWith('blob:') &&
@@ -144,13 +147,35 @@ export function MapCatModal({
                 accessibilityLabel={`Photo de ${cat.name}`}
                 onError={() => setPhotoFailed(true)}
               />
-            ) : (
+            ) : captured ? (
               <CatSprite
                 colorLabel={cat.analysis?.color ?? 'Roux'}
                 seed={cat.number}
                 size={180}
                 faceOnly
               />
+            ) : (
+              <View style={{ alignItems: 'center', gap: spacing[16] }}>
+                <Svg width={72} height={72} viewBox="0 0 24 24" fill="none">
+                  <Circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    stroke={colors.textMuted}
+                    strokeWidth={iconStroke.regular}
+                  />
+                  <Path
+                    d="M9.2 9.2a2.8 2.8 0 0 1 5.4.9c0 1.6-1.4 2.2-2.1 2.7-.6.4-.9.9-.9 1.6"
+                    stroke={colors.textMuted}
+                    strokeWidth={iconStroke.regular}
+                    strokeLinecap="round"
+                  />
+                  <Circle cx="12" cy="17.2" r="1.1" fill={colors.textMuted} />
+                </Svg>
+                <Text variant="bodySmall" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
+                  Mystère
+                </Text>
+              </View>
             )}
           </View>
 
@@ -165,7 +190,7 @@ export function MapCatModal({
             <Text variant="bodySmall" color="textSecondary">
               {captured
                 ? `${cat.analysis.breed} · ${cat.analysis.color}`
-                : 'Pas encore capturé'}
+                : 'Repéré par un autre explorateur'}
               {distanceLabel ? ` · ${distanceLabel}` : ''}
             </Text>
           </View>
@@ -176,7 +201,8 @@ export function MapCatModal({
             </Text>
           ) : (
             <Text variant="body" color="textSecondary">
-              Approche-toi et photographie-le pour l’ajouter à ton CatDex.
+              Tu ne l’as pas encore capturé. Approche-toi et photographie-le pour
+              l’ajouter à ton CatDex.
             </Text>
           )}
 
@@ -185,7 +211,7 @@ export function MapCatModal({
               <Button title="Voir la fiche" onPress={onViewCard} />
             ) : (
               <>
-                <Button title="Le capturer" onPress={onCapture} />
+                <Button title="Le découvrir" onPress={onCapture} />
                 <Button title="J’y vais" variant="secondary" onPress={onGoThere} />
               </>
             )}

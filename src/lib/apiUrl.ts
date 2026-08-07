@@ -77,8 +77,3 @@ export function getApiCandidateUrls(): string[] {
 export function getPrimaryApiUrl(): string {
   return getApiCandidateUrls()[0] ?? `http://localhost:${API_PORT}`;
 }
-
-export function getApiSecret(): string | undefined {
-  const secret = process.env.EXPO_PUBLIC_API_SECRET?.trim();
-  return secret || undefined;
-}

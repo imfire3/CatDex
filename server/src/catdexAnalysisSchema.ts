@@ -54,6 +54,27 @@ const ageEnum = ['kitten', 'young', 'adult', 'senior', 'unknown'] as const;
 const typeCategoryEnum = ['domestic', 'probable_breed', 'mixed', 'unknown'] as const;
 const statusEnum = ['success', 'low_quality', 'multiple_cats', 'not_a_cat'] as const;
 
+/** MVP breed whitelist — no free-form invention. */
+export const BREED_KEY_ENUM = [
+  'european',
+  'domestic_shorthair',
+  'domestic_longhair',
+  'maine_coon',
+  'siamese',
+  'persian',
+  'british_shorthair',
+  'bengal',
+  'sphynx',
+  'ragdoll',
+  'norwegian_forest',
+  'unknown',
+] as const;
+
+const faceProfileEnum = ['flat', 'normal', 'elongated', 'unknown'] as const;
+const muzzleEnum = ['flat', 'normal', 'elongated', 'unknown'] as const;
+const earSizeEnum = ['small', 'medium', 'large', 'unknown'] as const;
+const earShapeEnum = ['pointed', 'rounded', 'folded', 'unknown'] as const;
+
 const confidenceScore = {
   type: 'number' as const,
   description: 'Confidence between 0 and 1',
@@ -74,6 +95,19 @@ const breedCandidate = {
   },
 };
 
+const morphologyObject = {
+  type: 'object' as const,
+  additionalProperties: false,
+  required: ['face_profile', 'muzzle', 'ear_size', 'ear_shape', 'confidence'],
+  properties: {
+    face_profile: { type: 'string', enum: [...faceProfileEnum] },
+    muzzle: { type: 'string', enum: [...muzzleEnum] },
+    ear_size: { type: 'string', enum: [...earSizeEnum] },
+    ear_shape: { type: 'string', enum: [...earShapeEnum] },
+    confidence: confidenceScore,
+  },
+};
+
 const catObject = {
   type: 'object' as const,
   additionalProperties: false,
@@ -82,6 +116,7 @@ const catObject = {
     'type',
     'coat',
     'physical_features',
+    'morphology',
     'pose',
     'environment',
     'playful_traits',
@@ -93,6 +128,7 @@ const catObject = {
       type: 'object',
       additionalProperties: false,
       required: [
+        'breed_key',
         'label',
         'category',
         'confidence',
@@ -100,10 +136,16 @@ const catObject = {
         'visible_evidence',
       ],
       properties: {
+        breed_key: {
+          type: 'string',
+          enum: [...BREED_KEY_ENUM],
+          description:
+            'MVP whitelist only. Use european/domestic_* when confidence < 0.80',
+        },
         label: {
           type: 'string',
           description:
-            'French label e.g. Chat domestique à poil court, or a precise breed only if confidence >= 0.80',
+            'French player label matching breed_key (e.g. Européen, Chat domestique à poil court)',
         },
         category: { type: 'string', enum: [...typeCategoryEnum] },
         confidence: confidenceScore,
@@ -137,7 +179,11 @@ const catObject = {
         tabby_pattern: {
           anyOf: [{ type: 'string', enum: [...tabbyEnum] }, { type: 'null' }],
         },
-        length: { type: 'string', enum: [...lengthEnum] },
+        length: {
+          type: 'string',
+          enum: [...lengthEnum],
+          description: 'Prefer short when uncertain',
+        },
         texture: { type: 'string', enum: [...textureEnum] },
         confidence: confidenceScore,
       },
@@ -160,10 +206,15 @@ const catObject = {
         face_shape: { type: 'string' },
         body_shape: { type: 'string' },
         age_group: { type: 'string', enum: [...ageEnum] },
-        distinctive_markings: stringList,
+        distinctive_markings: {
+          ...stringList,
+          description:
+            'French concrete markings visible on photo (white chest, socks, striped tail…)',
+        },
         confidence: confidenceScore,
       },
     },
+    morphology: morphologyObject,
     pose: {
       type: 'object',
       additionalProperties: false,
@@ -190,7 +241,8 @@ const catObject = {
     },
     description: {
       type: 'string',
-      description: 'Max 2 French sentences, playful but factual',
+      description:
+        '1–2 French narrative sentences; mention color + visible detail; never robotic breed jargon',
     },
   },
 };

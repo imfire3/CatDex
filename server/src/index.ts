@@ -8,6 +8,16 @@ import OpenAI from 'openai';
 import { z } from 'zod';
 
 import {
+  allowUnauthAnalyze,
+  consumeRateLimit,
+  estimateDecodedBytes,
+  extractBearerToken,
+  getAnalyzeMaxBytes,
+  isAllowedMime,
+  isProductionRuntime,
+  verifySupabaseAccessToken,
+} from './analyzeAuth';
+import {
   CATDEX_VISION_PROMPT,
   CATDEX_VISION_USER_TEXT,
 } from './catdexVisionPrompt';
@@ -19,9 +29,12 @@ import {
   type VisionJson,
 } from './normalizeVisionAnalysis';
 
-const app = new Hono();
+const app = new Hono<{
+  Variables: {
+    analyzeUserId: string;
+  };
+}>();
 const port = Number(process.env.PORT ?? 8787);
-const apiSecret = process.env.API_SECRET?.trim();
 
 app.use(
   '*',
@@ -32,21 +45,45 @@ app.use(
 
 app.get('/health', (c) => c.json({ ok: true, service: 'catdex-api' }));
 
-/** Lightweight shared-secret gate for /analyze-cat (optional in local dev). */
+/** Require Supabase JWT (prod) + rate-limit per user. */
 app.use('/analyze-cat', async (c, next) => {
-  if (!apiSecret) {
-    await next();
-    return;
+  const token = extractBearerToken(c.req.header('authorization'));
+  let userId: string | null = null;
+
+  if (token) {
+    const user = await verifySupabaseAccessToken(token);
+    userId = user?.id ?? null;
   }
 
-  const header =
-    c.req.header('x-api-key')?.trim() ||
-    c.req.header('authorization')?.replace(/^Bearer\s+/i, '').trim();
-
-  if (header !== apiSecret) {
-    return c.json({ error: 'Non autorisé' }, 401);
+  if (!userId) {
+    if (allowUnauthAnalyze()) {
+      userId = 'dev-unauth';
+    } else {
+      return c.json(
+        {
+          error:
+            'Non autorisé. Connecte-toi pour analyser une photo.',
+        },
+        401,
+      );
+    }
   }
 
+  const quota = consumeRateLimit(userId);
+  c.header('X-RateLimit-Limit', String(process.env.ANALYZE_RATE_LIMIT ?? 20));
+  c.header('X-RateLimit-Remaining', String(quota.remaining));
+  c.header('X-RateLimit-Reset', String(Math.ceil(quota.resetAt / 1000)));
+
+  if (!quota.ok) {
+    return c.json(
+      {
+        error: 'Trop de demandes. Réessaie dans une heure.',
+      },
+      429,
+    );
+  }
+
+  c.set('analyzeUserId', userId);
   await next();
 });
 
@@ -58,30 +95,27 @@ const analyzeSchema = z.object({
 const COLORS = [
   'Noir',
   'Roux',
-  'Roux tigré',
+  'Roux et blanc',
   'Gris',
   'Gris tigré',
   'Blanc',
   'Écaille de tortue',
-  'Bicolore',
   'Crème',
-  'Siamois',
+  'Noir et blanc',
 ] as const;
 
 const BREEDS = [
   'Européen',
-  'Chartreux',
+  'Chat domestique à poil court',
   'Siamois',
   'Maine Coon',
-  'Persan',
   'British Shorthair',
   'Bengal',
   'Ragdoll',
   'Norvégien',
-  'Sphynx',
 ] as const;
 
-const COATS = ['Court', 'Mi-long', 'Long', 'Bouclé'] as const;
+const COATS = ['Court', 'Mi-long', 'Long'] as const;
 const EYES = ['Ambre', 'Verts', 'Bleus', 'Dorés', 'Noisette', 'Cuivre'] as const;
 const SIZES = ['Petite', 'Moyenne', 'Grande'] as const;
 const GENDERS = ['male', 'female', 'unknown'] as const;
@@ -151,7 +185,7 @@ function buildFallbackAnalysis(seedInput: string) {
     gender,
     tags,
     suggestedName,
-    description: `Un chat ${color.toLowerCase()} de type ${breed}, air ${tags[0]!.toLowerCase()}. ${suggestedName} a été repéré dans le quartier — prêt à rejoindre ton CatDex.`,
+    description: `Ce chat ${color.toLowerCase()} t'observe avec curiosité. ${suggestedName} est prêt·e à rejoindre ton CatDex.`,
   };
 }
 
@@ -217,24 +251,46 @@ app.post('/analyze-cat', async (c) => {
   let { imageBase64, mimeType } = stripDataUrl(parsed.data.imageBase64, parsed.data.mimeType);
   const analysisSeed = imageBase64.slice(0, 1200);
 
+  if (!isAllowedMime(mimeType)) {
+    return c.json(
+      {
+        error: 'Format image non supporté. Utilise JPEG, PNG ou WebP.',
+      },
+      400,
+    );
+  }
+
+  const decodedBytes = estimateDecodedBytes(imageBase64);
+  if (decodedBytes > getAnalyzeMaxBytes()) {
+    return c.json(
+      {
+        error: 'Image trop lourde. Compresse la photo et réessaie.',
+      },
+      413,
+    );
+  }
+
   const normalizedMime = mimeType.toLowerCase();
   if (
     normalizedMime.includes('heic') ||
     normalizedMime.includes('heif') ||
     normalizedMime.includes('tiff')
   ) {
-    // Always 200 + analysis when mocking — Cloudflare quick tunnels strip non-200 bodies.
-    return c.json({
-      error: 'Format image non supporté. Utilise JPEG ou PNG.',
-      analysis: buildFallbackAnalysis(analysisSeed),
-      mocked: true,
-    });
+    return c.json(
+      {
+        error: 'Format image non supporté. Utilise JPEG, PNG ou WebP.',
+      },
+      400,
+    );
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
 
   // Mock path: respond immediately — cutout is optional polish, not required for detection.
   if (keyLooksPlaceholder(apiKey)) {
+    if (isProductionRuntime() && !allowUnauthAnalyze()) {
+      return c.json({ error: 'Service d’analyse indisponible.' }, 503);
+    }
     return c.json({
       analysis: buildFallbackAnalysis(analysisSeed),
       mocked: true,

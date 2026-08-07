@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   Platform,
@@ -10,6 +10,17 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 
@@ -19,6 +30,7 @@ import {
 } from '@/components/CaptureReveal';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { CATDEX_TARGET, formatCatDefaultName, formatDexNumber } from '@/lib/constants';
 import { enrichAnalysis } from '@/lib/catTraits';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
@@ -63,12 +75,110 @@ function CameraBadgeIcon({ color }: { color: string }) {
   );
 }
 
+function ConfettiBurst() {
+  const { colors } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 14 }, (_, i) => ({
+        id: i,
+        left: 8 + ((i * 17) % 84),
+        delay: (i % 7) * 40,
+        color: [colors.brand, colors.orange, colors.success, colors.rose, colors.yellow][
+          i % 5
+        ]!,
+        size: 6 + (i % 4) * 2,
+      })),
+    [colors.brand, colors.orange, colors.rose, colors.success, colors.yellow],
+  );
+
+  if (reduceMotion) return null;
+
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {pieces.map((piece) => (
+        <ConfettiPiece key={piece.id} {...piece} />
+      ))}
+    </View>
+  );
+}
+
+function ConfettiPiece({
+  left,
+  delay,
+  color,
+  size,
+}: {
+  left: number;
+  delay: number;
+  color: string;
+  size: number;
+}) {
+  const y = useSharedValue(-20);
+  const opacity = useSharedValue(1);
+  const rotate = useSharedValue(0);
+
+  useEffect(() => {
+    y.value = withTiming(520, { duration: 1600 + delay * 2 });
+    opacity.value = withTiming(0, { duration: 1600 + delay * 2 });
+    rotate.value = withTiming(180 + delay, { duration: 1600 });
+  }, [delay, opacity, rotate, y]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: y.value },
+      { rotate: `${rotate.value}deg` },
+    ],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          top: 40,
+          left: `${left}%`,
+          width: size,
+          height: size * 1.4,
+          borderRadius: 2,
+          backgroundColor: color,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+function PulsingBadge({ children }: { children: React.ReactNode }) {
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(0.7);
+  const glow = useSharedValue(0.6);
+
+  useEffect(() => {
+    scale.value = withSpring(1, { damping: 10, stiffness: 120 });
+    if (reduceMotion) return;
+    glow.value = withRepeat(
+      withSequence(withTiming(1, { duration: 700 }), withTiming(0.65, { duration: 700 })),
+      -1,
+      false,
+    );
+  }, [glow, reduceMotion, scale]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value * (0.96 + glow.value * 0.06) }],
+  }));
+
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
 /**
  * Post-capture: verify infos → optional first badge → share.
  */
 export default function RewardScreen() {
   const { colors, fonts, spacing, radius, shadow, gradients } = useTheme();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReducedMotion();
   const showToast = useToastStore((state) => state.show);
   const addCat = useCatsStore((state) => state.addCat);
   const cats = useCatsStore((state) => state.cats);
@@ -84,6 +194,7 @@ export default function RewardScreen() {
   const savedCat = cat;
   const totalXp = estimateTotalXp(cats);
   const progression = progressionFromTotalXp(totalXp);
+  const xpToNext = Math.max(0, progression.xpMax - progression.xpIntoLevel);
 
   const displayName = useMemo(() => {
     if (!pending) return '';
@@ -141,7 +252,7 @@ export default function RewardScreen() {
 
       const remaining = Math.max(0, CATDEX_TARGET - created.number);
       showToast({
-        title: 'Ajouté au CatDex',
+        title: 'Nouveau chat découvert !',
         description:
           remaining > 0
             ? `${created.name} · Plus que ${remaining} chat${remaining > 1 ? 's' : ''}`
@@ -222,15 +333,18 @@ export default function RewardScreen() {
     );
   }
 
+  const enter = reduceMotion ? undefined : FadeIn.duration(280);
+  const enterUp = reduceMotion ? undefined : FadeInUp.delay(80).duration(320);
+  const enterDown = reduceMotion ? undefined : FadeInDown.delay(120).duration(320);
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {phase === 'share' ? (
-        <LinearGradient
-          colors={[gradients.primarySoft[0], colors.background, colors.background]}
-          locations={[0, 0.45, 1]}
-          style={StyleSheet.absoluteFillObject}
-        />
-      ) : null}
+      <LinearGradient
+        colors={[gradients.primarySoft[0], colors.background, colors.background]}
+        locations={[0, 0.45, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
+      {phase === 'share' ? <ConfettiBurst /> : null}
 
       <View
         style={{
@@ -243,49 +357,69 @@ export default function RewardScreen() {
       >
         {phase === 'badge' ? (
           <>
-            <View style={{ alignItems: 'center', gap: spacing[24], paddingTop: spacing[32] }}>
-              <Text variant="h1" color="text" align="center" style={{ fontFamily: fonts.display }}>
-                Nouveau badge débloqué !
+            <Animated.View
+              entering={enter}
+              style={{ alignItems: 'center', gap: spacing[24], paddingTop: spacing[32] }}
+            >
+              <Text
+                variant="h1"
+                color="textBrand"
+                align="center"
+                style={{ fontFamily: fonts.display }}
+              >
+                Nouveau badge obtenu !
               </Text>
 
-              <View
-                style={[
-                  {
-                    width: 160,
-                    height: 160,
-                    borderRadius: radius.xl,
-                    backgroundColor: colors.brand,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  },
-                  shadow.glow,
-                ]}
-              >
-                <CameraBadgeIcon color={colors.onAccent} />
-              </View>
+              <PulsingBadge>
+                <View
+                  style={[
+                    {
+                      width: 160,
+                      height: 160,
+                      borderRadius: radius.xl,
+                      backgroundColor: colors.brand,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    },
+                    shadow.glow,
+                  ]}
+                >
+                  <CameraBadgeIcon color={colors.onAccent} />
+                </View>
+              </PulsingBadge>
 
               <View style={{ alignItems: 'center', gap: spacing[8] }}>
                 <Text variant="h2" color="textBrand" align="center">
                   Photographe
                 </Text>
-                <Text variant="bodySmall" color="textSecondary" align="center">
-                  Ami des chats
-                </Text>
-                <Text variant="body" color="textSecondary" align="center">
-                  Prends ta première photo d’un chat.
+                <Text variant="bodySmall" color="textBody" align="center">
+                  Premier cliché · Ami des chats
                 </Text>
                 <Text
-                  variant="body"
+                  variant="h3"
                   color="textBrand"
                   align="center"
                   style={{ fontFamily: fonts.bodySemi, marginTop: spacing[8] }}
                 >
-                  + {xpGained} XP · Niveau {progression.level}
+                  +{xpGained} XP
+                </Text>
+                <Text variant="body" color="textBody" align="center">
+                  Niveau {progression.level} atteint
+                </Text>
+                <Text variant="caption" color="textMuted" align="center">
+                  Encore {xpToNext} XP avant le niveau suivant
                 </Text>
               </View>
-            </View>
+            </Animated.View>
 
-            <Button title="Super !" onPress={() => setPhase('share')} />
+            <View style={{ gap: spacing[8] }}>
+              <Button title="Continuer" onPress={() => setPhase('share')} />
+              <Button
+                variant="tertiary"
+                title="Voir tous mes badges"
+                onPress={() => setPhase('share')}
+              />
+            </View>
           </>
         ) : null}
 
@@ -294,44 +428,55 @@ export default function RewardScreen() {
             <View
               style={{
                 alignItems: 'center',
-                gap: spacing[24],
+                gap: spacing[16],
                 flex: 1,
                 justifyContent: 'center',
               }}
             >
-              <Text
-                variant="h1"
-                color="textBrand"
-                align="center"
-                style={{ fontFamily: fonts.display }}
-              >
-                Capture réussie !
-              </Text>
-
-              <Image
-                source={{ uri: savedCat.photoUri }}
-                style={{
-                  width: 220,
-                  height: 220,
-                  borderRadius: radius.xl,
-                }}
-                resizeMode="cover"
-              />
-
-              <Text variant="h3" color="text" align="center">
-                {savedCat.name} {formatDexNumber(savedCat.number)}
-              </Text>
-
-              {!firstCapture ? (
+              <Animated.View entering={enterUp}>
                 <Text
-                  variant="body"
+                  variant="h1"
+                  color="textBrand"
+                  align="center"
+                  style={{ fontFamily: fonts.display }}
+                >
+                  {savedCat.name} rejoint ton CatDex !
+                </Text>
+              </Animated.View>
+
+              <Animated.View entering={enterDown}>
+                <Image
+                  source={{ uri: savedCat.photoUri }}
+                  style={{
+                    width: 200,
+                    height: 200,
+                    borderRadius: radius.cta,
+                    borderWidth: 3,
+                    borderColor: colors.brand,
+                  }}
+                  resizeMode="cover"
+                />
+              </Animated.View>
+
+              <View style={{ alignItems: 'center', gap: spacing[8] }}>
+                <Text
+                  variant="h3"
                   color="textBrand"
                   align="center"
                   style={{ fontFamily: fonts.bodySemi }}
                 >
-                  + {xpGained} XP
+                  +{xpGained} XP
                 </Text>
-              ) : null}
+                {firstCapture ? (
+                  <Text variant="bodySmall" color="textBody" align="center">
+                    Premier chat · Nouvelle série · Nouveau badge
+                  </Text>
+                ) : (
+                  <Text variant="bodySmall" color="textBody" align="center">
+                    {formatDexNumber(savedCat.number)} · CatDex enrichi
+                  </Text>
+                )}
+              </View>
 
               <View
                 style={[
@@ -342,12 +487,13 @@ export default function RewardScreen() {
                     borderWidth: 1,
                     borderColor: colors.border,
                     padding: spacing[16],
-                    gap: spacing[16],
+                    gap: spacing[8],
+                    alignItems: 'center',
                   },
                   shadow.low,
                 ]}
               >
-                <Text variant="h3" color="text" align="center">
+                <Text variant="bodySmall" color="textBody" align="center">
                   Partage ta découverte
                 </Text>
                 <Pressable
@@ -355,7 +501,6 @@ export default function RewardScreen() {
                   accessibilityLabel="Partager"
                   onPress={() => void handleShare()}
                   style={({ pressed }) => ({
-                    alignSelf: 'center',
                     paddingVertical: spacing[8],
                     paddingHorizontal: spacing[24],
                     borderRadius: radius.full,
@@ -377,12 +522,7 @@ export default function RewardScreen() {
             <View style={{ gap: spacing[8] }}>
               <Button
                 title="Voir dans mon CatDex"
-                onPress={() =>
-                  router.replace({
-                    pathname: '/cat/[id]',
-                    params: { id: savedCat.id },
-                  })
-                }
+                onPress={() => router.replace('/(tabs)/catdex')}
               />
               <Button title="Retour à la carte" variant="secondary" onPress={finishToMap} />
             </View>

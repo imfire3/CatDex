@@ -79,10 +79,22 @@ export function genderSymbol(gender?: CatGender): string {
   return '';
 }
 
-/** True when Vision says the photo has no clearly visible cat. */
+/** True when Vision says the photo has no clearly visible / usable cat. */
 export function isNoCatFound(analysis: CatAnalysis): boolean {
   if (analysis.notACat === true) return true;
-  if (analysis.errorCode === 'NOT_A_CAT') return true;
+
+  const code = (analysis.errorCode ?? '').toUpperCase();
+  if (
+    code === 'NOT_A_CAT' ||
+    code === 'MULTIPLE_CATS' ||
+    code === 'LOW_QUALITY' ||
+    code === 'BLURRY' ||
+    code === 'PARTIAL_CAT' ||
+    code === 'PHOTO_INVALID'
+  ) {
+    return true;
+  }
+
   if (
     typeof analysis.confidence === 'number' &&
     Number.isFinite(analysis.confidence) &&

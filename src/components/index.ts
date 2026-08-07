@@ -35,6 +35,13 @@ export { Modal, type AppModalProps } from './Modal';
 export { ScanFrame } from './ScanFrame';
 export { GlassIconButton, type GlassIconButtonProps } from './GlassIconButton';
 export { BrandLogo } from './BrandLogo';
+export {
+  SettingsScreen,
+  SettingsSection,
+  SettingsRow,
+  type SettingsRowProps,
+  type SettingsRowBadge,
+} from './Settings';
 /** @see CatCard thin alias — prefer CatDexCard */
 export { CatCard } from './CatCard';
 export { CatDexCard } from './CatDexCard';

@@ -3,30 +3,27 @@ import type { CatAnalysis, CatGender } from '@/types/cat';
 const COLORS = [
   'Noir',
   'Roux',
-  'Roux tigré',
+  'Roux et blanc',
   'Gris',
   'Gris tigré',
   'Blanc',
   'Écaille de tortue',
-  'Bicolore',
   'Crème',
-  'Siamois',
+  'Noir et blanc',
 ] as const;
 
 const BREEDS = [
   'Européen',
-  'Chartreux',
+  'Chat domestique à poil court',
   'Siamois',
   'Maine Coon',
-  'Persan',
   'British Shorthair',
   'Bengal',
   'Ragdoll',
   'Norvégien',
-  'Sphynx',
 ] as const;
 
-const COATS = ['Court', 'Mi-long', 'Long', 'Bouclé'] as const;
+const COATS = ['Court', 'Mi-long', 'Long'] as const;
 const EYES = ['Ambre', 'Verts', 'Bleus', 'Dorés', 'Noisette', 'Cuivre'] as const;
 const SIZES = ['Petite', 'Moyenne', 'Grande'] as const;
 const GENDERS: CatGender[] = ['male', 'female', 'unknown'];
@@ -233,7 +230,7 @@ function buildDescription(
   tags: string[],
 ): string {
   const vibe = tags[0]?.toLowerCase() ?? 'curieux';
-  return `Un chat ${color.toLowerCase()} de type ${breed}, air ${vibe}. ${name} a été repéré dans le quartier — prêt à rejoindre ton CatDex.`;
+  return `Ce chat ${color.toLowerCase()} t'observe avec un air ${vibe.toLowerCase()}. ${name} est prêt·e à rejoindre ton CatDex.`;
 }
 
 /**
