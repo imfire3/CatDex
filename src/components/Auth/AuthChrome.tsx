@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -31,12 +32,12 @@ export function AuthBackButton({
         width: spacing[40],
         height: spacing[40],
         borderRadius: radius[8],
-        backgroundColor: colors.surface,
+        backgroundColor: pressed ? colors.ctaSecondaryPressed : colors.ctaSecondary,
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: colors.ctaSecondaryBorder,
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: pressed ? 0.85 : 1,
+        opacity: pressed ? 0.95 : 1,
         transform: [{ scale: pressed ? 0.98 : 1 }],
       })}
     >
@@ -60,6 +61,10 @@ export function AuthHeader({
   onBack,
   inline = false,
   embedded = false,
+  /** Back on its own row, large centered title below (login / signup). */
+  hero = false,
+  /** Right-aligned accessory on the title row (e.g. Étape 1 sur 2). */
+  trailing,
 }: {
   title: string;
   subtitle?: string;
@@ -69,38 +74,80 @@ export function AuthHeader({
   embedded?: boolean;
   /** Back button and centered title on one row. */
   inline?: boolean;
+  hero?: boolean;
+  trailing?: ReactNode;
 }) {
   const { fonts, spacing } = useTheme();
   const insets = useSafeAreaInsets();
 
+  if (hero) {
+    return (
+      <View style={{ gap: spacing[24] }}>
+        {showBack ? (
+          <View style={{ alignSelf: 'flex-start' }}>
+            <AuthBackButton onPress={onBack} />
+          </View>
+        ) : (
+          <View style={{ height: spacing[40] }} />
+        )}
+        <View style={{ gap: spacing[8], alignItems: 'center' }}>
+          <Text
+            variant="h1"
+            color="textBrand"
+            align="center"
+            style={{ fontFamily: fonts.display }}
+          >
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text variant="body" color="textSecondary" align="center">
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
   if (inline) {
     const side = spacing[40];
     return (
-      <View style={{ gap: spacing[16] }}>
+      <View style={{ gap: subtitle ? spacing[16] : 0 }}>
         <View
           style={{
+            height: side,
             flexDirection: 'row',
             alignItems: 'center',
-            minHeight: side,
           }}
         >
-          {showBack ? (
-            <AuthBackButton onPress={onBack} />
-          ) : (
-            <View style={{ width: side, height: side }} />
-          )}
+          <View style={{ width: side, zIndex: 1 }}>
+            {showBack ? (
+              <AuthBackButton onPress={onBack} />
+            ) : (
+              <View style={{ width: side, height: side }} />
+            )}
+          </View>
           <Text
             variant="h2"
             color="textBrand"
             align="center"
+            numberOfLines={1}
             style={{ flex: 1, fontFamily: fonts.display }}
           >
             {title}
           </Text>
-          <View style={{ width: side, height: side }} accessibilityElementsHidden />
+          <View
+            style={{
+              minWidth: side,
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+            }}
+          >
+            {trailing ?? <View style={{ width: side, height: side }} />}
+          </View>
         </View>
         {subtitle ? (
-          <Text variant="body" color="textSecondary">
+          <Text variant="body" color="textSecondary" align="center">
             {subtitle}
           </Text>
         ) : null}
@@ -148,7 +195,7 @@ export function AuthDivider({
       }}
     >
       <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
-      <Text variant="caption" color="textMuted">
+      <Text variant="caption" color="textBrand" style={{ fontWeight: '600' }}>
         {label}
       </Text>
       <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />

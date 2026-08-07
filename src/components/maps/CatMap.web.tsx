@@ -23,6 +23,7 @@ type Props = {
   scheme: 'light' | 'dark';
   onSelectCat: (cat: Cat) => void;
   focusCoordinate?: { latitude: number; longitude: number } | null;
+  focusNonce?: number;
   userCoordinate?: { latitude: number; longitude: number } | null;
   nearbyCatIds?: string[];
   capturedCatIds?: string[];
@@ -340,6 +341,7 @@ export function CatMap({
   cats,
   onSelectCat,
   focusCoordinate,
+  focusNonce,
   userCoordinate,
   nearbyCatIds,
   capturedCatIds,
@@ -431,17 +433,29 @@ export function CatMap({
       pitch: MAP_PITCH,
       duration: 450,
     });
-  }, [focusCoordinate, mapReady]);
+  }, [focusCoordinate, focusNonce, mapReady]);
 
+  // First GPS lock only — continuous follow would fight user panning.
+  // Explicit recenter goes through focusCoordinate.
+  const didCenterOnUserRef = useRef(false);
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map || !userCoordinate) return;
+    if (didCenterOnUserRef.current) return;
+    didCenterOnUserRef.current = true;
     map.easeTo({
       center: [userCoordinate.longitude, userCoordinate.latitude],
+      zoom: Math.max(map.getZoom(), MAP_ZOOM),
       pitch: MAP_PITCH,
-      duration: 280,
+      duration: 450,
     });
   }, [userCoordinate, mapReady]);
+
+  useEffect(() => {
+    if (focusCoordinate) {
+      didCenterOnUserRef.current = true;
+    }
+  }, [focusCoordinate, focusNonce]);
 
   useEffect(() => {
     const map = mapRef.current;

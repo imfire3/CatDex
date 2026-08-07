@@ -56,6 +56,7 @@ export function AuthShell({
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const footerPadBottom = Math.max(insets.bottom, spacing[16]);
+  const canvas = colors.background;
 
   const sheetPadding = {
     paddingHorizontal: spacing[24],
@@ -63,7 +64,7 @@ export function AuthShell({
     paddingBottom: footer ? spacing[16] : Math.max(insets.bottom, spacing[24]),
     borderTopLeftRadius: plain || fullHeight ? 0 : radius.sheet,
     borderTopRightRadius: plain || fullHeight ? 0 : radius.sheet,
-    backgroundColor: plain ? colors.background : colors.surfaceElevated,
+    backgroundColor: canvas,
     borderTopWidth: plain || fullHeight ? 0 : 1,
     borderColor: colors.border,
   };
@@ -73,8 +74,8 @@ export function AuthShell({
       style={fullHeight || footer || header ? { flex: 1 } : undefined}
       contentContainerStyle={{
         flexGrow: fullHeight ? 1 : undefined,
-        gap: spacing[24],
-        paddingBottom: footer ? spacing[16] : 0,
+        gap: spacing[16],
+        paddingBottom: footer ? spacing[8] : 0,
       }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
@@ -104,8 +105,8 @@ export function AuthShell({
       {header ? (
         <View
           style={{
-            paddingBottom: spacing[16],
-            backgroundColor: plain ? colors.background : colors.surfaceElevated,
+            paddingBottom: spacing[8],
+            backgroundColor: canvas,
           }}
         >
           {header}
@@ -118,7 +119,7 @@ export function AuthShell({
             gap: spacing[8],
             paddingTop: spacing[8],
             paddingBottom: footerPadBottom,
-            backgroundColor: plain ? colors.background : colors.surfaceElevated,
+            backgroundColor: canvas,
           }}
         >
           {footer}

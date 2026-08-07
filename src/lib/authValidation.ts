@@ -5,7 +5,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SPECIAL_RE = /[^A-Za-z0-9]/;
 const DIGIT_RE = /\d/;
 
-export const PASSWORD_MIN_LENGTH = 6;
+export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 100;
 
 export type PasswordRuleId = 'length' | 'digit' | 'special';
@@ -19,18 +19,18 @@ export type PasswordRule = {
 export const PASSWORD_RULES: PasswordRule[] = [
   {
     id: 'length',
-    label: `Au moins ${PASSWORD_MIN_LENGTH} caractères`,
+    label: `${PASSWORD_MIN_LENGTH} caractères`,
     test: (value) =>
       value.length >= PASSWORD_MIN_LENGTH && value.length <= PASSWORD_MAX_LENGTH,
   },
   {
     id: 'digit',
-    label: 'Au moins un chiffre',
+    label: '1 chiffre',
     test: (value) => DIGIT_RE.test(value),
   },
   {
     id: 'special',
-    label: 'Au moins un caractère spécial (!@#…)',
+    label: 'caractère spécial',
     test: (value) => SPECIAL_RE.test(value),
   },
 ];

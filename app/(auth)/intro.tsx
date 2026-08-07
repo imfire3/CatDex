@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { View } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { OnboardingStepper } from '@/components/Auth/OnboardingStepper';
@@ -10,79 +10,67 @@ import { Text } from '@/components/Text';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const STEPS = [
+const POWERS = [
   {
-    key: 'location',
-    title: 'Localisation',
-    body: 'Vois les chats autour de toi et les quartiers à explorer.',
+    key: 'explore',
+    title: 'Explorer',
+    body: 'Repère les chats près de toi.',
+    hook: 'Belleville : 14 chats repérés aujourd’hui',
     softKey: 'brandSoft' as const,
     tintKey: 'brand' as const,
-    icon: 'location' as const,
+    icon: 'paw' as const,
     badge: 'recommended' as const,
   },
   {
-    key: 'camera',
-    title: 'Caméra',
-    body: 'Photographie et analyse les chats que tu rencontres.',
+    key: 'capture',
+    title: 'Capturer',
+    body: 'Analyse automatiquement chaque rencontre.',
+    hook: 'Premier chat garanti en quelques minutes',
     softKey: 'orangeSoft' as const,
     tintKey: 'orange' as const,
-    icon: 'camera' as const,
+    icon: 'capture' as const,
     badge: 'recommended' as const,
   },
   {
-    key: 'notifications',
-    title: 'Notifications',
-    body: 'Ne manque aucun chat rare ni tes récompenses.',
+    key: 'collect',
+    title: 'Collectionner',
+    body: 'Construis le plus grand CatDex du quartier.',
+    hook: 'Certaines espèces n’apparaissent qu’à certaines heures',
     softKey: 'roseSoft' as const,
     tintKey: 'rose' as const,
-    icon: 'bell' as const,
+    icon: 'star' as const,
     badge: 'optional' as const,
   },
 ];
 
-function StepIcon({
+function PowerIcon({
   name,
   color,
 }: {
-  name: (typeof STEPS)[number]['icon'];
+  name: (typeof POWERS)[number]['icon'];
   color: string;
 }) {
-  const { iconStroke } = useTheme();
-
-  if (name === 'location') {
+  if (name === 'paw') {
     return (
       <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
         <Path
-          d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"
-          stroke={color}
-          strokeWidth={iconStroke.regular}
-          strokeLinejoin="round"
+          d="M12 18.5c-2.6 0-4.7-1.4-4.7-2.8 0-.8.9-1.2 1.8-.9.6.2 1.4.4 2.9.4s2.3-.2 2.9-.4c.9-.3 1.8.1 1.8.9 0 1.4-2.1 2.8-4.7 2.8Z"
+          fill={color}
         />
-        <Circle cx="12" cy="10" r="2.5" stroke={color} strokeWidth={iconStroke.regular} />
+        <Circle cx="7.2" cy="11.2" r="1.9" fill={color} />
+        <Circle cx="16.8" cy="11.2" r="1.9" fill={color} />
+        <Circle cx="9.4" cy="7.4" r="1.7" fill={color} />
+        <Circle cx="14.6" cy="7.4" r="1.7" fill={color} />
       </Svg>
     );
   }
 
-  if (name === 'camera') {
+  if (name === 'capture') {
     return (
       <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-        <Path
-          d="M4 9.5V8a2 2 0 0 1 2-2h1.5l1-1.5h7L16.5 6H18a2 2 0 0 1 2 2v1.5"
-          stroke={color}
-          strokeWidth={iconStroke.regular}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <Rect
-          x="4"
-          y="9.5"
-          width="16"
-          height="10.5"
-          rx="2"
-          stroke={color}
-          strokeWidth={iconStroke.regular}
-        />
-        <Circle cx="12" cy="14.5" r="2.75" stroke={color} strokeWidth={iconStroke.regular} />
+        <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} />
+        <Path d="M3 12h18" stroke={color} strokeWidth={2} />
+        <Circle cx="12" cy="12" r="3.2" fill={color} />
       </Svg>
     );
   }
@@ -90,67 +78,15 @@ function StepIcon({
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M12 3.5a1.75 1.75 0 0 1 1.75 1.58V6.5h2.5A2.25 2.25 0 0 1 18.25 8.75v8.5A2.25 2.25 0 0 1 16 19.5H8A2.25 2.25 0 0 1 5.75 17.25v-8.5A2.25 2.25 0 0 1 8 6.5h2.5V5.08A1.75 1.75 0 0 1 12 3.5Z"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M10.25 17.25h3.5"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function ShieldIcon({ color }: { color: string }) {
-  const { iconStroke } = useTheme();
-  return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 3.5 5.5 6.25v5.1c0 4.2 2.85 7.95 6.5 9.15 3.65-1.2 6.5-4.95 6.5-9.15v-5.1L12 3.5Z"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M9.5 12.25 11.25 14l3.5-3.75"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function LockIcon({ color }: { color: string }) {
-  const { iconStroke } = useTheme();
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Rect
-        x="5.5"
-        y="10.5"
-        width="13"
-        height="9.5"
-        rx="2"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-      />
-      <Path
-        d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"
-        stroke={color}
-        strokeWidth={iconStroke.regular}
-        strokeLinecap="round"
+        d="M12 3.2 13.9 8.6l5.7.5-4.3 3.7 1.3 5.5L12 15.6 7.4 18.3l1.3-5.5L4.4 9.1l5.7-.5L12 3.2Z"
+        fill={color}
       />
     </Svg>
   );
 }
 
 export default function IntroScreen() {
-  const { colors, spacing, radius } = useTheme();
+  const { colors, fonts, spacing, radius } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
 
@@ -166,12 +102,12 @@ export default function IntroScreen() {
       plain
       fullHeight
       scroll
-      sheetStyle={{ backgroundColor: colors.surface }}
+      sheetStyle={{ backgroundColor: colors.background }}
       footer={
         <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
-          <OnboardingStepper step={0} />
+          <OnboardingStepper step={0} labels={['Découverte', 'Prêt !']} />
           <Button
-            title="Continuer"
+            title="Commencer l’aventure"
             onPress={() => router.push('/(auth)/permissions')}
           />
         </View>
@@ -179,71 +115,68 @@ export default function IntroScreen() {
     >
       <View style={{ gap: spacing[8], alignItems: 'center' }}>
         <Text variant="label" color="textMuted" align="center">
-          Découvre CatDex
+          Prêt à jouer
         </Text>
-        <Text variant="h1" color="textBrand" align="center">
-          CatDex en 3 gestes
+        <Text
+          variant="h1"
+          color="textBrand"
+          align="center"
+          style={{ fontFamily: fonts.display }}
+        >
+          Ton aventure commence ici
         </Text>
         <Text variant="body" color="textSecondary" align="center">
-          Salut {user.displayName} — voici l’essentiel avant de partir explorer.
+          Plus de 500 chats à découvrir dans ta ville.
         </Text>
       </View>
 
-      <View
-        style={{
-          flexGrow: 1,
-          justifyContent: 'center',
-          gap: spacing[24],
-        }}
-      >
-        <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
-          {STEPS.map((step) => (
+      <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
+        {POWERS.map((power) => (
+          <View
+            key={power.key}
+            style={{
+              gap: spacing[4],
+              padding: spacing[16],
+              borderRadius: radius.cta,
+              backgroundColor: colors.surfaceElevated,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
             <View
-              key={step.key}
               style={{
-                gap: spacing[8],
-                padding: spacing[16],
-                borderRadius: radius.cta,
-                backgroundColor: colors.surfaceElevated,
-                borderWidth: 1,
-                borderColor: colors.border,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing[16],
               }}
             >
               <View
                 style={{
-                  flexDirection: 'row',
+                  width: spacing[48],
+                  height: spacing[48],
+                  borderRadius: radius.full,
+                  backgroundColor: colors[power.softKey],
                   alignItems: 'center',
-                  gap: spacing[16],
+                  justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
-                <View
-                  style={{
-                    width: spacing[48],
-                    height: spacing[48],
-                    borderRadius: radius.full,
-                    backgroundColor: colors[step.softKey],
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <StepIcon name={step.icon} color={colors[step.tintKey]} />
-                </View>
+                <PowerIcon name={power.icon} color={colors[power.tintKey]} />
+              </View>
 
+              <View style={{ flex: 1, gap: spacing[4], minWidth: 0 }}>
                 <View
                   style={{
-                    flex: 1,
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: spacing[8],
-                    minWidth: 0,
                   }}
                 >
                   <Text variant="h3" color="text" style={{ flexShrink: 1 }}>
-                    {step.title}
+                    {power.title}
                   </Text>
-                  {step.badge === 'recommended' ? (
+                  {power.badge === 'recommended' ? (
                     <Badge label="Recommandé" variant="success" />
                   ) : (
                     <Badge
@@ -253,37 +186,39 @@ export default function IntroScreen() {
                     />
                   )}
                 </View>
+                <Text variant="bodySmall" color="textSecondary">
+                  {power.body}
+                </Text>
+                <Text
+                  variant="caption"
+                  color="textBrand"
+                  style={{ fontFamily: fonts.bodySemi }}
+                >
+                  {power.hook}
+                </Text>
               </View>
-
-              <Text
-                variant="bodySmall"
-                color="textSecondary"
-                style={{ marginLeft: spacing[48] + spacing[16] }}
-              >
-                {step.body}
-              </Text>
             </View>
-          ))}
-        </View>
+          </View>
+        ))}
+      </View>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing[16],
-            paddingVertical: spacing[16],
-            paddingHorizontal: spacing[16],
-            borderRadius: radius.md,
-            backgroundColor: colors.brandSoft,
-            alignSelf: 'stretch',
-          }}
-        >
-          <ShieldIcon color={colors.brand} />
-          <Text variant="bodySmall" color="textBody" style={{ flex: 1 }}>
-            Tes données restent privées. Tu gardes le contrôle.
-          </Text>
-          <LockIcon color={colors.brand} />
-        </View>
+      <Text variant="caption" color="textMuted" align="center">
+        247 chats découverts aujourd’hui · Déjà 3 412 explorateurs
+      </Text>
+
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing[8],
+          paddingVertical: spacing[4],
+          alignSelf: 'stretch',
+        }}
+      >
+        <Text variant="caption" color="textMuted" align="center">
+          Tes données restent privées. Tu gardes le contrôle.
+        </Text>
       </View>
     </AuthShell>
   );

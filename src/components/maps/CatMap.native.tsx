@@ -27,6 +27,8 @@ type Props = {
   onSelectCat: (cat: Cat) => void;
   /** When set, camera animates to this coordinate (compass / recenter). */
   focusCoordinate?: { latitude: number; longitude: number } | null;
+  /** Bumps on each recenter request so the camera re-animates. */
+  focusNonce?: number;
   /** Player position for the custom CatDex location indicator. */
   userCoordinate?: { latitude: number; longitude: number } | null;
   nearbyCatIds?: string[];
@@ -63,41 +65,47 @@ export function CatMap({
   scheme,
   onSelectCat,
   focusCoordinate,
+  focusNonce,
   userCoordinate,
   nearbyCatIds,
   capturedCatIds,
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
-  const didFitCatsRef = useRef(false);
+  const didCenterOnUserRef = useRef(false);
 
   // Explicit recenter — restores game default zoom/pitch.
   useEffect(() => {
     if (!focusCoordinate) return;
     lastFollowRef.current = focusCoordinate;
+    didCenterOnUserRef.current = true;
     mapRef.current?.animateCamera(buildMapCamera(focusCoordinate), {
       duration: MAP_CAMERA_DURATION,
     });
-  }, [focusCoordinate]);
+  }, [focusCoordinate, focusNonce]);
 
   // Soft follow while walking — pan only, never override pinch zoom.
+  // First GPS lock: center the camera on the player (game default framing).
   useEffect(() => {
     if (!userCoordinate) return;
 
     const prev = lastFollowRef.current;
-    if (prev) {
-      const moved = distanceMeters(
-        prev.latitude,
-        prev.longitude,
-        userCoordinate.latitude,
-        userCoordinate.longitude,
-      );
-      if (moved < MAP_FOLLOW_THRESHOLD_M) return;
-    } else {
-      // First GPS lock: remember position without stealing zoom control.
+    if (!prev || !didCenterOnUserRef.current) {
       lastFollowRef.current = userCoordinate;
+      didCenterOnUserRef.current = true;
+      mapRef.current?.animateCamera(buildMapCamera(userCoordinate), {
+        duration: MAP_CAMERA_DURATION,
+      });
       return;
     }
+
+    const moved = distanceMeters(
+      prev.latitude,
+      prev.longitude,
+      userCoordinate.latitude,
+      userCoordinate.longitude,
+    );
+    if (moved < MAP_FOLLOW_THRESHOLD_M) return;
 
     lastFollowRef.current = userCoordinate;
     void (async () => {
@@ -107,21 +115,6 @@ export function CatMap({
       });
     })();
   }, [userCoordinate]);
-
-  // Keep 3D pitch — fitToCoordinates flattens the camera on iOS.
-  useEffect(() => {
-    if (didFitCatsRef.current || cats.length === 0) return;
-    didFitCatsRef.current = true;
-
-    const timer = setTimeout(() => {
-      const target = cats[0];
-      mapRef.current?.animateCamera(buildMapCamera(target), {
-        duration: MAP_CAMERA_DURATION,
-      });
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [cats]);
 
   return (
     <View style={StyleSheet.absoluteFill}>

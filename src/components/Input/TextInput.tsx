@@ -117,7 +117,7 @@ function FieldShell({
   return (
     <View style={[{ gap: spacing[8] }, containerStyle]}>
       {label ? (
-        <Text variant="label" color="textSecondary">
+        <Text variant="body" color="text">
           {label}
         </Text>
       ) : null}

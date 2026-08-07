@@ -2,9 +2,11 @@ import { Redirect, router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { AuthHeader, TermsCheckbox } from '@/components/Auth/AuthChrome';
+import { AuthHeader } from '@/components/Auth/AuthChrome';
 import { AuthEmailConfigBanner } from '@/components/Auth/AuthEmailConfigBanner';
+import { AuthReadyButton } from '@/components/Auth/AuthReadyButton';
 import { AuthShell } from '@/components/Auth/AuthShell';
+import { AuthSocialButtons } from '@/components/Auth/AuthSocialButtons';
 import { PasswordRequirements } from '@/components/Auth/PasswordRequirements';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
@@ -26,17 +28,19 @@ import {
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SignupScreen() {
-  const { spacing } = useTheme();
+  const { spacing, fonts } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const signUp = useAuthStore((state) => state.signUp);
+  const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle);
+  const signInWithApple = useAuthStore((state) => state.signInWithApple);
+  const oauthDisabled = useAuthStore((state) => state.oauthDisabled);
   const clearError = useAuthStore((state) => state.clearError);
 
   const [pseudo, setPseudo] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [accepted, setAccepted] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -46,28 +50,38 @@ export default function SignupScreen() {
   const confirmMatches = Boolean(confirm) && !confirmLiveError && passwordOk;
 
   const errors = useMemo(() => {
+    const showPseudo = submitted || pseudo.trim().length > 0;
+    const showEmail = submitted || email.trim().length > 0;
+    const showPassword = submitted || password.length > 0;
     const confirmError =
       confirmLiveError ??
-      (submitted ? validatePasswordConfirm(password, confirm) : null);
+      (submitted || confirm.length > 0 ? validatePasswordConfirm(password, confirm) : null);
     return {
-      pseudo: submitted ? validatePseudo(pseudo) : null,
-      email: submitted ? validateEmail(email) : null,
-      password: submitted ? validatePassword(password) : null,
+      pseudo: showPseudo ? validatePseudo(pseudo) : null,
+      email: showEmail ? validateEmail(email) : null,
+      password: showPassword ? validatePassword(password) : null,
       confirm: confirmError,
-      terms: submitted && !accepted ? 'Tu dois accepter les conditions.' : null,
     };
-  }, [accepted, confirm, confirmLiveError, email, password, pseudo, submitted]);
+  }, [confirm, confirmLiveError, email, password, pseudo, submitted]);
 
-  const canSubmit = useMemo(
+  const formReady = useMemo(
     () =>
       !validatePseudo(pseudo) &&
       !validateEmail(email) &&
       !validatePassword(password) &&
-      !validatePasswordConfirm(password, confirm) &&
-      accepted &&
-      !loading,
-    [accepted, confirm, email, loading, password, pseudo],
+      !validatePasswordConfirm(password, confirm),
+    [confirm, email, password, pseudo],
   );
+
+  const formProgress = useMemo(() => {
+    const checks = [
+      !validatePseudo(pseudo) && pseudo.trim().length > 0,
+      !validateEmail(email) && email.trim().length > 0,
+      !validatePassword(password) && password.length > 0,
+      !validatePasswordConfirm(password, confirm) && confirm.length > 0,
+    ];
+    return checks.filter(Boolean).length / checks.length;
+  }, [confirm, email, password, pseudo]);
 
   if (user) {
     return <Redirect href={getPostAuthHref(onboardingCompleted)} />;
@@ -82,7 +96,6 @@ export default function SignupScreen() {
       email: validateEmail(email),
       password: validatePassword(password),
       confirm: validatePasswordConfirm(password, confirm),
-      terms: accepted ? null : 'Tu dois accepter les conditions.',
     };
     if (Object.values(next).some(Boolean)) return;
 
@@ -102,8 +115,24 @@ export default function SignupScreen() {
         );
         return;
       }
-      // New accounts always continue to intro + permissions.
       router.replace(getPostAuthHref(state.onboardingCompleted));
+    } catch (error) {
+      setFormError(getAuthErrorMessage(error as never));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const enterOAuth = async (provider: 'google' | 'apple') => {
+    clearError();
+    setFormError(null);
+    setLoading(true);
+    try {
+      if (provider === 'google') await signInWithGoogle();
+      else await signInWithApple();
+      if (useAuthStore.getState().user) {
+        router.replace(getPostAuthHref(useAuthStore.getState().onboardingCompleted));
+      }
     } catch (error) {
       setFormError(getAuthErrorMessage(error as never));
     } finally {
@@ -118,87 +147,108 @@ export default function SignupScreen() {
       header={
         <AuthHeader
           inline
-          showBack={false}
-          title="Créer un compte"
-          subtitle="Sauvegarde ta collection et retrouve ton CatDex partout."
+          showBack
+          onBack={() => router.replace('/(auth)/join')}
+          title="Rejoins CatDex"
         />
       }
       footer={
         <View style={{ gap: spacing[8] }}>
-          <Button
-            title="Créer mon compte"
-            loading={loading}
-            disabled={!canSubmit}
-            onPress={() => void onSubmit()}
-          />
-          <Button
-            variant="tertiary"
-            title="J’ai déjà un compte"
-            disabled={loading}
-            onPress={() => router.push('/(auth)/login')}
-          />
+          <View style={{ gap: spacing[4] }}>
+            <AuthReadyButton
+              title="Créer mon compte"
+              progress={formProgress}
+              ready={formReady}
+              loading={loading}
+              onPress={() => void onSubmit()}
+            />
+            <Button
+              variant="tertiary"
+              title="J’ai déjà un compte"
+              disabled={loading}
+              onPress={() => router.push('/(auth)/login')}
+            />
+          </View>
+          <Text variant="caption" color="textSecondary" align="center">
+            En créant un compte, tu acceptes les{' '}
+            <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+              Conditions d’utilisation
+            </Text>
+            {' et la '}
+            <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+              Politique de confidentialité
+            </Text>
+            .
+          </Text>
         </View>
       }
     >
       <View style={{ gap: spacing[16] }}>
-        {!isSupabaseConfigured ? (
-          <Text variant="caption" color="warning">
-            Mode local — ajoute ta clé Supabase dans `.env` pour l’auth réelle.
-          </Text>
-        ) : null}
-        <AuthEmailConfigBanner />
-        {formError ? (
-          <Text variant="bodySmall" color="danger">
-            {formError}
-          </Text>
-        ) : null}
-        <TextInput
-          label="Pseudo"
-          value={pseudo}
-          onChangeText={setPseudo}
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="MiaouExplorer"
-          helperText="3 à 20 caractères · lettres, chiffres, espaces, - + _ [ ]"
-          error={errors.pseudo ?? undefined}
-        />
-        <TextInput
-          label="Adresse e-mail"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoComplete="email"
-          placeholder="toi@email.com"
-          error={errors.email ?? undefined}
-        />
         <View style={{ gap: spacing[8] }}>
+          {!isSupabaseConfigured ? (
+            <Text variant="caption" color="warning">
+              Mode local — ajoute ta clé Supabase dans `.env` pour l’auth réelle.
+            </Text>
+          ) : null}
+          <AuthEmailConfigBanner />
+          {formError ? (
+            <Text variant="bodySmall" color="danger">
+              {formError}
+            </Text>
+          ) : null}
           <TextInput
-            label="Mot de passe"
-            value={password}
-            onChangeText={setPassword}
+            label="Pseudo"
+            value={pseudo}
+            onChangeText={setPseudo}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="MiaouExplorer"
+            error={errors.pseudo ?? undefined}
+          />
+          <TextInput
+            label="Adresse e-mail"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+            placeholder="toi@email.com"
+            error={errors.email ?? undefined}
+          />
+          <View style={{ gap: spacing[8] }}>
+            <TextInput
+              label="Mot de passe"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              valid={passwordOk && !errors.password}
+              error={errors.password ?? undefined}
+            />
+            <PasswordRequirements password={password} />
+          </View>
+          <TextInput
+            label="Confirme le mot de passe"
+            value={confirm}
+            onChangeText={setConfirm}
             secureTextEntry
             autoCapitalize="none"
             autoComplete="new-password"
             placeholder="••••••••"
-            valid={passwordOk}
-            error={errors.password ?? undefined}
+            valid={confirmMatches && !errors.confirm}
+            error={errors.confirm ?? undefined}
           />
-          <PasswordRequirements password={password} />
         </View>
-        <TextInput
-          label="Répéter le mot de passe"
-          value={confirm}
-          onChangeText={setConfirm}
-          secureTextEntry
-          autoCapitalize="none"
-          autoComplete="new-password"
-          placeholder="••••••••"
-          valid={confirmMatches}
-          error={errors.confirm ?? undefined}
-        />
 
-        <TermsCheckbox checked={accepted} onChange={setAccepted} error={errors.terms} />
+        <AuthSocialButtons
+          disabled={loading}
+          hideGoogle={Boolean(oauthDisabled.google)}
+          hideApple={Boolean(oauthDisabled.apple)}
+          onGoogle={() => void enterOAuth('google')}
+          onApple={() => void enterOAuth('apple')}
+        />
       </View>
     </AuthShell>
   );

@@ -10,9 +10,7 @@ const BRAND = '#6A69F8';
 const BRAND_PRESSED = '#5554E0';
 const BRAND_SOFT = 'rgba(106, 105, 248, 0.12)';
 const SOFT_GRAY = '#EEF0F2';
-/** Auth welcome / bottom sheet panel */
-const AUTH_SHEET = '#F2F2F2';
-/** App canvas — behind white cards & CTAs */
+/** App canvas + auth sheets — behind white cards & CTAs */
 const APP_BG = '#F9F9FB';
 const CARD_BG = '#FFFFFF';
 
@@ -35,14 +33,14 @@ const light = {
   surface: CARD_BG,
   /** White cards and sheets on the app canvas (#F9F9FB). */
   surfaceElevated: CARD_BG,
-  /** Welcome / auth bottom sheet */
-  authSheet: AUTH_SHEET,
+  /** Welcome / auth bottom sheet — same canvas as the rest of the app */
+  authSheet: APP_BG,
   surfaceSecondary: SOFT_GRAY,
   surfaceTertiary: SOFT_GRAY,
   surfaceMuted: SOFT_GRAY,
   surfaceDisabled: SOFT_GRAY,
 
-  /** Secondary CTA — solid white fill (readable on authSheet #F2F2F2) */
+  /** Secondary CTA — solid white fill (readable on canvas #F9F9FB) */
   ctaSecondary: '#FFFFFF',
   ctaSecondaryPressed: '#F3F3F7',
   ctaSecondaryBorder: '#D8DBDF',

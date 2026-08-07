@@ -50,7 +50,7 @@ export default function WelcomeScreen() {
           pointerEvents="none"
         />
         <LinearGradient
-          colors={['transparent', 'rgba(242,242,242,0.45)', colors.authSheet]}
+          colors={['transparent', 'rgba(249,249,251,0.45)', colors.authSheet]}
           style={styles.bottomVeil}
           pointerEvents="none"
         />
@@ -114,7 +114,7 @@ export default function WelcomeScreen() {
         <View style={{ gap: spacing[8] }}>
           <Button
             title="Créer un compte"
-            onPress={() => router.push('/(auth)/signup')}
+            onPress={() => router.push('/(auth)/join')}
           />
           <Button
             variant="secondary"

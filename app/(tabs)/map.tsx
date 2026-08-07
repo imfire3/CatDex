@@ -58,6 +58,7 @@ export default function MapScreen() {
   const [focusCoordinate, setFocusCoordinate] = useState<{
     latitude: number;
     longitude: number;
+    nonce: number;
   } | null>(null);
   const [userCoordinate, setUserCoordinate] = useState<{
     latitude: number;
@@ -138,30 +139,44 @@ export default function MapScreen() {
   const refreshUserCoordinate = useCallback(async (opts?: { request?: boolean }) => {
     if (opts?.request) {
       const ok = await requestLocationAccess();
-      if (!ok) return false;
+      if (!ok) return null;
     } else {
       const active = await isLocationActive();
-      if (!active) return false;
+      if (!active) return null;
     }
-    const position = await Location.getCurrentPositionAsync({});
+    const position = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
     const next = {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
     };
     setUserCoordinate(next);
-    return true;
+    return next;
   }, []);
+
+  /** Fly camera to a coordinate (always re-triggers, even if already centered). */
+  const flyToCoordinate = useCallback(
+    (coordinate: { latitude: number; longitude: number }) => {
+      setFocusCoordinate((prev) => ({
+        ...coordinate,
+        nonce: (prev?.nonce ?? 0) + 1,
+      }));
+    },
+    [],
+  );
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const ok = await refreshUserCoordinate();
-      if (!ok || !mounted) return;
+      const next = await refreshUserCoordinate({ request: true });
+      if (!next || !mounted) return;
+      flyToCoordinate(next);
     })().catch(() => undefined);
     return () => {
       mounted = false;
     };
-  }, [refreshUserCoordinate]);
+  }, [flyToCoordinate, refreshUserCoordinate]);
 
   useEffect(() => {
     if (!nearestForProximity || nearestForProximity.distanceM > PROXIMITY_ALERT_M) {
@@ -177,26 +192,22 @@ export default function MapScreen() {
 
   const recenterOnPlayer = async () => {
     try {
-      const ok = await refreshUserCoordinate({ request: true });
-      if (ok) {
-        const position = await Location.getCurrentPositionAsync({});
-        setFocusCoordinate({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
+      const next = await refreshUserCoordinate({ request: true });
+      if (next) {
+        flyToCoordinate(next);
         return;
       }
     } catch {
       // fallback below
     }
-    setFocusCoordinate({ ...PARIS_20E.center });
+    flyToCoordinate({ ...PARIS_20E.center });
   };
 
   const goToNearestCat = () => {
     const nearest = sortedCats[0]?.cat;
     if (!nearest) return;
     // Fly the camera only — sheet opens when the user taps the marker.
-    setFocusCoordinate({
+    flyToCoordinate({
       latitude: nearest.latitude,
       longitude: nearest.longitude,
     });
@@ -217,7 +228,15 @@ export default function MapScreen() {
         <CatMap
           cats={mapCatList}
           scheme="light"
-          focusCoordinate={focusCoordinate}
+          focusCoordinate={
+            focusCoordinate
+              ? {
+                  latitude: focusCoordinate.latitude,
+                  longitude: focusCoordinate.longitude,
+                }
+              : null
+          }
+          focusNonce={focusCoordinate?.nonce}
           userCoordinate={userCoordinate}
           nearbyCatIds={nearbyCatIds}
           capturedCatIds={capturedCatIdList}
@@ -230,14 +249,9 @@ export default function MapScreen() {
 
       <LocationInactiveBanner
         onActivated={() => {
-          void refreshUserCoordinate({ request: true }).then((ok) => {
-            if (!ok) return;
-            void Location.getCurrentPositionAsync({}).then((position) => {
-              setFocusCoordinate({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              });
-            });
+          void refreshUserCoordinate({ request: true }).then((next) => {
+            if (!next) return;
+            flyToCoordinate(next);
           });
         }}
       />
@@ -309,7 +323,7 @@ export default function MapScreen() {
         }}
         onGoThere={() => {
           if (!selected) return;
-          setFocusCoordinate({
+          flyToCoordinate({
             latitude: selected.latitude,
             longitude: selected.longitude,
           });
