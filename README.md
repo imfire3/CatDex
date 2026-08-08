@@ -172,6 +172,70 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=votre-anon-key
 EXPO_PUBLIC_API_URL=http://localhost:8787
 ```
 
+## 🚀 Setup Rapide - Mettre CatDex en Ligne
+
+### Option 1 : Tester sur Ton Téléphone Maintenant (2 min)
+
+**👉 [Guide Ultra Rapide Téléphone](./PHONE_QUICKSTART.md)** ⚡
+
+```bash
+npm start
+# Scanne le QR code avec Expo Go
+```
+
+### Option 2 : Déployer l'API Backend (10 min)
+
+**👉 [Guide Setup Render.com](./RENDER_SETUP_GUIDE.md)** 📦
+
+**Ou utilise le script interactif** :
+```bash
+./scripts/setup-render.sh
+```
+
+**Ce dont tu as besoin** :
+- 🔑 Clé OpenAI → [KEYS_TO_GET.md](./KEYS_TO_GET.md)
+- 🗄️ Projet Supabase → [KEYS_TO_GET.md](./KEYS_TO_GET.md)
+- 🚀 Compte Render.com (gratuit)
+
+**Résumé** :
+1. Obtenir les 3 clés (5 min) → [KEYS_TO_GET.md](./KEYS_TO_GET.md)
+2. Déployer sur Render (2 min) → [RENDER_CHEATSHEET.md](./RENDER_CHEATSHEET.md)
+3. Tester l'app (3 min)
+
+**Coût** : ~3-5€/mois (OpenAI) + Gratuit (Supabase + Render)
+
+## 🚀 Déploiement en Production
+
+Pour déployer CatDex en ligne et le partager avec tes amis :
+
+**👉 [Guide de Déploiement Complet](./DEPLOYMENT.md)**
+
+Guides détaillés :
+
+- **[Test sur Téléphone](./docs/TEST_ON_PHONE.md)** - Guide complet pour mobile
+- **[Déploiement API (Render/Railway)](./docs/RENDER_DEPLOYMENT.md)** - Backend en 10 minutes
+- **[Déploiement Mobile (iOS/Android)](./docs/MOBILE_DEPLOYMENT.md)** - Publication sur les stores
+- **[Déploiement Web (Netlify/Vercel)](./DEPLOYMENT.md#-partie-2--déployer-lapplication-web)** - Version web en 5 minutes
+
+### Résumé Rapide
+
+```bash
+# 1. Déployer l'API sur Render.com (gratuit)
+# Dashboard → https://dashboard.render.com
+# "New" → "Blueprint" → Sélectionne le repo CatDex
+
+# 2. Déployer l'app web
+npm install -g netlify-cli
+npx expo export --platform web
+netlify deploy --prod --dir dist
+
+# 3. Build l'app mobile
+npm install -g eas-cli
+eas build --platform all --profile production
+```
+
+**URL de l'API par défaut** : `https://catdex-api.onrender.com` (à remplacer par la tienne)
+
 ## Licence
 
 Voir [LICENSE](./LICENSE)

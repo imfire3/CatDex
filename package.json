@@ -58,9 +58,12 @@
     "ios:sim": "bash scripts/ios-sim.sh",
     "ios:go": "bash scripts/ensure-expo-go-ios.sh && expo start --go --ios --localhost",
     "web": "expo start --web",
+    "web:build": "expo export --platform web",
     "server": "npm run dev --prefix server",
     "screenshots:server": "EXPO_NO_DOTENV=1 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key EXPO_NO_TELEMETRY=1 expo start --web --localhost --port 8099",
     "screenshots": "node scripts/export-screenshots.mjs http://127.0.0.1:8099",
+    "deploy:check": "bash scripts/check-deployment.sh",
+    "deploy:web": "bash scripts/deploy-web.sh",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit"
   },
