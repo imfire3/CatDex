@@ -1,0 +1,218 @@
+---
+description: Comprehensive CatDex design system + Figma MCP integration rules
+globs: app/**/*.{ts,tsx},src/components/**/*.{ts,tsx},src/theme/**/*.{ts,tsx},src/layout/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex Design System Rules (Figma MCP)
+
+Use these rules for every Figma → code (and code → Figma) task.  
+**Figma:** [Cat-DEX-UI](https://www.figma.com/design/qIYWbKuvILi9hjSmT60rmn/Cat-DEX-UI) (`qIYWbKuvILi9hjSmT60rmn`) · APP `239:19` · DS component pages.
+
+---
+
+## 1. Token definitions
+
+**Source of truth:** `src/theme/` via `useTheme()` from `@/theme`.
+
+| File | Tokens |
+|---|---|
+| `src/theme/colors.ts` | Brand, surfaces, text, borders, status |
+| `src/theme/typography.ts` | `display`…`label` + font families |
+| `src/theme/spacing.ts` | 8pt grid only |
+| `src/theme/radius.ts` | 8 / 16 / pill |
+| `src/theme/shadow.ts` | `low` · `medium` · `floating` · `glow` |
+| `src/theme/motion.ts` | Durations + press scales |
+| `src/theme/icons.ts` | `iconSize` · `iconStroke` |
+| `src/theme/gradients.ts` | `primary` · `xp` · etc. |
+| `src/theme/themeOverrides.ts` | Theme Lab brand/shape presets |
+| `src/theme/ThemeProvider.tsx` | Runtime theme assembly |
+
+**Format:** TypeScript `as const` objects (no Style Dictionary / CSS vars in-app).  
+**Runtime:** Theme Lab (`src/store/themeLab.ts`) can remint brand colors + radius via `applyBrandToColors` / `applyShapeToRadius`.
+
+```ts
+import { useTheme } from '@/theme'
+const { colors, spacing, radius, typography, shadow, gradients, motion, iconSize, iconStroke } = useTheme()
+```
+
+IMPORTANT:
+
+- Never hardcode hex/rgba, font sizes, spacing, or radii
+- Coat/rarity accents: `src/lib/catTheme.ts` only — never app chrome
+- Do **not** copy styles from `ChatDex Mobile App UI/`
+
+### Key token values
+
+| Role | Token | Value |
+|---|---|---|
+| Brand | `colors.brand` | `#6A69F8` |
+| Brand pressed | `colors.brandPressed` | `#5554E0` |
+| Canvas | `colors.background` | `#F9F9FB` |
+| Surface | `colors.surface` | `#FFFFFF` |
+| Text | `colors.text` | `#15172B` |
+| Spacing | `spacing[4]`…`[96]` | 4·8·16·24·32·40·48·56·64·80·96 |
+| Radius surfaces | `radius.md` | `8` |
+| Radius CTA | `radius.cta` | `16` |
+| Icons | `iconSize.md` | `24` |
+
+### Figma variables → code
+
+| Figma | Code |
+|---|---|
+| `color/brand`, `color/primary` | `colors.brand` / `colors.primary` |
+| `color/background` | `colors.background` |
+| `color/surface` | `colors.surface` |
+| `color/text*` | `colors.text*` |
+| `spacing/*` | `spacing[n]` / `spacing.sm`… |
+| `radius/*` | `radius.*` |
+| `typography/*` | `<Text variant="…" />` |
+| `elevation/*` | `shadow.low\|medium\|floating\|glow` |
+
+---
+
+## 2. Component library
+
+**Location:** `src/components/` · barrel: `src/components/index.ts`  
+**Architecture:** folder per component (`Button/Button.tsx` + `index.ts`); domain folders `Auth/`, `maps/`, `missions/`, `profile/`, `Settings/`, `ThemeLab/`  
+**Storybook:** none for the Expo app
+
+### Prefer these primitives
+
+```ts
+import {
+  Text, Button, TextInput, SearchInput,
+  Card, PhotoCard, Badge, Chip, Avatar,
+  ProgressBar, BottomSheet, EmptyState, Spinner, Skeleton,
+  GlassIconButton, BrandLogo,
+} from '@/components'
+```
+
+### Figma component → code + variants
+
+| Figma set | Code | Variant map |
+|---|---|---|
+| **Button** | `Button` | `Type` → `variant`: Primary→`primary`, Secondary→`secondary`, Tertiary→`tertiary`, Ghost→`ghost`, Destructive→`destructive`. `State=Disabled`→`disabled`, `Loading`→`loading`. `Label`→`title` |
+| **Icon Button** | `Button variant="icon"` / `GlassIconButton` | `State` → pressed/disabled via Pressable |
+| **Input** | `TextInput` | Default/Focused/Filled → interaction; Error→`error`; Valid→`valid`; Disabled→`disabled`; Label/Placeholder props |
+| **Chip** | `Chip` | Unselected / Selected→`selected` / Disabled→`disabled` |
+| **Badge** | `Badge` | Default/Success/Warning/Accent → `variant` |
+| **Card** | `Card` | Default/Pressed → optional `onPress` |
+| **Avatar** | `Avatar` | Initials / Image |
+| **Progress** | `ProgressBar` / `XPBar` | Value 0–100 → `progress` 0–1 |
+
+New shared UI → `src/components/<Name>/` + export from `index.ts`.  
+Screens → `app/` (Expo Router).
+
+---
+
+## 3. Frameworks & libraries
+
+| Layer | Choice |
+|---|---|
+| App | Expo **54**, React Native **0.81**, React **19** |
+| Routing | Expo Router (`app/`) |
+| Language | TypeScript |
+| State | Zustand (`src/store/`) |
+| Motion | Reanimated + `motion` tokens |
+| SVG | `react-native-svg` |
+| Backend client | Supabase JS |
+| Alias | `@/*` → `./src/*` (`tsconfig.json`) |
+
+IMPORTANT: Styling is **not** Tailwind/NativeWind. Figma MCP often emits React+Tailwind — **translate** to `useTheme()` + RN styles.
+
+Docs: https://docs.expo.dev/versions/v54.0.0/
+
+---
+
+## 4. Asset management
+
+- Static files: `assets/` (icons, splash, welcome/onboarding images, `world-cats/`, models)
+- Reference via Metro `require()` + RN `Image` / `ImageBackground`
+- User photos: Supabase storage (`src/lib/photoStorage.ts`)
+- Expo config icons/splash: `app.json` → `./assets/…`
+- No design-asset CDN for UI chrome
+
+IMPORTANT: If Figma MCP returns a localhost asset URL, use it directly — do not invent placeholders.
+
+---
+
+## 5. Icon system
+
+- Inline SVG components with `react-native-svg` — **do not** add icon packs for Figma work
+- Sizes: `iconSize.sm|md|lg|xl` (16/24/32/40); stroke: `iconStroke.regular|bold`
+- Settings icons: `src/components/Settings/settingsIcons.tsx` — name `Icon` + PascalCase (`IconUser`, `IconBell`)
+- HUD: wrap with `GlassIconButton`
+- Prefer 24×24 `viewBox`; stroke from `colors.textSecondary` or brand as needed
+
+---
+
+## 6. Styling approach
+
+1. Call `useTheme()` in the component
+2. Use `StyleSheet.create` for static layout; theme values in style arrays
+3. Prefer `<Text variant color />`, `<Button />`, `<Card />` over raw Views
+4. Safe area: `useSafeAreaInsets()`
+5. Gradients: `expo-linear-gradient` + `gradients` tokens
+6. Press feedback: `motion.pressScale` / `cardPressScale`
+
+```tsx
+// ❌ BAD
+<View style={{ backgroundColor: '#6A69F8', padding: 13 }} />
+
+// ✅ GOOD
+const { colors, spacing, radius, shadow } = useTheme()
+<View
+  style={[
+    {
+      backgroundColor: colors.surface,
+      padding: spacing.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    shadow.low,
+  ]}
+/>
+<Text variant="h3" color="textBrand">Title</Text>
+```
+
+Typography: iOS System; Android/web **Syne** (display) + **Manrope** (body). Prefer `color="textBrand"` for titles.
+
+---
+
+## 7. Project structure
+
+```
+app/                 # Expo Router screens (auth, tabs, settings, scanner…)
+src/theme/           # Design tokens (SoT)
+src/components/      # UI library
+src/layout/          # Shell / chrome helpers
+src/store/           # Zustand
+src/lib/             # Domain helpers (incl. catTheme)
+assets/              # Static images / models
+server/              # Vision API (separate)
+ChatDex Mobile App UI/  # Figma/web REFERENCE ONLY — not RN SoT
+```
+
+Brand copy: **CatDex** — “Ton quartier. Tes chats.”  
+Map: HUD in `MapExplorerHud` — no bottom `MainTabBar`.
+
+---
+
+## Figma MCP required flow
+
+1. `get_design_context` for the exact node(s)
+2. If truncated → `get_metadata`, then re-fetch needed nodes
+3. `get_screenshot` for the variant being built
+4. Only then implement / download assets
+5. Map Tailwind/hex output → CatDex tokens + components
+6. Validate against screenshot before done
+
+## Anti-patterns
+
+- Hardcoded colors/spacing or off-grid values
+- Copying `ChatDex Mobile App UI/` styles into RN
+- New Button/Input when a variant already exists
+- Installing icon libraries for Figma SVGs
+- Using legacy Figma Inter styles / `Test Primary` vars — prefer `color/*` + `typography/*`

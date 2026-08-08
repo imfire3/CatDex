@@ -16,3 +16,14 @@ import { Text, Button, Card } from '@/components';
 ```
 
 Do not copy styles from `ChatDex Mobile App UI/` — that folder is a Figma/web reference, not the React Native source of truth.
+
+# Figma MCP (design system rules)
+
+**File:** [Cat-DEX-UI](https://www.figma.com/design/qIYWbKuvILi9hjSmT60rmn/Cat-DEX-UI) · APP `239:19`.
+
+Comprehensive rules (tokens, components, variants, assets, icons, styling, structure, MCP flow):
+
+- `.cursor/rules/figma-mcp.mdc` ← **follow this for every Figma implementation**
+- `docs/FIGMA_DESIGN_SYSTEM_RULES.md` ← human index
+
+Required: `get_design_context` + `get_screenshot` → map to `useTheme()` + `@/components` (never ship Tailwind/hex from MCP as-is).
