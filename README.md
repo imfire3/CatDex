@@ -172,16 +172,37 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=votre-anon-key
 EXPO_PUBLIC_API_URL=http://localhost:8787
 ```
 
-## 📱 Tester sur Ton Téléphone (2 minutes)
+## 🚀 Setup Rapide - Mettre CatDex en Ligne
 
-**Le plus rapide** : Teste CatDex sur ton téléphone **maintenant** !
+### Option 1 : Tester sur Ton Téléphone Maintenant (2 min)
 
 **👉 [Guide Ultra Rapide Téléphone](./PHONE_QUICKSTART.md)** ⚡
 
-3 méthodes simples :
-- **Expo Go** (2 min) - Teste instantanément avec l'app Expo Go
-- **Version Web** (5 min) - Partage un lien que tes amis ouvrent dans leur navigateur
-- **APK Android** (15 min) - Vraie app Android à partager
+```bash
+npm start
+# Scanne le QR code avec Expo Go
+```
+
+### Option 2 : Déployer l'API Backend (10 min)
+
+**👉 [Guide Setup Render.com](./RENDER_SETUP_GUIDE.md)** 📦
+
+**Ou utilise le script interactif** :
+```bash
+./scripts/setup-render.sh
+```
+
+**Ce dont tu as besoin** :
+- 🔑 Clé OpenAI → [KEYS_TO_GET.md](./KEYS_TO_GET.md)
+- 🗄️ Projet Supabase → [KEYS_TO_GET.md](./KEYS_TO_GET.md)
+- 🚀 Compte Render.com (gratuit)
+
+**Résumé** :
+1. Obtenir les 3 clés (5 min) → [KEYS_TO_GET.md](./KEYS_TO_GET.md)
+2. Déployer sur Render (2 min) → [RENDER_CHEATSHEET.md](./RENDER_CHEATSHEET.md)
+3. Tester l'app (3 min)
+
+**Coût** : ~3-5€/mois (OpenAI) + Gratuit (Supabase + Render)
 
 ## 🚀 Déploiement en Production
 
