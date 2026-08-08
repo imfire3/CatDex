@@ -17,5 +17,9 @@ services:
         value: gpt-4o-mini
       - key: OPENAI_API_KEY
         sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
       - key: API_SECRET
         generateValue: true
