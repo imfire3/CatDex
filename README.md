@@ -172,6 +172,17 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=votre-anon-key
 EXPO_PUBLIC_API_URL=http://localhost:8787
 ```
 
+## 📱 Tester sur Ton Téléphone (2 minutes)
+
+**Le plus rapide** : Teste CatDex sur ton téléphone **maintenant** !
+
+**👉 [Guide Ultra Rapide Téléphone](./PHONE_QUICKSTART.md)** ⚡
+
+3 méthodes simples :
+- **Expo Go** (2 min) - Teste instantanément avec l'app Expo Go
+- **Version Web** (5 min) - Partage un lien que tes amis ouvrent dans leur navigateur
+- **APK Android** (15 min) - Vraie app Android à partager
+
 ## 🚀 Déploiement en Production
 
 Pour déployer CatDex en ligne et le partager avec tes amis :
@@ -180,6 +191,7 @@ Pour déployer CatDex en ligne et le partager avec tes amis :
 
 Guides détaillés :
 
+- **[Test sur Téléphone](./docs/TEST_ON_PHONE.md)** - Guide complet pour mobile
 - **[Déploiement API (Render/Railway)](./docs/RENDER_DEPLOYMENT.md)** - Backend en 10 minutes
 - **[Déploiement Mobile (iOS/Android)](./docs/MOBILE_DEPLOYMENT.md)** - Publication sur les stores
 - **[Déploiement Web (Netlify/Vercel)](./DEPLOYMENT.md#-partie-2--déployer-lapplication-web)** - Version web en 5 minutes
