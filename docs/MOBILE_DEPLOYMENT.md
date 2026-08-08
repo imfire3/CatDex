@@ -21,11 +21,9 @@ Guide détaillé pour déployer CatDex sur iOS et Android avec Expo Application 
 Créer un compte gratuit sur https://expo.dev/signup
 
 ```bash
-# Installer EAS CLI
-npm install -g eas-cli
-
+# Pas besoin d'installer globalement, utilise npx
 # Se connecter
-eas login
+npx eas-cli login
 ```
 
 ### 2. Pour Android
