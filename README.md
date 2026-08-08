@@ -172,6 +172,37 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=votre-anon-key
 EXPO_PUBLIC_API_URL=http://localhost:8787
 ```
 
+## 🚀 Déploiement en Production
+
+Pour déployer CatDex en ligne et le partager avec tes amis :
+
+**👉 [Guide de Déploiement Complet](./DEPLOYMENT.md)**
+
+Guides détaillés :
+
+- **[Déploiement API (Render/Railway)](./docs/RENDER_DEPLOYMENT.md)** - Backend en 10 minutes
+- **[Déploiement Mobile (iOS/Android)](./docs/MOBILE_DEPLOYMENT.md)** - Publication sur les stores
+- **[Déploiement Web (Netlify/Vercel)](./DEPLOYMENT.md#-partie-2--déployer-lapplication-web)** - Version web en 5 minutes
+
+### Résumé Rapide
+
+```bash
+# 1. Déployer l'API sur Render.com (gratuit)
+# Dashboard → https://dashboard.render.com
+# "New" → "Blueprint" → Sélectionne le repo CatDex
+
+# 2. Déployer l'app web
+npm install -g netlify-cli
+npx expo export --platform web
+netlify deploy --prod --dir dist
+
+# 3. Build l'app mobile
+npm install -g eas-cli
+eas build --platform all --profile production
+```
+
+**URL de l'API par défaut** : `https://catdex-api.onrender.com` (à remplacer par la tienne)
+
 ## Licence
 
 Voir [LICENSE](./LICENSE)
