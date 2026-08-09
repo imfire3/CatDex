@@ -1,15 +1,14 @@
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, View } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import {
-  OnboardingIconBadge,
-  OnboardingPulseCta,
-} from '@/components/Auth/OnboardingVisuals';
+import { OnboardingPulseCta } from '@/components/Auth/OnboardingVisuals';
+import { BrandLogo } from '@/components/BrandLogo';
 import { Button } from '@/components/Button';
+import { Spinner } from '@/components/Loader/Loader';
 import { Text } from '@/components/Text';
 import { requestLocationAccess } from '@/lib/locationAccess';
 import { useAuthStore } from '@/store/auth';
@@ -49,14 +48,15 @@ function LocationHeroIcon() {
   );
 }
 
-function RadarBootOverlay({ visible }: { visible: boolean }) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+function OnboardingCompleteLoader({ visible }: { visible: boolean }) {
+  const { colors, fonts, spacing } = useTheme();
   if (!visible) return null;
 
   return (
     <Animated.View
-      entering={FadeIn.duration(180)}
-      exiting={FadeOut.duration(180)}
+      entering={FadeIn.duration(220)}
+      accessibilityRole="progressbar"
+      accessibilityLabel="Ouverture de CatDex"
       style={{
         position: 'absolute',
         top: 0,
@@ -67,26 +67,13 @@ function RadarBootOverlay({ visible }: { visible: boolean }) {
         backgroundColor: colors.background,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: spacing[16],
+        gap: spacing[24],
         paddingHorizontal: spacing[24],
       }}
     >
-      <View
-        style={[
-          {
-            width: spacing[80],
-            height: spacing[80],
-            borderRadius: radius.full,
-            backgroundColor: colors.surfaceElevated,
-            borderWidth: 1,
-            borderColor: colors.border,
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-          shadow.medium,
-        ]}
-      >
-        <OnboardingIconBadge glyph="paw" softKey="brandSoft" tintKey="brand" size={64} />
+      <View style={{ alignItems: 'center', gap: spacing[16] }}>
+        <BrandLogo size="hero" />
+        <Spinner size="lg" color={colors.brand} />
       </View>
       <Text
         variant="h3"
@@ -94,7 +81,7 @@ function RadarBootOverlay({ visible }: { visible: boolean }) {
         align="center"
         style={{ fontFamily: fonts.display }}
       >
-        Activation du radar félin…
+        Ouverture de ton CatDex…
       </Text>
     </Animated.View>
   );
@@ -107,7 +94,7 @@ export default function PermissionLocationScreen() {
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
   const [busy, setBusy] = useState(false);
-  const [booting, setBooting] = useState(false);
+  const [finishing, setFinishing] = useState(false);
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
@@ -116,36 +103,36 @@ export default function PermissionLocationScreen() {
     return <Redirect href="/(tabs)/map" />;
   }
 
-  const finish = () => {
+  const finish = async () => {
+    if (finishing) return;
+    setBusy(true);
+    setFinishing(true);
+    await new Promise((resolve) => setTimeout(resolve, 900));
     completeOnboarding();
     router.replace('/(tabs)/map');
   };
 
   const askLocation = async () => {
     setBusy(true);
-    setBooting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      setBooting(false);
       const ok = await requestLocationAccess();
       if (!ok) {
         Alert.alert(
           'Exploration limitée',
           'Active la position pour voir les chats près de toi. Tu pourras l’activer plus tard.',
-          [{ text: 'Continuer', onPress: finish }],
+          [{ text: 'Continuer', onPress: () => void finish() }],
         );
         return;
       }
-      finish();
+      await finish();
     } finally {
-      setBooting(false);
       setBusy(false);
     }
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <RadarBootOverlay visible={booting} />
+      <OnboardingCompleteLoader visible={finishing} />
       <AuthShell
         plain
         fullHeight
@@ -163,7 +150,12 @@ export default function PermissionLocationScreen() {
                 onPress={() => void askLocation()}
               />
             </OnboardingPulseCta>
-            <Button variant="secondary" title="Plus tard" disabled={busy} onPress={finish} />
+            <Button
+              variant="secondary"
+              title="Plus tard"
+              disabled={busy}
+              onPress={() => void finish()}
+            />
           </View>
         }
       >
