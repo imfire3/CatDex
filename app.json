@@ -73,7 +73,8 @@
       "output": "single"
     },
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/CatDex"
     },
     "extra": {
       "router": {},
