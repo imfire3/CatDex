@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -115,15 +115,14 @@ export default function PermissionLocationScreen() {
   const askLocation = async () => {
     setBusy(true);
     try {
-      const ok = await requestLocationAccess();
-      if (!ok) {
-        Alert.alert(
-          'Exploration limitée',
-          'Active la position pour voir les chats près de toi. Tu pourras l’activer plus tard.',
-          [{ text: 'Continuer', onPress: () => void finish() }],
-        );
-        return;
-      }
+      // Safari can leave the permission promise pending. Never block onboarding:
+      // continue after the browser answers, or after a short safety timeout.
+      await Promise.race([
+        requestLocationAccess(),
+        new Promise<boolean>((resolve) => {
+          setTimeout(() => resolve(false), 8_000);
+        }),
+      ]);
       await finish();
     } finally {
       setBusy(false);
