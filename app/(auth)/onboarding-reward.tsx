@@ -18,7 +18,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 const LOADER_MIN_MS = 900;
 
-/** Onboarding 3/3 — le chat rejoint la collection, puis entrée map. */
+/** Onboarding 4/4 — bienvenue dans ton CatDex, puis entrée map. */
 export default function OnboardingRewardScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -57,13 +57,13 @@ export default function OnboardingRewardScreen() {
       footer={
         <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
           <ProgressDots
-            step={2}
+            step={3}
             total={ONBOARDING_STEP_COUNT}
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
-            title="Commencer ma collection"
-            subtitle="Les autorisations te seront demandées au bon moment"
+            title="Entrer dans mon CatDex"
+            subtitle="Les autorisations arriveront au bon moment"
             onPress={() => {
               void enterMap();
             }}

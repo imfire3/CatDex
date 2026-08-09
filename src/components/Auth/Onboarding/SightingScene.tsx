@@ -205,7 +205,10 @@ export function SightingScene() {
           align="center"
           style={{ fontFamily: fonts.display }}
         >
-          Un chat vient d’apparaître près de toi
+          Tu sors te promener…
+        </Text>
+        <Text variant="body" color="textSecondary" align="center">
+          Quelque chose bouge près de toi. Un chat ?
         </Text>
 
         <View
@@ -225,11 +228,11 @@ export function SightingScene() {
           ]}
         >
           <Text variant="bodySmall" color="text" style={{ fontFamily: fonts.bodySemi }}>
-            Belleville
+            Ton quartier
           </Text>
           <View style={{ width: 1, height: spacing[16], backgroundColor: colors.border }} />
           <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-            150 m
+            Tout près
           </Text>
         </View>
       </Animated.View>

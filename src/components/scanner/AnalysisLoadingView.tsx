@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import Animated, {
   Easing,
@@ -16,17 +15,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { AuthBackButton } from '@/components/Auth/AuthChrome';
+import { CatDexIcon } from '@/components/icons/catdex';
 import { ProgressBar } from '@/components/Progress';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { playHapticLight } from '@/lib/gameFeedback';
 import { useTheme } from '@/theme/ThemeProvider';
 
+/** Narrative beats — living timeline, not a dead checklist. */
 const ANALYSIS_STEPS = [
-  'Repérage du chat',
-  'Qualité de la photo',
-  'Race & pelage',
-  'Pose & environnement',
-  'Nom CatDex',
+  'Je regarde son pelage…',
+  'Je note la couleur…',
+  'J’estime la race…',
+  'Je sens sa personnalité…',
+  'Je lui trouve un nom…',
 ] as const;
 
 const TIPS = [
@@ -423,8 +425,8 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
 
   useEffect(() => {
     const doneCount = completedSteps.filter(Boolean).length;
-    if (doneCount > prevDoneCount.current && Platform.OS !== 'web') {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (doneCount > prevDoneCount.current) {
+      void playHapticLight();
     }
     prevDoneCount.current = doneCount;
   }, [completedSteps]);
@@ -434,9 +436,12 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
     Math.max(0, completedSteps.lastIndexOf(true) + 1),
   );
   const percentLabel = `${Math.round(progress * 100)}%`;
+  const activeBeat =
+    ANALYSIS_STEPS[Math.min(activeIndex, ANALYSIS_STEPS.length - 1)] ??
+    ANALYSIS_STEPS[0]!;
   const statusLabel = isWaitingOnApi
     ? WAITING_MESSAGES[waitingIndex]!
-    : 'Détection rapide…';
+    : activeBeat;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -488,7 +493,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
               align="center"
               style={{ fontFamily: fonts.display }}
             >
-              Découverte en cours
+              L’IA découvre qui il est
             </Text>
             <Text variant="caption" color="textSecondary" align="center" numberOfLines={1}>
               {statusLabel}
@@ -599,12 +604,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
                 justifyContent: 'center',
               }}
             >
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M12 3 13.6 8.4 19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3Z"
-                  fill={colors.brand}
-                />
-              </Svg>
+              <CatDexIcon name="spark" color={colors.brand} size={18} />
             </View>
             <View style={{ flex: 1, gap: spacing[4] }}>
               <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>

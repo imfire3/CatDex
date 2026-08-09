@@ -2,7 +2,7 @@ import { Redirect, router } from 'expo-router';
 import { View } from 'react-native';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import { PrimaryCTA, ProgressDots, ScanScene } from '@/components/Auth/Onboarding';
+import { PhotoScene, PrimaryCTA, ProgressDots } from '@/components/Auth/Onboarding';
 import {
   ONBOARDING_STEP_COUNT,
   ONBOARDING_STEP_LABELS,
@@ -10,8 +10,8 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** Onboarding 3/4 — l’IA découvre qui il est. */
-export default function PermissionsScreen() {
+/** Onboarding 2/4 — tu prends une photo. */
+export default function OnboardingPhotoScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
@@ -19,7 +19,6 @@ export default function PermissionsScreen() {
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
   }
-
   if (onboardingCompleted) {
     return <Redirect href="/(tabs)/map" />;
   }
@@ -29,24 +28,30 @@ export default function PermissionsScreen() {
       plain
       fullHeight
       scroll
-      sheetStyle={{ backgroundColor: colors.background }}
+      sheetStyle={{ backgroundColor: colors.background, paddingHorizontal: 0 }}
       footer={
-        <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
+        <View
+          style={{
+            gap: spacing[16],
+            alignSelf: 'stretch',
+            paddingHorizontal: spacing[24],
+          }}
+        >
           <ProgressDots
-            step={2}
+            step={1}
             total={ONBOARDING_STEP_COUNT}
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
             title="Continuer"
-            subtitle="Race, couleur, personnalité…"
-            onPress={() => router.push('/(auth)/onboarding-reward')}
+            subtitle="Un clic. CatDex s’occupe du reste."
+            onPress={() => router.push('/(auth)/permissions')}
           />
         </View>
       }
     >
       <View style={{ flexGrow: 1, minHeight: 520 }}>
-        <ScanScene />
+        <PhotoScene />
       </View>
     </AuthShell>
   );

@@ -1,10 +1,11 @@
-/** Post-auth onboarding: 3 game intro screens — permissions asked in-game. */
-export const ONBOARDING_STEP_COUNT = 3;
+/** Post-auth onboarding: 4 narrative beats — walk → photo → AI → CatDex. */
+export const ONBOARDING_STEP_COUNT = 4;
 
 export const ONBOARDING_STEP_LABELS = [
-  'Découverte',
+  'Promenade',
+  'Photo',
   'Analyse',
-  'Récompense',
+  'Collection',
 ] as const;
 
 /** @deprecated Prefer `ProgressDots` from `@/components/Auth/Onboarding`. */

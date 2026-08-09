@@ -118,7 +118,7 @@ export function RewardScene() {
           align="center"
           style={{ fontFamily: fonts.display }}
         >
-          Nouveau chat !
+          Bienvenue dans ton CatDex.
         </Text>
       </Animated.View>
 

@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** Onboarding 1/3 — un chat apparaît près de toi. */
+/** Onboarding 1/4 — tu sors te promener… */
 export default function IntroScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -43,9 +43,9 @@ export default function IntroScreen() {
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
-            title="Partir explorer"
-            subtitle="Tu n’es qu’à une photo de commencer ta collection"
-            onPress={() => router.push('/(auth)/permissions')}
+            title="Continuer"
+            subtitle="Quelque chose bouge près de toi."
+            onPress={() => router.push('/(auth)/onboarding-photo')}
           />
         </View>
       }

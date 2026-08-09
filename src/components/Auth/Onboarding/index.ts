@@ -8,6 +8,7 @@ export { RewardChips, type RewardChipItem } from './RewardChips';
 export { PrimaryCTA } from './PrimaryCTA';
 export { ProgressDots } from './ProgressDots';
 export { SightingScene } from './SightingScene';
+export { PhotoScene } from './PhotoScene';
 export { ScanScene } from './ScanScene';
 export { RewardScene } from './RewardScene';
 export { Glyph, type OnboardingGlyph } from './glyphs';

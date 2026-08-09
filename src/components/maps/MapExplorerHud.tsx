@@ -8,7 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Avatar } from '@/components/Avatar';
+import { CatDexIcon } from '@/components/icons/catdex';
+import { PressableScale } from '@/components/motion';
 import { Text } from '@/components/Text';
+import { playHapticLight } from '@/lib/gameFeedback';
 import {
   getMapActionClusterBottom,
   MAP_CAPTURE_FAB_SIZE,
@@ -239,17 +242,18 @@ export function MapExplorerHud({
           }
         />
 
-        <Pressable
+        <PressableScale
           accessibilityRole="button"
           accessibilityLabel="Photographier un chat"
           onPress={() => {
+            void playHapticLight();
             if (onCapturePress) {
               onCapturePress();
               return;
             }
             router.push('/scanner');
           }}
-          style={({ pressed }) => [
+          style={[
             {
               width: MAP_CAPTURE_FAB_SIZE,
               height: MAP_CAPTURE_FAB_SIZE,
@@ -257,21 +261,12 @@ export function MapExplorerHud({
               backgroundColor: captureHighlighted ? colors.brandPressed : colors.brand,
               alignItems: 'center',
               justifyContent: 'center',
-              transform: [{ scale: pressed ? motion.pressScale : 1 }],
             },
             shadow.glow,
           ]}
         >
-          <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M8 8.5 9.2 6h5.6L16 8.5h1.5A2.5 2.5 0 0 1 20 11v6a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17v-6A2.5 2.5 0 0 1 6.5 8.5H8Z"
-              stroke={colors.onBrand}
-              strokeWidth={stroke}
-              strokeLinejoin="round"
-            />
-            <Circle cx="12" cy="14" r="3.1" stroke={colors.onBrand} strokeWidth={stroke} />
-          </Svg>
-        </Pressable>
+          <CatDexIcon name="camera" color={colors.onBrand} size={iconSize.md} />
+        </PressableScale>
 
         <HudPill
           label="Mon CatDex"

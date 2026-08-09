@@ -21,11 +21,11 @@ import { useTheme } from '@/theme/ThemeProvider';
 const DEMO_CAT = require('../../../../assets/onboarding-demo-cat.jpg');
 
 const REVEALS = [
-  'Race détectée',
-  'Couleur détectée',
-  'Pelage détecté',
-  'Pose détectée',
-  'Personnalité générée',
+  'Je regarde son pelage…',
+  'Couleur repérée',
+  'Race estimée',
+  'Personnalité imagée',
+  'Un nom lui vient',
 ] as const;
 
 /**

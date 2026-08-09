@@ -68,31 +68,42 @@ export type RarityId = 'common' | 'uncommon' | 'rare' | 'exceptional';
 
 export const rarityTokens: Record<
   RarityId,
-  { label: string; foreground: string; background: string; border: string }
+  {
+    label: string;
+    foreground: string;
+    background: string;
+    border: string;
+    /** Soft halo tint for reward / reveal moments. */
+    glow: string;
+  }
 > = {
   common: {
     label: 'Commun',
     foreground: '#667085',
     background: '#F2F4F8',
     border: '#E8EAF0',
+    glow: 'rgba(102, 112, 133, 0.22)',
   },
   uncommon: {
     label: 'Peu commun',
     foreground: '#2E90FA',
     background: 'rgba(46, 144, 250, 0.12)',
     border: 'rgba(46, 144, 250, 0.28)',
+    glow: 'rgba(46, 144, 250, 0.28)',
   },
   rare: {
     label: 'Rare',
     foreground: '#7A5AF8',
     background: 'rgba(122, 90, 248, 0.12)',
     border: 'rgba(122, 90, 248, 0.28)',
+    glow: 'rgba(122, 90, 248, 0.35)',
   },
   exceptional: {
     label: 'Exceptionnel',
     foreground: '#E8834A',
     background: 'rgba(232, 131, 74, 0.12)',
     border: 'rgba(232, 131, 74, 0.28)',
+    glow: 'rgba(232, 131, 74, 0.38)',
   },
 };
 

@@ -1,12 +1,17 @@
 import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 
 import { Button } from '@/components/Button';
 import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
+import { CatDexIcon } from '@/components/icons/catdex';
+import { Breathing } from '@/components/motion';
+import { RewardHalo } from '@/components/reward';
 import { Text } from '@/components/Text';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { formatDistanceMeters } from '@/lib/constants';
 import { isCatPhotoRef } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -39,8 +44,9 @@ export function MapCatModal({
   onGoThere,
   onCapture,
 }: Props) {
-  const { colors, fonts, spacing, radius, iconStroke, motion } = useTheme();
+  const { colors, fonts, spacing, radius, iconStroke, motion, shadow } = useTheme();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReducedMotion();
   const [photoFailed, setPhotoFailed] = useState(false);
 
   useEffect(() => {
@@ -140,60 +146,72 @@ export function MapCatModal({
             }}
           >
             {canShowPhoto ? (
-              <CatImage
-                uri={cat.photoUri}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-                accessibilityLabel={`Photo de ${cat.name}`}
-                onError={() => setPhotoFailed(true)}
-              />
-            ) : captured ? (
-              <CatSprite
-                colorLabel={cat.analysis?.color ?? 'Roux'}
-                seed={cat.number}
-                size={180}
-                faceOnly
-              />
-            ) : (
-              <View style={{ alignItems: 'center', gap: spacing[16] }}>
-                <Svg width={72} height={72} viewBox="0 0 24 24" fill="none">
-                  <Circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    stroke={colors.textMuted}
-                    strokeWidth={iconStroke.regular}
-                  />
-                  <Path
-                    d="M9.2 9.2a2.8 2.8 0 0 1 5.4.9c0 1.6-1.4 2.2-2.1 2.7-.6.4-.9.9-.9 1.6"
-                    stroke={colors.textMuted}
-                    strokeWidth={iconStroke.regular}
-                    strokeLinecap="round"
-                  />
-                  <Circle cx="12" cy="17.2" r="1.1" fill={colors.textMuted} />
-                </Svg>
-                <Text variant="bodySmall" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
-                  Mystère
-                </Text>
+              <View style={{ width: '100%', height: '100%' }}>
+                <CatImage
+                  uri={cat.photoUri}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                  accessibilityLabel={`Photo de ${cat.name}`}
+                  onError={() => setPhotoFailed(true)}
+                />
               </View>
+            ) : captured ? (
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <RewardHalo size={220} />
+                <CatSprite
+                  colorLabel={cat.analysis?.color ?? 'Roux'}
+                  seed={cat.number}
+                  size={180}
+                  faceOnly
+                />
+              </View>
+            ) : (
+              <Animated.View
+                entering={reduceMotion ? undefined : FadeIn.duration(motion.duration.slow)}
+                style={{ alignItems: 'center', gap: spacing[16] }}
+              >
+                <Breathing>
+                  <View
+                    style={[
+                      {
+                        width: spacing[96],
+                        height: spacing[96],
+                        borderRadius: radius.full,
+                        backgroundColor: colors.brandSoft,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      },
+                      shadow.glow,
+                    ]}
+                  >
+                    <CatDexIcon name="paw" color={colors.brand} size={40} />
+                  </View>
+                </Breathing>
+                <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+                  Quelque chose t’observe…
+                </Text>
+              </Animated.View>
             )}
           </View>
 
-          <View style={{ gap: spacing[8], width: '100%' }}>
+          <Animated.View
+            entering={reduceMotion ? undefined : FadeInUp.delay(60).duration(motion.duration.normal)}
+            style={{ gap: spacing[8], width: '100%' }}
+          >
             <Text
               variant="h2"
               color="textBrand"
               style={{ fontFamily: fonts.display }}
             >
-              {captured ? cat.name : 'Chat mystère'}
+              {captured ? cat.name : 'Un chat apparaît'}
             </Text>
             <Text variant="bodySmall" color="textSecondary">
               {captured
                 ? `${cat.analysis.breed} · ${cat.analysis.color}`
-                : 'Repéré par un autre explorateur'}
+                : 'Repéré près de toi — capture-le pour révéler qui il est'}
               {distanceLabel ? ` · ${distanceLabel}` : ''}
             </Text>
-          </View>
+          </Animated.View>
 
           {captured ? (
             <Text variant="body" color="textBody">
@@ -201,8 +219,8 @@ export function MapCatModal({
             </Text>
           ) : (
             <Text variant="body" color="textSecondary">
-              Tu ne l’as pas encore capturé. Approche-toi et photographie-le pour
-              l’ajouter à ton CatDex.
+              Approche-toi et photographie-le. L’IA découvrira son identité —
+              et il rejoindra ton CatDex.
             </Text>
           )}
 

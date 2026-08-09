@@ -1,26 +1,8 @@
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Image,
-  Platform,
-  Pressable,
-  Share,
-  StyleSheet,
-  View,
-} from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import { Image, Share, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -28,10 +10,24 @@ import {
   type CaptureRevealResult,
 } from '@/components/CaptureReveal';
 import { Button } from '@/components/Button';
+import { PressableScale } from '@/components/motion';
+import { XpTicker } from '@/components/motion/XpTicker';
+import {
+  RewardCardFlip,
+  RewardConfetti,
+  RewardStagedBeats,
+  type RewardBeat,
+} from '@/components/reward';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { pickCatRelatedBadgeCopy } from '@/lib/catBadgeTitle';
+import {
+  catDexRarityLabel,
+  resolveRevealRarity,
+  rarityTokens,
+} from '@/lib/catTheme';
 import { CATDEX_TARGET, formatCatDefaultName, formatDexNumber } from '@/lib/constants';
+import { playHapticSuccess } from '@/lib/gameFeedback';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import {
   estimateTotalXp,
@@ -41,109 +37,18 @@ import { useCatsStore } from '@/store/cats';
 import { usePendingCaptureStore } from '@/store/pendingCapture';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { Cat } from '@/types/cat';
+import type { Cat, CatAnalysis } from '@/types/cat';
 
-type Phase = 'verify' | 'badge' | 'share';
+type Phase = 'celebrate' | 'adjust' | 'badge' | 'share';
 
-function ConfettiBurst() {
-  const { colors } = useTheme();
-  const reduceMotion = useReducedMotion();
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 14 }, (_, i) => ({
-        id: i,
-        left: 8 + ((i * 17) % 84),
-        delay: (i % 7) * 40,
-        color: [colors.brand, colors.orange, colors.success, colors.rose, colors.yellow][
-          i % 5
-        ]!,
-        size: 6 + (i % 4) * 2,
-      })),
-    [colors.brand, colors.orange, colors.rose, colors.success, colors.yellow],
-  );
-
-  if (reduceMotion) return null;
-
-  return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {pieces.map((piece) => (
-        <ConfettiPiece key={piece.id} {...piece} />
-      ))}
-    </View>
-  );
-}
-
-function ConfettiPiece({
-  left,
-  delay,
-  color,
-  size,
-}: {
-  left: number;
-  delay: number;
-  color: string;
-  size: number;
-}) {
-  const y = useSharedValue(-20);
-  const opacity = useSharedValue(1);
-  const rotate = useSharedValue(0);
-
-  useEffect(() => {
-    y.value = withTiming(520, { duration: 1600 + delay * 2 });
-    opacity.value = withTiming(0, { duration: 1600 + delay * 2 });
-    rotate.value = withTiming(180 + delay, { duration: 1600 });
-  }, [delay, opacity, rotate, y]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: y.value },
-      { rotate: `${rotate.value}deg` },
-    ],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          top: 40,
-          left: `${left}%`,
-          width: size,
-          height: size * 1.4,
-          borderRadius: 2,
-          backgroundColor: color,
-        },
-        style,
-      ]}
-    />
-  );
-}
-
-function PulsingBadge({ children }: { children: React.ReactNode }) {
-  const reduceMotion = useReducedMotion();
-  const scale = useSharedValue(0.7);
-  const glow = useSharedValue(0.6);
-
-  useEffect(() => {
-    scale.value = withSpring(1, { damping: 10, stiffness: 120 });
-    if (reduceMotion) return;
-    glow.value = withRepeat(
-      withSequence(withTiming(1, { duration: 700 }), withTiming(0.65, { duration: 700 })),
-      -1,
-      false,
-    );
-  }, [glow, reduceMotion, scale]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value * (0.96 + glow.value * 0.06) }],
-  }));
-
-  return <Animated.View style={style}>{children}</Animated.View>;
+function rarityStars(id: ReturnType<typeof resolveRevealRarity>): string {
+  const n =
+    id === 'exceptional' ? 5 : id === 'rare' ? 4 : id === 'uncommon' ? 3 : 2;
+  return Array.from({ length: n }, () => '★').join(' ');
 }
 
 /**
- * Post-capture: verify infos → optional first badge → share.
+ * Post-capture: wow reveal first → optional adjust → badge/share.
  */
 export default function RewardScreen() {
   const { colors, fonts, spacing, radius, shadow, gradients } = useTheme();
@@ -156,7 +61,8 @@ export default function RewardScreen() {
   const clearPending = usePendingCaptureStore((state) => state.clearPending);
 
   const addingRef = useRef(false);
-  const [phase, setPhase] = useState<Phase>(pending ? 'verify' : 'share');
+  const [phase, setPhase] = useState<Phase>(pending ? 'celebrate' : 'share');
+  const [showBeats, setShowBeats] = useState(reduceMotion);
   const [cat, setCat] = useState<Cat | null>(null);
   const [xpGained, setXpGained] = useState(25);
   const [firstCapture, setFirstCapture] = useState(false);
@@ -174,14 +80,41 @@ export default function RewardScreen() {
     );
   }, [pending]);
 
+  const rarityId = useMemo(
+    () =>
+      pending
+        ? resolveRevealRarity(pending.analysis, pending.nextNumber)
+        : savedCat
+          ? resolveRevealRarity(savedCat.analysis, savedCat.number)
+          : 'common',
+    [pending, savedCat],
+  );
+  const rarity = rarityTokens[rarityId];
+
   const badgeCopy = useMemo(
     () => (cat ? pickCatRelatedBadgeCopy(cat) : null),
     [cat],
   );
-  const badgePhotoSize = spacing[96] + spacing[64];
+  const cardW = spacing[96] + spacing[80];
   const enter = reduceMotion ? undefined : FadeIn.duration(280);
   const enterUp = reduceMotion ? undefined : FadeInUp.delay(80).duration(320);
-  const enterDown = reduceMotion ? undefined : FadeInDown.delay(120).duration(320);
+
+  useEffect(() => {
+    if (phase !== 'celebrate') return;
+    void playHapticSuccess();
+  }, [phase]);
+
+  const celebrateBeats: RewardBeat[] = useMemo(() => {
+    const beats: RewardBeat[] = [
+      { id: 'xp', label: '+XP', icon: 'xp' },
+      { id: 'dex', label: 'CatDex', icon: 'book' },
+    ];
+    if (cats.length === 0) {
+      beats.push({ id: 'companion', label: 'Premier compagnon', icon: 'paw' });
+      beats.push({ id: 'badge', label: 'Badge', icon: 'badge' });
+    }
+    return beats;
+  }, [cats.length]);
 
   const finishToMap = () => {
     clearPending();
@@ -193,7 +126,7 @@ export default function RewardScreen() {
     router.replace('/scanner');
   };
 
-  const handleConfirm = async (result: CaptureRevealResult) => {
+  const persistCat = async (name: string, analysis: CatAnalysis) => {
     if (!pending || addingRef.current) return;
     addingRef.current = true;
 
@@ -204,12 +137,6 @@ export default function RewardScreen() {
         mimeType: pending.photoMimeType ?? 'image/jpeg',
       }) ?? pending.photoUri;
 
-    const name =
-      result.name.trim() ||
-      pending.analysis.suggestedName?.trim() ||
-      formatCatDefaultName(pending.nextNumber);
-    const nextAnalysis = result.analysis;
-
     try {
       const catsBefore = useCatsStore.getState().cats;
       const created = await addCat({
@@ -217,17 +144,11 @@ export default function RewardScreen() {
         latitude: pending.latitude,
         longitude: pending.longitude,
         name,
-        analysis: nextAnalysis,
+        analysis,
         sourceWorldId: pending.sourceWorldId,
       });
 
-      if (Platform.OS !== 'web') {
-        try {
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } catch {
-          // ignore
-        }
-      }
+      await playHapticSuccess();
 
       const remaining = Math.max(0, CATDEX_TARGET - created.number);
       showToast({
@@ -264,6 +185,22 @@ export default function RewardScreen() {
     }
   };
 
+  const handleQuickAdd = () => {
+    if (!pending) return;
+    const name =
+      pending.analysis.suggestedName?.trim() ||
+      formatCatDefaultName(pending.nextNumber);
+    void persistCat(name, pending.analysis);
+  };
+
+  const handleConfirmAdjust = (result: CaptureRevealResult) => {
+    const name =
+      result.name.trim() ||
+      pending?.analysis.suggestedName?.trim() ||
+      formatCatDefaultName(pending?.nextNumber ?? 1);
+    void persistCat(name, result.analysis);
+  };
+
   const handleShare = async () => {
     if (!savedCat) return;
     try {
@@ -275,18 +212,133 @@ export default function RewardScreen() {
     }
   };
 
-  if (phase === 'verify' && pending) {
+  if (phase === 'adjust' && pending) {
     return (
       <CaptureReveal
         name={displayName}
         number={pending.nextNumber}
         photoUri={pending.photoUri}
         analysis={pending.analysis}
-        onAdd={(result) => {
-          void handleConfirm(result);
-        }}
+        onAdd={handleConfirmAdjust}
         onRetake={handleRetake}
       />
+    );
+  }
+
+  if (phase === 'celebrate' && pending) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <LinearGradient
+          colors={[gradients.primarySoft[0], colors.background, colors.background]}
+          locations={[0, 0.4, 1]}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <RewardConfetti />
+
+        <View
+          style={{
+            flex: 1,
+            paddingTop: insets.top + spacing[24],
+            paddingHorizontal: spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            justifyContent: 'space-between',
+            gap: spacing[16],
+          }}
+        >
+          <Animated.View
+            entering={enterUp}
+            style={{ alignItems: 'center', gap: spacing[4] }}
+          >
+            <Text
+              variant="h1"
+              color="textBrand"
+              align="center"
+              style={{ fontFamily: fonts.display }}
+            >
+              Nouveau chat !
+            </Text>
+          </Animated.View>
+
+          <View style={{ alignItems: 'center', gap: spacing[16], flex: 1, justifyContent: 'center' }}>
+            <RewardCardFlip
+              width={cardW}
+              borderColor={rarity.border}
+              glowColor={rarity.glow}
+              onFlipComplete={() => setShowBeats(true)}
+            >
+              <View style={{ height: spacing[96] + spacing[48], backgroundColor: colors.surfaceSecondary }}>
+                <Image
+                  source={{ uri: pending.photoUri }}
+                  resizeMode="cover"
+                  style={{ width: '100%', height: '100%' }}
+                  accessibilityLabel={`Photo de ${displayName}`}
+                />
+                <LinearGradient
+                  colors={['transparent', 'rgba(21,23,43,0.75)']}
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: spacing[48],
+                    justifyContent: 'flex-end',
+                    padding: spacing[8],
+                  }}
+                >
+                  <Text variant="caption" color="onAccent" style={{ fontFamily: fonts.bodySemi }}>
+                    {formatDexNumber(pending.nextNumber)}
+                  </Text>
+                </LinearGradient>
+              </View>
+              <View style={{ padding: spacing[16], gap: spacing[8], alignItems: 'center' }}>
+                <Text variant="h2" color="text" style={{ fontFamily: fonts.display }}>
+                  {displayName}
+                </Text>
+                <View
+                  style={{
+                    paddingVertical: spacing[4],
+                    paddingHorizontal: spacing[16],
+                    borderRadius: radius.full,
+                    backgroundColor: rarity.background,
+                    borderWidth: 1,
+                    borderColor: rarity.border,
+                  }}
+                >
+                  <Text
+                    variant="caption"
+                    style={{ fontFamily: fonts.bodySemi, color: rarity.foreground }}
+                  >
+                    {catDexRarityLabel(rarityId)}
+                  </Text>
+                </View>
+              </View>
+            </RewardCardFlip>
+
+            <Animated.View entering={reduceMotion ? undefined : FadeIn.delay(500).duration(320)}>
+              <Text
+                variant="body"
+                color="textBrand"
+                align="center"
+                style={{ letterSpacing: 4 }}
+              >
+                {rarityStars(rarityId)}
+              </Text>
+            </Animated.View>
+
+            <RewardStagedBeats beats={celebrateBeats} visible={showBeats} />
+          </View>
+
+          <View style={{ gap: spacing[8] }}>
+            <Button title="Ajouter à mon CatDex" onPress={handleQuickAdd} />
+            <Button
+              variant="secondary"
+              title="Ajuster les infos"
+              onPress={() => setPhase('adjust')}
+            />
+            <Button variant="tertiary" title="Reprendre une photo" onPress={handleRetake} />
+          </View>
+        </View>
+      </View>
     );
   }
 
@@ -312,6 +364,30 @@ export default function RewardScreen() {
     );
   }
 
+  const shareBeats: RewardBeat[] = [
+    { id: 'xp', label: `+${xpGained} XP`, icon: 'xp' },
+    ...(firstCapture
+      ? [
+          {
+            id: 'companion',
+            label: 'Premier compagnon',
+            icon: 'paw' as const,
+          },
+          {
+            id: 'badge',
+            label: badgeCopy?.title ?? 'Badge',
+            icon: 'badge' as const,
+          },
+        ]
+      : [
+          {
+            id: 'dex',
+            label: formatDexNumber(savedCat.number),
+            icon: 'book' as const,
+          },
+        ]),
+  ];
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <LinearGradient
@@ -319,7 +395,7 @@ export default function RewardScreen() {
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFillObject}
       />
-      {phase === 'share' ? <ConfettiBurst /> : null}
+      {(phase === 'share' || phase === 'badge') && <RewardConfetti />}
 
       <View
         style={{
@@ -330,11 +406,11 @@ export default function RewardScreen() {
           justifyContent: 'space-between',
         }}
       >
-        {phase === 'badge' && badgeCopy && savedCat ? (
+        {phase === 'badge' && badgeCopy ? (
           <>
             <Animated.View
               entering={enter}
-              style={{ alignItems: 'center', gap: spacing[24], paddingTop: spacing[32] }}
+              style={{ alignItems: 'center', gap: spacing[16], paddingTop: spacing[16], flex: 1, justifyContent: 'center' }}
             >
               <Text
                 variant="h1"
@@ -342,32 +418,17 @@ export default function RewardScreen() {
                 align="center"
                 style={{ fontFamily: fonts.display }}
               >
-                Nouveau badge obtenu !
+                Badge débloqué !
               </Text>
 
-              <PulsingBadge>
-                <View
-                  style={[
-                    {
-                      width: badgePhotoSize,
-                      height: badgePhotoSize,
-                      borderRadius: radius.xl,
-                      backgroundColor: colors.surfaceSecondary,
-                      borderWidth: 3,
-                      borderColor: colors.brand,
-                      overflow: 'hidden',
-                    },
-                    shadow.glow,
-                  ]}
-                >
-                  <Image
-                    source={{ uri: savedCat.photoUri }}
-                    style={{ width: badgePhotoSize, height: badgePhotoSize }}
-                    resizeMode="cover"
-                    accessibilityLabel={`Photo de ${savedCat.name}`}
-                  />
-                </View>
-              </PulsingBadge>
+              <RewardCardFlip width={cardW} borderColor={colors.brand}>
+                <Image
+                  source={{ uri: savedCat.photoUri }}
+                  style={{ width: cardW, height: cardW }}
+                  resizeMode="cover"
+                  accessibilityLabel={`Photo de ${savedCat.name}`}
+                />
+              </RewardCardFlip>
 
               <View style={{ alignItems: 'center', gap: spacing[8] }}>
                 <Text variant="h2" color="textBrand" align="center">
@@ -376,30 +437,15 @@ export default function RewardScreen() {
                 <Text variant="bodySmall" color="textBody" align="center">
                   {badgeCopy.subtitle}
                 </Text>
-                <Text
-                  variant="h3"
-                  color="textBrand"
-                  align="center"
-                  style={{ fontFamily: fonts.bodySemi, marginTop: spacing[8] }}
-                >
-                  +{xpGained} XP
-                </Text>
+                <XpTicker value={xpGained} />
                 <Text variant="body" color="textBody" align="center">
-                  Niveau {progression.level} atteint
-                </Text>
-                <Text variant="caption" color="textMuted" align="center">
-                  Encore {xpToNext} XP avant le niveau suivant
+                  Niveau {progression.level}
                 </Text>
               </View>
             </Animated.View>
 
             <View style={{ gap: spacing[8] }}>
               <Button title="Continuer" onPress={() => setPhase('share')} />
-              <Button
-                variant="tertiary"
-                title="Voir tous mes badges"
-                onPress={() => setPhase('share')}
-              />
             </View>
           </>
         ) : null}
@@ -421,84 +467,77 @@ export default function RewardScreen() {
                   align="center"
                   style={{ fontFamily: fonts.display }}
                 >
-                  {savedCat.name} rejoint ton CatDex !
+                  {savedCat.name}
                 </Text>
               </Animated.View>
 
-              <Animated.View entering={enterDown}>
+              <RewardCardFlip
+                width={cardW}
+                borderColor={rarity.border}
+                glowColor={rarity.glow}
+              >
                 <Image
                   source={{ uri: savedCat.photoUri }}
-                  style={{
-                    width: badgePhotoSize,
-                    height: badgePhotoSize,
-                    borderRadius: radius.cta,
-                    borderWidth: 3,
-                    borderColor: colors.brand,
-                  }}
+                  style={{ width: cardW, height: cardW * 0.85 }}
                   resizeMode="cover"
                   accessibilityLabel={`Photo de ${savedCat.name}`}
                 />
-              </Animated.View>
-
-              <View style={{ alignItems: 'center', gap: spacing[8] }}>
-                <Text
-                  variant="h3"
-                  color="textBrand"
-                  align="center"
-                  style={{ fontFamily: fonts.bodySemi }}
-                >
-                  +{xpGained} XP
-                </Text>
-                {firstCapture ? (
-                  <Text variant="bodySmall" color="textBody" align="center">
-                    Premier chat · Nouvelle série · Nouveau badge
+                <View style={{ padding: spacing[16], alignItems: 'center', gap: spacing[8] }}>
+                  <View
+                    style={{
+                      paddingVertical: spacing[4],
+                      paddingHorizontal: spacing[16],
+                      borderRadius: radius.full,
+                      backgroundColor: rarity.background,
+                      borderWidth: 1,
+                      borderColor: rarity.border,
+                    }}
+                  >
+                    <Text
+                      variant="caption"
+                      style={{ fontFamily: fonts.bodySemi, color: rarity.foreground }}
+                    >
+                      {catDexRarityLabel(rarityId)}
+                    </Text>
+                  </View>
+                  <Text variant="body" color="textBrand" style={{ letterSpacing: 4 }}>
+                    {rarityStars(rarityId)}
                   </Text>
-                ) : (
-                  <Text variant="bodySmall" color="textBody" align="center">
-                    {formatDexNumber(savedCat.number)} · CatDex enrichi
-                  </Text>
-                )}
-              </View>
+                </View>
+              </RewardCardFlip>
 
-              <View
+              <XpTicker value={xpGained} />
+              <Text variant="caption" color="textMuted" align="center">
+                Encore {xpToNext} XP avant le niveau suivant
+              </Text>
+
+              <RewardStagedBeats beats={shareBeats} visible />
+
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel="Partager"
+                onPress={() => void handleShare()}
                 style={[
                   {
-                    alignSelf: 'stretch',
-                    backgroundColor: colors.surfaceElevated,
-                    borderRadius: radius.cta,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    padding: spacing[16],
-                    gap: spacing[8],
-                    alignItems: 'center',
-                  },
-                  shadow.low,
-                ]}
-              >
-                <Text variant="bodySmall" color="textBody" align="center">
-                  Partage ta découverte
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Partager"
-                  onPress={() => void handleShare()}
-                  style={({ pressed }) => ({
+                    marginTop: spacing[8],
                     paddingVertical: spacing[8],
                     paddingHorizontal: spacing[24],
                     borderRadius: radius.full,
                     backgroundColor: colors.brandSoft,
-                    opacity: pressed ? 0.88 : 1,
-                  })}
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  },
+                  shadow.low,
+                ]}
+              >
+                <Text
+                  variant="bodySmall"
+                  color="textBrand"
+                  style={{ fontFamily: fonts.bodySemi }}
                 >
-                  <Text
-                    variant="bodySmall"
-                    color="textBrand"
-                    style={{ fontFamily: fonts.bodySemi }}
-                  >
-                    Partager
-                  </Text>
-                </Pressable>
-              </View>
+                  Partager
+                </Text>
+              </PressableScale>
             </View>
 
             <View style={{ gap: spacing[8] }}>

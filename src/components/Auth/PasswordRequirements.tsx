@@ -3,172 +3,133 @@ import { View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSequence,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Text } from '@/components/Text';
-import { PASSWORD_RULES, getPasswordRuleStatus, type PasswordRuleId } from '@/lib/authValidation';
+import {
+  getPasswordRuleStatus,
+  isPasswordStrong,
+  PASSWORD_RULES,
+} from '@/lib/authValidation';
 import { useTheme } from '@/theme/ThemeProvider';
 
 type Props = {
   password: string;
 };
 
-function RuleIcon({ met }: { met: boolean }) {
-  const { colors, iconStroke } = useTheme();
-  const scale = useSharedValue(met ? 1 : 0.85);
-  const opacity = useSharedValue(met ? 1 : 0.7);
+export type PasswordStrengthLevel = 'empty' | 'weak' | 'ok' | 'excellent';
 
-  useEffect(() => {
-    if (met) {
-      scale.value = withSequence(
-        withTiming(1.2, { duration: 120 }),
-        withSpring(1, { damping: 10, stiffness: 260 }),
-      );
-      opacity.value = withTiming(1, { duration: 160 });
-    } else {
-      scale.value = withTiming(0.9, { duration: 140 });
-      opacity.value = withTiming(0.75, { duration: 140 });
-    }
-  }, [met, opacity, scale]);
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View style={animStyle}>
-      {met ? (
-        <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-          <Circle cx="12" cy="12" r="10" fill={colors.brandSoft} />
-          <Path
-            d="M8 12.5 11 15.5 16 9.5"
-            stroke={colors.brand}
-            strokeWidth={iconStroke.regular}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      ) : (
-        <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-          <Circle
-            cx="12"
-            cy="12"
-            r="9"
-            stroke={colors.textMuted}
-            strokeWidth={iconStroke.regular}
-          />
-        </Svg>
-      )}
-    </Animated.View>
-  );
+/** Map rule progress to Faible / Correct / Excellent — same rules, softer UI. */
+export function getPasswordStrengthLevel(password: string): PasswordStrengthLevel {
+  if (!password) return 'empty';
+  const status = getPasswordRuleStatus(password);
+  const met = PASSWORD_RULES.filter((rule) => status[rule.id]).length;
+  if (met <= 1) return 'weak';
+  if (!isPasswordStrong(password)) return 'ok';
+  if (password.length >= 12) return 'excellent';
+  return 'ok';
 }
 
-function RuleLabel({ met, label }: { met: boolean; label: string }) {
-  const match = /^(\d+)\s*(.*)$/.exec(label);
-  const color = met ? ('textBrand' as const) : ('textMuted' as const);
-
-  if (!match) {
-    return (
-      <Text variant="caption" color={color}>
-        {label}
-      </Text>
-    );
-  }
-
-  return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
-      <Text variant="caption" color={color} style={{ fontWeight: '700' }}>
-        {match[1]}
-      </Text>
-      {match[2] ? (
-        <Text variant="caption" color={color}>
-          {` ${match[2]}`}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
-
-function RuleRow({
-  ruleId,
-  met,
-  label,
-}: {
-  ruleId: PasswordRuleId;
-  met: boolean;
-  label: string;
-}) {
-  const { spacing, motion } = useTheme();
-  const translateX = useSharedValue(0);
-  const prevMet = useRef(false);
-
-  useEffect(() => {
-    if (met && !prevMet.current) {
-      translateX.value = withSequence(
-        withTiming(-2, { duration: motion.duration.fast }),
-        withSpring(0, { damping: 12, stiffness: 220 }),
-      );
-    }
-    prevMet.current = met;
-  }, [met, motion.duration.fast, translateX]);
-
-  const rowStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  return (
-    <Animated.View
-      key={ruleId}
-      style={[
-        {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing[8],
-        },
-        rowStyle,
-      ]}
-    >
-      <RuleIcon met={met} />
-      <RuleLabel met={met} label={label} />
-    </Animated.View>
-  );
-}
+const LEVEL_LABEL: Record<Exclude<PasswordStrengthLevel, 'empty'>, string> = {
+  weak: 'Faible',
+  ok: 'Correct',
+  excellent: 'Excellent',
+};
 
 /**
- * Inline password rules under the field — animate when a rule flips to met.
+ * Password strength meter — replaces the checklist UI while keeping authValidation rules.
  */
-export function PasswordRequirements({ password }: Props) {
-  const { colors, spacing, radius } = useTheme();
-  const status = getPasswordRuleStatus(password);
+export function PasswordStrengthMeter({ password }: Props) {
+  const { colors, fonts, spacing, radius, motion } = useTheme();
+  const level = getPasswordStrengthLevel(password);
+  const progress = useSharedValue(0);
+  const prevLevel = useRef(level);
+
+  const fillRatio =
+    level === 'empty' ? 0 : level === 'weak' ? 0.33 : level === 'ok' ? 0.66 : 1;
+
+  const fillColor =
+    level === 'weak'
+      ? colors.danger
+      : level === 'ok'
+        ? colors.warning
+        : level === 'excellent'
+          ? colors.success
+          : colors.border;
+
+  const labelColor =
+    level === 'weak'
+      ? ('danger' as const)
+      : level === 'ok'
+        ? ('warning' as const)
+        : level === 'excellent'
+          ? ('success' as const)
+          : ('textMuted' as const);
+
+  useEffect(() => {
+    progress.value = withSpring(fillRatio, {
+      damping: 16,
+      stiffness: 180,
+    });
+    prevLevel.current = level;
+  }, [fillRatio, level, progress]);
+
+  const fillStyle = useAnimatedStyle(() => ({
+    width: `${Math.max(0.04, progress.value) * 100}%`,
+  }));
 
   if (!password) return null;
 
   return (
     <View
       accessibilityRole="summary"
-      style={{
-        gap: spacing[8],
-        paddingVertical: spacing[8],
-        paddingHorizontal: spacing[16],
-        borderRadius: radius[8],
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.border,
-      }}
+      accessibilityLabel={`Force du mot de passe : ${
+        level === 'empty' ? 'vide' : LEVEL_LABEL[level]
+      }`}
+      style={{ gap: spacing[8] }}
     >
-      {PASSWORD_RULES.map((rule) => (
-        <RuleRow
-          key={rule.id}
-          ruleId={rule.id}
-          met={status[rule.id]}
-          label={rule.label}
+      <View
+        style={{
+          height: 8,
+          borderRadius: radius.full,
+          backgroundColor: colors.surfaceSecondary,
+          overflow: 'hidden',
+        }}
+      >
+        <Animated.View
+          style={[
+            {
+              height: '100%',
+              borderRadius: radius.full,
+              backgroundColor: fillColor,
+            },
+            fillStyle,
+          ]}
         />
-      ))}
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: spacing[8],
+        }}
+      >
+        <Text
+          variant="caption"
+          color={labelColor}
+          style={{ fontFamily: fonts.bodySemi }}
+        >
+          {LEVEL_LABEL[level === 'empty' ? 'weak' : level]}
+        </Text>
+        <Text variant="caption" color="textMuted">
+          8+ · chiffre · symbole
+        </Text>
+      </View>
     </View>
   );
 }
+
+/** @deprecated Prefer PasswordStrengthMeter — kept for import stability. */
+export { PasswordStrengthMeter as PasswordRequirements };
