@@ -7,6 +7,7 @@ import { AuthEmailConfigBanner } from '@/components/Auth/AuthEmailConfigBanner';
 import { AuthReadyButton } from '@/components/Auth/AuthReadyButton';
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { AuthSocialButtons } from '@/components/Auth/AuthSocialButtons';
+import { isAppleAuthEnabled, isGoogleAuthEnabled } from '@/lib/authProviders';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { TextInput } from '@/components/Input';
@@ -116,8 +117,8 @@ export default function LoginScreen() {
           />
           <AuthSocialButtons
             disabled={loading}
-            hideGoogle={Boolean(oauthDisabled.google)}
-            hideApple={Boolean(oauthDisabled.apple)}
+            hideGoogle={!isGoogleAuthEnabled || Boolean(oauthDisabled.google)}
+            hideApple={!isAppleAuthEnabled || Boolean(oauthDisabled.apple)}
             onGoogle={() => void enterOAuth('google')}
             onApple={() => void enterOAuth('apple')}
           />
