@@ -16,7 +16,7 @@ import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const DEMO_CAT = require('../../../../assets/onboarding-demo-cat.jpg');
+import { DEMO_CAT_IMAGE } from './demoCat';
 
 export type FloatingPreviewVariant = 'sighting' | 'analysis' | 'dex';
 
@@ -79,7 +79,7 @@ export function FloatingPreviewCard({
           }}
         >
           <Image
-            source={DEMO_CAT}
+            source={DEMO_CAT_IMAGE}
             resizeMode="cover"
             style={{ width: thumb, height: thumb }}
             accessibilityIgnoresInvertColors
@@ -135,7 +135,7 @@ export function FloatingPreviewCard({
           }}
         >
           <Image
-            source={DEMO_CAT}
+            source={DEMO_CAT_IMAGE}
             resizeMode="cover"
             style={{ width: spacing[40], height: spacing[56] }}
             accessibilityIgnoresInvertColors

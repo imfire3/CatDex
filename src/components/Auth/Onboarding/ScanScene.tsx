@@ -18,7 +18,7 @@ import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const DEMO_CAT = require('../../../../assets/onboarding-demo-cat.jpg');
+import { DEMO_CAT_IMAGE } from './demoCat';
 
 const REVEALS = [
   'Race détectée',
@@ -164,7 +164,7 @@ export function ScanScene() {
           ]}
         >
           <Image
-            source={DEMO_CAT}
+            source={DEMO_CAT_IMAGE}
             resizeMode="cover"
             style={{ width: '100%', height: '100%' }}
             accessibilityIgnoresInvertColors
