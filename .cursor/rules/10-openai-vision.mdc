@@ -1,0 +1,38 @@
+---
+description: OpenAI Vision analyze pipeline for CatDex — prompts, schema, client/server contract.
+globs: server/**/*.{ts,tsx},src/lib/api.ts,src/lib/apiUrl.ts,docs/VISION_ANALYSIS.md
+alwaysApply: false
+---
+
+# CatDex — OpenAI Vision
+
+## Pipeline
+
+```
+Client analyzeCatPhoto() → POST /analyze-cat (Bearer Supabase JWT)
+  → server auth + rate limit
+  → OpenAI Vision (model from env)
+  → normalize → CatAnalysis-shaped JSON
+```
+
+- Client: `src/lib/api.ts`, URL discovery `src/lib/apiUrl.ts`
+- Server: `server/src/` — prompt `catdexVisionPrompt.ts`, schema `catdexAnalysisSchema.ts`, `normalize*` modules
+- Product docs: `docs/VISION_ANALYSIS.md`
+
+## Env (server)
+
+- `OPENAI_API_KEY` (required for real identify)
+- `OPENAI_MODEL` (fallback in code; keep documented)
+- Supabase JWT/service role for auth
+- Optional: `ALLOW_UNAUTH_ANALYZE` (dev only — never enable in prod)
+
+## Rules
+
+- App never embeds the OpenAI key
+- Preserve `notACat` / photo problem codes for UX (`errorCatalog` / PHOTO_PROBLEM_CODES)
+- When changing fields, update **server schema + normalizers + `src/types/cat.ts`** together
+- Client must try remote fallbacks when local API is down (`shouldTryNextCandidate` patterns) — don’t strand users on localhost 503
+
+## Output expectations
+
+Analysis may include breed, coat/color, tags/personality, suggestedName, confidence, rarity string, warnings, catCount. UI must tolerate partial payloads.

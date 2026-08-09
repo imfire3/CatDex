@@ -1,0 +1,36 @@
+---
+description: Release checklist for CatDex web, mobile, and Vision API.
+alwaysApply: false
+---
+
+# CatDex — Release Checklist
+
+## Before shipping
+
+### Product
+- [ ] Capture → analyze → reward → album works on target platform
+- [ ] Auth + onboarding path still reaches map
+- [ ] Map HUD capture gate + location banner OK
+
+### Config
+- [ ] `EXPO_PUBLIC_SUPABASE_*` set for target
+- [ ] `EXPO_PUBLIC_API_URL` points at healthy HTTPS API
+- [ ] Server has `OPENAI_API_KEY` + Supabase secrets
+- [ ] OAuth redirect URLs allowlisted
+
+### Quality
+- [ ] Typecheck / server tests green
+- [ ] No secrets in repo or client bundle
+- [ ] Error states verified (API down, not a cat)
+
+### Web beta (Netlify et al.)
+- [ ] Production build (`dist` / EAS as applicable) deployed from intended branch (`main` / release)
+- [ ] Smoke test on `catdex-beta` (or current host): welcome, login, map, scanner
+
+### Mobile
+- [ ] Follow `docs/MOBILE_DEPLOYMENT.md` / `TEST_ON_PHONE.md`
+- [ ] Camera + location permissions copy still accurate
+
+### Rollback
+- [ ] Know previous deploy artifact / API revision
+- [ ] Feature flags / env toggles documented if used

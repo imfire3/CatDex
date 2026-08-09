@@ -1,0 +1,32 @@
+---
+description: Testing strategy for CatDex — current reality and what to add.
+globs: **/*.{test,spec}.{ts,tsx},server/**/*.ts
+alwaysApply: false
+---
+
+# CatDex — Testing
+
+## Current reality
+
+- **App:** `lint` + `typecheck` (no Jest/Vitest suite in root package today)
+- **Server:** Node test runner via `tsx --test` — `server/src/*.test.ts` (normalize Vision, breed policy, form analysis)
+
+## When you change code
+
+| Change | Minimum verification |
+|--------|----------------------|
+| Vision schema / normalize | Server unit tests green |
+| Domain helpers (XP, rarity, validation) | Add/adjust pure function tests when practical |
+| UI | Typecheck + manual path on web/device for critical flows |
+| Auth / sync | Manual + careful RLS reasoning |
+
+## Critical manual flows
+
+1. Signup / login / onboarding → map
+2. Capture → analyze → reward wow → album
+3. Map mystery pin → capture gate → scanner
+4. Offline / API down messaging (no false “not a cat”)
+
+## Ambition (ECC)
+
+Project ECC rules mention TDD/80% — treat as target for **new pure logic**, not a blocker that invents a full RN e2e harness mid-feature. Prefer server tests + typecheck + focused manual QA.

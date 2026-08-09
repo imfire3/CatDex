@@ -1,0 +1,28 @@
+---
+description: Definition of done / quality gate before merging CatDex work.
+alwaysApply: false
+---
+
+# CatDex — Quality Gate
+
+Before marking work ready for review:
+
+1. **Typecheck** — `npm run typecheck` (and server tests if Vision touched)
+2. **Lint** — project lint script if configured
+3. **Design system** — `useTheme()` + shared components; no ad-hoc palette
+4. **Critical path** — manually exercise the user story you changed
+5. **Prefs / a11y** — reduced motion & haptics prefs not ignored on new feedback
+6. **Env safety** — no secrets; API URL behavior documented if changed
+7. **Git** — conventional commit; PR description with test plan
+
+## Feature-specific gates
+
+| Area | Extra check |
+|------|-------------|
+| Reward | Celebrate before edit; CTA clear |
+| Onboarding | 4 beats still wired |
+| Signup | Wizard steps + password meter |
+| Map | FAB + permission gate |
+| Analyze | Real errors surfaced; narrative loading |
+
+Do not claim “done” on UI-only screenshots if the capture pipeline is untested when you touched it.

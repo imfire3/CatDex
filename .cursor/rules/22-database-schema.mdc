@@ -1,0 +1,33 @@
+---
+description: Supabase / Postgres schema rules for CatDex (PostGIS, RLS, migrations).
+globs: supabase/**/*.sql,src/lib/supabaseQueries.ts,src/lib/catSync.ts
+alwaysApply: false
+---
+
+# CatDex — Database Schema
+
+## Core tables (`supabase/schema.sql`)
+
+| Table | Purpose |
+|-------|---------|
+| `profiles` | Extends `auth.users` |
+| `cats` | Owned captures (geo, dex_number, photo_url, …) |
+| `sightings` | Sightings linked to cats |
+| `cat_analysis` | 1:1 analysis payload |
+| `analysis_feedback` | User corrections / training signal |
+
+Extensions: `uuid-ossp`, `postgis`. Geography points for map queries.
+
+## Rules
+
+- Additive migrations preferred (`ADD COLUMN IF NOT EXISTS`, safe policy drops/recreates)
+- Keep RLS enabled; update policies in the same PR as schema changes
+- Indexes: owner, created_at, dex_number, GiST on geography
+- App models in `src/types/cat.ts` may be richer than columns — map carefully in sync layer
+- Never invent parallel shadow databases in the client
+
+## When changing schema
+
+1. Update `supabase/migrations/` (and schema snapshot if that’s the project practice)
+2. Update sync/queries
+3. Document backfill needs in the PR

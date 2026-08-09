@@ -1,0 +1,45 @@
+---
+description: CatDex product principles — loops, priorities, and what “good” feels like.
+alwaysApply: true
+---
+
+# CatDex — Product Design
+
+## North star
+
+Every session should make the player want **one more capture**. Design for delight at discovery, not admin forms.
+
+## Core loop
+
+```
+Explore map → Spot / approach → Capture (camera) → Living analysis → Reward wow → CatDex + map pin
+```
+
+Secondary: missions / XP / badges reinforce return visits; never block the first capture behind heavy setup.
+
+## Priorities (highest first)
+
+1. **Capture pleasure** — celebrate before edit (`app/reward.tsx`, `src/components/reward/`)
+2. **Narrative onboarding** — story beats, not SaaS slides (`app/(auth)/intro` → photo → permissions → reward)
+3. **Lightweight signup** — multi-step, soft password UI
+4. **Micro-interactions** — haptics/sounds gated by settings
+5. **CatDex visual language** — halos, paws, rarity glow, filled icons
+
+## Product rules
+
+- Permissions (camera/location) are asked **in context** on the map / capture gate — not as a wall of screens before first value
+- Welcome = full-bleed hero (map), brand-forward, short proof + CTAs — no heavy white sheet
+- Community “mystery” cats stay mysterious until the player captures them
+- Prefer one clear CTA per screen; avoid dashboard clutter on emotional moments
+
+## Out of scope for MVP polish
+
+- Social feed, chat, marketplace
+- Hardcore MMO inventory systems
+- Dark-mode-first redesign (product is white-first + indigo)
+
+## Related
+
+- Game pacing: `04-game-design.mdc`
+- Copy: `03-ux-writing.mdc`
+- Domain: `23-catdex-domain.mdc`

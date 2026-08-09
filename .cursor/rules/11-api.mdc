@@ -1,0 +1,32 @@
+---
+description: CatDex HTTP API — Hono server, client helpers, URLs, auth headers.
+globs: server/**/*.{ts,tsx},src/lib/api.ts,src/lib/apiUrl.ts
+alwaysApply: false
+---
+
+# CatDex — API
+
+## Server
+
+- Runtime: Hono in `server/src/index.ts` (default port **8787**)
+- Primary route: `POST /analyze-cat`
+- Also: health, privileged ops (e.g. account delete) as implemented
+- Deploy target historically: Render (`docs/RENDER_DEPLOYMENT.md`)
+
+## Client
+
+- `analyzeCatPhoto` in `src/lib/api.ts`
+- Base URL: `EXPO_PUBLIC_API_URL` or discovery via `apiUrl.ts`
+- Default remote fallback: `https://catdex-api.onrender.com` (keep HTTPS in prod)
+- Send Supabase access token when session exists
+
+## Contract rules
+
+- JSON envelopes should stay consistent; surface server error messages through catalog mapping
+- Timeouts / cold starts: analysis UI already crawls progress — don’t fake 100% before response
+- Version breaking Vision fields intentionally; document in PR + `VISION_ANALYSIS.md` if user-visible
+
+## Local dev
+
+- Run server with `OPENAI_API_KEY` in `server/.env`
+- Point app at `http://localhost:8787` only when the server is up; otherwise use remote

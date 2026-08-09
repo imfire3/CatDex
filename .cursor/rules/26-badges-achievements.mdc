@@ -1,0 +1,25 @@
+---
+description: Badges and achievements presentation in CatDex.
+globs: src/lib/progression.ts,src/lib/catBadgeTitle.ts,app/reward.tsx,src/components/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — Badges & Achievements
+
+## Sources
+
+- Profile badges builders in `src/lib/progression.ts` (`buildProfileBadges` et al.)
+- First-capture / cat-related badge copy helpers (`catBadgeTitle`)
+- Reward flow may show a badge beat after the first capture
+
+## Design
+
+- Use CatDex icon language (`badge`, `xp`, `paw`) — not ad-hoc emoji walls
+- Badge moments are part of the **celebration choreography**, secondary to the cat reveal
+- Keep names short FR labels
+
+## Rules
+
+- Achievements should reflect real collection/mission state
+- Avoid notifying the same badge repeatedly across sessions without persist guards
+- New badges need: id, title, unlock rule, where surfaced (reward / profile)

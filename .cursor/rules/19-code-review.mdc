@@ -1,0 +1,35 @@
+---
+description: Code review checklist for CatDex pull requests.
+alwaysApply: false
+---
+
+# CatDex — Code Review
+
+## Product / UX
+
+- [ ] Capture or onboarding emotional beat not regressed to form-first
+- [ ] French copy OK; errors use catalog where applicable
+- [ ] Design tokens only — no random hex/spacing
+
+## Architecture
+
+- [ ] UI → store/lib → remote boundaries respected
+- [ ] Pending capture lifecycle correct
+- [ ] No OpenAI key in app
+
+## Game feel
+
+- [ ] New reward/analysis UI respects reduced motion + haptics prefs
+- [ ] Map mystery language preserved for uncaptured cats
+
+## Quality
+
+- [ ] `typecheck` clean for touched packages
+- [ ] Server tests updated if normalize/schema changed
+- [ ] No leftover debug logs / commented dumps
+
+## Severity guidance
+
+- **Block merge:** security, data loss, broken capture pipeline, token inventing that fragments UI
+- **Should fix:** a11y labels on new controls, missing empty/error states
+- **Nit:** naming, comment polish

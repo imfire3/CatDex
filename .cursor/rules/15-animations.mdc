@@ -1,0 +1,37 @@
+---
+description: Motion system — theme tokens, Reanimated primitives, reduced motion.
+globs: src/theme/motion.ts,src/components/motion/**/*.{ts,tsx},src/components/reward/**/*.{ts,tsx},src/components/Auth/Onboarding/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — Animations
+
+## Tokens (`src/theme/motion.ts`)
+
+| Token | ms |
+|-------|-----|
+| `fast` | ~140 |
+| `normal` / `standard` | ~220 |
+| `slow` | ~320 |
+| `reveal` | ~520 |
+
+Also: springs in `motion.easing`, `pressScale` `0.98`, `cardPressScale` `0.99`.
+
+## Primitives
+
+`src/components/motion/`: `PressableScale`, `Breathing`, `Float`, `CascadeIn`, `XpTicker`.
+
+Reward: `RewardCardFlip`, `RewardConfetti`, `RewardHalo`, `RewardStagedBeats`.
+
+## Rules
+
+- Prefer theme durations over magic numbers
+- Use Reanimated (`withSpring`, `withTiming`, entering `FadeIn*`) for UI motion
+- Always branch on `useReducedMotion()` — show final state quickly
+- Gate haptics/SFX via `gameFeedback` + settings prefs
+- Motion supports hierarchy (reward, onboarding, FAB) — not decorative noise on every text label
+
+## Do not
+
+- Block capture completion on long animation queues; allow skip/final state
+- Run infinite heavy animations on hidden screens

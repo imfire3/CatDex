@@ -1,0 +1,34 @@
+---
+description: Supabase usage in CatDex — auth, RLS, storage, client boundaries.
+globs: src/lib/supabase*.ts,src/lib/catSync.ts,src/lib/supabaseQueries.ts,src/store/auth.ts,supabase/**/*
+alwaysApply: false
+---
+
+# CatDex — Supabase
+
+## Client
+
+- `src/lib/supabase.ts` — `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- If unset: mock/local auth paths may run — surface that clearly in UI banners
+
+## Responsibilities
+
+| Concern | Where |
+|---------|--------|
+| Auth session | `useAuthStore` + Supabase auth |
+| Profiles | `profiles` table |
+| Cats / sightings / analysis | schema + `catSync` / queries |
+| Photos | Storage bucket `cats` |
+| Analyze auth | Server verifies Supabase JWT |
+
+## Rules
+
+- Use **anon key** only in the app; **service role** only on server
+- Never disable RLS in production schemas without a migration review
+- Prefer parameterized client helpers already in `supabaseQueries` / `catSync`
+- Account deletion and privileged ops go through server routes with service role
+
+## Schema source
+
+- `supabase/schema.sql` + `supabase/migrations/`
+- Follow `22-database-schema.mdc` when changing tables

@@ -1,0 +1,35 @@
+---
+description: Security rules for CatDex app, Supabase, and Vision API.
+alwaysApply: false
+---
+
+# CatDex — Security
+
+## Secrets
+
+- Never commit API keys, service role keys, JWT secrets
+- Client: only `EXPO_PUBLIC_*` non-secret config
+- Server: `OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET` in server env only
+
+## AuthZ
+
+- RLS on `profiles`, `cats`, `sightings`, `cat_analysis` — users touch own rows (and documented shared sighting rules)
+- Analyze endpoint verifies Supabase JWT (unless explicit unsafe dev flag)
+- Rate-limit analyze on server
+
+## Uploads
+
+- Validate image types/sizes server-side where enforced
+- Don’t log base64 photo payloads
+- Storage paths should not be guessable across users without policy checks
+
+## UX safety
+
+- Error messages: actionable, no stack traces or env dumps in UI
+- OAuth: use configured redirect URLs only
+
+## Checklist before commit
+
+- [ ] No hardcoded secrets
+- [ ] User inputs validated (`authValidation`, Vision schema)
+- [ ] RLS / JWT assumptions unchanged or migrated safely

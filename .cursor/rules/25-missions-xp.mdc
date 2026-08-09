@@ -1,0 +1,25 @@
+---
+description: Missions, XP, levels, and progression rules for CatDex.
+globs: src/lib/progression.ts,src/store/missions.ts,src/components/missions/**/*.{ts,tsx},app/(tabs)/missions.tsx
+alwaysApply: false
+---
+
+# CatDex — Missions & XP
+
+## XP / levels
+
+- Logic: `src/lib/progression.ts` — `xpForCat`, `estimateTotalXp`, level curves, `MAX_LEVEL`, quests/collections helpers
+- Reward UI should **animate XP** (`XpTicker` / progress), not only show static `+N XP`
+
+## Missions
+
+- Store: `useMissionsStore` (persist + streak)
+- UI: `src/components/missions/*`, tab `missions`
+- Starter mission energy: first capture — keep achievable early
+
+## Rules
+
+- Progression must remain explainable (no opaque random XP swings)
+- Don’t soft-lock the map behind unfinished missions
+- When adding missions, define clear completion predicates tied to real player actions (capture, count, streak)
+- Profile surfaces can summarize level/XP using shared progression helpers — don’t reimplement curves in UI

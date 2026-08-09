@@ -1,0 +1,60 @@
+---
+description: CatDex design system — tokens via useTheme, shared components, Figma mapping.
+globs: app/**/*.{ts,tsx},src/**/*.{ts,tsx}
+alwaysApply: true
+---
+
+# CatDex — Design System
+
+**Canonical detail also lives in** `design-system.mdc` (keep both aligned).
+
+## Source of truth
+
+```ts
+import { useTheme } from '@/theme';
+import { Text, Button, Card } from '@/components';
+
+const { colors, spacing, radius, typography, shadow, gradients, motion, iconSize } = useTheme();
+```
+
+Never invent hex, font sizes, spacing, or radii. Never copy styles from `ChatDex Mobile App UI/`.
+
+## Brand snapshot
+
+| Role | Token | Value |
+|------|-------|-------|
+| Brand / primary | `brand` | `#6A69F8` |
+| Pressed | `brandPressed` | `#5554E0` |
+| Soft | `brandSoft` | `rgba(106,105,248,0.12)` |
+| Canvas | `background` | `#F9F9FB` |
+| Surfaces | `surface` | `#FFFFFF` |
+| Ink | `text` | `#15172B` |
+
+Coat / rarity accents: **`src/lib/catTheme.ts` only** (includes rarity `glow`).
+
+## Layout tokens
+
+- **Spacing (8pt):** `4 · 8 · 16 · 24 · 32 · 40 · 48 · 56 · 64 · 80 · 96` — screen pad `24`, card pad `16/24`, button height `56`
+- **Radius:** surfaces `8`; auth/primary CTAs `16` (`radius.cta`); circles `pill`/`full`
+- **Elevation:** borders + `shadow.low|medium|floating|glow` (glow = turquoise FAB only)
+- **Type:** use `<Text variant="…" color="…" />` — prefer `color="textBrand"` for titles
+- **Fonts:** iOS System; Android/web Syne (display) + Manrope (body)
+
+## Components
+
+Prefer shared: `Text`, `Button` (`primary|secondary|ghost|destructive|icon` / repo variants), `TextInput`/`SearchInput`, `Card`/`PhotoCard`, `Chip`, `Badge`, `BottomSheet`, `EmptyState`, `Spinner`/`Skeleton`, motion (`PressableScale`, …), CatDex icons (`src/components/icons/catdex`).
+
+## Figma
+
+File [Cat-DEX-UI](https://www.figma.com/design/qIYWbKuvILi9hjSmT60rmn/Cat-DEX-UI) · APP `239:19`.
+
+**Mandatory:** follow `figma-mcp.mdc` — `get_design_context` + `get_screenshot` → map to tokens/components; never ship MCP Tailwind/hex as-is.
+
+```tsx
+// ❌ BAD
+<View style={{ backgroundColor: '#1a1a2e', padding: 13 }} />
+
+// ✅ GOOD
+const { colors, spacing, radius, shadow } = useTheme();
+<View style={[{ backgroundColor: colors.surface, padding: spacing.md ?? spacing[16], borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border }, shadow.low]} />
+```

@@ -1,0 +1,31 @@
+---
+description: Map system — CatMap, pins, explorer HUD, permissions, mystery cats.
+globs: app/(tabs)/map.tsx,src/components/maps/**/*.{ts,tsx},src/lib/mapExplore.ts,src/store/mapExplore.ts
+alwaysApply: false
+---
+
+# CatDex — Map System
+
+## Key files
+
+- Screen: `app/(tabs)/map.tsx`
+- Components: `src/components/maps/` — `CatMap` (+ `.native` / `.web`), `MapExplorerHud`, `MapCatModal`, pins, radius, player marker, map styles
+- State/logic: `useMapExploreStore`, `src/lib/mapExplore.ts`, `worldCats.ts`
+
+## Behaviors
+
+- Custom HUD replaces tab bar for primary actions (Missions · Capture · CatDex)
+- Capture FAB → `useCaptureGate` → `/scanner`
+- Location CTA via in-map modal / banner — not a pre-map permission gauntlet
+- Uncaptured cats: mystery presentation in `MapCatModal`
+
+## Platform
+
+- Native: `react-native-maps`
+- Web: MapLibre path — verify both when changing camera/style/pins
+
+## Rules
+
+- Keep map palette helpers (`mapPalette`, pale isometric style) consistent with light CatDex look
+- Don’t block map render on optional spawns
+- Pin interactions should be thumb-friendly; modal owns detail CTAs

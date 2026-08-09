@@ -1,0 +1,31 @@
+---
+description: Performance rules for CatDex maps, lists, images, and web.
+globs: app/**/*.{ts,tsx},src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — Performance
+
+## Hot paths
+
+1. **Map** — pin count, region updates, modal mounts
+2. **CatDex album** — image grids
+3. **Reward / onboarding motion** — particles & flips on web
+4. **Analyze upload** — image size / base64 payload
+
+## Rules
+
+- Avoid unnecessary React re-renders on map region changes; keep markers memoized where patterns exist
+- Compress / downscale photos before analyze when helpers exist; don’t upload multi‑MB camera originals if pipeline already resizes
+- Confetti/particles: keep counts modest; disable or simplify under `useReducedMotion`
+- Prefer `React.memo` only where profiling shows wins — don’t blanket-memo everything
+- Lists: stable keys (`cat.id`), avoid inline heavy closures in row components when scrolling janks
+
+## Web
+
+- Watch bundle size for map + reanimated
+- Ensure hero images on welcome don’t block interaction (gradients/overlays `pointerEvents`)
+
+## Measurement
+
+- Fix jank where felt (map pan, reward FPS) before micro-optimizing auth forms

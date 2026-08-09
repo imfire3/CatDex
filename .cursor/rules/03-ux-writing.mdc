@@ -1,0 +1,41 @@
+---
+description: French UX writing for CatDex — tone, CTAs, errors, onboarding voice.
+globs: app/**/*.{ts,tsx},src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — UX Writing (FR)
+
+## Voice
+
+- Friendly explorer, slightly playful, never childish spam
+- Short sentences. One idea per line on emotional screens
+- Tutoiement (« tu »)
+- Prefer scene-setting over marketing slogans (« Rejoins CatDex » → concrete action)
+
+## Patterns
+
+| Moment | Tone |
+|--------|------|
+| Welcome | Brand + one promise (« Découvre les chats cachés autour de toi. ») |
+| Onboarding | Narrative beats (« Tu sors te promener… », « Tu prends une photo. ») |
+| Analysis | Living first person / present (« Je regarde son pelage… ») |
+| Reward | Celebration, short labels, clear CTA (« Ajouter à mon CatDex ») |
+| Errors | Human, actionable, no blame — use `src/lib/errorCatalog.ts` |
+| Permissions | Why now + benefit (« pour poser ton pin », « pour photographier ») |
+
+## CTA rules
+
+- Primary verb = player verb: Continuer, Photographier, Ajouter, Découvrir
+- Avoid vague « OK » / « Valider » on key game moments
+- Destructive actions: explicit noun (« Supprimer le chat »)
+
+## Do not
+
+- Emoji clusters as UI chrome (icons from `CatDexIcon` / SVG instead)
+- All-caps walls of legal text in the hero
+- English UI strings in user-facing surfaces (except brand « CatDex », « XP »)
+
+## Errors
+
+Centralize user-facing strings in `errorCatalog` / auth helpers. Scanner must show the **real** failure when analyze fails — not a generic « Impossible d’identifier » when the API is down.

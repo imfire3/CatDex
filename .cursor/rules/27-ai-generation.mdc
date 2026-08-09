@@ -1,0 +1,31 @@
+---
+description: Generative AI content rules — names, personality, descriptions.
+globs: server/**/*.{ts,tsx},src/types/cat.ts,src/components/CaptureReveal.tsx,app/reward.tsx
+alwaysApply: false
+---
+
+# CatDex — AI Generation
+
+## What AI may generate
+
+- Physical attributes (breed/coat/color estimates)
+- Short description
+- Suggested poetic name
+- Small tag set / personality (keep ≤ policy max, historically ~3 tags)
+- Optional rarity hint strings
+
+## What AI must not dictate alone
+
+- Final name/fields — user can adjust after wow (`CaptureReveal` / adjust phase)
+- Safety: `notACat` and photo problem codes must short-circuit collection add
+
+## Product tone for generated FR copy
+
+- Charming, local, specific — avoid generic encyclopedia dumps
+- No offensive content; server prompt policies apply
+
+## Engineering
+
+- Prompt + schema owned by server modules
+- Client displays + allows correction; corrections can flow to `analysis_feedback`
+- Confidence and warnings should be visible when relevant, not hidden

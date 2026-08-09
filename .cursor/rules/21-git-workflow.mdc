@@ -1,0 +1,38 @@
+---
+description: Git branching, commits, and PR flow for CatDex.
+alwaysApply: false
+---
+
+# CatDex — Git Workflow
+
+Canonical doc: `docs/GIT_WORKFLOW.md`.
+
+## Branches
+
+| Branch | Role |
+|--------|------|
+| `main` | Production |
+| `develop` | Integration |
+| `feature/*`, `fix/*`, `hotfix/*`, `chore/*`, `docs/*` | Temporary |
+
+PRs land in **`develop`** first; release to `main` separately. Hotfixes may target `main` with care.
+
+## Commits
+
+Conventional commits:
+
+```
+feat: … | fix: … | refactor: … | docs: … | test: … | chore: … | perf: … | ci: …
+```
+
+## Agent / Cloud notes
+
+- Cloud agents may use `cursor/<name>-****` branches — still open a proper PR and avoid long-lived divergence
+- Prefer updating PR description when scope changes
+- Never force-push shared `main` / `develop`
+
+## PR body
+
+- Summary of product impact
+- Test plan with checkboxes
+- Note Vision/schema/env changes explicitly

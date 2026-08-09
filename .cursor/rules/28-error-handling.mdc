@@ -1,0 +1,31 @@
+---
+description: Error handling — errorCatalog, recovery UX, analyze failures.
+globs: src/lib/errorCatalog.ts,src/components/**/*.{ts,tsx},app/scanner.tsx
+alwaysApply: false
+---
+
+# CatDex — Error Handling
+
+## Catalog
+
+`src/lib/errorCatalog.ts` — typed kinds, FR titles/messages, photo problem codes.
+
+Use catalog copy in scanner / problem states instead of inventing one-off strings.
+
+## Principles
+
+- Fail visibly with a next action (retry, retake, open settings, check network)
+- Distinguish **not a cat / bad photo** from **server/network/auth** failures
+- Preserve the photo for retry when the catalog flags that behavior
+- Log detail server-side; UI stays human
+
+## UI building blocks
+
+- `ErrorState` / `ProblemState` / permission modal patterns
+- Toasts for non-blocking success/failure (`useToastStore`)
+
+## Anti-patterns
+
+- Empty catch blocks
+- Generic « Impossible d’identifier » when the real issue is 503 / missing API key / offline
+- Swallowing analyze fallback candidates on non-network errors (see `api.ts` candidate loop)

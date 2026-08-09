@@ -1,0 +1,32 @@
+---
+description: CatDex domain model — Cat, analysis fields, rarity, numbering.
+globs: src/types/cat.ts,src/lib/catTheme.ts,src/lib/constants.ts,src/store/cats.ts
+alwaysApply: false
+---
+
+# CatDex — Domain
+
+## Entities
+
+- **`Cat`** (`src/types/cat.ts`): id, number, name, photoUri, lat/lng, discoveredAt, views, analysis, optional `remoteId`, `sourceWorldId`
+- **`CatAnalysis`**: breed, color, coat, description, suggestedName, gender, tags, confidence, rarity string, notACat, warnings, …
+
+## Numbering & goals
+
+- Dex number per user collection
+- Goal constant `CATDEX_TARGET` / progression goal (~500) in constants/progression
+
+## Rarity
+
+- UI token ids: `common | uncommon | rare | exceptional` via `src/lib/catTheme.ts` (`rarityTokens`, including `glow`)
+- Vision may return richer FR rarity labels — map through `resolveRevealRarity` / helpers; don’t fork palettes in chrome
+
+## Coat themes
+
+- Pastel coat themes in `catTheme.ts` are **card accents**, not app chrome
+
+## Rules
+
+- Preserve `sourceWorldId` so explorer pins disappear after capture
+- Name fallbacks: `formatCatDefaultName` / suggestedName
+- User corrections use `AnalysisFieldCorrection` field unions — keep training signal labeled

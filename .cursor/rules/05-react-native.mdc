@@ -1,0 +1,36 @@
+---
+description: React Native conventions for the CatDex Expo app.
+globs: app/**/*.{ts,tsx},src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — React Native
+
+## Defaults
+
+- Functional components + hooks only
+- Style with theme tokens; avoid large inline magic numbers
+- Prefer `StyleSheet.create` for static styles; dynamic values from `useTheme()`
+- Platform splits: `.native.tsx` / `.web.tsx` when behavior truly differs (see `CatMap`)
+
+## Structure
+
+- Screens in `app/` stay thin — compose feature components from `src/components/`
+- Shared UI under `src/components/`; feature folders (`maps/`, `Auth/`, `reward/`, …)
+- Hooks in `src/hooks/`; pure logic in `src/lib/`
+
+## Lists & images
+
+- Use FlashList/FlatList patterns already in album screens; stable `key`s
+- Cat photos: `CatImage` / storage helpers — handle `blob:`, failed loads, and persistent URIs (`photoUri` utils)
+
+## Gestures & press
+
+- Prefer `PressableScale` or theme `motion.pressScale` for primary controls
+- Capture FAB: map HUD (`MapExplorerHud`) — keep hit target ≥ 48
+
+## Do not
+
+- Import DOM-only APIs in shared files without Platform guards
+- Mutate props/state objects in place (prefer immutable updates)
+- Add navigation containers inside screens (expo-router owns navigation)

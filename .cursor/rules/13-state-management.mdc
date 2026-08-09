@@ -1,0 +1,34 @@
+---
+description: Zustand stores in CatDex — ownership, persistence, and update rules.
+globs: src/store/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — State Management
+
+## Stores (`src/store/`)
+
+| Store | Role |
+|-------|------|
+| `useAuthStore` | Session, onboarding flag, OAuth/email auth |
+| `useCatsStore` | Local collection + sync |
+| `useMissionsStore` | Missions + streak |
+| `usePendingCaptureStore` | Scan → reward handoff |
+| `useMapExploreStore` | Map explore UI state |
+| `useSettingsPrefsStore` | Haptics, sounds, prefs |
+| `useThemeLabStore` | Theme lab overrides |
+| `useToastStore` | Toasts |
+
+## Rules
+
+- One concern per store; don’t dump UI-only ephemeral state into auth/cats
+- Persist only what must survive restarts (auth, cats, missions, prefs)
+- Updates: immutable patterns (spread / return new objects)
+- After successful `addCat`, clear pending capture
+- Read with selectors: `useCatsStore((s) => s.cats)` to limit rerenders
+
+## Anti-patterns
+
+- Duplicating server truth without a sync story
+- Storing large base64 forever in pending without cleanup
+- Calling network inside every component instead of store/lib actions

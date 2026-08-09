@@ -1,0 +1,41 @@
+---
+description: CatDex architecture — layers, boundaries, offline-first sync mental model.
+alwaysApply: false
+---
+
+# CatDex — Architecture
+
+## Layers
+
+```
+UI (app/ + components)
+  → hooks / stores (zustand)
+    → lib (api, supabase, progression, errors)
+      → remote (Supabase + Analyze API)
+```
+
+- **UI** never talks to OpenAI directly
+- **Stores** own persistence + optimistic local collection
+- **Server** owns Vision keys, JWT verification, rate limits
+
+## Capture pipeline
+
+```
+scanner → pendingCapture store → (discovery) → reward → cats store → supabase sync
+```
+
+`usePendingCaptureStore` is the handoff object (photo + analysis + coords). Clear it after successful add.
+
+## Sync mental model
+
+- Local-first CatDex album (`useCatsStore` + persist)
+- Remote ids on `Cat.remoteId` when synced
+- Storage bucket `cats` for photos (`supabaseStorage`)
+
+## Feature folders
+
+Colocate by feature under `src/components/{maps,missions,scanner,reward,Auth}` rather than dumping everything in a flat components root.
+
+## Docs
+
+See `docs/ARCHITECTURE.md` for deeper diagrams when changing sync or API contracts.

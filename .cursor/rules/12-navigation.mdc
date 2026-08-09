@@ -1,0 +1,35 @@
+---
+description: expo-router navigation, auth gates, and tab structure for CatDex.
+globs: app/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — Navigation
+
+## Router
+
+- File-based routes under `app/` (expo-router)
+- Root stack: `(auth)`, `(tabs)`, modals (`scanner`, `discovery`, `reward`), `cat/[id]`, `settings/*`, `auth/callback`
+
+## Auth gates
+
+- `app/index.tsx`: no user → `/(auth)/welcome`; else `getPostAuthHref(onboardingCompleted)`
+- Incomplete onboarding → `/(auth)/intro` (then photo → permissions → onboarding-reward)
+- Completed → `/(tabs)/map`
+
+## Tabs
+
+- `app/(tabs)/_layout.tsx` uses **custom chrome** (`tabBar={() => null}`)
+- Tab screens: `map`, `catdex`, `missions`, `profile`
+- Map HUD owns Capture / Missions / CatDex entry points (`MapExplorerHud`)
+
+## Capture entry
+
+- Prefer `useCaptureGate` for camera permission before `/scanner`
+- Pass `worldId` when capturing a map spawn/mystery pin
+
+## Rules
+
+- Use `router.push` / `replace` / `Redirect` — don’t nest NavigationContainers
+- Legacy permission routes redirect; don’t rebuild full-screen permission tutorials
+- Deep links: scheme `catdex`; OAuth returns via `app/auth/callback`

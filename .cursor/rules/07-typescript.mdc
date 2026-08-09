@@ -1,0 +1,32 @@
+---
+description: TypeScript conventions for CatDex app and Vision server.
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — TypeScript
+
+## Basics
+
+- Strict typing; avoid `any`. Prefer `unknown` + narrow
+- Domain types live in `src/types/` (`cat.ts`, …)
+- Shared unions for gender, rarity UI ids, error kinds — don’t stringly-type across layers
+
+## Imports
+
+- Use `@/` alias for app code
+- Prefer type-only imports when appropriate: `import type { Cat } from '@/types/cat'`
+
+## Nullability
+
+- Optional AI fields stay optional (`suggestedName?`, `tags?`)
+- UI must handle missing analysis pieces with safe fallbacks (`formatCatDefaultName`, etc.)
+
+## Server
+
+- `server/src` uses Zod / schema modules for Vision payloads — keep client `CatAnalysis` and server normalize\* in sync when fields change
+
+## Scripts
+
+- App: `npm run typecheck`
+- Don’t weaken `tsconfig` to silence errors — fix call sites

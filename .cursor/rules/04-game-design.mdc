@@ -1,0 +1,47 @@
+---
+description: CatDex game design — capture ritual, reward pacing, onboarding beats, feedback.
+globs: app/**/*.{ts,tsx},src/components/{reward,motion,scanner,Auth/Onboarding}/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — Game Design
+
+## Capture ritual (must feel good)
+
+Order of experience:
+
+1. **Scan / shutter** — clear camera affordance
+2. **Living analysis** — narrative timeline + light haptics (`AnalysisLoadingView`)
+3. **Reward wow (2–3s)** — flip, rarity glow, confetti/paw particles, staged beats, XP ticker
+4. **CTA** — « Ajouter à mon CatDex »
+5. **Optional adjust** — edit AI fields after celebration, never before
+
+Pivots: `app/reward.tsx`, `src/components/reward/`, patterns from `RewardScene` onboarding.
+
+## Onboarding = 4 story beats
+
+| Step | Label | Beat |
+|------|-------|------|
+| 0 | Promenade | « Tu sors te promener… » |
+| 1 | Photo | « Tu prends une photo. » |
+| 2 | Analyse | « L’IA découvre qui il est. » |
+| 3 | Collection | « Bienvenue dans ton CatDex. » |
+
+Constants: `ONBOARDING_STEP_COUNT` / labels in `OnboardingStepper.tsx`.
+
+## Feedback gates
+
+- Haptics / sounds via `src/lib/gameFeedback.ts`
+- Respect `settingsPrefs.haptics` and `settingsPrefs.sounds`
+- Respect `useReducedMotion()` — shorten or skip ornamental motion
+
+## Map mystery
+
+Uncaptured community cats: mystery language (« Quelque chose t’observe… », « Un chat apparaît ») — reveal identity only after capture.
+
+## Anti-patterns
+
+- Form-first verify screens before celebration
+- Dead checklists for AI steps
+- Blocking capture behind long permission tutorials
+- Reward that is only a toast / `+30 XP` text with no motion

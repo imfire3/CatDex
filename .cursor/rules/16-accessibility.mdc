@@ -1,0 +1,29 @@
+---
+description: Accessibility expectations for CatDex UI.
+globs: app/**/*.{ts,tsx},src/components/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# CatDex — Accessibility
+
+## Musts
+
+- Icon-only controls: `accessibilityRole="button"` + French `accessibilityLabel`
+- Progress (onboarding dots, signup steps, analysis): expose `accessibilityRole="progressbar"` + values when present
+- Modals: `accessibilityViewIsModal` (see `MapCatModal`)
+- Don’t rely on color alone for rarity / password strength — include text labels
+- Respect reduced motion (`useReducedMotion`)
+
+## Contrast
+
+- Prefer theme text tokens on surfaces (`text`, `textBody`, `textSecondary` on white / canvas)
+- Brand text on soft indigo is OK; white text only on `brand` / danger fills (`onBrand`)
+
+## Touch
+
+- Min ~40–48 pt targets for map tools and FABs (spacing tokens `40` / `48`)
+- Avoid nesting conflicting pressables
+
+## Copy
+
+- Error and empty states must be readable by VoiceOver/TalkBack (text nodes, not only icons)

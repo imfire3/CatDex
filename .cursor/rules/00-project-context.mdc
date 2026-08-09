@@ -1,0 +1,55 @@
+---
+description: CatDex project identity, stack, folders, and non-goals for every agent session.
+alwaysApply: true
+---
+
+# CatDex — Project Context
+
+## Product
+
+**CatDex** — « Ton quartier. Tes chats. »
+
+Street-cat collector: photograph a cat → AI analysis → add to personal CatDex album + map pin. Core fantasy = Pokémon-like discovery in a real neighborhood (MVP focus: Paris).
+
+## Stack
+
+| Layer | Choice |
+|-------|--------|
+| App | Expo **54**, React Native `0.81`, React `19`, TypeScript, **expo-router ~6** |
+| UI | `src/theme/` + `@/components` (not Tailwind in RN) |
+| State | Zustand + AsyncStorage persist (`src/store/`) |
+| Backend data | Supabase (auth, Postgres/PostGIS, Storage) |
+| Analyze API | Hono server in `server/` (OpenAI Vision) |
+| Map | `react-native-maps` + MapLibre (web) |
+
+## Source layout
+
+```
+app/                 # expo-router screens
+src/components/      # UI + feature folders (Auth, maps, missions, reward, scanner, motion…)
+src/theme/           # design tokens + ThemeProvider
+src/store/           # zustand
+src/lib/             # api, supabase, progression, errors, sync…
+src/types/           # Cat, CatAnalysis…
+server/              # Vision API (port 8787)
+supabase/            # schema.sql + migrations
+docs/                # product / deploy / vision docs
+```
+
+Path alias: `@/*` → `./src/*`.
+
+## Language
+
+- **UI copy: French**
+- Code identifiers: English preferred; comments may be FR/EN
+
+## Non-goals / do not
+
+- Do **not** treat `ChatDex Mobile App UI/` as RN source of truth (Figma/web export only)
+- Do **not** invent hex/spacing/type outside `src/theme/` (coat/rarity → `src/lib/catTheme.ts` only)
+- Do **not** hardcode secrets; use env vars (`EXPO_PUBLIC_*` client, server `.env`)
+- Do **not** skip Expo v54 docs: https://docs.expo.dev/versions/v54.0.0/
+
+## Companion rules
+
+Start with `01-product-design`, `02-design-system`, `04-game-design`, then stack/domain files as needed.

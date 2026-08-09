@@ -1,0 +1,41 @@
+---
+description: Expo 54 rules for CatDex — docs pin, router, native modules.
+globs: app/**/*.{ts,tsx},src/**/*.{ts,tsx},app.json,package.json
+alwaysApply: false
+---
+
+# CatDex — Expo 54
+
+## Docs pin
+
+Expo **has changed**. Before using APIs, read:
+
+https://docs.expo.dev/versions/v54.0.0/
+
+Do not assume Expo 49/50 habits (Router, AV, FileSystem, Camera).
+
+## App entry
+
+- `expo-router` file-based routes under `app/`
+- Root layout: fonts, providers, auth bootstrap — `app/_layout.tsx`
+- Scheme / slug: `catdex` (`app.json`)
+
+## Common modules in use
+
+| Concern | Package / area |
+|---------|----------------|
+| Camera | `expo-camera` + scanner screen |
+| Haptics | `expo-haptics` via `gameFeedback` |
+| Audio hooks | `expo-av` (prefs-gated; assets optional) |
+| Files / photos | `expo-file-system`, photo URI helpers |
+| Secure storage-ish | AsyncStorage for session/persist |
+| Blur / gradients | `expo-blur`, `expo-linear-gradient` |
+
+## Env
+
+Client public env must be `EXPO_PUBLIC_*` (Supabase URL/anon, API URL, auth provider flags). Rebuild/reload after env changes.
+
+## Web
+
+- Map uses MapLibre path; test layout on web when touching map/HUD
+- Some native modules no-op on web (haptics) — keep UX intact without them
