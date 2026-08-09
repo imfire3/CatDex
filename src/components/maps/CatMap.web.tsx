@@ -4,6 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { loadPaleIsometricStyle } from '@/components/maps/applyPaleIsometricStyle';
 import {
   INITIAL_MAP_CAMERA,
+  MAP_CAMERA_DURATION,
+  MAP_FOLLOW_THRESHOLD_M,
   MAP_PITCH,
   MAP_ZOOM,
 } from '@/components/maps/mapCamera';
@@ -13,6 +15,7 @@ import {
   pinScaleForZoom,
 } from '@/components/maps/CatPinVisual';
 import { mapPalette } from '@/components/maps/mapPalette';
+import { distanceMeters } from '@/lib/constants';
 import { themeFromColorLabel } from '@/lib/catTheme';
 import { isCatPhotoRef, resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -379,6 +382,9 @@ export function CatMap({
   const playerMarkerRef = useRef<MapLibreMarker | null>(null);
   const onSelectRef = useRef(onSelectCat);
   const [mapReady, setMapReady] = useState(false);
+  const followingRef = useRef(true);
+  const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const didCenterOnUserRef = useRef(false);
   onSelectRef.current = onSelectCat;
 
   useEffect(() => {
@@ -420,6 +426,11 @@ export function CatMap({
           if (!cancelled) setMapReady(true);
         });
 
+        // User pans → stop auto-centering until recenter / focus.
+        map.on('dragstart', () => {
+          followingRef.current = false;
+        });
+
         mapRef.current = map;
 
         if (typeof ResizeObserver !== 'undefined' && hostRef.current) {
@@ -452,35 +463,49 @@ export function CatMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map || !focusCoordinate) return;
+    followingRef.current = true;
+    lastFollowRef.current = focusCoordinate;
+    didCenterOnUserRef.current = true;
     map.easeTo({
       center: [focusCoordinate.longitude, focusCoordinate.latitude],
       zoom: Math.max(map.getZoom(), MAP_ZOOM),
       pitch: MAP_PITCH,
-      duration: 450,
+      duration: MAP_CAMERA_DURATION,
     });
   }, [focusCoordinate, focusNonce, mapReady]);
 
-  // First GPS lock only — continuous follow would fight user panning.
-  // Explicit recenter goes through focusCoordinate.
-  const didCenterOnUserRef = useRef(false);
+  // Soft follow — keep GPS point centered while following (Pokémon-style).
   useEffect(() => {
     const map = mapRef.current;
-    if (!mapReady || !map || !userCoordinate) return;
-    if (didCenterOnUserRef.current) return;
-    didCenterOnUserRef.current = true;
+    if (!mapReady || !map || !userCoordinate || !followingRef.current) return;
+
+    const prev = lastFollowRef.current;
+    if (!prev || !didCenterOnUserRef.current) {
+      lastFollowRef.current = userCoordinate;
+      didCenterOnUserRef.current = true;
+      map.easeTo({
+        center: [userCoordinate.longitude, userCoordinate.latitude],
+        zoom: Math.max(map.getZoom(), MAP_ZOOM),
+        pitch: MAP_PITCH,
+        duration: MAP_CAMERA_DURATION,
+      });
+      return;
+    }
+
+    const moved = distanceMeters(
+      prev.latitude,
+      prev.longitude,
+      userCoordinate.latitude,
+      userCoordinate.longitude,
+    );
+    if (moved < MAP_FOLLOW_THRESHOLD_M) return;
+
+    lastFollowRef.current = userCoordinate;
     map.easeTo({
       center: [userCoordinate.longitude, userCoordinate.latitude],
-      zoom: Math.max(map.getZoom(), MAP_ZOOM),
-      pitch: MAP_PITCH,
-      duration: 450,
+      duration: MAP_CAMERA_DURATION,
     });
   }, [userCoordinate, mapReady]);
-
-  useEffect(() => {
-    if (focusCoordinate) {
-      didCenterOnUserRef.current = true;
-    }
-  }, [focusCoordinate, focusNonce]);
 
   useEffect(() => {
     const map = mapRef.current;

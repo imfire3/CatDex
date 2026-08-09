@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import Animated, {
@@ -50,14 +50,15 @@ function PulseRing({
 }
 
 /**
- * Player pin + wide radar pulse (explorer mock).
- * Large halo from PR; dual expanding rings and mapPlayer tokens from main.
+ * Player pin + radar pulse.
+ * flat + centered anchor so the GPS point stays on the lat/lng (no 3D billboard drift).
+ * tracksViewChanges freezes after paint so the marker does not jitter off-center.
  */
 export function PlayerLocationMarker({ coordinate }: Props) {
   const { colors, spacing } = useTheme();
   const pulseA = useSharedValue(0);
   const pulseB = useSharedValue(0);
-  const corePulse = useSharedValue(1);
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
   useEffect(() => {
     pulseA.value = withRepeat(
@@ -73,47 +74,59 @@ export function PlayerLocationMarker({ coordinate }: Props) {
         false,
       ),
     );
-    corePulse.value = withRepeat(
-      withTiming(1.12, {
-        duration: 1400,
-        easing: Easing.inOut(Easing.sin),
-      }),
-      -1,
-      true,
-    );
-  }, [corePulse, pulseA, pulseB]);
+  }, [pulseA, pulseB]);
 
-  const coreStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: corePulse.value }],
-  }));
+  useEffect(() => {
+    setTracksViewChanges(true);
+    const freeze = setTimeout(() => setTracksViewChanges(false), 1800);
+    return () => clearTimeout(freeze);
+  }, []);
 
-  const radarSize = spacing[96];
+  const radarSize = spacing[48];
   const coreSize = spacing[16];
-  const ringSize = spacing[24] + spacing[4];
+  const ringSize = spacing[24];
 
   return (
     <Marker
       coordinate={coordinate}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges
-      flat={false}
+      centerOffset={{ x: 0, y: 0 }}
+      tracksViewChanges={tracksViewChanges}
+      flat
       zIndex={999}
     >
-      <View style={[styles.wrap, { width: radarSize, height: radarSize }]}>
+      <View style={[styles.wrap, { width: radarSize, height: radarSize }]} collapsable={false}>
         <View
           style={[
             styles.softGlow,
             {
-              width: radarSize - spacing[16],
-              height: radarSize - spacing[16],
-              borderRadius: (radarSize - spacing[16]) / 2,
+              width: radarSize - spacing[8],
+              height: radarSize - spacing[8],
+              borderRadius: (radarSize - spacing[8]) / 2,
               backgroundColor: colors.mapPlayerSoft,
             },
           ]}
         />
-        <PulseRing progress={pulseA} size={radarSize} color={colors.mapPlayer} />
-        <PulseRing progress={pulseB} size={radarSize} color={colors.mapPlayer} />
-        <Animated.View
+        {tracksViewChanges ? (
+          <>
+            <PulseRing progress={pulseA} size={radarSize} color={colors.mapPlayer} />
+            <PulseRing progress={pulseB} size={radarSize} color={colors.mapPlayer} />
+          </>
+        ) : (
+          <View
+            style={[
+              styles.pulseRing,
+              {
+                width: radarSize * 0.7,
+                height: radarSize * 0.7,
+                borderRadius: (radarSize * 0.7) / 2,
+                borderColor: colors.mapPlayer,
+                opacity: 0.28,
+              },
+            ]}
+          />
+        )}
+        <View
           style={[
             styles.ring,
             {
@@ -122,9 +135,6 @@ export function PlayerLocationMarker({ coordinate }: Props) {
               borderRadius: ringSize / 2,
               backgroundColor: colors.mapPlayerRing,
               borderColor: colors.mapPlayerRing,
-            },
-            coreStyle,
-            {
               shadowColor: colors.mapPlayer,
               shadowOffset: { width: 0, height: 0 },
               shadowOpacity: 0.35,
@@ -141,7 +151,7 @@ export function PlayerLocationMarker({ coordinate }: Props) {
               backgroundColor: colors.mapPlayer,
             }}
           />
-        </Animated.View>
+        </View>
       </View>
     </Marker>
   );
