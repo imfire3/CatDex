@@ -2,21 +2,24 @@ import { Redirect, router } from 'expo-router';
 import { View } from 'react-native';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import { OnboardingStepper } from '@/components/Auth/OnboardingStepper';
 import {
-  OnboardingPulseCta,
-  OnboardingRadarHero,
-  OnboardingRewardRow,
-  OnboardingScanPreview,
-  OnboardingSightingPreview,
-} from '@/components/Auth/OnboardingVisuals';
+  FloatingPreviewCard,
+  OnboardingHero,
+  PrimaryCTA,
+  ProgressDots,
+  RewardChips,
+} from '@/components/Auth/Onboarding';
+import {
+  ONBOARDING_STEP_COUNT,
+  ONBOARDING_STEP_LABELS,
+} from '@/components/Auth/OnboardingStepper';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 /**
- * Pre-permission story — rewards scroll with content (not sticky).
+ * Pre-permission story — rewards + compact preview cascade.
  * Continues to dedicated camera then GPS authorization screens.
  */
 export default function PermissionsScreen() {
@@ -45,46 +48,42 @@ export default function PermissionsScreen() {
       scroll
       sheetStyle={{ backgroundColor: colors.background }}
       footer={
-        <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
-          <OnboardingStepper step={1} labels={['Découverte', 'Prêt !']} />
-          <OnboardingPulseCta>
-            <Button
-              title="Continuer"
-              onPress={() => router.push('/(auth)/permission-camera')}
-            />
-          </OnboardingPulseCta>
-          <Button variant="tertiary" title="Plus tard" onPress={skip} />
+        <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
+          <ProgressDots
+            step={1}
+            total={ONBOARDING_STEP_COUNT}
+            labels={[...ONBOARDING_STEP_LABELS]}
+          />
+          <PrimaryCTA
+            title="Capturer mon premier chat"
+            onPress={() => router.push('/(auth)/permission-camera')}
+            secondary={
+              <Button variant="tertiary" title="Plus tard" onPress={skip} />
+            }
+          />
         </View>
       }
     >
-      <OnboardingRadarHero />
+      <View style={{ gap: spacing[40], alignSelf: 'stretch', paddingBottom: spacing[16] }}>
+        <OnboardingHero
+          title="Plus qu’un pas"
+          description="Autorise caméra et position.\nTon premier chat est tout près."
+        />
 
-      <View style={{ gap: spacing[8], alignItems: 'center' }}>
-        <Text
-          variant="h1"
-          color="textBrand"
-          align="center"
-          style={{ fontFamily: fonts.display }}
-        >
-          Plus qu’un pas avant ton premier chat
-        </Text>
-        <Text variant="body" color="textBody" align="center">
-          Ensuite, autorise la caméra et ta position pour découvrir les chats autour de toi.
-        </Text>
+        <View style={{ gap: spacing[16], alignItems: 'center', alignSelf: 'stretch' }}>
+          <FloatingPreviewCard variant="sighting" delay={80} />
+          <Text variant="caption" color="textBrand" align="center" style={{ fontFamily: fonts.bodySemi }}>
+            ↓
+          </Text>
+          <FloatingPreviewCard variant="analysis" delay={180} />
+          <Text variant="caption" color="textBrand" align="center" style={{ fontFamily: fonts.bodySemi }}>
+            ↓
+          </Text>
+          <FloatingPreviewCard variant="dex" delay={280} float={false} />
+        </View>
+
+        <RewardChips />
       </View>
-
-      <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
-        <OnboardingSightingPreview />
-        <OnboardingScanPreview />
-      </View>
-
-      <OnboardingRewardRow
-        items={[
-          { value: '+30 XP', label: 'Première découverte' },
-          { value: 'Badge', label: 'Photographe' },
-          { value: 'CatDex', label: 'Débloqué' },
-        ]}
-      />
     </AuthShell>
   );
 }

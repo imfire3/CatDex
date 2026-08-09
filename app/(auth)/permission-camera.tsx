@@ -5,7 +5,11 @@ import { Alert, Platform, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import { OnboardingPulseCta } from '@/components/Auth/OnboardingVisuals';
+import { PrimaryCTA, ProgressDots } from '@/components/Auth/Onboarding';
+import {
+  ONBOARDING_STEP_COUNT,
+  ONBOARDING_STEP_LABELS,
+} from '@/components/Auth/OnboardingStepper';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { useAuthStore } from '@/store/auth';
@@ -51,7 +55,6 @@ export default function PermissionCameraScreen() {
   const { colors, fonts, spacing, radius } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
-  const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
   const [busy, setBusy] = useState(false);
 
   if (!user) {
@@ -60,11 +63,6 @@ export default function PermissionCameraScreen() {
   if (onboardingCompleted) {
     return <Redirect href="/(tabs)/map" />;
   }
-
-  const skipAll = () => {
-    completeOnboarding();
-    router.replace('/(tabs)/map');
-  };
 
   const askCamera = async () => {
     setBusy(true);
@@ -93,24 +91,26 @@ export default function PermissionCameraScreen() {
       scroll
       sheetStyle={{ backgroundColor: colors.background }}
       footer={
-        <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
-          <Text variant="caption" color="textMuted" align="center">
-            Étape 1 / 2 — Caméra
-          </Text>
-          <OnboardingPulseCta>
-            <Button
-              title="Autoriser la caméra"
-              loading={busy}
-              onPress={() => void askCamera()}
-            />
-          </OnboardingPulseCta>
-          <Button
-            variant="tertiary"
-            title="Plus tard"
-            disabled={busy}
-            onPress={() => router.push('/(auth)/permission-location')}
+        <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
+          <ProgressDots
+            step={2}
+            total={ONBOARDING_STEP_COUNT}
+            labels={[...ONBOARDING_STEP_LABELS]}
           />
-          <Button variant="tertiary" title="Passer" disabled={busy} onPress={skipAll} />
+          <PrimaryCTA
+            title="Autoriser la caméra"
+            loading={busy}
+            subtitle="Pour scanner ton premier chat"
+            onPress={() => void askCamera()}
+            secondary={
+              <Button
+                variant="tertiary"
+                title="Plus tard"
+                disabled={busy}
+                onPress={() => router.push('/(auth)/permission-location')}
+              />
+            }
+          />
         </View>
       }
     >

@@ -5,10 +5,12 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
+import { PrimaryCTA, ProgressDots } from '@/components/Auth/Onboarding';
 import {
-  OnboardingIconBadge,
-  OnboardingPulseCta,
-} from '@/components/Auth/OnboardingVisuals';
+  ONBOARDING_STEP_COUNT,
+  ONBOARDING_STEP_LABELS,
+} from '@/components/Auth/OnboardingStepper';
+import { OnboardingIconBadge } from '@/components/Auth/OnboardingVisuals';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { requestLocationAccess } from '@/lib/locationAccess';
@@ -152,18 +154,21 @@ export default function PermissionLocationScreen() {
         scroll
         sheetStyle={{ backgroundColor: colors.background }}
         footer={
-          <View style={{ gap: spacing[8], alignSelf: 'stretch' }}>
-            <Text variant="caption" color="textMuted" align="center">
-              Étape 2 / 2 — Position
-            </Text>
-            <OnboardingPulseCta>
-              <Button
-                title="Autoriser la position"
-                loading={busy}
-                onPress={() => void askLocation()}
-              />
-            </OnboardingPulseCta>
-            <Button variant="tertiary" title="Plus tard" disabled={busy} onPress={finish} />
+          <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
+            <ProgressDots
+              step={3}
+              total={ONBOARDING_STEP_COUNT}
+              labels={[...ONBOARDING_STEP_LABELS]}
+            />
+            <PrimaryCTA
+              title="Autoriser la position"
+              loading={busy}
+              subtitle="Pour voir les chats autour de toi"
+              onPress={() => void askLocation()}
+              secondary={
+                <Button variant="tertiary" title="Plus tard" disabled={busy} onPress={finish} />
+              }
+            />
           </View>
         }
       >
