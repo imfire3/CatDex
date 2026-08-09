@@ -30,10 +30,17 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files & secrets (never commit — public repo)
 .env
-.env*.local
+.env.*
+!.env.example
 server/.env
+server/.env.*
+!server/.env.example
+credentials.json
+service-account*.json
+.secrets/
+secrets/
 
 # design reference (Figma Make export — not part of Expo app)
 ChatDex Mobile App UI/

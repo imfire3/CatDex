@@ -2,6 +2,11 @@
 
 Bienvenue ! Ce guide te dirige vers la bonne documentation selon ce que tu veux faire.
 
+> **Repo public** — commence par [README.md](./README.md),
+> [docs/FEATURES.md](./docs/FEATURES.md), [SECURITY.md](./SECURITY.md)
+> et l’[agenda public/privé](./docs/PUBLIC_REPO_AGENDA.md).
+> Ne colle jamais de clés API dans Git.
+
 ---
 
 ## 🎯 Je veux...
