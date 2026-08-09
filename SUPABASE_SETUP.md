@@ -1,20 +1,24 @@
 # Configuration rapide Supabase — CatDex
 
-## Projet
-- **URL**: https://ocmxluabuaexzsrjuwrk.supabase.co
-- **Dashboard**: https://supabase.com/dashboard/project/ocmxluabuaexzsrjuwrk
+> **Repo public** : n’y mets jamais ton ID de projet réel, ni de clés.
+> Utilise `.env` local (gitignoré). Voir [SECURITY.md](./SECURITY.md).
 
-## 1. Clé anon
-1. Ouvre https://supabase.com/dashboard/project/ocmxluabuaexzsrjuwrk/settings/api
-2. Copie **anon public** (`eyJ…`)
-3. Colle dans `.env` :
+## Projet
+
+Crée un projet sur [Supabase](https://supabase.com/dashboard), puis note
+**Project URL** et **anon public** (Settings → API).
+
+## 1. Clé anon (app)
+
+Colle dans `.env` (jamais commit) :
 
 ```bash
-EXPO_PUBLIC_SUPABASE_URL=https://ocmxluabuaexzsrjuwrk.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...ton_anon_key
+EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
 ## 2. Schéma SQL (tables + RLS + storage)
+
 1. SQL Editor → New query  
 2. Colle **tout** le fichier `supabase/schema.sql`  
 3. **Run**
@@ -22,17 +26,16 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...ton_anon_key
 Cela crée : `profiles`, `cats`, `sightings`, `cat_analysis`, RLS, PostGIS nearby search, bucket Storage `cats`.
 
 ### Si tu vois `PGRST200` / `cat_analysis`
-L’app joint `cats` → `cat_analysis`. Si la FK manque (projet créé avec un vieux schéma), tu auras :
 
-`Could not find a relationship between 'cats' and 'cat_analysis'`
+L’app joint `cats` → `cat_analysis`. Si la FK manque (projet créé avec un vieux schéma) :
 
-Fix rapide :
 1. SQL Editor → New query  
 2. Colle **tout** `supabase/migrations/20260805_ensure_cat_analysis.sql`  
 3. **Run** (recharge aussi le cache PostgREST)  
 4. Recharge l’app (`r` dans Expo)
 
 ## 3. Auth e-mail
+
 Authentication → Providers → Email : activé  
 
 **Obligatoire (sinon « e-mail ou mot de passe incorrect ») :**  
@@ -49,6 +52,7 @@ Option SQL (backfill + auto-confirm) si besoin :
 `supabase/migrations/20260805_auto_confirm_email.sql` dans le SQL Editor.
 
 ### Google / Apple (sinon erreur `provider is not enabled`)
+
 Par défaut seuls **Email** est requis. Les boutons Google/Apple sont **masqués**
 tant que tu n’actives pas les flags dans `.env` :
 
@@ -57,29 +61,40 @@ EXPO_PUBLIC_AUTH_GOOGLE=true
 EXPO_PUBLIC_AUTH_APPLE=true
 ```
 
-Sans ces flags (et sans provider Supabase), un clic OAuth sur le web affichait
-`Unsupported provider: provider is not enabled` en JSON brut.
-
 Pour activer Google :
 1. Authentication → Providers → **Google** → Enable  
-2. Colle Client ID + Client Secret (Google Cloud Console)  
-3. Redirect URL Supabase : `https://ocmxluabuaexzsrjuwrk.supabase.co/auth/v1/callback`
+2. Colle Client ID + Client Secret (Google Cloud Console) — **secrets privés**  
+3. Redirect URL Supabase : `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
 4. Mets `EXPO_PUBLIC_AUTH_GOOGLE=true` et redémarre Expo
 
 Sans OAuth, connecte-toi uniquement avec **e-mail / mot de passe**.
 
 ## 4. Redirect URLs (OAuth / web)
+
 Authentication → URL Configuration → ajoute :
 - `https://<ton-tunnel>.trycloudflare.com/auth/callback`
 - `catdex://auth/callback`
 - `http://localhost:8082/auth/callback`
 
-## 5. Redémarrer Expo
+## 5. Secrets serveur (privés)
+
+Uniquement dans `server/.env` ou le dashboard Render — **jamais** `EXPO_PUBLIC_` :
+
+- `SUPABASE_URL`
+- `SUPABASE_JWT_SECRET`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `OPENAI_API_KEY`
+
+Voir `server/.env.example` et [SECURITY.md](./SECURITY.md).
+
+## 6. Redémarrer Expo
+
 ```bash
 npx expo start --web --clear
 ```
 
 ## Vérifier
+
 1. Créer un compte dans l’app  
 2. Dashboard → Authentication → Users → l’utilisateur apparaît  
 3. Scanner un chat → Table Editor → `cats` reçoit la fiche

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
+import Constants from 'expo-constants';
 
 import { Text } from '@/components/Text';
 import {
@@ -10,8 +11,24 @@ import {
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const DASHBOARD_PROVIDERS =
-  'https://supabase.com/dashboard/project/ocmxluabuaexzsrjuwrk/auth/providers';
+const FALLBACK_DASHBOARD = 'https://supabase.com/dashboard';
+
+/**
+ * Build Auth → Providers dashboard URL from the configured project URL.
+ * Never hardcode a production project ref in this public repo.
+ */
+function getAuthProvidersDashboardUrl(): string {
+  const raw =
+    Constants.expoConfig?.extra?.supabaseUrl ??
+    process.env.EXPO_PUBLIC_SUPABASE_URL ??
+    '';
+  const trimmed = String(raw).trim().replace(/\/$/, '');
+  const match = trimmed.match(/^https:\/\/([a-z0-9-]+)\.supabase\.co$/i);
+  if (match?.[1]) {
+    return `https://supabase.com/dashboard/project/${match[1]}/auth/providers`;
+  }
+  return FALLBACK_DASHBOARD;
+}
 
 /**
  * Warns when Supabase still requires email confirmation — the usual cause of
@@ -60,7 +77,7 @@ export function AuthEmailConfigBanner() {
       </Text>
       <Pressable
         accessibilityRole="link"
-        onPress={() => void Linking.openURL(DASHBOARD_PROVIDERS)}
+        onPress={() => void Linking.openURL(getAuthProvidersDashboardUrl())}
         hitSlop={8}
       >
         <Text variant="caption" color="textBrand">
