@@ -74,13 +74,13 @@ export function CatMap({
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const didCenterOnUserRef = useRef(false);
   /** When true, camera keeps the GPS point centered (Pokémon-style). */
-  const followingRef = useRef(true);
+  const keepCenteredRef = useRef(true);
 
   // Explicit recenter — restores game default zoom/pitch and re-enables follow.
   useEffect(() => {
     if (!focusCoordinate) return;
     lastFollowRef.current = focusCoordinate;
-    followingRef.current = true;
+    keepCenteredRef.current = true;
     didCenterOnUserRef.current = true;
     mapRef.current?.animateCamera(buildMapCamera(focusCoordinate), {
       duration: MAP_CAMERA_DURATION,
@@ -91,7 +91,7 @@ export function CatMap({
   // First GPS lock: center the camera on the player (game default framing).
   // User pan disables follow until recenter.
   useEffect(() => {
-    if (!userCoordinate || !followingRef.current) return;
+    if (!userCoordinate || !keepCenteredRef.current) return;
 
     const prev = lastFollowRef.current;
     if (!prev || !didCenterOnUserRef.current) {
@@ -113,7 +113,7 @@ export function CatMap({
 
     lastFollowRef.current = userCoordinate;
     void (async () => {
-      if (!followingRef.current) return;
+      if (!keepCenteredRef.current) return;
       const current = await mapRef.current?.getCamera();
       mapRef.current?.animateCamera(buildFollowCamera(userCoordinate, current), {
         duration: MAP_CAMERA_DURATION,
@@ -150,7 +150,7 @@ export function CatMap({
         toolbarEnabled={false}
         mapPadding={{ top: 0, right: 0, bottom: 0, left: 0 }}
         onPanDrag={() => {
-          followingRef.current = false;
+          keepCenteredRef.current = false;
         }}
       >
         <MapWorldDecor cats={cats} />

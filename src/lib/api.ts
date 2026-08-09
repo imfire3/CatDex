@@ -28,7 +28,8 @@ function analyzeTimeoutFor(apiBase: string): number {
       host === '127.0.0.1' ||
       host.startsWith('192.168.') ||
       host.startsWith('10.');
-    return isLocal ? 45_000 : 40_000;
+    // Local OpenAI path: give it room. Remote fallback: fail fast if asleep/down.
+    return isLocal ? 50_000 : 18_000;
   } catch {
     return 45_000;
   }
@@ -44,7 +45,15 @@ async function getAccessToken(): Promise<string | null> {
   if (!supabase) return null;
   try {
     const { data } = await supabase.auth.getSession();
-    return data.session?.access_token?.trim() || null;
+    let token = data.session?.access_token?.trim() || null;
+    if (!token) return null;
+
+    const expiresAt = data.session?.expires_at;
+    if (expiresAt && expiresAt * 1000 < Date.now() + 60_000) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      token = refreshed.session?.access_token?.trim() || token;
+    }
+    return token;
   } catch {
     return null;
   }

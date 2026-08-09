@@ -245,7 +245,8 @@ app.post('/analyze-cat', async (c) => {
               type: 'image_url',
               image_url: {
                 url: `data:${mimeType};base64,${imageBase64}`,
-                detail: 'high',
+                // low = faster / cheaper; enough for coat / color / breed heuristics
+                detail: 'low',
               },
             },
           ],
