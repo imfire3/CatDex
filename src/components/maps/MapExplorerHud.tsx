@@ -21,6 +21,8 @@ type Props = {
   collectionCount?: number;
   onRecenter?: () => void;
   captureHighlighted?: boolean;
+  /** Intercept Capture FAB (e.g. camera permission gate). */
+  onCapturePress?: () => void;
 };
 
 function RoundTool({
@@ -130,6 +132,7 @@ export function MapExplorerHud({
   collectionCount = 0,
   onRecenter,
   captureHighlighted = false,
+  onCapturePress,
 }: Props) {
   const { colors, spacing, radius, shadow, iconStroke, iconSize, motion } = useTheme();
   const insets = useSafeAreaInsets();
@@ -239,7 +242,13 @@ export function MapExplorerHud({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Photographier un chat"
-          onPress={() => router.push('/scanner')}
+          onPress={() => {
+            if (onCapturePress) {
+              onCapturePress();
+              return;
+            }
+            router.push('/scanner');
+          }}
           style={({ pressed }) => [
             {
               width: MAP_CAPTURE_FAB_SIZE,

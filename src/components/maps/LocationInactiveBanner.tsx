@@ -170,17 +170,15 @@ export function LocationInactiveBanner({ onActivated }: Props) {
       <EnablePermissionModal
         visible={modalVisible}
         kind="location"
+        title="Autorise ta position"
+        description="Pour placer les chats sur la carte et te suivre pendant que tu explores."
+        primaryLabel="Autoriser la position"
         onClose={() => setModalVisible(false)}
         onRetry={() => {
           void handleRetry();
         }}
-        onOpenSettings={
-          Platform.OS === 'web'
-            ? undefined
-            : () => {
-                void openSystemLocationSettings();
-              }
-        }
+        onDismissLabel="Plus tard"
+        onDismiss={() => setModalVisible(false)}
       />
     </>
   );

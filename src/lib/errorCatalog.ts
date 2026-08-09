@@ -73,7 +73,8 @@ export const ERROR_CATALOG: Record<CaptureErrorKind, CaptureErrorCopy> = {
     kind: 'server',
     icon: 'server',
     title: 'Serveur indisponible',
-    description: 'Nos serveurs font une pause. Réessaie dans quelques instants.',
+    description:
+      'L’analyse Vision ne répond pas. En local : lance `npm run server` avec OPENAI_API_KEY dans server/.env.',
     primaryLabel: 'Réessayer',
     preservePhoto: true,
   },
@@ -184,7 +185,9 @@ export function classifyThrownAnalysisError(
     message.includes('offline') ||
     message.includes('internet') ||
     message.includes('failed to fetch') ||
-    message.includes('network request failed')
+    message.includes('network request failed') ||
+    message.includes('joindre') ||
+    message.includes('pas de connexion')
   ) {
     return 'offline';
   }
@@ -193,8 +196,12 @@ export function classifyThrownAnalysisError(
     message.includes('502') ||
     message.includes('504') ||
     message.includes('unavailable') ||
+    message.includes('indisponible') ||
     message.includes('timeout') ||
-    message.includes('timed out')
+    message.includes('timed out') ||
+    message.includes('trop de temps') ||
+    message.includes('openai_api_key') ||
+    message.includes('configure openai')
   ) {
     return 'server';
   }
