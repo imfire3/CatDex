@@ -101,8 +101,9 @@ EXPO_PUBLIC_API_URL=https://your-api.example.com
 - `SUPABASE_URL`
 - `SUPABASE_JWT_SECRET`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_STATS_SECRET` (dashboard `/admin?key=…`)
 
-Ces quatre-là ne sont **jamais** préfixées `EXPO_PUBLIC_` et ne sont **jamais**
+Ces secrets ne sont **jamais** préfixés `EXPO_PUBLIC_` et ne sont **jamais**
 commitées. Détail : [SECURITY.md](./SECURITY.md) · [KEYS_TO_GET.md](./KEYS_TO_GET.md)
 
 ## Docs utiles

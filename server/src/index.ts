@@ -28,6 +28,9 @@ import {
   normalizeAnalysis,
   type VisionJson,
 } from './normalizeVisionAnalysis';
+import { renderAdminDashboardHtml } from './adminDashboard';
+import { getRuntimeAnalyzeStats, recordAnalyzeEvent } from './statsStore';
+import { fetchSupabaseProductStats } from './supabaseProductStats';
 
 const app = new Hono<{
   Variables: {
@@ -44,6 +47,70 @@ app.use(
 );
 
 app.get('/health', (c) => c.json({ ok: true, service: 'catdex-api' }));
+
+function getAdminStatsSecret(): string | null {
+  return process.env.ADMIN_STATS_SECRET?.trim() || null;
+}
+
+function isAdminAuthorized(c: { req: { header: (name: string) => string | undefined; query: (name: string) => string | undefined } }): boolean {
+  const secret = getAdminStatsSecret();
+  if (!secret) return false;
+  const header = c.req.header('x-admin-secret')?.trim();
+  const query = c.req.query('key')?.trim();
+  return header === secret || query === secret;
+}
+
+/** JSON stats for operators (ADMIN_STATS_SECRET required). */
+app.get('/admin/stats', async (c) => {
+  if (!isAdminAuthorized(c)) {
+    return c.json(
+      {
+        error:
+          'Non autorisé. Configure ADMIN_STATS_SECRET et passe ?key=… ou le header x-admin-secret.',
+      },
+      401,
+    );
+  }
+
+  const [product, analyze] = await Promise.all([
+    fetchSupabaseProductStats(),
+    Promise.resolve(getRuntimeAnalyzeStats()),
+  ]);
+
+  return c.json({
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    product,
+    analyze,
+  });
+});
+
+/** HTML dashboard — open in browser with ?key=ADMIN_STATS_SECRET */
+app.get('/admin', async (c) => {
+  if (!isAdminAuthorized(c)) {
+    return c.html(
+      `<!DOCTYPE html><html lang="fr"><body style="font-family:system-ui;padding:24px">
+        <h1>CatDex · Stats</h1>
+        <p>Accès refusé. Ajoute <code>?key=TON_ADMIN_STATS_SECRET</code> à l’URL
+        (secret défini sur Render / <code>server/.env</code>).</p>
+      </body></html>`,
+      401,
+    );
+  }
+
+  const [product, analyze] = await Promise.all([
+    fetchSupabaseProductStats(),
+    Promise.resolve(getRuntimeAnalyzeStats()),
+  ]);
+
+  return c.html(
+    renderAdminDashboardHtml({
+      generatedAt: new Date().toISOString(),
+      product,
+      analyze,
+    }),
+  );
+});
 
 /** Apple Guideline 5.1.1(v) — in-app account deletion. */
 app.delete('/account', async (c) => {
@@ -153,16 +220,30 @@ async function cutoutWithinBudget(
 }
 
 app.post('/analyze-cat', async (c) => {
+  const started = Date.now();
+  const userId = c.get('analyzeUserId') || 'unknown';
   const body = await c.req.json().catch(() => null);
   const parsed = analyzeSchema.safeParse(body);
 
   if (!parsed.success) {
+    recordAnalyzeEvent({
+      ok: false,
+      userId,
+      latencyMs: Date.now() - started,
+      error: 'Payload invalide',
+    });
     return c.json({ error: 'Payload invalide' }, 400);
   }
 
   let { imageBase64, mimeType } = stripDataUrl(parsed.data.imageBase64, parsed.data.mimeType);
 
   if (!isAllowedMime(mimeType)) {
+    recordAnalyzeEvent({
+      ok: false,
+      userId,
+      latencyMs: Date.now() - started,
+      error: 'Format image non supporté',
+    });
     return c.json(
       {
         error: 'Format image non supporté. Utilise JPEG, PNG ou WebP.',
@@ -173,6 +254,13 @@ app.post('/analyze-cat', async (c) => {
 
   const decodedBytes = estimateDecodedBytes(imageBase64);
   if (decodedBytes > getAnalyzeMaxBytes()) {
+    recordAnalyzeEvent({
+      ok: false,
+      userId,
+      latencyMs: Date.now() - started,
+      error: 'Image trop lourde',
+      imageBytes: decodedBytes,
+    });
     return c.json(
       {
         error: 'Image trop lourde. Compresse la photo et réessaie.',
@@ -187,6 +275,13 @@ app.post('/analyze-cat', async (c) => {
     normalizedMime.includes('heif') ||
     normalizedMime.includes('tiff')
   ) {
+    recordAnalyzeEvent({
+      ok: false,
+      userId,
+      latencyMs: Date.now() - started,
+      error: 'Format image non supporté',
+      imageBytes: decodedBytes,
+    });
     return c.json(
       {
         error: 'Format image non supporté. Utilise JPEG, PNG ou WebP.',
@@ -200,6 +295,13 @@ app.post('/analyze-cat', async (c) => {
   // Mock path DISABLED — form must never be filled with invented data.
   if (keyLooksPlaceholder(apiKey)) {
     console.error('[analyze-cat] OPENAI_API_KEY missing or placeholder');
+    recordAnalyzeEvent({
+      ok: false,
+      userId,
+      latencyMs: Date.now() - started,
+      error: 'OPENAI_API_KEY missing',
+      imageBytes: decodedBytes,
+    });
     return c.json(
       {
         error:
@@ -275,6 +377,14 @@ app.post('/analyze-cat', async (c) => {
       notACat: analysis.notACat,
     });
 
+    recordAnalyzeEvent({
+      ok: true,
+      userId,
+      latencyMs: Date.now() - started,
+      imageBytes: decodedBytes,
+      model,
+    });
+
     return c.json({
       analysis,
       mocked: false,
@@ -293,6 +403,14 @@ app.post('/analyze-cat', async (c) => {
     });
   } catch (error) {
     console.error('[analyze-cat] OpenAI failure — no mock fill', error);
+    recordAnalyzeEvent({
+      ok: false,
+      userId,
+      latencyMs: Date.now() - started,
+      error: 'OpenAI failure',
+      imageBytes: decodedBytes,
+      model,
+    });
     return c.json(
       {
         error: 'Échec analyse OpenAI. Réessaie avec une photo plus nette.',
