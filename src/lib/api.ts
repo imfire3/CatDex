@@ -207,3 +207,58 @@ export async function analyzeCatPhoto(
     )
   );
 }
+
+/**
+ * Permanently delete the signed-in account (storage + auth user + cascaded rows).
+ * Requires API with SUPABASE_SERVICE_ROLE_KEY.
+ */
+export async function deleteRemoteAccount(): Promise<void> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    throw new Error('Connecte-toi pour supprimer ton compte.');
+  }
+
+  const candidates = getApiCandidateUrls();
+  if (candidates.length === 0) {
+    throw new Error(
+      'EXPO_PUBLIC_API_URL manquant. Configure l’URL de l’API.',
+    );
+  }
+
+  let lastError: Error | null = null;
+
+  for (const apiBase of candidates) {
+    try {
+      const response = await fetch(`${apiBase}/account`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      let data: { error?: string; ok?: boolean } | null = null;
+      try {
+        data = (await response.json()) as { error?: string; ok?: boolean };
+      } catch {
+        data = null;
+      }
+
+      if (response.ok) return;
+
+      lastError = new Error(
+        data?.error || `Suppression impossible (${response.status}).`,
+      );
+      if (response.status === 401 || response.status === 503) break;
+    } catch (error) {
+      if (isNetworkError(error)) {
+        lastError = new Error(`Impossible de joindre l’API (${apiBase}).`);
+        continue;
+      }
+      lastError =
+        error instanceof Error ? error : new Error('Erreur de suppression');
+      break;
+    }
+  }
+
+  throw lastError ?? new Error('Impossible de supprimer le compte.');
+}

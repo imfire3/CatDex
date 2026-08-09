@@ -27,17 +27,11 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    # CORS pour l'API
-    Access-Control-Allow-Origin = "*"
-    
     # Sécurité
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    
-    # Cache des assets
-    Cache-Control = "public, max-age=31536000, immutable"
 
 # Cache différencié pour index.html (pas de cache)
 [[headers]]

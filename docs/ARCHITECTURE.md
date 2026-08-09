@@ -385,3 +385,32 @@ Review Apple/Google (1-3 jours)
 ---
 
 **Documentation complète** : Voir `DEPLOYMENT.md`, `QUICKSTART.md`, et guides dans `docs/`
+
+## État du code avant la bêta web
+
+La structure de dossiers reste la source de vérité suivante :
+
+- `app/` : écrans et routes Expo Router ;
+- `src/components/` : interface réutilisable ;
+- `src/store/` : état de l'application ;
+- `src/lib/` : accès Supabase, API et services ;
+- `src/theme/` : design system ;
+- `server/src/` : API privée entre l'application et OpenAI ;
+- `supabase/migrations/` : schéma versionné ;
+- `docs/releases/` : procédures de bêta et de publication.
+
+Le dossier `ChatDex Mobile App UI/` est une ancienne référence visuelle. Il ne
+fait pas partie de l'application Expo et reste exclu du lint.
+
+### Découpage recommandé après la bêta
+
+Certains fichiers concentrent trop de responsabilités :
+
+- `app/scanner.tsx` : caméra, permissions, upload et orchestration ;
+- `src/store/auth.ts` : e-mail, OAuth, onboarding et persistance ;
+- `src/components/maps/CatMap.web.tsx` : chargement MapLibre, style et marqueurs ;
+- `src/lib/supabaseQueries.ts` : plusieurs domaines de données.
+
+Ils doivent être découpés ticket par ticket, avec tests de non-régression. Un
+grand déplacement de fichiers juste avant la bêta augmenterait le risque sans
+améliorer l'expérience des testeurs.

@@ -18,5 +18,6 @@ Travail en **tickets**. Un ticket à la fois. Review → commit → ticket suiva
 
 ## Ticket actif
 
-→ **Sprint 0 / Ticket 3** — ToastHost (attente GO)  
-Lot 0 sécurité (T1+T2) : [audits/engineering/lot0-security-done.md](../audits/engineering/lot0-security-done.md)
+→ **Sprint 0 terminé côté code** — valider checklist device + `docs/releases/STORE_CHECKLIST.md`  
+Lot 0 sécurité : [audits/engineering/lot0-security-done.md](../audits/engineering/lot0-security-done.md)  
+Suite produit : Sprint 1 ([sprint-1-core-loop.md](./sprint-1-core-loop.md))

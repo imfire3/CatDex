@@ -14,7 +14,6 @@ import {
   extractBearerToken,
   getAnalyzeMaxBytes,
   isAllowedMime,
-  isProductionRuntime,
   verifySupabaseAccessToken,
 } from './analyzeAuth';
 import {
@@ -22,6 +21,7 @@ import {
   CATDEX_VISION_USER_TEXT,
 } from './catdexVisionPrompt';
 import { CATDEX_FORM_RESPONSE_FORMAT } from './catdexFormSchema';
+import { deleteAccountForBearerToken } from './deleteAccount';
 import {
   NOT_A_CAT_MESSAGE,
   NOT_A_CAT_TITLE,
@@ -44,6 +44,15 @@ app.use(
 );
 
 app.get('/health', (c) => c.json({ ok: true, service: 'catdex-api' }));
+
+/** Apple Guideline 5.1.1(v) — in-app account deletion. */
+app.delete('/account', async (c) => {
+  const result = await deleteAccountForBearerToken(c.req.header('authorization'));
+  if (!result.ok) {
+    return c.json({ error: result.error }, result.status as 401 | 502 | 503);
+  }
+  return c.json({ ok: true });
+});
 
 /** Require Supabase JWT (prod) + rate-limit per user. */
 app.use('/analyze-cat', async (c, next) => {
