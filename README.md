@@ -11,9 +11,13 @@ les analyser à l’IA, les placer sur une carte et construire un CatDex.
 
 ## Fonctionnalités
 
-Carte · Scanner · Analyse IA (via API privée) · CatDex · Missions · Profil
+Onboarding game-feel (apparition → IA → premier chat) · Carte · Scanner · Analyse IA (via API privée) · CatDex · Missions · Profil
 
-Détail : **[docs/FEATURES.md](./docs/FEATURES.md)**
+Détail : **[docs/FEATURES.md](./docs/FEATURES.md)** · galerie : [`screenshots/index.html`](./screenshots/index.html)
+
+<img alt="Onboarding apparition" src="screenshots/app/04-intro.png" width="180" />
+<img alt="Onboarding analyse IA" src="screenshots/app/05-scan.png" width="180" />
+<img alt="Onboarding premier chat" src="screenshots/app/06-reward.png" width="180" />
 
 ## Stack
 

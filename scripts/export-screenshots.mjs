@@ -42,18 +42,34 @@ const PUBLIC_SCREENS = [
 ];
 
 const APP_SCREENS = [
-  { id: '04-intro', route: '/intro', title: 'Intro', beforeOnboarding: true },
-  { id: '05-permissions', route: '/permissions', title: 'Permissions', beforeOnboarding: true },
-  { id: '06-map', route: '/map', title: 'Explorer (carte)' },
-  { id: '07-catdex', route: '/catdex', title: 'CatDex' },
-  { id: '08-missions', route: '/missions', title: 'Missions' },
-  { id: '09-profile', route: '/profile', title: 'Profil' },
-  { id: '10-scanner', route: '/scanner', title: 'Scanner / Capture' },
-  { id: '11-discovery', route: '/discovery', title: 'Discovery' },
-  { id: '12-settings-profile', route: '/settings/edit-profile', title: 'Réglages · Profil' },
-  { id: '13-settings-notifications', route: '/settings/notifications', title: 'Réglages · Notifs' },
-  { id: '14-settings-help', route: '/settings/help', title: 'Réglages · Aide' },
-  { id: '15-cat-detail', route: '/cat/demo_1', title: 'Fiche chat' },
+  {
+    id: '04-intro',
+    route: '/intro',
+    title: 'Onboarding · Apparition',
+    beforeOnboarding: true,
+  },
+  {
+    id: '05-scan',
+    route: '/permissions',
+    title: 'Onboarding · Analyse IA',
+    beforeOnboarding: true,
+  },
+  {
+    id: '06-reward',
+    route: '/onboarding-reward',
+    title: 'Onboarding · Premier chat',
+    beforeOnboarding: true,
+  },
+  { id: '07-map', route: '/map', title: 'Explorer (carte)' },
+  { id: '08-catdex', route: '/catdex', title: 'CatDex' },
+  { id: '09-missions', route: '/missions', title: 'Missions' },
+  { id: '10-profile', route: '/profile', title: 'Profil' },
+  { id: '11-scanner', route: '/scanner', title: 'Scanner / Capture' },
+  { id: '12-discovery', route: '/discovery', title: 'Discovery' },
+  { id: '13-settings-profile', route: '/settings/edit-profile', title: 'Réglages · Profil' },
+  { id: '14-settings-notifications', route: '/settings/notifications', title: 'Réglages · Notifs' },
+  { id: '15-settings-help', route: '/settings/help', title: 'Réglages · Aide' },
+  { id: '16-cat-detail', route: '/cat/demo_1', title: 'Fiche chat' },
 ];
 
 async function waitForApp(page, ms = 2200) {
@@ -158,6 +174,14 @@ async function goto(page, route) {
 }
 
 async function clickByText(page, text, opts = {}) {
+  // Prefer role=button (PrimaryCTA) — getByText alone can miss nested RN-web labels.
+  const byRole = page.getByRole('button', { name: text }).first();
+  if (await byRole.count()) {
+    await byRole.waitFor({ state: 'visible', timeout: opts.timeout ?? 15_000 });
+    await byRole.click();
+    await waitForApp(page, opts.wait ?? 1500);
+    return;
+  }
   const locator = page.getByText(text, { exact: opts.exact ?? false }).first();
   await locator.waitFor({ state: 'visible', timeout: opts.timeout ?? 15_000 });
   await locator.click();
@@ -227,25 +251,50 @@ async function signupAndOnboard(page) {
     await clickByText(page, 'Créer un compte', { wait: 2500 });
   });
 
-  // Intro
-  if (page.url().includes('intro') || (await page.getByText('CatDex en 3 gestes').count())) {
+  // Game-feel trilogy step 1 — sighting
+  const onIntro =
+    page.url().includes('intro') ||
+    (await page.getByText(/Un chat vient d|Partir explorer|CatDex en 3 gestes/i).count());
+  if (onIntro) {
+    await page.waitForTimeout(800);
     const introFile = await shot(page, '04-intro');
-    await clickByText(page, 'Continuer', { wait: 2000 });
+    await clickByText(page, 'Partir explorer', { wait: 2000 }).catch(async () => {
+      await clickByText(page, 'Continuer', { wait: 2000 });
+    });
     return { introFile, email };
   }
 
   return { introFile: null, email };
 }
 
-async function finishPermissions(page) {
-  if (page.url().includes('permissions') || (await page.getByText(/Dernière étape|Localisation/i).count())) {
-    const file = await shot(page, '05-permissions');
-    await clickByText(page, 'Passer pour l’instant', { wait: 2500 }).catch(async () => {
-      await clickByText(page, 'Plus tard', { wait: 2500 });
+/** Steps 2–3: IA scan → reward card, then enter map. */
+async function finishOnboardingTrilogy(page) {
+  const files = { scan: null, reward: null };
+
+  const onScan =
+    page.url().includes('permissions') ||
+    (await page.getByText(/L’IA découvre|L'IA découvre|Race détectée|Trouver mon premier chat/i).count());
+  if (onScan) {
+    // Let reveal checklist populate (~400 + 5×300 ms)
+    await page.waitForTimeout(2200);
+    files.scan = await shot(page, '05-scan');
+    await clickByText(page, 'Trouver mon premier chat', { wait: 2200 }).catch(async () => {
+      await clickByText(page, 'Continuer', { wait: 2200 });
     });
-    return file;
   }
-  return null;
+
+  const onReward =
+    page.url().includes('onboarding-reward') ||
+    (await page.getByText(/Nouveau chat|Commencer ma collection|Premier compagnon/i).count());
+  if (onReward) {
+    await page.waitForTimeout(1200);
+    files.reward = await shot(page, '06-reward');
+    await clickByText(page, 'Commencer ma collection', { wait: 2500 }).catch(async () => {
+      await clickByText(page, 'Continuer', { wait: 2500 });
+    });
+  }
+
+  return files;
 }
 
 function writeGallery(results) {
@@ -326,20 +375,44 @@ async function main() {
   try {
     const { introFile } = await signupAndOnboard(page);
     if (introFile) {
-      results.push({ id: '04-intro', route: '/intro', title: 'Intro', file: introFile });
+      results.push({
+        id: '04-intro',
+        route: '/intro',
+        title: 'Onboarding · Apparition',
+        file: introFile,
+      });
     } else {
       await goto(page, '/intro');
-      results.push({ id: '04-intro', route: '/intro', title: 'Intro', file: await shot(page, '04-intro') });
-      await clickByText(page, 'Continuer', { wait: 2000 }).catch(() => undefined);
+      await page.waitForTimeout(800);
+      results.push({
+        id: '04-intro',
+        route: '/intro',
+        title: 'Onboarding · Apparition',
+        file: await shot(page, '04-intro'),
+      });
+      await clickByText(page, 'Partir explorer', { wait: 2000 }).catch(() => undefined);
     }
 
-    const permFile = await finishPermissions(page);
-    if (permFile) {
-      results.push({ id: '05-permissions', route: '/permissions', title: 'Permissions', file: permFile });
+    const trilogy = await finishOnboardingTrilogy(page);
+    if (trilogy.scan) {
+      results.push({
+        id: '05-scan',
+        route: '/permissions',
+        title: 'Onboarding · Analyse IA',
+        file: trilogy.scan,
+      });
+    }
+    if (trilogy.reward) {
+      results.push({
+        id: '06-reward',
+        route: '/onboarding-reward',
+        title: 'Onboarding · Premier chat',
+        file: trilogy.reward,
+      });
     }
 
     for (const screen of APP_SCREENS) {
-      if (screen.id === '04-intro' || screen.id === '05-permissions') continue;
+      if (screen.beforeOnboarding) continue;
       await goto(page, screen.route);
       const file = await shot(page, screen.id);
       results.push({ ...screen, file });

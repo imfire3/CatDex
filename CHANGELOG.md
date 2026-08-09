@@ -6,6 +6,11 @@ Versioning : [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Docs
+- Screenshots onboarding game-feel (apparition → analyse IA → premier chat)
+- `docs/FEATURES.md` : trilogy onboarding documentée
+- Export Playwright aligné sur les CTAs `Partir explorer` / `Trouver mon premier chat` / `Commencer ma collection`
+
 ### Security
 - Agenda repo public / privé (`docs/PUBLIC_REPO_AGENDA.md`)
 - Politique secrets (`SECURITY.md`)
