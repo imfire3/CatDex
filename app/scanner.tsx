@@ -613,6 +613,9 @@ export default function ScannerScreen() {
         <EnablePermissionModal
           visible
           kind="camera"
+          title="Autorise la caméra"
+          description="Pour scanner et capturer les chats que tu croises dans ton quartier."
+          primaryLabel="Autoriser la caméra"
           onClose={() => {
             if (router.canGoBack()) router.back();
           }}

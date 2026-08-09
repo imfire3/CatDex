@@ -1,12 +1,10 @@
-/** Post-auth onboarding: 3 game intro screens → camera → location */
-export const ONBOARDING_STEP_COUNT = 5;
+/** Post-auth onboarding: 3 game intro screens — permissions asked in-game. */
+export const ONBOARDING_STEP_COUNT = 3;
 
 export const ONBOARDING_STEP_LABELS = [
   'Découverte',
   'Analyse',
   'Récompense',
-  'Caméra',
-  'Position',
 ] as const;
 
 /** @deprecated Prefer `ProgressDots` from `@/components/Auth/Onboarding`. */

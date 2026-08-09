@@ -4,10 +4,12 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { EnablePermissionModal } from '@/components/EnablePermissionModal';
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
+import { useCaptureGate } from '@/hooks/useCaptureGate';
 import { PARIS_20E } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
 import { isLocationActive, requestLocationAccess } from '@/lib/locationAccess';
@@ -26,6 +28,7 @@ export default function MapScreen() {
   const setHasNearbyCat = useMapExploreStore((state) => state.setHasNearbyCat);
   const missions = useMissionsStore((state) => state.missions);
   const openMissionCount = missions.filter((m) => !m.completed).length;
+  const captureGate = useCaptureGate();
 
   const capturedIds = useMemo(() => {
     const ids = new Set<string>();
@@ -252,6 +255,9 @@ export default function MapScreen() {
         collectionCount={storedCats.length}
         captureHighlighted={Boolean(nearbyCatIds.length)}
         onRecenter={() => void recenterOnPlayer()}
+        onCapturePress={() => {
+          void captureGate.requestCapture();
+        }}
       />
 
       <MapCatModal
@@ -282,11 +288,22 @@ export default function MapScreen() {
           const sightingId = selected.id;
           setSheetVisible(false);
           setSelected(null);
-          router.push({
-            pathname: '/scanner',
-            params: { worldId: sightingId },
-          });
+          void captureGate.requestCapture({ worldId: sightingId });
         }}
+      />
+
+      <EnablePermissionModal
+        visible={captureGate.modalVisible}
+        kind="camera"
+        title="Autorise la caméra"
+        description="Pour scanner et capturer les chats que tu croises dans ton quartier."
+        primaryLabel="Autoriser la caméra"
+        onClose={captureGate.dismiss}
+        onRetry={() => {
+          void captureGate.handleRetry();
+        }}
+        onDismissLabel="Plus tard"
+        onDismiss={captureGate.dismiss}
       />
     </View>
   );
