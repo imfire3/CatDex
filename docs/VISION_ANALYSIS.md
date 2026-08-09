@@ -30,7 +30,8 @@ Photo
 `POST /analyze-cat` exige un **Bearer JWT Supabase** (session utilisateur).
 
 - Prod : JWT obligatoire + rate limit (défaut 20/h/user) + plafond image (défaut 5 Mo) + mime JPEG/PNG/WebP.
-- Dev local sans auth : `ALLOW_UNAUTH_ANALYZE=1` côté `server/` uniquement (interdit en `NODE_ENV=production`).
+- Dev local sans auth : autorisé par défaut hors `NODE_ENV=production`
+  (`ALLOW_UNAUTH_ANALYZE=0` pour forcer le JWT en local).
 - Le client envoie `Authorization: Bearer <access_token>` (`src/lib/api.ts`). Pas de secret dans le bundle (`EXPO_PUBLIC_API_SECRET` retiré).
 
 Vars serveur : `SUPABASE_URL`, `SUPABASE_JWT_SECRET` (ou JWKS via URL), `ANALYZE_RATE_LIMIT`, `ANALYZE_MAX_BYTES`.

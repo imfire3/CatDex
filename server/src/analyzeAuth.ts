@@ -20,10 +20,15 @@ export function isProductionRuntime(): boolean {
 
 export function allowUnauthAnalyze(): boolean {
   if (isProductionRuntime()) return false;
-  return (
-    process.env.ALLOW_UNAUTH_ANALYZE === '1' ||
-    process.env.ALLOW_UNAUTH_ANALYZE === 'true'
-  );
+  // Local / staging: allow analyze without JWT by default so Expo + API work
+  // even when SUPABASE_JWT_SECRET is missing. Set ALLOW_UNAUTH_ANALYZE=0 to force JWT.
+  if (
+    process.env.ALLOW_UNAUTH_ANALYZE === '0' ||
+    process.env.ALLOW_UNAUTH_ANALYZE === 'false'
+  ) {
+    return false;
+  }
+  return true;
 }
 
 export function getAnalyzeRateLimit(): number {

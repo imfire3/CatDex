@@ -37,6 +37,7 @@ import {
   resolvePhotoProblemCopy,
 } from '@/lib/errorCatalog';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
+import { compressPhotoDataUri } from '@/lib/photoStorage';
 import { sendAnalysisErrorReport } from '@/lib/sendErrorReport';
 import { useCatsStore } from '@/store/cats';
 import { usePendingCaptureStore } from '@/store/pendingCapture';
@@ -284,9 +285,24 @@ export default function ScannerScreen() {
     const isStale = () => gen !== analysisGenRef.current;
 
     try {
+      let payloadBase64 = base64;
+      let payloadMime = mimeType;
+      // Web: shrink before Vision (native already uses low capture quality).
+      if (Platform.OS === 'web') {
+        const dataUri = base64.startsWith('data:')
+          ? base64
+          : `data:${mimeType};base64,${base64}`;
+        const compressed = await compressPhotoDataUri(dataUri, 960, 0.55);
+        const match = /^data:([^;]+);base64,(.+)$/s.exec(compressed);
+        if (match) {
+          payloadMime = match[1] || mimeType;
+          payloadBase64 = match[2];
+        }
+      }
+
       const { analysis: nextAnalysis, mocked, cutoutUri } = await analyzeCatPhoto(
-        base64,
-        mimeType,
+        payloadBase64,
+        payloadMime,
       );
       await waitMinDuration();
       if (isStale()) return;
@@ -340,7 +356,7 @@ export default function ScannerScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync({
         // Lean JPEG → faster upload + Vision; storage still gets this capture.
-        quality: 0.35,
+        quality: 0.28,
         base64: true,
         exif: false,
         shutterSound: false,
@@ -387,7 +403,7 @@ export default function ScannerScreen() {
   const handlePickFromLibrary = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.35,
+      quality: 0.28,
       base64: true,
       exif: false,
       preferredAssetRepresentationMode:
