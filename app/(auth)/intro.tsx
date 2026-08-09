@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** Onboarding 1/3 — un chat se cache près de toi. */
+/** Onboarding 1/3 — un chat apparaît près de toi. */
 export default function IntroScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -28,23 +28,29 @@ export default function IntroScreen() {
       plain
       fullHeight
       scroll
-      sheetStyle={{ backgroundColor: colors.background }}
+      sheetStyle={{ backgroundColor: colors.background, paddingHorizontal: 0 }}
       footer={
-        <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
+        <View
+          style={{
+            gap: spacing[16],
+            alignSelf: 'stretch',
+            paddingHorizontal: spacing[24],
+          }}
+        >
           <ProgressDots
             step={0}
             total={ONBOARDING_STEP_COUNT}
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
-            title="Commencer"
-            subtitle="Un chat t’attend à moins de 200 m"
+            title="Partir explorer"
+            subtitle="Tu n’es qu’à une photo de commencer ta collection"
             onPress={() => router.push('/(auth)/permissions')}
           />
         </View>
       }
     >
-      <View style={{ flexGrow: 1, minHeight: 440 }}>
+      <View style={{ flexGrow: 1, minHeight: 520 }}>
         <SightingScene />
       </View>
     </AuthShell>

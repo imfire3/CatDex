@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** Onboarding 3/3 — explosion de récompenses, puis permissions caméra. */
+/** Onboarding 3/3 — le chat rejoint la collection. */
 export default function OnboardingRewardScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -37,14 +37,14 @@ export default function OnboardingRewardScreen() {
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
-            title="Capturer mon premier chat"
+            title="Commencer ma collection"
             subtitle="Première capture en moins de 2 minutes"
             onPress={() => router.push('/(auth)/permission-camera')}
           />
         </View>
       }
     >
-      <View style={{ flexGrow: 1, minHeight: 480 }}>
+      <View style={{ flexGrow: 1, minHeight: 520 }}>
         <RewardScene />
       </View>
     </AuthShell>

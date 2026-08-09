@@ -1,11 +1,13 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Image, Platform, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
+  Easing,
   FadeIn,
   FadeInDown,
   FadeInUp,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -24,47 +26,75 @@ import { Glyph } from './glyphs';
 const DEMO_CAT = require('../../../../assets/onboarding-demo-cat.jpg');
 
 const REWARDS = [
-  { id: 'xp', label: '+85 XP', glyph: 'xp' as const },
-  { id: 'badge', label: 'Premier badge', glyph: 'badge' as const },
+  { id: 'xp', label: '+30 XP', glyph: 'xp' as const },
+  { id: 'badge', label: 'Photographe', glyph: 'badge' as const },
+  { id: 'companion', label: 'Premier compagnon', glyph: 'paw' as const },
   { id: 'dex', label: 'CatDex débloqué', glyph: 'book' as const },
 ];
 
 /**
- * Écran 3 — explosion de récompenses.
- * Carte qui glisse, numéro, badges, confettis, haptic.
+ * Écran 3 — le chat saute dans la carte CatDex.
+ * Flip / spring Pokémon-like, puis récompenses une par une.
  */
 export function RewardScene() {
   const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
   const reduceMotion = useReducedMotion();
+  const [showRewards, setShowRewards] = useState(reduceMotion);
+
+  const flip = useSharedValue(reduceMotion ? 1 : 0);
   const glow = useSharedValue(0.5);
-  const cardY = useSharedValue(reduceMotion ? 0 : 48);
-  const cardScale = useSharedValue(reduceMotion ? 1 : 0.9);
+  const enterY = useSharedValue(reduceMotion ? 0 : 80);
+  const enterScale = useSharedValue(reduceMotion ? 1 : 0.7);
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-    if (reduceMotion) return;
-    cardY.value = withSpring(0, { damping: 14, stiffness: 140 });
-    cardScale.value = withSpring(1, { damping: 12, stiffness: 160 });
+    if (reduceMotion) {
+      setShowRewards(true);
+      return;
+    }
+
+    enterY.value = withSpring(0, { damping: 13, stiffness: 120 });
+    enterScale.value = withSpring(1, { damping: 11, stiffness: 140 });
+    flip.value = withDelay(
+      280,
+      withSequence(
+        withTiming(0.5, { duration: 220, easing: Easing.in(Easing.cubic) }),
+        withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) }),
+      ),
+    );
     glow.value = withRepeat(
       withSequence(
         withTiming(1, { duration: motion.duration.reveal * 2 }),
-        withTiming(0.5, { duration: motion.duration.reveal * 2 }),
+        withTiming(0.45, { duration: motion.duration.reveal * 2 }),
       ),
       -1,
       false,
     );
-  }, [cardScale, cardY, glow, motion.duration.reveal, reduceMotion]);
 
-  const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: cardY.value }, { scale: cardScale.value }],
-  }));
+    const t = setTimeout(() => setShowRewards(true), 900);
+    return () => clearTimeout(t);
+  }, [enterScale, enterY, flip, glow, motion.duration.reveal, reduceMotion]);
+
+  const cardStyle = useAnimatedStyle(() => {
+    const rotateY = interpolate(flip.value, [0, 0.5, 1], [-18, 90, 0]);
+    return {
+      transform: [
+        { perspective: 900 },
+        { translateY: enterY.value },
+        { scale: enterScale.value },
+        { rotateY: `${rotateY}deg` },
+      ],
+    };
+  });
 
   const glowStyle = useAnimatedStyle(() => ({
-    opacity: 0.25 + glow.value * 0.35,
-    transform: [{ scale: 0.92 + glow.value * 0.12 }],
+    opacity: 0.22 + glow.value * 0.4,
+    transform: [{ scale: 0.9 + glow.value * 0.16 }],
   }));
+
+  const cardW = spacing[96] + spacing[80];
 
   return (
     <View
@@ -72,15 +102,15 @@ export function RewardScene() {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: spacing[32],
-        paddingVertical: spacing[16],
+        gap: spacing[24],
+        paddingVertical: spacing[8],
       }}
     >
       <OnboardingConfetti />
 
       <Animated.View
-        entering={reduceMotion ? undefined : FadeInUp.delay(80).springify().damping(16)}
-        style={{ gap: spacing[8], alignItems: 'center' }}
+        entering={reduceMotion ? undefined : FadeInUp.delay(40).springify().damping(16)}
+        style={{ alignItems: 'center', gap: spacing[4] }}
       >
         <Text
           variant="h1"
@@ -88,7 +118,7 @@ export function RewardScene() {
           align="center"
           style={{ fontFamily: fonts.display }}
         >
-          Il rejoint ton CatDex
+          Nouveau chat !
         </Text>
       </Animated.View>
 
@@ -97,8 +127,8 @@ export function RewardScene() {
           style={[
             {
               position: 'absolute',
-              width: spacing[96] + spacing[64],
-              height: spacing[96] + spacing[64],
+              width: cardW + spacing[48],
+              height: cardW + spacing[48],
               borderRadius: radius.full,
               backgroundColor: colors.brandSoft,
             },
@@ -110,7 +140,7 @@ export function RewardScene() {
           style={[
             cardStyle,
             {
-              width: spacing[96] + spacing[96],
+              width: cardW,
               borderRadius: radius.cta,
               overflow: 'hidden',
               backgroundColor: colors.surfaceElevated,
@@ -120,7 +150,7 @@ export function RewardScene() {
             shadow.floating,
           ]}
         >
-          <View style={{ height: spacing[96] + spacing[64], backgroundColor: colors.surfaceSecondary }}>
+          <View style={{ height: spacing[96] + spacing[48], backgroundColor: colors.surfaceSecondary }}>
             <Image
               source={DEMO_CAT}
               resizeMode="cover"
@@ -128,7 +158,7 @@ export function RewardScene() {
               accessibilityIgnoresInvertColors
             />
             <LinearGradient
-              colors={['transparent', 'rgba(21,23,43,0.72)']}
+              colors={['transparent', 'rgba(21,23,43,0.75)']}
               style={{
                 position: 'absolute',
                 left: 0,
@@ -140,19 +170,18 @@ export function RewardScene() {
               }}
             >
               <Text variant="caption" color="onAccent" style={{ fontFamily: fonts.bodySemi }}>
-                #001
+                #042
               </Text>
             </LinearGradient>
           </View>
-          <View style={{ padding: spacing[16], gap: spacing[8] }}>
-            <Text variant="h3" color="text" style={{ fontFamily: fonts.display }}>
+          <View style={{ padding: spacing[16], gap: spacing[8], alignItems: 'center' }}>
+            <Text variant="h2" color="text" style={{ fontFamily: fonts.display }}>
               Miel
             </Text>
             <View
               style={{
-                alignSelf: 'flex-start',
                 paddingVertical: spacing[4],
-                paddingHorizontal: spacing[8],
+                paddingHorizontal: spacing[16],
                 borderRadius: radius.full,
                 backgroundColor: colors.brandSoft,
               }}
@@ -165,6 +194,15 @@ export function RewardScene() {
         </Animated.View>
       </View>
 
+      {/* Stars */}
+      <Animated.View
+        entering={reduceMotion ? undefined : FadeIn.delay(700).duration(motion.duration.slow)}
+      >
+        <Text variant="body" color="textBrand" align="center" style={{ letterSpacing: 4 }}>
+          ★ ★ ★ ★ ★
+        </Text>
+      </Animated.View>
+
       <View
         style={{
           flexDirection: 'row',
@@ -172,11 +210,14 @@ export function RewardScene() {
           gap: spacing[8],
           justifyContent: 'center',
           alignSelf: 'stretch',
+          minHeight: spacing[80],
         }}
       >
-        {REWARDS.map((item, index) => (
-          <RewardPop key={item.id} label={item.label} glyph={item.glyph} index={index} />
-        ))}
+        {showRewards
+          ? REWARDS.map((item, index) => (
+              <RewardPop key={item.id} label={item.label} glyph={item.glyph} index={index} />
+            ))
+          : null}
       </View>
     </View>
   );
@@ -188,26 +229,26 @@ function RewardPop({
   index,
 }: {
   label: string;
-  glyph: 'xp' | 'badge' | 'book';
+  glyph: 'xp' | 'badge' | 'paw' | 'book';
   index: number;
 }) {
   const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
   const reduceMotion = useReducedMotion();
-  const scale = useSharedValue(reduceMotion ? 1 : 0.6);
+  const scale = useSharedValue(reduceMotion ? 1 : 0.55);
 
   useEffect(() => {
     if (reduceMotion) return;
     scale.value = withDelay(
-      520 + index * 180,
+      index * 160,
       withSequence(
-        withSpring(1.08, { damping: 10, stiffness: 200 }),
+        withSpring(1.12, { damping: 9, stiffness: 210 }),
         withTiming(1, { duration: motion.duration.fast }),
       ),
     );
     if (Platform.OS !== 'web') {
       const t = setTimeout(() => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }, 520 + index * 180);
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }, index * 160);
       return () => clearTimeout(t);
     }
     return undefined;
@@ -222,7 +263,7 @@ function RewardPop({
       entering={
         reduceMotion
           ? undefined
-          : FadeInDown.delay(500 + index * 160).duration(motion.duration.normal)
+          : FadeInDown.delay(index * 140).duration(motion.duration.normal)
       }
       style={style}
     >
@@ -235,7 +276,7 @@ function RewardPop({
             paddingVertical: spacing[8],
             paddingHorizontal: spacing[16],
             borderRadius: radius.full,
-            backgroundColor: colors.surfaceElevated,
+            backgroundColor: 'rgba(255,255,255,0.92)',
             borderWidth: 1,
             borderColor: colors.border,
           },
@@ -267,10 +308,10 @@ function OnboardingConfetti() {
   const reduceMotion = useReducedMotion();
   const pieces = useMemo(
     () =>
-      Array.from({ length: 16 }, (_, i) => ({
+      Array.from({ length: 18 }, (_, i) => ({
         id: i,
-        left: 6 + ((i * 19) % 88),
-        delay: (i % 8) * 50,
+        left: 4 + ((i * 17) % 90),
+        delay: (i % 9) * 45,
         color: [colors.brand, colors.orange, colors.success, colors.rose, colors.yellow][
           i % 5
         ]!,
@@ -301,14 +342,14 @@ function ConfettiPiece({
   color: string;
   size: number;
 }) {
-  const y = useSharedValue(-24);
+  const y = useSharedValue(-30);
   const opacity = useSharedValue(1);
   const rotate = useSharedValue(0);
 
   useEffect(() => {
-    y.value = withDelay(delay, withTiming(420, { duration: 1500 + delay }));
-    opacity.value = withDelay(delay, withTiming(0, { duration: 1500 + delay }));
-    rotate.value = withDelay(delay, withTiming(200 + delay, { duration: 1400 }));
+    y.value = withDelay(delay, withTiming(460, { duration: 1600 + delay }));
+    opacity.value = withDelay(delay, withTiming(0, { duration: 1600 + delay }));
+    rotate.value = withDelay(delay, withTiming(220 + delay, { duration: 1500 }));
   }, [delay, opacity, rotate, y]);
 
   const style = useAnimatedStyle(() => ({
@@ -322,10 +363,10 @@ function ConfettiPiece({
       style={[
         {
           position: 'absolute',
-          top: 24,
+          top: 16,
           left: `${left}%`,
           width: size,
-          height: size * 1.35,
+          height: size * 1.4,
           borderRadius: 2,
           backgroundColor: color,
         },

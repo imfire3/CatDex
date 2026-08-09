@@ -10,10 +10,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/**
- * Onboarding 2/3 — la caméra / l’IA révèle l’identité.
- * Continue vers l’écran récompense.
- */
+/** Onboarding 2/3 — révélation IA live. */
 export default function PermissionsScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -41,14 +38,14 @@ export default function PermissionsScreen() {
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
-            title="Continuer"
+            title="Trouver mon premier chat"
             subtitle="L’IA s’occupe du reste"
             onPress={() => router.push('/(auth)/onboarding-reward')}
           />
         </View>
       }
     >
-      <View style={{ flexGrow: 1, minHeight: 480 }}>
+      <View style={{ flexGrow: 1, minHeight: 520 }}>
         <ScanScene />
       </View>
     </AuthShell>
