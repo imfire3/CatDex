@@ -146,7 +146,7 @@ export default function PermissionCameraScreen() {
       footer={
         <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
           <ProgressDots
-            step={2}
+            step={3}
             total={ONBOARDING_STEP_COUNT}
             labels={[...ONBOARDING_STEP_LABELS]}
           />

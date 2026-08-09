@@ -7,4 +7,7 @@ export { FloatingPreviewCard, type FloatingPreviewVariant } from './FloatingPrev
 export { RewardChips, type RewardChipItem } from './RewardChips';
 export { PrimaryCTA } from './PrimaryCTA';
 export { ProgressDots } from './ProgressDots';
+export { SightingScene } from './SightingScene';
+export { ScanScene } from './ScanScene';
+export { RewardScene } from './RewardScene';
 export { Glyph, type OnboardingGlyph } from './glyphs';

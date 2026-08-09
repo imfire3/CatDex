@@ -1,9 +1,10 @@
-/** Post-auth onboarding flow length: Intro → Permissions → Camera → Location */
-export const ONBOARDING_STEP_COUNT = 4;
+/** Post-auth onboarding: 3 game intro screens → camera → location */
+export const ONBOARDING_STEP_COUNT = 5;
 
 export const ONBOARDING_STEP_LABELS = [
   'Découverte',
-  'Récompenses',
+  'Analyse',
+  'Récompense',
   'Caméra',
   'Position',
 ] as const;

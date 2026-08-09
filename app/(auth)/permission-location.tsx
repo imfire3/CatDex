@@ -174,11 +174,11 @@ export default function PermissionLocationScreen() {
       sheetStyle={{ backgroundColor: colors.background }}
       footer={
         <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
-          <ProgressDots
-            step={3}
-            total={ONBOARDING_STEP_COUNT}
-            labels={[...ONBOARDING_STEP_LABELS]}
-          />
+            <ProgressDots
+              step={4}
+              total={ONBOARDING_STEP_COUNT}
+              labels={[...ONBOARDING_STEP_LABELS]}
+            />
           <PrimaryCTA
             title="Autoriser la position"
             loading={busy}

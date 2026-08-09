@@ -2,7 +2,7 @@ import { Redirect, router } from 'expo-router';
 import { View } from 'react-native';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import { PrimaryCTA, ProgressDots, ScanScene } from '@/components/Auth/Onboarding';
+import { PrimaryCTA, ProgressDots, RewardScene } from '@/components/Auth/Onboarding';
 import {
   ONBOARDING_STEP_COUNT,
   ONBOARDING_STEP_LABELS,
@@ -10,11 +10,8 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/**
- * Onboarding 2/3 — la caméra / l’IA révèle l’identité.
- * Continue vers l’écran récompense.
- */
-export default function PermissionsScreen() {
+/** Onboarding 3/3 — explosion de récompenses, puis permissions caméra. */
+export default function OnboardingRewardScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
@@ -22,7 +19,6 @@ export default function PermissionsScreen() {
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
   }
-
   if (onboardingCompleted) {
     return <Redirect href="/(tabs)/map" />;
   }
@@ -36,20 +32,20 @@ export default function PermissionsScreen() {
       footer={
         <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
           <ProgressDots
-            step={1}
+            step={2}
             total={ONBOARDING_STEP_COUNT}
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
-            title="Continuer"
-            subtitle="L’IA s’occupe du reste"
-            onPress={() => router.push('/(auth)/onboarding-reward')}
+            title="Capturer mon premier chat"
+            subtitle="Première capture en moins de 2 minutes"
+            onPress={() => router.push('/(auth)/permission-camera')}
           />
         </View>
       }
     >
       <View style={{ flexGrow: 1, minHeight: 480 }}>
-        <ScanScene />
+        <RewardScene />
       </View>
     </AuthShell>
   );

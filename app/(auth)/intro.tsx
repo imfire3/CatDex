@@ -2,12 +2,7 @@ import { Redirect, router } from 'expo-router';
 import { View } from 'react-native';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import {
-  DiscoveryTimeline,
-  OnboardingHero,
-  PrimaryCTA,
-  ProgressDots,
-} from '@/components/Auth/Onboarding';
+import { PrimaryCTA, ProgressDots, SightingScene } from '@/components/Auth/Onboarding';
 import {
   ONBOARDING_STEP_COUNT,
   ONBOARDING_STEP_LABELS,
@@ -15,6 +10,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
+/** Onboarding 1/3 — un chat se cache près de toi. */
 export default function IntroScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -41,15 +37,15 @@ export default function IntroScreen() {
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
-            title="Commencer l’aventure"
+            title="Commencer"
+            subtitle="Un chat t’attend à moins de 200 m"
             onPress={() => router.push('/(auth)/permissions')}
           />
         </View>
       }
     >
-      <View style={{ gap: spacing[40], alignSelf: 'stretch', paddingBottom: spacing[16] }}>
-        <OnboardingHero />
-        <DiscoveryTimeline />
+      <View style={{ flexGrow: 1, minHeight: 440 }}>
+        <SightingScene />
       </View>
     </AuthShell>
   );
