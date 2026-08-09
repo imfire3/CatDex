@@ -154,6 +154,22 @@ function isNetworkError(error: unknown): boolean {
   return false;
 }
 
+/** Transient / local-misconfig errors — try the next API candidate. */
+function shouldTryNextCandidate(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    error.name === 'AbortError' ||
+    isNetworkError(error) ||
+    message.includes('joindre') ||
+    message.includes('trop de temps') ||
+    message.includes('indisponible') ||
+    message.includes('openai_api_key') ||
+    message.includes('503') ||
+    message.includes('502') ||
+    message.includes('504')
+  );
+}
+
 /**
  * Send photo to OpenAI Vision via API.
  * Never fills the form with mock / random data.
@@ -186,10 +202,12 @@ export async function analyzeCatPhoto(
           `L’analyse Vision a pris trop de temps (${apiBase}). Réessaie.`,
         );
       } else if (isNetworkError(error)) {
-        lastError = new Error(`Impossible de joindre l’API (${apiBase}).`);
+        lastError = new Error(
+          `Impossible de joindre l’API (${apiBase}). Lance \`npm run server\` ou configure EXPO_PUBLIC_API_URL.`,
+        );
       } else if (error instanceof Error) {
         lastError = error;
-        if (!/impossible de joindre/i.test(error.message)) {
+        if (!shouldTryNextCandidate(error)) {
           break;
         }
       } else {

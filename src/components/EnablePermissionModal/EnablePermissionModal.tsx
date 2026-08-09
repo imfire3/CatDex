@@ -16,9 +16,15 @@ export type EnablePermissionModalProps = {
   onRetry: () => void;
   /** Open system settings when permission is permanently denied. */
   onOpenSettings?: () => void;
-  /** Optional escape hatch (e.g. use gallery). */
+  /** Optional escape hatch (e.g. use gallery / Plus tard). */
   onDismissLabel?: string;
   onDismiss?: () => void;
+  /** Override catalog title (first-ask friendly copy). */
+  title?: string;
+  /** Override catalog description. */
+  description?: string;
+  /** Override primary CTA (e.g. Autoriser vs Réessayer). */
+  primaryLabel?: string;
 };
 
 const COPY: Record<
@@ -48,10 +54,18 @@ export function EnablePermissionModal({
   onOpenSettings,
   onDismissLabel,
   onDismiss,
+  title,
+  description,
+  primaryLabel,
 }: EnablePermissionModalProps) {
   const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const copy = COPY[kind];
+  const resolvedTitle = title ?? copy.title;
+  const resolvedDescription = description ?? copy.description;
+  const resolvedPrimary =
+    primaryLabel ??
+    (kind === 'camera' ? 'Autoriser la caméra' : 'Autoriser la position');
 
   const secondaryLabel = onOpenSettings
     ? 'Ouvrir les réglages'
@@ -85,7 +99,7 @@ export function EnablePermissionModal({
         />
         <View
           accessibilityRole="summary"
-          accessibilityLabel={copy.title}
+          accessibilityLabel={resolvedTitle}
           style={[
             {
               width: '100%',
@@ -104,9 +118,9 @@ export function EnablePermissionModal({
           <ErrorState
             compact
             icon={copy.icon}
-            title={copy.title}
-            description={copy.description}
-            primaryLabel="Réessayer"
+            title={resolvedTitle}
+            description={resolvedDescription}
+            primaryLabel={resolvedPrimary}
             onPrimary={onRetry}
             secondaryLabel={secondaryLabel}
             onSecondary={onSecondary}

@@ -1,68 +1,37 @@
-import { Camera } from 'expo-camera';
-import { Redirect, router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, View } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { Redirect } from 'expo-router';
 
+<<<<<<< HEAD
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { OnboardingPulseCta } from '@/components/Auth/OnboardingVisuals';
 import { BrandLogo } from '@/components/BrandLogo';
 import { Button } from '@/components/Button';
 import { Spinner } from '@/components/Loader/Loader';
 import { Text } from '@/components/Text';
+=======
+>>>>>>> origin/main
 import { useAuthStore } from '@/store/auth';
-import { useTheme } from '@/theme/ThemeProvider';
 
-function CameraHeroIcon() {
-  const { colors, spacing, radius, shadow } = useTheme();
-  return (
-    <View
-      accessibilityRole="image"
-      accessibilityLabel="Caméra"
-      style={[
-        {
-          alignSelf: 'center',
-          width: spacing[96],
-          height: spacing[96],
-          borderRadius: radius.full,
-          backgroundColor: colors.brandSoft,
-          borderWidth: 1,
-          borderColor: colors.border,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        shadow.low,
-      ]}
-    >
-      <Svg width={40} height={40} viewBox="0 0 24 24" fill="none">
-        <Path
-          d="M4 8.5A2.5 2.5 0 0 1 6.5 6h2.1l1.2-1.8A1.5 1.5 0 0 1 11.05 3.5h1.9a1.5 1.5 0 0 1 1.25.7L15.4 6h2.1A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z"
-          stroke={colors.brand}
-          strokeWidth={1.8}
-          strokeLinejoin="round"
-        />
-        <Circle cx="12" cy="12.5" r="3.2" stroke={colors.brand} strokeWidth={1.8} />
-        <Rect x="16.2" y="8.2" width="1.6" height="1.6" rx="0.4" fill={colors.brand} />
-      </Svg>
-    </View>
-  );
-}
-
-/** Dedicated camera authorization — after onboarding preview. */
+/**
+ * Legacy route — camera is requested in-game via EnablePermissionModal
+ * when the user taps Capture.
+ */
 export default function PermissionCameraScreen() {
-  const { colors, fonts, spacing, radius } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
+<<<<<<< HEAD
   const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
   const [busy, setBusy] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+=======
+>>>>>>> origin/main
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
   }
-  if (onboardingCompleted) {
-    return <Redirect href="/(tabs)/map" />;
+  if (!onboardingCompleted) {
+    return <Redirect href="/(auth)/onboarding-reward" />;
   }
+<<<<<<< HEAD
 
   const skipAll = () => {
     completeOnboarding();
@@ -177,4 +146,7 @@ export default function PermissionCameraScreen() {
       </View>
     </AuthShell>
   );
+=======
+  return <Redirect href="/(tabs)/map" />;
+>>>>>>> origin/main
 }

@@ -1,8 +1,14 @@
 import { Redirect, router } from 'expo-router';
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import { PrimaryCTA, ProgressDots, ScanScene } from '@/components/Auth/Onboarding';
+import {
+  BrandLoader,
+  PrimaryCTA,
+  ProgressDots,
+  RewardScene,
+} from '@/components/Auth/Onboarding';
 import {
   ONBOARDING_STEP_COUNT,
   ONBOARDING_STEP_LABELS,
@@ -10,18 +16,36 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** Onboarding 2/3 — révélation IA live. */
-export default function PermissionsScreen() {
+const LOADER_MIN_MS = 900;
+
+/** Onboarding 3/3 — le chat rejoint la collection, puis entrée map. */
+export default function OnboardingRewardScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
+  const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
+  const [entering, setEntering] = useState(false);
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
   }
-
-  if (onboardingCompleted) {
+  if (onboardingCompleted && !entering) {
     return <Redirect href="/(tabs)/map" />;
+  }
+
+  const enterMap = async () => {
+    setEntering(true);
+    completeOnboarding();
+    await new Promise((resolve) => setTimeout(resolve, LOADER_MIN_MS));
+    router.replace('/(tabs)/map');
+  };
+
+  if (entering) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <BrandLoader label="Bienvenue dans ton quartier…" />
+      </View>
+    );
   }
 
   return (
@@ -33,20 +57,22 @@ export default function PermissionsScreen() {
       footer={
         <View style={{ gap: spacing[16], alignSelf: 'stretch' }}>
           <ProgressDots
-            step={1}
+            step={2}
             total={ONBOARDING_STEP_COUNT}
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
-            title="Trouver mon premier chat"
-            subtitle="L’IA s’occupe du reste"
-            onPress={() => router.push('/(auth)/onboarding-reward')}
+            title="Commencer ma collection"
+            subtitle="Les autorisations te seront demandées au bon moment"
+            onPress={() => {
+              void enterMap();
+            }}
           />
         </View>
       }
     >
       <View style={{ flexGrow: 1, minHeight: 520 }}>
-        <ScanScene />
+        <RewardScene />
       </View>
     </AuthShell>
   );
