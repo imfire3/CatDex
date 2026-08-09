@@ -53,7 +53,7 @@ export default function PermissionsScreen() {
               onPress={() => router.push('/(auth)/permission-camera')}
             />
           </OnboardingPulseCta>
-          <Button variant="tertiary" title="Plus tard" onPress={skip} />
+          <Button variant="secondary" title="Plus tard" onPress={skip} />
         </View>
       }
     >

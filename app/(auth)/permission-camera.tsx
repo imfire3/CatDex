@@ -1,7 +1,7 @@
 import { Camera } from 'expo-camera';
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
@@ -69,16 +69,14 @@ export default function PermissionCameraScreen() {
   const askCamera = async () => {
     setBusy(true);
     try {
-      if (Platform.OS !== 'web') {
-        const { status } = await Camera.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert(
-            'Caméra plus tard',
-            'Tu pourras l’activer au moment de capturer un chat.',
-            [{ text: 'Continuer', onPress: () => router.push('/(auth)/permission-location') }],
-          );
-          return;
-        }
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Caméra plus tard',
+          'Tu pourras l’activer au moment de capturer un chat.',
+          [{ text: 'Continuer', onPress: () => router.push('/(auth)/permission-location') }],
+        );
+        return;
       }
       router.push('/(auth)/permission-location');
     } finally {
@@ -105,7 +103,7 @@ export default function PermissionCameraScreen() {
             />
           </OnboardingPulseCta>
           <Button
-            variant="tertiary"
+            variant="secondary"
             title="Plus tard"
             disabled={busy}
             onPress={() => router.push('/(auth)/permission-location')}
