@@ -13,7 +13,6 @@ import {
   ONBOARDING_STEP_COUNT,
   ONBOARDING_STEP_LABELS,
 } from '@/components/Auth/OnboardingStepper';
-import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -26,12 +25,6 @@ export default function PermissionsScreen() {
   const { colors, fonts, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
-  const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
-
-  const skip = () => {
-    completeOnboarding();
-    router.replace('/(tabs)/map');
-  };
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
@@ -57,9 +50,6 @@ export default function PermissionsScreen() {
           <PrimaryCTA
             title="Capturer mon premier chat"
             onPress={() => router.push('/(auth)/permission-camera')}
-            secondary={
-              <Button variant="tertiary" title="Plus tard" onPress={skip} />
-            }
           />
         </View>
       }

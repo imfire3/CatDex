@@ -1,4 +1,5 @@
 export { AnimatedCircle } from './AnimatedCircle';
+export { BrandLoader } from './BrandLoader';
 export { OnboardingHero } from './OnboardingHero';
 export { DiscoveryTimeline } from './DiscoveryTimeline';
 export { TimelineStep } from './TimelineStep';

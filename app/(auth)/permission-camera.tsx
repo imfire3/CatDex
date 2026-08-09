@@ -1,6 +1,5 @@
-import { Camera } from 'expo-camera';
 import { Redirect, router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -11,7 +10,13 @@ import {
   ONBOARDING_STEP_LABELS,
 } from '@/components/Auth/OnboardingStepper';
 import { Button } from '@/components/Button';
+import { PageLoading } from '@/components/Loader';
 import { Text } from '@/components/Text';
+import {
+  getCameraAccessGranted,
+  openSystemCameraSettings,
+  requestCameraAccess,
+} from '@/lib/cameraAccess';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -56,6 +61,31 @@ export default function PermissionCameraScreen() {
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (!user || onboardingCompleted) {
+      setChecking(false);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const granted = await getCameraAccessGranted();
+        if (cancelled) return;
+        if (granted) {
+          router.replace('/(auth)/permission-location');
+          return;
+        }
+      } finally {
+        if (!cancelled) setChecking(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [onboardingCompleted, user]);
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
@@ -64,21 +94,44 @@ export default function PermissionCameraScreen() {
     return <Redirect href="/(tabs)/map" />;
   }
 
+  if (checking) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <PageLoading label="Vérification de la caméra…" />
+      </View>
+    );
+  }
+
+  const goNext = () => {
+    router.push('/(auth)/permission-location');
+  };
+
   const askCamera = async () => {
     setBusy(true);
     try {
-      if (Platform.OS !== 'web') {
-        const { status } = await Camera.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert(
-            'Caméra plus tard',
-            'Tu pourras l’activer au moment de capturer un chat.',
-            [{ text: 'Continuer', onPress: () => router.push('/(auth)/permission-location') }],
-          );
-          return;
-        }
+      const granted = await requestCameraAccess();
+      if (granted) {
+        goNext();
+        return;
       }
-      router.push('/(auth)/permission-location');
+      Alert.alert(
+        'Caméra requise',
+        'CatDex a besoin de la caméra pour capturer les chats. Tu peux l’activer dans les réglages.',
+        [
+          { text: 'Réessayer', onPress: () => void askCamera() },
+          ...(Platform.OS === 'web'
+            ? [{ text: 'Plus tard', style: 'cancel' as const, onPress: goNext }]
+            : [
+                {
+                  text: 'Réglages',
+                  onPress: () => {
+                    void openSystemCameraSettings();
+                  },
+                },
+                { text: 'Plus tard', style: 'cancel' as const, onPress: goNext },
+              ]),
+        ],
+      );
     } finally {
       setBusy(false);
     }
@@ -100,14 +153,14 @@ export default function PermissionCameraScreen() {
           <PrimaryCTA
             title="Autoriser la caméra"
             loading={busy}
-            subtitle="Pour scanner ton premier chat"
+            subtitle="Obligatoire pour capturer ton premier chat"
             onPress={() => void askCamera()}
             secondary={
               <Button
-                variant="tertiary"
+                variant="secondary"
                 title="Plus tard"
                 disabled={busy}
-                onPress={() => router.push('/(auth)/permission-location')}
+                onPress={goNext}
               />
             }
           />
