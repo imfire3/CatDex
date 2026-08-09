@@ -163,7 +163,7 @@ export default function PermissionLocationScreen() {
                 onPress={() => void askLocation()}
               />
             </OnboardingPulseCta>
-            <Button variant="tertiary" title="Plus tard" disabled={busy} onPress={finish} />
+            <Button variant="secondary" title="Plus tard" disabled={busy} onPress={finish} />
           </View>
         }
       >
