@@ -10,13 +10,28 @@ L’analyse IA et les clés serveur restent **privées** — voir [SECURITY.md](
 ## Parcours principal
 
 1. **Compte** — inscription / connexion (e-mail ; Google / Apple optionnels)
-2. **Carte** — quartier, pins de chats, recentrage GPS
-3. **Scanner** — photo (caméra ou galerie) + permissions in-map
-4. **Analyse** — l’app appelle *ton* API privée (`EXPO_PUBLIC_API_URL`)
-5. **Découverte** — fiche chat, rareté, placement sur la carte
-6. **CatDex** — collection personnelle
-7. **Missions** — objectifs de progression
-8. **Profil** — stats, réglages, suppression de compte
+2. **Onboarding game-feel** (3 écrans, permissions plus tard) — voir ci-dessous
+3. **Carte** — quartier, pins de chats, recentrage GPS
+4. **Scanner** — photo (caméra ou galerie) + permissions in-map
+5. **Analyse** — l’app appelle *ton* API privée (`EXPO_PUBLIC_API_URL`)
+6. **Découverte** — fiche chat, rareté, placement sur la carte
+7. **CatDex** — collection personnelle
+8. **Missions** — objectifs de progression
+9. **Profil** — stats, réglages, suppression de compte
+
+---
+
+## Onboarding (trilogy)
+
+Screenshots publics : `screenshots/app/04-intro.png` · `05-scan.png` · `06-reward.png`
+
+| Étape | Écran | Message | CTA |
+|-------|-------|---------|-----|
+| 1 | Apparition | « Un chat vient d’apparaître près de toi » | Partir explorer |
+| 2 | Analyse IA | « L’IA découvre qui il est » (race, couleur, pelage, pose…) | Trouver mon premier chat |
+| 3 | Récompense | « Nouveau chat ! » — carte (ex. Miel #042) + XP / badges | Commencer ma collection |
+
+Les autorisations GPS / caméra sont demandées **au bon moment** (in-map), pas pendant cette intro.
 
 ---
 
@@ -27,6 +42,7 @@ L’analyse IA et les clés serveur restent **privées** — voir [SECURITY.md](
 - Session persistante (Supabase Auth)
 - OAuth Google / Apple (flags `EXPO_PUBLIC_AUTH_*`, providers dashboard)
 - Mode local (mock) si Supabase n’est pas configuré
+- Onboarding immersif 3 étapes (ci-dessus)
 
 ### Carte
 - Carte interactive (MapLibre / react-native-maps selon plateforme)

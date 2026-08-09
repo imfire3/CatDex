@@ -1,6 +1,6 @@
 {
   "base": "http://127.0.0.1:8099",
-  "generatedAt": "2026-08-05T23:49:37.411Z",
+  "generatedAt": "2026-08-09T18:18:17.005Z",
   "viewport": {
     "width": 390,
     "height": 844,
@@ -28,74 +28,83 @@
     {
       "id": "04-intro",
       "route": "/intro",
-      "title": "Intro",
+      "title": "Onboarding · Apparition",
+      "beforeOnboarding": true,
       "file": "screenshots/app/04-intro.png"
     },
     {
-      "id": "05-permissions",
+      "id": "05-scan",
       "route": "/permissions",
-      "title": "Permissions",
-      "file": "screenshots/app/05-permissions.png"
+      "title": "Onboarding · Analyse IA",
+      "beforeOnboarding": true,
+      "file": "screenshots/app/05-scan.png"
     },
     {
-      "id": "06-map",
+      "id": "06-reward",
+      "route": "/onboarding-reward",
+      "title": "Onboarding · Premier chat",
+      "beforeOnboarding": true,
+      "file": "screenshots/app/06-reward.png"
+    },
+    {
+      "id": "07-map",
       "route": "/map",
       "title": "Explorer (carte)",
-      "file": "screenshots/app/06-map.png"
+      "file": "screenshots/app/07-map.png"
     },
     {
-      "id": "07-catdex",
+      "id": "08-catdex",
       "route": "/catdex",
       "title": "CatDex",
-      "file": "screenshots/app/07-catdex.png"
+      "file": "screenshots/app/08-catdex.png"
     },
     {
-      "id": "08-missions",
+      "id": "09-missions",
       "route": "/missions",
       "title": "Missions",
-      "file": "screenshots/app/08-missions.png"
+      "file": "screenshots/app/09-missions.png"
     },
     {
-      "id": "09-profile",
+      "id": "10-profile",
       "route": "/profile",
       "title": "Profil",
-      "file": "screenshots/app/09-profile.png"
+      "file": "screenshots/app/10-profile.png"
     },
     {
-      "id": "10-scanner",
+      "id": "11-scanner",
       "route": "/scanner",
       "title": "Scanner / Capture",
-      "file": "screenshots/app/10-scanner.png"
+      "file": "screenshots/app/11-scanner.png"
     },
     {
-      "id": "11-discovery",
+      "id": "12-discovery",
       "route": "/discovery",
       "title": "Discovery",
-      "file": "screenshots/app/11-discovery.png"
+      "file": "screenshots/app/12-discovery.png"
     },
     {
-      "id": "12-settings-profile",
+      "id": "13-settings-profile",
       "route": "/settings/edit-profile",
       "title": "Réglages · Profil",
-      "file": "screenshots/app/12-settings-profile.png"
+      "file": "screenshots/app/13-settings-profile.png"
     },
     {
-      "id": "13-settings-notifications",
+      "id": "14-settings-notifications",
       "route": "/settings/notifications",
       "title": "Réglages · Notifs",
-      "file": "screenshots/app/13-settings-notifications.png"
+      "file": "screenshots/app/14-settings-notifications.png"
     },
     {
-      "id": "14-settings-help",
+      "id": "15-settings-help",
       "route": "/settings/help",
       "title": "Réglages · Aide",
-      "file": "screenshots/app/14-settings-help.png"
+      "file": "screenshots/app/15-settings-help.png"
     },
     {
-      "id": "15-cat-detail",
+      "id": "16-cat-detail",
       "route": "/cat/demo_1",
       "title": "Fiche chat",
-      "file": "screenshots/app/15-cat-detail.png"
+      "file": "screenshots/app/16-cat-detail.png"
     }
   ]
 }
