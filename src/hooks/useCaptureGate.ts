@@ -29,12 +29,17 @@ export function useCaptureGate() {
 
   const requestCapture = useCallback(
     async (params?: CaptureParams) => {
-      const granted = await getCameraAccessGranted();
-      if (granted) {
-        openScanner(params);
-        return;
-      }
       setPending(params ?? null);
+      try {
+        const granted = await getCameraAccessGranted();
+        if (granted) {
+          openScanner(params);
+          return;
+        }
+      } catch {
+        // Fall through to modal if permission probe fails.
+      }
+      // Always show in-app acceptance modal before the OS prompt.
       setModalVisible(true);
     },
     [openScanner],

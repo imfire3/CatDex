@@ -15,6 +15,7 @@ import { pullCommunityCatsForMap } from '@/lib/catSync';
 import {
   getCurrentLocationCoordinate,
   isLocationActive,
+  openSystemLocationSettings,
   requestLocationAccess,
 } from '@/lib/locationAccess';
 import { PROXIMITY_ALERT_M, sortCatsByDistance } from '@/lib/mapExplore';
@@ -25,7 +26,7 @@ import type { Cat } from '@/types/cat';
 
 /**
  * Explorer — map + HUD (profile avatar, Missions / Capture / CatDex).
- * No bottom tab bar · no filter stack.
+ * GPS & camera are gated by in-app modals (no silent OS prompts).
  */
 export default function MapScreen() {
   const storedCats = useCatsStore((state) => state.cats);
@@ -56,6 +57,10 @@ export default function MapScreen() {
     latitude: number;
     longitude: number;
   } | null>(null);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [locationBusy, setLocationBusy] = useState(false);
+  /** Start GPS watch only after the user accepted (or already granted). */
+  const [watchEnabled, setWatchEnabled] = useState(false);
 
   const lastHapticCatRef = useRef<string | null>(null);
 
@@ -125,20 +130,6 @@ export default function MapScreen() {
     [sortedCats],
   );
 
-  const refreshUserCoordinate = useCallback(async (opts?: { request?: boolean }) => {
-    if (opts?.request) {
-      const ok = await requestLocationAccess();
-      if (!ok) return null;
-    } else {
-      const active = await isLocationActive();
-      if (!active) return null;
-    }
-    const next = await getCurrentLocationCoordinate();
-    if (!next) return null;
-    setUserCoordinate(next);
-    return next;
-  }, []);
-
   /** Fly camera to a coordinate (always re-triggers, even if already centered). */
   const flyToCoordinate = useCallback(
     (coordinate: { latitude: number; longitude: number }) => {
@@ -150,19 +141,43 @@ export default function MapScreen() {
     [],
   );
 
+  const applyLocation = useCallback(
+    async (coordinate: { latitude: number; longitude: number }) => {
+      setUserCoordinate(coordinate);
+      flyToCoordinate(coordinate);
+      setWatchEnabled(true);
+    },
+    [flyToCoordinate],
+  );
+
+  /** First map entry after signup: in-app GPS modal, never a silent OS prompt. */
   useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      const active = await isLocationActive();
+      if (!mounted) return;
+      if (active) {
+        const next = await getCurrentLocationCoordinate();
+        if (next && mounted) await applyLocation(next);
+        return;
+      }
+      setLocationModalVisible(true);
+    })().catch(() => {
+      if (mounted) setLocationModalVisible(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [applyLocation]);
+
+  useEffect(() => {
+    if (!watchEnabled) return;
+
     let mounted = true;
     let subscription: Location.LocationSubscription | null = null;
     let webWatchId: number | null = null;
 
     (async () => {
-      const next = await refreshUserCoordinate({ request: true });
-      if (!next || !mounted) return;
-      flyToCoordinate(next);
-
-      const active = await isLocationActive();
-      if (!active || !mounted) return;
-
       if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.geolocation) {
         webWatchId = navigator.geolocation.watchPosition(
           (position) => {
@@ -201,7 +216,7 @@ export default function MapScreen() {
         navigator.geolocation?.clearWatch(webWatchId);
       }
     };
-  }, [flyToCoordinate, refreshUserCoordinate]);
+  }, [watchEnabled]);
 
   useEffect(() => {
     if (!nearestForProximity || nearestForProximity.distanceM > PROXIMITY_ALERT_M) {
@@ -215,11 +230,34 @@ export default function MapScreen() {
     }
   }, [nearestForProximity, setHasNearbyCat]);
 
-  const recenterOnPlayer = async () => {
+  const handleLocationAuthorize = useCallback(async () => {
+    setLocationBusy(true);
     try {
-      const next = await refreshUserCoordinate({ request: true });
+      const ok = await requestLocationAccess();
+      if (ok) {
+        const next = await getCurrentLocationCoordinate();
+        setLocationModalVisible(false);
+        if (next) await applyLocation(next);
+        return;
+      }
+      if (Platform.OS !== 'web') {
+        await openSystemLocationSettings();
+      }
+    } finally {
+      setLocationBusy(false);
+    }
+  }, [applyLocation]);
+
+  const recenterOnPlayer = async () => {
+    const active = await isLocationActive();
+    if (!active) {
+      setLocationModalVisible(true);
+      return;
+    }
+    try {
+      const next = await getCurrentLocationCoordinate();
       if (next) {
-        flyToCoordinate(next);
+        await applyLocation(next);
         return;
       }
     } catch {
@@ -260,12 +298,7 @@ export default function MapScreen() {
       </View>
 
       <LocationInactiveBanner
-        onActivated={() => {
-          void refreshUserCoordinate({ request: true }).then((next) => {
-            if (!next) return;
-            flyToCoordinate(next);
-          });
-        }}
+        onRequestEnable={() => setLocationModalVisible(true)}
       />
 
       <MapExplorerHud
@@ -311,15 +344,37 @@ export default function MapScreen() {
       />
 
       <EnablePermissionModal
+        visible={locationModalVisible}
+        kind="location"
+        title="Autorise le suivi GPS"
+        description="CatDex utilise ta position pour placer les chats près de toi et te suivre pendant que tu explores. Tu peux refuser et l’activer plus tard."
+        primaryLabel={locationBusy ? 'Ouverture…' : 'Autoriser le GPS'}
+        onClose={() => setLocationModalVisible(false)}
+        onRetry={() => {
+          void handleLocationAuthorize();
+        }}
+        onOpenSettings={
+          Platform.OS === 'web'
+            ? undefined
+            : () => {
+                void openSystemLocationSettings();
+              }
+        }
+        onDismissLabel="Plus tard"
+        onDismiss={() => setLocationModalVisible(false)}
+      />
+
+      <EnablePermissionModal
         visible={captureGate.modalVisible}
         kind="camera"
         title="Autorise la caméra"
-        description="Pour scanner et capturer les chats que tu croises dans ton quartier."
+        description="Pour scanner et capturer les chats que tu croises dans ton quartier, CatDex a besoin d’accéder à ta caméra."
         primaryLabel="Autoriser la caméra"
         onClose={captureGate.dismiss}
         onRetry={() => {
           void captureGate.handleRetry();
         }}
+        onOpenSettings={captureGate.openSettings}
         onDismissLabel="Plus tard"
         onDismiss={captureGate.dismiss}
       />
