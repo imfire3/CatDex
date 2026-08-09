@@ -6,7 +6,9 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
 import { OnboardingPulseCta } from '@/components/Auth/OnboardingVisuals';
+import { BrandLogo } from '@/components/BrandLogo';
 import { Button } from '@/components/Button';
+import { Spinner } from '@/components/Loader/Loader';
 import { Text } from '@/components/Text';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -53,6 +55,7 @@ export default function PermissionCameraScreen() {
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
   const [busy, setBusy] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
@@ -78,11 +81,35 @@ export default function PermissionCameraScreen() {
         );
         return;
       }
+      setConfirmed(true);
+      await new Promise((resolve) => setTimeout(resolve, 800));
       router.push('/(auth)/permission-location');
     } finally {
       setBusy(false);
     }
   };
+
+  if (confirmed) {
+    return (
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel="Caméra prête"
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing[16],
+        }}
+      >
+        <BrandLogo size="lg" />
+        <Spinner size="sm" color={colors.brand} />
+        <Text variant="h3" color="textBrand" align="center">
+          C’est bon, tout marche !
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <AuthShell

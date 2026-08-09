@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
@@ -10,7 +10,11 @@ import { MapCatModal } from '@/components/maps/MapCatModal';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
 import { PARIS_20E } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
-import { isLocationActive, requestLocationAccess } from '@/lib/locationAccess';
+import {
+  getCurrentLocationCoordinate,
+  isLocationActive,
+  requestLocationAccess,
+} from '@/lib/locationAccess';
 import { PROXIMITY_ALERT_M, sortCatsByDistance } from '@/lib/mapExplore';
 import { useCatsStore } from '@/store/cats';
 import { useMapExploreStore } from '@/store/mapExplore';
@@ -126,13 +130,8 @@ export default function MapScreen() {
       const active = await isLocationActive();
       if (!active) return null;
     }
-    const position = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.High,
-    });
-    const next = {
-      latitude: position.coords.latitude,
-      longitude: position.coords.longitude,
-    };
+    const next = await getCurrentLocationCoordinate();
+    if (!next) return null;
     setUserCoordinate(next);
     return next;
   }, []);
@@ -151,6 +150,7 @@ export default function MapScreen() {
   useEffect(() => {
     let mounted = true;
     let subscription: Location.LocationSubscription | null = null;
+    let webWatchId: number | null = null;
 
     (async () => {
       const next = await refreshUserCoordinate({ request: true });
@@ -159,6 +159,21 @@ export default function MapScreen() {
 
       const active = await isLocationActive();
       if (!active || !mounted) return;
+
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.geolocation) {
+        webWatchId = navigator.geolocation.watchPosition(
+          (position) => {
+            if (!mounted) return;
+            setUserCoordinate({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+          },
+          () => undefined,
+          { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 },
+        );
+        return;
+      }
 
       subscription = await Location.watchPositionAsync(
         {
@@ -179,6 +194,9 @@ export default function MapScreen() {
     return () => {
       mounted = false;
       subscription?.remove();
+      if (webWatchId != null && typeof navigator !== 'undefined') {
+        navigator.geolocation?.clearWatch(webWatchId);
+      }
     };
   }, [flyToCoordinate, refreshUserCoordinate]);
 

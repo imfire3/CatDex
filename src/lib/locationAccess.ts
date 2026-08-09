@@ -10,10 +10,55 @@ export type LocationAccessState = {
   active: boolean;
 };
 
+export type LocationCoordinate = {
+  latitude: number;
+  longitude: number;
+};
+
+function getWebPosition(timeout = 10_000): Promise<LocationCoordinate | null> {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout, maximumAge: 10_000 },
+    );
+  });
+}
+
 /**
  * Real location status for native + web (no Platform.OS === 'web' shortcut).
  */
 export async function getLocationAccessState(): Promise<LocationAccessState> {
+  if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
+    try {
+      const permission = await navigator.permissions?.query({ name: 'geolocation' });
+      if (permission) {
+        const status =
+          permission.state === 'granted'
+            ? Location.PermissionStatus.GRANTED
+            : permission.state === 'denied'
+              ? Location.PermissionStatus.DENIED
+              : Location.PermissionStatus.UNDETERMINED;
+        return {
+          permission: status,
+          servicesEnabled: permission.state !== 'denied',
+          active: permission.state === 'granted',
+        };
+      }
+    } catch {
+      // Safari may not expose the Permissions API; fall through to Expo.
+    }
+  }
+
   const { status } = await Location.getForegroundPermissionsAsync();
   let servicesEnabled = true;
   try {
@@ -36,6 +81,10 @@ export async function isLocationActive(): Promise<boolean> {
 }
 
 export async function requestLocationAccess(): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    return Boolean(await getWebPosition());
+  }
+
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== Location.PermissionStatus.GRANTED) return false;
   try {
@@ -43,6 +92,24 @@ export async function requestLocationAccess(): Promise<boolean> {
     return enabled;
   } catch {
     return true;
+  }
+}
+
+export async function getCurrentLocationCoordinate(): Promise<LocationCoordinate | null> {
+  if (Platform.OS === 'web') {
+    return getWebPosition();
+  }
+
+  try {
+    const position = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
+    });
+    return {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+    };
+  } catch {
+    return null;
   }
 }
 
