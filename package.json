@@ -65,7 +65,8 @@
     "deploy:check": "bash scripts/check-deployment.sh",
     "deploy:web": "bash scripts/deploy-web.sh",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "npm test --prefix server"
   },
   "private": true
 }
