@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -25,8 +25,9 @@ import {
   SettingsSection,
 } from '@/components/Settings';
 import { Text } from '@/components/Text';
-import { openSupportMail, PRIVACY_URL, SUPPORT_EMAIL, TERMS_URL } from '@/lib/supportLinks';
+import { openSupportMail, SUPPORT_EMAIL } from '@/lib/supportLinks';
 import { useAuthStore } from '@/store/auth';
+import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 
 async function openUrl(url: string) {
@@ -40,7 +41,11 @@ async function openUrl(url: string) {
 export default function SettingsHubScreen() {
   const { spacing } = useTheme();
   const signOut = useAuthStore((s) => s.signOut);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const loading = useAuthStore((s) => s.loading);
+  const showToast = useToastStore((s) => s.show);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSignOut = () => {
     void (async () => {
@@ -48,6 +53,34 @@ export default function SettingsHubScreen() {
         await signOut();
       } finally {
         router.replace('/(auth)/welcome');
+      }
+    })();
+  };
+
+  const handleDeleteAccount = () => {
+    void (async () => {
+      setDeleting(true);
+      try {
+        await deleteAccount();
+        setDeleteOpen(false);
+        showToast({
+          title: 'Compte supprimé',
+          description: 'Tes données CatDex ont été effacées.',
+          tone: 'success',
+        });
+        router.replace('/(auth)/welcome');
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Suppression impossible pour le moment.';
+        showToast({
+          title: 'Échec de la suppression',
+          description: message,
+          tone: 'danger',
+        });
+      } finally {
+        setDeleting(false);
       }
     })();
   };
@@ -78,7 +111,7 @@ export default function SettingsHubScreen() {
           <SettingsRow
             icon={<IconSpeaker />}
             title="Notifications"
-            subtitle="Choisis les alertes que tu souhaites recevoir."
+            subtitle="Préférences locales — push pas encore actif."
             onPress={() => router.push('/settings/notifications')}
           />
           <SettingsRow
@@ -171,18 +204,14 @@ export default function SettingsHubScreen() {
             icon={<IconDoc />}
             title="Conditions d’utilisation"
             subtitle="Consulte les conditions d’utilisation."
-            onPress={() => {
-              void openUrl(TERMS_URL);
-            }}
+            onPress={() => router.push('/settings/legal-terms' as Href)}
           />
           <SettingsRow
             icon={<IconShield />}
             title="Politique de confidentialité"
             subtitle="Découvre comment tes données sont utilisées."
             showDivider={false}
-            onPress={() => {
-              void openUrl(PRIVACY_URL);
-            }}
+            onPress={() => router.push('/settings/legal-privacy' as Href)}
           />
         </SettingsSection>
 
@@ -192,23 +221,36 @@ export default function SettingsHubScreen() {
       <Modal
         visible={deleteOpen}
         title="Supprimer mon compte ?"
-        onClose={() => setDeleteOpen(false)}
+        onClose={() => {
+          if (!deleting) setDeleteOpen(false);
+        }}
         accessibilityLabel="Confirmation suppression de compte"
       >
         <View style={{ gap: spacing[16] }}>
           <Text variant="body" color="textBody">
             Cette action est définitive. Tes captures, ta progression et ton profil seront
-            effacés. Écris-nous si tu as besoin d’aide avant.
+            effacés immédiatement.
           </Text>
           <Button
-            title="Oui, supprimer"
+            title={deleting || loading ? 'Suppression…' : 'Oui, supprimer'}
             variant="destructive"
+            disabled={deleting || loading}
+            onPress={handleDeleteAccount}
+          />
+          <Button
+            title="Annuler"
+            variant="secondary"
+            disabled={deleting}
+            onPress={() => setDeleteOpen(false)}
+          />
+          <Button
+            title="Besoin d’aide ?"
+            variant="ghost"
+            disabled={deleting}
             onPress={() => {
-              setDeleteOpen(false);
-              void openUrl(openSupportMail('Suppression de compte CatDex'));
+              void openUrl(openSupportMail('Aide avant suppression de compte CatDex'));
             }}
           />
-          <Button title="Annuler" variant="secondary" onPress={() => setDeleteOpen(false)} />
           <Text variant="caption" color="textMuted" align="center">
             {SUPPORT_EMAIL}
           </Text>

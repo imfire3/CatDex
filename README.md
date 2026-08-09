@@ -22,6 +22,9 @@ Slogan : **Ton quartier. Tes chats.**
 3. Suivez le guide complet : **[supabase/README.md](./supabase/README.md)**
 4. Copiez vos clés dans `.env` :
 
+Pour repartir sur un projet neuf sans reproduire l'ancien schéma incomplet,
+suivez d'abord **[docs/releases/SUPABASE_CLEAN_START.md](./docs/releases/SUPABASE_CLEAN_START.md)**.
+
 ```bash
 cp .env.example .env
 # Ajoutez vos clés Supabase dans .env
@@ -78,6 +81,11 @@ Login (Apple / Google / email) → Carte → Scanner → Analyse IA → Découve
 
 Onglets : Carte · CatDex · Missions · Profil (+ FAB Scanner)
 
+## Bêta web
+
+La stratégie gratuite recommandée (Netlify + Render + Supabase) est décrite
+dans **[docs/releases/WEB_BETA.md](./docs/releases/WEB_BETA.md)**.
+
 ## Configuration Supabase
 
 L'application utilise Supabase pour :
@@ -107,6 +115,9 @@ Consultez **[supabase/README.md](./supabase/README.md)** pour :
 - Dépannage
 
 ## Structure du projet
+
+Voir aussi [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) pour les flux et le
+plan de découpage progressif.
 
 ```
 catdex/

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { View } from 'react-native';
 
 import {
   IconFlag,
@@ -9,9 +10,12 @@ import {
   SettingsScreen,
   SettingsSection,
 } from '@/components/Settings';
+import { Text } from '@/components/Text';
 import { useSettingsPrefsStore } from '@/store/settingsPrefs';
+import { useTheme } from '@/theme/ThemeProvider';
 
 export default function NotificationsSettingsScreen() {
+  const { colors, spacing, radius } = useTheme();
   const prefs = useSettingsPrefsStore((s) => s.prefs);
   const hydrated = useSettingsPrefsStore((s) => s.hydrated);
   const hydrate = useSettingsPrefsStore((s) => s.hydrate);
@@ -24,9 +28,25 @@ export default function NotificationsSettingsScreen() {
   return (
     <SettingsScreen
       title="Notifications"
-      subtitle="Choisis les alertes que tu souhaites recevoir."
+      subtitle="Préférences enregistrées sur cet appareil. Les push ne sont pas encore envoyés."
     >
-      <SettingsSection title="Alertes">
+      <View
+        style={{
+          padding: spacing[16],
+          borderRadius: radius.lg,
+          backgroundColor: colors.brandSoft,
+          borderWidth: 1,
+          borderColor: colors.border,
+          marginBottom: spacing[8],
+        }}
+      >
+        <Text variant="bodySmall" color="textBody">
+          Bientôt : vraies alertes push. Pour l’instant, ces interrupteurs préparent
+          seulement tes choix — rien n’est envoyé.
+        </Text>
+      </View>
+
+      <SettingsSection title="Alertes (bientôt)">
         <SettingsRow
           kind="switch"
           icon={<IconSparkle />}

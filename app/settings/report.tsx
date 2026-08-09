@@ -7,7 +7,7 @@ import { Button } from '@/components/Button';
 import { TextInput } from '@/components/Input';
 import { SettingsScreen } from '@/components/Settings';
 import { Text } from '@/components/Text';
-import { openSupportMail } from '@/lib/supportLinks';
+import { openSupportMail, SUPPORT_EMAIL } from '@/lib/supportLinks';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -57,7 +57,7 @@ export default function ReportProblemScreen() {
     } catch {
       showToast({
         title: 'Impossible d’ouvrir le mail',
-        description: 'Réessaie ou écris à support@catdex.app.',
+        description: `Réessaie ou écris à ${SUPPORT_EMAIL}.`,
         tone: 'danger',
       });
     } finally {

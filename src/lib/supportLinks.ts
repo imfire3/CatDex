@@ -1,8 +1,7 @@
-export const SUPPORT_EMAIL = 'support@catdex.app';
-export const TERMS_URL = 'https://catdex.app/terms';
-export const PRIVACY_URL = 'https://catdex.app/privacy';
-export const DISCORD_URL = 'https://discord.gg/catdex';
-export const INSTAGRAM_URL = 'https://instagram.com/catdex.app';
+export const SUPPORT_EMAIL = 'vincentgiacalonepro@gmail.com';
+
+export const IN_APP_TERMS_PATH = '/settings/legal-terms' as const;
+export const IN_APP_PRIVACY_PATH = '/settings/legal-privacy' as const;
 
 export function openSupportMail(subject: string, body?: string) {
   const params = new URLSearchParams();

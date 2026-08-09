@@ -5,6 +5,12 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   ...expoConfig,
   {
-    ignores: ['dist/*', 'server/**', 'node_modules/**', '.expo/**'],
+    ignores: [
+      'dist/**',
+      'server/**',
+      'node_modules/**',
+      '.expo/**',
+      'ChatDex Mobile App UI/**',
+    ],
   },
 ]);

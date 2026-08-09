@@ -1,5 +1,10 @@
 # 🚀 Déployer CatDex sur Render.com MAINTENANT
 
+> Pour une nouvelle installation, commence par
+> [`docs/releases/SUPABASE_CLEAN_START.md`](./docs/releases/SUPABASE_CLEAN_START.md),
+> puis suis [`docs/releases/WEB_BETA.md`](./docs/releases/WEB_BETA.md). Les
+> anciennes instructions ci-dessous sont conservées comme aide détaillée.
+
 ## ✅ C'est Prêt !
 
 Le fichier `render.yaml` est maintenant sur la branche **main** de GitHub !
@@ -40,6 +45,7 @@ Tu verras plusieurs variables. **Configure SEULEMENT celles-ci** :
 | `OPENAI_API_KEY` | `sk-proj-...` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | `SUPABASE_URL` | `https://xyz.supabase.co` | Dashboard Supabase → Settings → API |
 | `SUPABASE_JWT_SECRET` | `secret-key` | Dashboard Supabase → Settings → API → JWT Secret |
+| `SUPABASE_SERVICE_ROLE_KEY` | clé secrète serveur | Dashboard Supabase → Settings → API |
 
 **Les autres sont déjà configurées** :
 - ✅ `NODE_ENV=production`

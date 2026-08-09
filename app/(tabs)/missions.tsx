@@ -89,7 +89,7 @@ export default function MissionsScreen() {
         }}
       >
         <Text variant="body" color="textBody">
-          Chaque mission te rapproche du CatDex ultime.
+          Progression calculée à partir de tes captures. Pas encore de notifications push.
         </Text>
 
         <MissionLevelCard
@@ -104,14 +104,17 @@ export default function MissionsScreen() {
         />
 
         <View style={{ gap: spacing[16] }}>
-          <SectionLabel title="Aujourd’hui" hint="Termine ces défis avant ce soir." />
+          <SectionLabel
+            title="Aujourd’hui"
+            hint="Objectifs locaux basés sur ta collection — pas de serveur de quêtes."
+          />
           <DailyQuestList quests={daily} />
         </View>
 
         <View style={{ gap: spacing[16] }}>
           <SectionLabel
             title="En ce moment"
-            hint="Un objectif plus ambitieux. Tu as toute la semaine."
+            hint="Défi hebdo estimé depuis tes chats déjà capturés."
           />
           <WeeklyChallengeCard quest={weekly} />
         </View>
@@ -119,7 +122,7 @@ export default function MissionsScreen() {
         <View style={{ gap: spacing[16] }}>
           <SectionLabel
             title="Collections"
-            hint="Chaque collection raconte une nouvelle histoire."
+            hint="Aperçus débloqués selon ton niveau local."
           />
           <CollectionPreview collections={collections} onSeeAll={handleSeeCollections} />
         </View>

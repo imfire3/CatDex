@@ -1,8 +1,7 @@
 import { Linking, Platform } from 'react-native';
 
 import { recordAnalysisFeedback } from '@/lib/analysisFeedback';
-
-const SUPPORT_EMAIL = 'support@catdex.app';
+import { SUPPORT_EMAIL } from '@/lib/supportLinks';
 
 /** Queue a lightweight failure report + open mail client when available. */
 export async function sendAnalysisErrorReport(input?: {

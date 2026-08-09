@@ -73,6 +73,8 @@ type AuthState = {
   /** Send a password-reset email to the current account. */
   sendPasswordResetEmail: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Permanently delete account (API + local wipe). */
+  deleteAccount: () => Promise<void>;
   initialize: () => Promise<void>;
   handleAuthUrl: (url: string) => Promise<boolean>;
 };
@@ -813,6 +815,38 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error) {
           console.error('Sign out error:', error);
+          set({ loading: false, error: error as AuthError });
+          throw error;
+        }
+      },
+
+      deleteAccount: async () => {
+        try {
+          set({ loading: true, error: null });
+          if (!isSupabaseConfigured || !supabase) {
+            await clearCatsOnSignOut();
+            set({
+              user: null,
+              session: null,
+              onboardingCompleted: false,
+              loading: false,
+            });
+            return;
+          }
+
+          const { deleteRemoteAccount } = await import('@/lib/api');
+          await deleteRemoteAccount();
+          await clearLocalSupabaseSession();
+          await clearCatsOnSignOut();
+          set({
+            user: null,
+            session: null,
+            onboardingCompleted: false,
+            loading: false,
+            error: null,
+          });
+        } catch (error) {
+          console.error('Delete account error:', error);
           set({ loading: false, error: error as AuthError });
           throw error;
         }
