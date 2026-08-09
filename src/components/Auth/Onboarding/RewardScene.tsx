@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
   FadeIn,
@@ -22,8 +21,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { Glyph } from './glyphs';
-
-const DEMO_CAT = require('../../../../assets/onboarding-demo-cat.jpg');
+import { OnboardingCatCard } from './OnboardingCatCard';
 
 const REWARDS = [
   { id: 'xp', label: '+30 XP', glyph: 'xp' as const },
@@ -37,7 +35,7 @@ const REWARDS = [
  * Flip / spring Pokémon-like, puis récompenses une par une.
  */
 export function RewardScene() {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, fonts, spacing, radius, motion } = useTheme();
   const reduceMotion = useReducedMotion();
   const [showRewards, setShowRewards] = useState(reduceMotion);
 
@@ -136,61 +134,8 @@ export function RewardScene() {
           ]}
         />
 
-        <Animated.View
-          style={[
-            cardStyle,
-            {
-              width: cardW,
-              borderRadius: radius.cta,
-              overflow: 'hidden',
-              backgroundColor: colors.surfaceElevated,
-              borderWidth: StyleSheet.hairlineWidth,
-              borderColor: colors.border,
-            },
-            shadow.floating,
-          ]}
-        >
-          <View style={{ height: spacing[96] + spacing[48], backgroundColor: colors.surfaceSecondary }}>
-            <Image
-              source={DEMO_CAT}
-              resizeMode="cover"
-              style={{ width: '100%', height: '100%' }}
-              accessibilityIgnoresInvertColors
-            />
-            <LinearGradient
-              colors={['transparent', 'rgba(21,23,43,0.75)']}
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: spacing[48],
-                justifyContent: 'flex-end',
-                padding: spacing[8],
-              }}
-            >
-              <Text variant="caption" color="onAccent" style={{ fontFamily: fonts.bodySemi }}>
-                #042
-              </Text>
-            </LinearGradient>
-          </View>
-          <View style={{ padding: spacing[16], gap: spacing[8], alignItems: 'center' }}>
-            <Text variant="h2" color="text" style={{ fontFamily: fonts.display }}>
-              Miel
-            </Text>
-            <View
-              style={{
-                paddingVertical: spacing[4],
-                paddingHorizontal: spacing[16],
-                borderRadius: radius.full,
-                backgroundColor: colors.brandSoft,
-              }}
-            >
-              <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-                Rare
-              </Text>
-            </View>
-          </View>
+        <Animated.View style={cardStyle}>
+          <OnboardingCatCard size="compact" showMeta={false} />
         </Animated.View>
       </View>
 

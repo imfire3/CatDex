@@ -12,8 +12,7 @@ import Animated, {
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** Baseline JPEG demo cat — must render in Expo Go. */
-const DEMO_CAT = require('../../../../assets/onboarding-demo-cat.jpg');
+import { DEMO_CAT_IMAGE } from './demoCat';
 
 type AnimatedCircleProps = {
   /** Accessibility label for the hero image. */
@@ -125,7 +124,7 @@ export function AnimatedCircle({
         ]}
       >
         <Image
-          source={DEMO_CAT}
+          source={DEMO_CAT_IMAGE}
           resizeMode="cover"
           style={{ width: photoSize, height: photoSize }}
           accessibilityIgnoresInvertColors
