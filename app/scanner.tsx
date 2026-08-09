@@ -146,6 +146,9 @@ export default function ScannerScreen() {
   const [photoMimeType, setPhotoMimeType] = useState('image/jpeg');
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<CatAnalysis | null>(null);
+  const [analysisErrorMessage, setAnalysisErrorMessage] = useState<string | null>(
+    null,
+  );
   const [existingCat, setExistingCat] = useState<Cat | null>(null);
   const [allowRecapture, setAllowRecapture] = useState(false);
   const [facing, setFacing] = useState<CameraType>('back');
@@ -266,6 +269,7 @@ export default function ScannerScreen() {
   ) => {
     const gen = ++analysisGenRef.current;
     setAnalyzing(true);
+    setAnalysisErrorMessage(null);
     setStep('analyzing');
     const startedAt = Date.now();
 
@@ -306,6 +310,11 @@ export default function ScannerScreen() {
       if (isStale()) return;
       setPhotoUri(imageUri);
       const kind = classifyThrownAnalysisError(error);
+      const detail =
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message.trim()
+          : null;
+      setAnalysisErrorMessage(detail);
       setStep(
         kind === 'offline' ? 'offline' : kind === 'server' ? 'server' : 'analysisError',
       );
@@ -525,7 +534,7 @@ export default function ScannerScreen() {
         <ErrorState
           icon={copy.icon}
           title={copy.title}
-          description={copy.description}
+          description={analysisErrorMessage ?? copy.description}
           primaryLabel={copy.primaryLabel}
           onPrimary={retryLastPhoto}
         />
@@ -551,7 +560,7 @@ export default function ScannerScreen() {
         <ErrorState
           icon={copy.icon}
           title={copy.title}
-          description={copy.description}
+          description={analysisErrorMessage ?? copy.description}
           primaryLabel={copy.primaryLabel}
           onPrimary={retryLastPhoto}
         />
@@ -577,7 +586,7 @@ export default function ScannerScreen() {
         <ErrorState
           icon={copy.icon}
           title={copy.title}
-          description={copy.description}
+          description={analysisErrorMessage ?? copy.description}
           primaryLabel={copy.primaryLabel}
           onPrimary={retryLastPhoto}
           secondaryLabel={copy.secondaryLabel}
@@ -585,7 +594,7 @@ export default function ScannerScreen() {
             void (async () => {
               await sendAnalysisErrorReport({
                 errorKind: 'analysis',
-                message: 'Impossible d’identifier ce chat',
+                message: analysisErrorMessage ?? 'Impossible d’identifier ce chat',
               });
               showToast({
                 title: 'Rapport envoyé',

@@ -2,6 +2,9 @@ import Constants from 'expo-constants';
 
 const API_PORT = 8787;
 
+/** Last-resort Vision API when local `:8787` is down / missing OPENAI_API_KEY. */
+const DEFAULT_REMOTE_API_URL = 'https://catdex-api.onrender.com';
+
 function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, '');
 }
@@ -70,6 +73,9 @@ export function getApiCandidateUrls(): string[] {
   } else if (fromEnv) {
     push(fromEnv);
   }
+
+  // Dev without .env still needs a remote fallback (auth required there).
+  push(DEFAULT_REMOTE_API_URL);
 
   return candidates;
 }
