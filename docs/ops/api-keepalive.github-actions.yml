@@ -1,0 +1,33 @@
+# Ping the Render API so free-tier instances stay warm for beta captures.
+# Install: cp docs/ops/api-keepalive.github-actions.yml .github/workflows/api-keepalive.yml
+# (Requires a GitHub token with the `workflow` scope to push under .github/workflows.)
+name: API keep-alive
+
+on:
+  schedule:
+    # Render free tier sleeps after ~15 min idle; ping under that window.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Warm catdex-api /health
+        run: |
+          set -euo pipefail
+          API_URL="${API_URL:-https://catdex-api.onrender.com}"
+          echo "Pinging ${API_URL}/health …"
+          # Allow a cold start (can take 30–60s) then require a healthy body.
+          for attempt in 1 2 3 4 5; do
+            if body="$(curl -fsS --max-time 45 "${API_URL}/health")"; then
+              echo "$body"
+              echo "$body" | grep -q '"ok":true'
+              exit 0
+            fi
+            echo "Attempt ${attempt} failed; retrying…"
+            sleep 5
+          done
+          echo "Health check failed after retries" >&2
+          exit 1

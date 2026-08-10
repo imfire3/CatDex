@@ -61,7 +61,8 @@
     "screenshots:server": "EXPO_NO_DOTENV=1 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key EXPO_NO_TELEMETRY=1 expo start --web --localhost --port 8099",
     "screenshots": "node scripts/export-screenshots.mjs http://127.0.0.1:8099",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "api:keepalive": "curl -fsS --max-time 60 https://catdex-api.onrender.com/health"
   },
   "private": true
 }
