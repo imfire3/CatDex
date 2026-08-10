@@ -10,7 +10,7 @@ import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner
 import { MapCatModal } from '@/components/maps/MapCatModal';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
 import { useCaptureGate } from '@/hooks/useCaptureGate';
-import { formatDistanceMeters, PARIS_20E } from '@/lib/constants';
+import { PARIS_20E } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
 import {
   getCurrentLocationCoordinate,
@@ -22,6 +22,7 @@ import { PROXIMITY_ALERT_M, sortCatsByDistance } from '@/lib/mapExplore';
 import { useCatsStore } from '@/store/cats';
 import { useMapExploreStore } from '@/store/mapExplore';
 import { useMissionsStore } from '@/store/missions';
+import { useNotificationsStore } from '@/store/notifications';
 import type { Cat } from '@/types/cat';
 
 /**
@@ -31,6 +32,7 @@ import type { Cat } from '@/types/cat';
 export default function MapScreen() {
   const storedCats = useCatsStore((state) => state.cats);
   const setHasNearbyCat = useMapExploreStore((state) => state.setHasNearbyCat);
+  const pushNearby = useNotificationsStore((state) => state.pushNearby);
   const missions = useMissionsStore((state) => state.missions);
   const openMissionCount = missions.filter((m) => !m.completed).length;
   const captureGate = useCaptureGate();
@@ -130,15 +132,6 @@ export default function MapScreen() {
     [sortedCats],
   );
 
-  const pinCallouts = useMemo(() => {
-    const next: Record<string, string> = {};
-    for (const { cat, distanceM } of sortedCats) {
-      if (distanceM > PROXIMITY_ALERT_M) continue;
-      next[cat.id] = `${cat.name} · ${formatDistanceMeters(distanceM)}`;
-    }
-    return next;
-  }, [sortedCats]);
-
   /** Fly camera to a coordinate (always re-triggers, even if already centered). */
   const flyToCoordinate = useCallback(
     (coordinate: { latitude: number; longitude: number }) => {
@@ -233,11 +226,17 @@ export default function MapScreen() {
       return;
     }
     setHasNearbyCat(true);
-    if (lastHapticCatRef.current !== nearestForProximity.cat.id) {
-      lastHapticCatRef.current = nearestForProximity.cat.id;
+    const { cat } = nearestForProximity;
+    if (lastHapticCatRef.current !== cat.id) {
+      lastHapticCatRef.current = cat.id;
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      pushNearby({
+        catId: cat.id,
+        catName: cat.name,
+        breed: cat.analysis?.breed,
+      });
     }
-  }, [nearestForProximity, setHasNearbyCat]);
+  }, [nearestForProximity, pushNearby, setHasNearbyCat]);
 
   const handleLocationAuthorize = useCallback(async () => {
     setLocationBusy(true);
@@ -258,11 +257,18 @@ export default function MapScreen() {
   }, [applyLocation]);
 
   const recenterOnPlayer = async () => {
+    // Instant camera feedback from last known GPS (works even if a fresh
+    // geolocation read is slow or blocked).
+    if (userCoordinate) {
+      flyToCoordinate(userCoordinate);
+    }
+
     const active = await isLocationActive();
     if (!active) {
-      setLocationModalVisible(true);
+      if (!userCoordinate) setLocationModalVisible(true);
       return;
     }
+
     try {
       const next = await getCurrentLocationCoordinate();
       if (next) {
@@ -272,7 +278,10 @@ export default function MapScreen() {
     } catch {
       // fallback below
     }
-    flyToCoordinate({ ...PARIS_20E.center });
+
+    if (!userCoordinate) {
+      flyToCoordinate({ ...PARIS_20E.center });
+    }
   };
 
   const mapCatList = useMemo(
@@ -299,7 +308,7 @@ export default function MapScreen() {
           userCoordinate={userCoordinate}
           nearbyCatIds={nearbyCatIds}
           capturedCatIds={capturedCatIdList}
-          pinCallouts={pinCallouts}
+          selectedCatId={selected?.id ?? null}
           onSelectCat={(item) => {
             setSelected(item);
             setSheetVisible(true);

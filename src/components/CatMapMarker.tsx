@@ -8,7 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import {
-  CAT_PIN_AVATAR,
+  CAT_PIN_SELECTED,
   CAT_PIN_SILHOUETTE,
   CAT_PIN_TIP_H,
   CatPinVisual,
@@ -21,27 +21,28 @@ type Props = {
   cat: Cat;
   onPress: (cat: Cat) => void;
   isNearby?: boolean;
-  /** Dim / mystery look for not-yet-captured world cats. */
   captured?: boolean;
-  /** Purple bubble above featured pins — e.g. "Nox · 90 m". */
+  selected?: boolean;
   callout?: string | null;
 };
 
 /**
- * Map pin — featured photo+callout when nearby, grey silhouette otherwise.
+ * Map pin — purple silhouette; selected grows with pulse rings.
  */
 function CatMapMarkerComponent({
   cat,
   onPress,
   isNearby = false,
   captured = true,
-  callout = null,
+  selected = false,
 }: Props) {
   const { spacing } = useTheme();
-  const size = isNearby ? spacing[48] : CAT_PIN_SILHOUETTE;
-  const calloutPad = callout ? spacing[24] : 0;
-  const wrapW = Math.max(size + spacing[16], spacing[96]);
-  const wrapH = size + (isNearby ? CAT_PIN_TIP_H : 0) + calloutPad;
+  const size = selected ? CAT_PIN_SELECTED : CAT_PIN_SILHOUETTE;
+  const pulseMax = selected ? size * 2.4 : 0;
+  const wrapW = selected ? pulseMax : size + spacing[16];
+  const wrapH = selected
+    ? pulseMax / 2 + size + CAT_PIN_TIP_H
+    : size + CAT_PIN_TIP_H;
 
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
   const appear = useSharedValue(0);
@@ -49,14 +50,13 @@ function CatMapMarkerComponent({
   useEffect(() => {
     appear.value = withSpring(1, motionEasing.standard);
     setTracksViewChanges(true);
-  }, [appear, cat.id, cat.photoUri, isNearby, callout]);
+  }, [appear, cat.id, selected]);
 
-  // Safety net if onLoad never fires (sprite-only pins settle via callback).
   useEffect(() => {
     if (!tracksViewChanges) return;
-    const freeze = setTimeout(() => setTracksViewChanges(false), 2500);
+    const freeze = setTimeout(() => setTracksViewChanges(false), 1200);
     return () => clearTimeout(freeze);
-  }, [tracksViewChanges, cat.id, cat.photoUri]);
+  }, [tracksViewChanges, cat.id, selected]);
 
   const onVisualSettled = useCallback(() => {
     setTracksViewChanges(false);
@@ -73,12 +73,12 @@ function CatMapMarkerComponent({
       tracksViewChanges={tracksViewChanges}
       anchor={{ x: 0.5, y: 1 }}
       tracksInfoWindowChanges={false}
-      zIndex={isNearby ? 20 : captured ? 12 : 10}
+      zIndex={selected ? 30 : isNearby ? 20 : captured ? 12 : 10}
     >
       <Animated.View
         style={[
           styles.wrap,
-          { width: wrapW, height: wrapH, minWidth: CAT_PIN_AVATAR },
+          { width: wrapW, height: wrapH },
           bodyStyle,
         ]}
       >
@@ -86,8 +86,8 @@ function CatMapMarkerComponent({
           cat={cat}
           captured={captured}
           isNearby={isNearby}
+          selected={selected}
           size={size}
-          callout={callout}
           onVisualSettled={onVisualSettled}
         />
       </Animated.View>

@@ -10,13 +10,13 @@ import {
   MAP_ZOOM,
 } from '@/components/maps/mapCamera';
 import {
+  CAT_PIN_SELECTED,
   CAT_PIN_SILHOUETTE,
   CAT_PIN_TIP_H,
   pinScaleForZoom,
 } from '@/components/maps/CatPinVisual';
 import { mapPalette } from '@/components/maps/mapPalette';
 import { distanceMeters } from '@/lib/constants';
-import { isCatPhotoRef, resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -29,7 +29,9 @@ type Props = {
   userCoordinate?: { latitude: number; longitude: number } | null;
   nearbyCatIds?: string[];
   capturedCatIds?: string[];
-  /** Purple callout above nearby pins — e.g. "Praline · 1 m". */
+  /** Currently selected cat — larger pin + pulse rings. */
+  selectedCatId?: string | null;
+  /** @deprecated Option-1 mock has no name callout on pins. */
   pinCallouts?: Record<string, string>;
 };
 
@@ -165,31 +167,26 @@ function ensure3dBuildings(map: MapLibreMap) {
   }
 }
 
-/** Flat circular face pin for MapLibre HTML markers (tip = ground anchor). */
+/** Purple silhouette pin for MapLibre HTML markers (tip = ground anchor). */
 function makePinElement(opts: {
   label: string;
   brand: string;
   brandSoft: string;
-  muted: string;
   onBrand: string;
   size: number;
-  photoUri?: string;
-  nearby?: boolean;
-  callout?: string;
+  selected?: boolean;
 }): HTMLButtonElement {
-  const featured = Boolean(opts.nearby);
   const size = opts.size;
-  const tipH = featured ? CAT_PIN_TIP_H : 0;
+  const tipH = CAT_PIN_TIP_H;
   const tipW = 16;
-  const ring = featured ? 4 : 0;
-  const calloutH = opts.callout ? 28 : 0;
-  const wrapW = Math.max(size + 16, opts.callout ? 120 : size + 16);
-  const wrapH = size + tipH + calloutH;
+  const selected = Boolean(opts.selected);
+  const pulseMax = selected ? size * 2.4 : 0;
+  const wrapW = selected ? pulseMax : size + 16;
+  const wrapH = selected ? pulseMax / 2 + size + tipH : size + tipH;
 
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.setAttribute('aria-label', opts.label);
-  // Outer box is what MapLibre positions — never transform this node.
   btn.style.cssText = [
     'border:0',
     'padding:0',
@@ -203,7 +200,6 @@ function makePinElement(opts: {
     'overflow:visible',
   ].join(';');
 
-  // Inner scales with zoom from the tip (bottom center).
   const scaleRoot = document.createElement('span');
   scaleRoot.setAttribute('data-pin-scale', '1');
   scaleRoot.style.cssText = [
@@ -218,63 +214,42 @@ function makePinElement(opts: {
     'will-change:transform',
   ].join(';');
 
-  if (opts.callout && featured) {
-    const bubble = document.createElement('span');
-    bubble.textContent = opts.callout;
-    bubble.style.cssText = [
-      'display:inline-flex',
-      'align-items:center',
-      'justify-content:center',
-      `background:${opts.brand}`,
-      'color:#fff',
-      'font-size:11px',
-      'font-weight:600',
-      'line-height:1',
-      'padding:4px 8px',
-      'border-radius:999px',
-      'margin-bottom:4px',
-      'max-width:140px',
-      'white-space:nowrap',
-      'overflow:hidden',
-      'text-overflow:ellipsis',
-      'pointer-events:none',
-      'box-shadow:0 2px 8px rgba(21,23,43,0.12)',
-    ].join(';');
-    scaleRoot.appendChild(bubble);
-  }
-
-  if (!featured) {
-    const avatar = document.createElement('span');
-    avatar.style.cssText = [
-      `width:${size}px`,
-      `height:${size}px`,
-      'border-radius:999px',
-      `background:${opts.muted}`,
-      'overflow:hidden',
+  if (selected) {
+    const layer = document.createElement('span');
+    const bottom = tipH + size / 2 - pulseMax / 2;
+    layer.style.cssText = [
+      'position:absolute',
+      'left:50%',
+      `bottom:${bottom}px`,
+      `width:${pulseMax}px`,
+      `height:${pulseMax}px`,
+      'margin-left:' + `${-(pulseMax / 2)}px`,
       'display:flex',
       'align-items:center',
       'justify-content:center',
-      'box-sizing:border-box',
+      'pointer-events:none',
     ].join(';');
-    avatar.appendChild(silhouetteSvg(Math.round(size * 0.62), opts.onBrand));
-    scaleRoot.appendChild(avatar);
-    btn.appendChild(scaleRoot);
-    return btn;
+    const rings = [
+      { size: pulseMax, fill: opts.brandSoft, opacity: '0.55', border: '0' },
+      { size: pulseMax * 0.72, fill: 'transparent', opacity: '0.28', border: `2px solid ${opts.brand}` },
+      { size: pulseMax * 0.48, fill: 'transparent', opacity: '0.4', border: `2px solid ${opts.brand}` },
+    ];
+    for (const ring of rings) {
+      const el = document.createElement('span');
+      el.style.cssText = [
+        'position:absolute',
+        `width:${ring.size}px`,
+        `height:${ring.size}px`,
+        'border-radius:999px',
+        `background:${ring.fill}`,
+        `border:${ring.border}`,
+        `opacity:${ring.opacity}`,
+        'box-sizing:border-box',
+      ].join(';');
+      layer.appendChild(el);
+    }
+    scaleRoot.appendChild(layer);
   }
-
-  const ground = document.createElement('span');
-  ground.style.cssText = [
-    'position:absolute',
-    `width:${size + 8}px`,
-    'height:8px',
-    'border-radius:999px',
-    `background:${opts.brandSoft}`,
-    'bottom:2px',
-    'left:50%',
-    'margin-left:' + `${-((size + 8) / 2)}px`,
-    'opacity:0.9',
-    'pointer-events:none',
-  ].join(';');
 
   const column = document.createElement('span');
   column.style.cssText = [
@@ -282,7 +257,7 @@ function makePinElement(opts: {
     'flex-direction:column',
     'align-items:center',
     'position:relative',
-    'z-index:1',
+    'z-index:2',
   ].join(';');
 
   const avatar = document.createElement('span');
@@ -290,32 +265,14 @@ function makePinElement(opts: {
     `width:${size}px`,
     `height:${size}px`,
     'border-radius:999px',
-    `border:${ring}px solid ${opts.brand}`,
-    'background:#fff',
+    `background:${opts.brand}`,
     'overflow:hidden',
     'display:flex',
     'align-items:center',
     'justify-content:center',
     'box-sizing:border-box',
   ].join(';');
-
-  if (opts.photoUri) {
-    const img = document.createElement('img');
-    img.alt = opts.label;
-    img.draggable = false;
-    img.src = opts.photoUri;
-    img.style.cssText =
-      'width:100%;height:100%;object-fit:cover;display:block;pointer-events:none';
-    img.onerror = () => {
-      img.remove();
-      avatar.style.background = opts.brandSoft;
-      avatar.appendChild(silhouetteSvg(Math.round(size * 0.55), opts.brand));
-    };
-    avatar.appendChild(img);
-  } else {
-    avatar.style.background = opts.brandSoft;
-    avatar.appendChild(silhouetteSvg(Math.round(size * 0.55), opts.brand));
-  }
+  avatar.appendChild(silhouetteSvg(Math.round(size * 0.55), opts.onBrand));
 
   const tip = document.createElement('span');
   tip.style.cssText = [
@@ -329,7 +286,6 @@ function makePinElement(opts: {
 
   column.appendChild(avatar);
   column.appendChild(tip);
-  scaleRoot.appendChild(ground);
   scaleRoot.appendChild(column);
   btn.appendChild(scaleRoot);
   return btn;
@@ -372,7 +328,7 @@ export function CatMap({
   userCoordinate,
   nearbyCatIds,
   capturedCatIds,
-  pinCallouts,
+  selectedCatId,
 }: Props) {
   const { colors, spacing } = useTheme();
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -466,11 +422,14 @@ export function CatMap({
     followingRef.current = true;
     lastFollowRef.current = focusCoordinate;
     didCenterOnUserRef.current = true;
+    const maybeStop = map as MapLibreMap & { stop?: () => void };
+    maybeStop.stop?.();
     map.easeTo({
       center: [focusCoordinate.longitude, focusCoordinate.latitude],
       zoom: Math.max(map.getZoom(), MAP_ZOOM),
       pitch: MAP_PITCH,
       duration: MAP_CAMERA_DURATION,
+      essential: true,
     });
   }, [focusCoordinate, focusNonce, mapReady]);
 
@@ -513,7 +472,6 @@ export function CatMap({
     if (!mapReady || !map || !maplibregl) return;
 
     let cancelled = false;
-    const objectUrls: string[] = [];
 
     catMarkersRef.current.forEach((marker) => marker.remove());
     catMarkersRef.current = [];
@@ -524,33 +482,15 @@ export function CatMap({
       for (const cat of cats) {
         if (cancelled) break;
 
-        const nearby = nearbyCatIds?.includes(cat.id) ?? false;
-
-        let photoUri: string | undefined = cat.photoUri || undefined;
-        if (photoUri && isCatPhotoRef(photoUri)) {
-          const resolved = await resolveCatPhotoUri(photoUri);
-          if (cancelled) break;
-          if (resolved) {
-            if (resolved.startsWith('blob:')) objectUrls.push(resolved);
-            photoUri = resolved;
-          } else {
-            photoUri = undefined;
-          }
-        } else if (photoUri?.startsWith('blob:')) {
-          // Stale camera blobs are not durable.
-          photoUri = undefined;
-        }
+        const selected = selectedCatId === cat.id;
 
         const el = makePinElement({
           label: cat.name,
           brand: colors.brand,
           brandSoft: colors.brandSoft,
-          muted: colors.textMuted,
           onBrand: colors.onBrand,
-          size: nearby ? spacing[48] : CAT_PIN_SILHOUETTE,
-          photoUri: nearby ? photoUri : undefined,
-          nearby,
-          callout: nearby ? pinCallouts?.[cat.id] : undefined,
+          size: selected ? CAT_PIN_SELECTED : CAT_PIN_SILHOUETTE,
+          selected,
         });
         const openSheet = (event: Event) => {
           event.preventDefault();
@@ -596,9 +536,8 @@ export function CatMap({
       map.off('zoomend', syncScale);
       catMarkersRef.current.forEach((marker) => marker.remove());
       catMarkersRef.current = [];
-      objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [cats, nearbyCatIds, pinCallouts, colors, spacing, mapReady]);
+  }, [cats, selectedCatId, colors, spacing, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -1,6 +1,6 @@
 /**
- * Floating map chrome — profile avatar, optional recenter, Missions / Capture / CatDex.
- * No bottom tab bar · no filter / nearest side tools.
+ * Floating map chrome — profile, notifications inbox, map settings,
+ * recenter, Missions / Capture / CatDex.
  */
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -14,6 +14,10 @@ import {
   MAP_CAPTURE_FAB_SIZE,
 } from '@/layout/tabBarMetrics';
 import { useAuthStore } from '@/store/auth';
+import {
+  selectUnreadCount,
+  useNotificationsStore,
+} from '@/store/notifications';
 import { useTheme } from '@/theme/ThemeProvider';
 
 type Props = {
@@ -28,13 +32,15 @@ type Props = {
 function RoundTool({
   label,
   onPress,
+  badge,
   children,
 }: {
   label: string;
   onPress: () => void;
+  badge?: number;
   children: React.ReactNode;
 }) {
-  const { colors, spacing, radius, shadow, motion } = useTheme();
+  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -54,6 +60,32 @@ function RoundTool({
       ]}
     >
       {children}
+      {typeof badge === 'number' && badge > 0 ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: -spacing[4],
+            right: -spacing[4],
+            minWidth: spacing[24],
+            height: spacing[24],
+            paddingHorizontal: spacing[4],
+            borderRadius: radius.full,
+            backgroundColor: colors.brand,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 2,
+            borderColor: colors.surfaceElevated,
+          }}
+        >
+          <Text
+            variant="caption"
+            color="onAccent"
+            style={{ fontFamily: fonts.bodySemi, lineHeight: 14 }}
+          >
+            {badge > 9 ? '9+' : String(badge)}
+          </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -137,6 +169,7 @@ export function MapExplorerHud({
   const { colors, spacing, radius, shadow, iconStroke, iconSize, motion } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
+  const unread = useNotificationsStore((state) => selectUnreadCount(state.items));
   const clusterBottom = getMapActionClusterBottom(insets.bottom, spacing);
   const stroke = iconStroke.regular;
   const initials = (
@@ -149,7 +182,6 @@ export function MapExplorerHud({
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-      {/* Profile — top left */}
       <View
         pointerEvents="box-none"
         style={{
@@ -184,7 +216,50 @@ export function MapExplorerHud({
         </Pressable>
       </View>
 
-      {/* Recenter only — filters / nearest removed */}
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: 'absolute',
+          top: insets.top + spacing[8],
+          right: spacing[16],
+          zIndex: 24,
+          flexDirection: 'row',
+          gap: spacing[8],
+        }}
+      >
+        <RoundTool
+          label="Notifications"
+          badge={unread}
+          onPress={() => router.push('/notifications')}
+        >
+          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M6 9a6 6 0 0 1 12 0v4l2 3H4l2-3V9ZM9.5 19h5"
+              stroke={colors.brand}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </RoundTool>
+        <RoundTool
+          label="Réglages de la carte"
+          onPress={() => router.push('/settings/map')}
+        >
+          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h8M16 17h4"
+              stroke={colors.brand}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+            />
+            <Circle cx="16" cy="7" r="2" stroke={colors.brand} strokeWidth={stroke} />
+            <Circle cx="9" cy="12" r="2" stroke={colors.brand} strokeWidth={stroke} />
+            <Circle cx="14" cy="17" r="2" stroke={colors.brand} strokeWidth={stroke} />
+          </Svg>
+        </RoundTool>
+      </View>
+
       {onRecenter ? (
         <View
           pointerEvents="box-none"
@@ -197,20 +272,18 @@ export function MapExplorerHud({
         >
           <RoundTool label="Recentrer sur ma position" onPress={onRecenter}>
             <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+              <Circle cx="12" cy="12" r="6" stroke={colors.brand} strokeWidth={stroke} />
               <Path
-                d="M12 4.5c-2.6 0-4.7 2-4.7 4.5 0 3.4 4.7 8.5 4.7 8.5s4.7-5.1 4.7-8.5c0-2.5-2.1-4.5-4.7-4.5Z"
+                d="M12 3v3M12 18v3M3 12h3M18 12h3"
                 stroke={colors.brand}
                 strokeWidth={stroke}
-                strokeLinejoin="round"
-                fill={colors.brandSoft}
+                strokeLinecap="round"
               />
-              <Circle cx="12" cy="9" r="1.6" fill={colors.brand} />
             </Svg>
           </RoundTool>
         </View>
       ) : null}
 
-      {/* Missions · Capture · Collection */}
       <View
         pointerEvents="box-none"
         style={{

@@ -27,8 +27,8 @@ export default function NotificationsSettingsScreen() {
 
   return (
     <SettingsScreen
-      title="Notifications"
-      subtitle="Préférences enregistrées sur cet appareil. Les push ne sont pas encore envoyés."
+      title="Préférences d’alertes"
+      subtitle="Choix enregistrés sur cet appareil. Les push ne sont pas encore envoyés. L’inbox des alertes (ex. passer près d’un chat) est dans Notifications."
     >
       <View
         style={{

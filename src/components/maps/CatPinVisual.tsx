@@ -1,27 +1,24 @@
 /**
- * Shared CatDex map pin — flat circular face + tip anchored to the ground.
- * Featured (nearby): photo + purple ring + name/distance callout.
- * Distant: grey silhouette pin (mock Explorer).
+ * Explorer map pin — purple silhouette + tip (mock left screen).
+ * Selected: larger pin with concentric brand pulse rings.
  */
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { CatImage } from '@/components/CatImage';
-import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
 export const CAT_PIN_AVATAR = 40;
 export const CAT_PIN_TIP_H = 8;
-export const CAT_PIN_SILHOUETTE = 32;
+export const CAT_PIN_SILHOUETTE = 36;
+export const CAT_PIN_SELECTED = 48;
 
 /**
  * Scale HTML pin content with MapLibre zoom so markers feel glued to the map.
  * Root Marker element must NOT be transformed — only an inner wrapper.
  */
 export function pinScaleForZoom(zoom: number): number {
-  // minZoom 13 → ~0.55, default ~16.6 → ~1, maxZoom 19 → ~1.2
   return Math.min(1.2, Math.max(0.55, 0.55 + (zoom - 13) * 0.11));
 }
 
@@ -29,15 +26,20 @@ type PinVisualProps = {
   cat: Cat;
   captured?: boolean;
   isNearby?: boolean;
-  /** Override diameter of the face circle (default 40 / 32). */
+  selected?: boolean;
   size?: number;
-  /** Purple bubble above the pin — e.g. "Nox · 90 m". */
+  /** @deprecated Option-1 mock has no name callout on pins. */
   callout?: string | null;
-  /** Fired once the photo settles (load or error) so native markers can freeze. */
   onVisualSettled?: () => void;
 };
 
-function CatSilhouetteIcon({ color, size }: { color: string; size: number }) {
+export function CatSilhouetteIcon({
+  color,
+  size,
+}: {
+  color: string;
+  size: number;
+}) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
@@ -62,98 +64,80 @@ function CatSilhouetteIcon({ color, size }: { color: string; size: number }) {
  * Tip sits on the bottom edge — Marker anchor must be bottom-center.
  */
 export function CatPinVisual({
-  cat,
-  captured = true,
-  isNearby = false,
+  selected = false,
   size,
-  callout,
   onVisualSettled,
 }: PinVisualProps) {
-  const { colors, spacing, radius, shadow, fonts } = useTheme();
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const featured = isNearby;
-  const pinSize = size ?? (featured ? spacing[48] : CAT_PIN_SILHOUETTE);
+  const { colors, spacing, radius, shadow } = useTheme();
+  const pinSize = size ?? (selected ? CAT_PIN_SELECTED : CAT_PIN_SILHOUETTE);
   const tipW = spacing[16];
   const tipH = CAT_PIN_TIP_H;
-  const ring = featured ? spacing[4] : 0;
-  const showPhoto =
-    featured &&
-    Boolean(cat.photoUri) &&
-    !photoFailed &&
-    !cat.photoUri.startsWith('blob:');
+  const pulseMax = selected ? pinSize * 2.4 : 0;
 
   useEffect(() => {
-    setPhotoFailed(false);
-  }, [cat.id, cat.photoUri]);
-
-  useEffect(() => {
-    if (!showPhoto) {
-      onVisualSettled?.();
-    }
-  }, [showPhoto, onVisualSettled]);
-
-  if (!featured) {
-    return (
-      <View style={styles.root} pointerEvents="none">
-        <View
-          style={[
-            styles.avatar,
-            {
-              width: pinSize,
-              height: pinSize,
-              borderRadius: radius.full,
-              backgroundColor: colors.textMuted,
-              opacity: captured ? 0.92 : 0.8,
-            },
-            shadow.low,
-          ]}
-        >
-          <CatSilhouetteIcon color={colors.onBrand} size={Math.round(pinSize * 0.62)} />
-        </View>
-      </View>
-    );
-  }
+    onVisualSettled?.();
+  }, [onVisualSettled, selected, pinSize]);
 
   return (
-    <View style={styles.root} pointerEvents="none">
-      {callout ? (
+    <View
+      style={[
+        styles.root,
+        selected
+          ? {
+              width: pulseMax,
+              height: pulseMax / 2 + pinSize + tipH,
+              justifyContent: 'flex-end',
+            }
+          : undefined,
+      ]}
+      pointerEvents="none"
+    >
+      {selected ? (
         <View
           style={[
-            styles.callout,
+            styles.pulseLayer,
             {
-              backgroundColor: colors.brand,
-              borderRadius: radius.full,
-              paddingHorizontal: spacing[8],
-              paddingVertical: spacing[4],
-              marginBottom: spacing[4],
-              maxWidth: spacing[96] + spacing[48],
+              width: pulseMax,
+              height: pulseMax,
+              bottom: tipH + pinSize / 2 - pulseMax / 2,
             },
-            shadow.low,
           ]}
         >
-          <Text
-            variant="caption"
-            color="onAccent"
-            numberOfLines={1}
-            style={{ fontFamily: fonts.bodySemi }}
-          >
-            {callout}
-          </Text>
+          <View
+            style={{
+              width: pulseMax,
+              height: pulseMax,
+              borderRadius: pulseMax / 2,
+              backgroundColor: colors.brandSoft,
+              opacity: 0.55,
+            }}
+          />
+          <View
+            style={[
+              styles.pulseRing,
+              {
+                width: pulseMax * 0.72,
+                height: pulseMax * 0.72,
+                borderRadius: (pulseMax * 0.72) / 2,
+                borderColor: colors.brand,
+                opacity: 0.28,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.pulseRing,
+              {
+                width: pulseMax * 0.48,
+                height: pulseMax * 0.48,
+                borderRadius: (pulseMax * 0.48) / 2,
+                borderColor: colors.brand,
+                opacity: 0.4,
+              },
+            ]}
+          />
         </View>
       ) : null}
-
-      <View
-        style={[
-          styles.ground,
-          {
-            width: pinSize + spacing[8],
-            height: spacing[8],
-            borderRadius: radius.full,
-            backgroundColor: colors.brandSoft,
-            opacity: 0.9,
-          },
-        ]}
-      />
 
       <View style={styles.column}>
         <View
@@ -163,39 +147,16 @@ export function CatPinVisual({
               width: pinSize,
               height: pinSize,
               borderRadius: radius.full,
-              borderWidth: ring,
-              borderColor: colors.brand,
-              backgroundColor: colors.surfaceElevated,
+              backgroundColor: colors.brand,
             },
             shadow.low,
           ]}
         >
-          {showPhoto ? (
-            <CatImage
-              uri={cat.photoUri}
-              style={{ width: '100%', height: '100%' }}
-              resizeMode="cover"
-              accessibilityLabel={cat.name}
-              onError={() => {
-                setPhotoFailed(true);
-                onVisualSettled?.();
-              }}
-              onLoad={() => onVisualSettled?.()}
-            />
-          ) : (
-            <View
-              style={{
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: colors.brandSoft,
-              }}
-            >
-              <CatSilhouetteIcon color={colors.brand} size={Math.round(pinSize * 0.55)} />
-            </View>
-          )}
+          <CatSilhouetteIcon
+            color={colors.onBrand}
+            size={Math.round(pinSize * 0.55)}
+          />
         </View>
-
         <View
           style={{
             width: 0,
@@ -221,17 +182,20 @@ const styles = StyleSheet.create({
   },
   column: {
     alignItems: 'center',
+    zIndex: 2,
   },
   avatar: {
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ground: {
+  pulseLayer: {
     position: 'absolute',
-    bottom: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  callout: {
-    zIndex: 2,
+  pulseRing: {
+    position: 'absolute',
+    borderWidth: 2,
   },
 });
