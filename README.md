@@ -1,125 +1,301 @@
-# CatDex
+# 🐱 CatDex
 
-**Ton quartier. Tes chats.**
+**Capture les chats que tu croises. Complète ton CatDex. Explore ta ville.**
 
-Application mobile (iOS, Android & web) pour capturer de vrais chats dans la rue,
-les analyser à l’IA, les placer sur une carte et construire un CatDex.
+CatDex est une application mobile qui transforme les chats rencontrés dans la vraie vie en une expérience de collection et d'exploration.
 
-> **Repo public** — le code UI est ici. Les **secrets API** (OpenAI, service_role,
-> JWT) restent **de ton côté**. Lis [SECURITY.md](./SECURITY.md) et
-> l’[agenda de nettoyage](./docs/PUBLIC_REPO_AGENDA.md).
+Prends un chat en photo, laisse CatDex l'analyser et ajoute-le automatiquement à ta collection avec ses caractéristiques, son lieu de découverte et ses statistiques.
 
-## Fonctionnalités
+---
 
-Onboarding game-feel (apparition → IA → premier chat) · Carte · Scanner · Analyse IA (via API privée) · CatDex · Missions · Profil
+## ✨ Concept
 
-Détail : **[docs/FEATURES.md](./docs/FEATURES.md)** · galerie : [`screenshots/index.html`](./screenshots/index.html)
+CatDex mélange :
 
-<img alt="Onboarding apparition" src="screenshots/app/04-intro.png" width="180" />
-<img alt="Onboarding analyse IA" src="screenshots/app/05-scan.png" width="180" />
-<img alt="Onboarding premier chat" src="screenshots/app/06-reward.png" width="180" />
+- 📸 Capture de chats
+- 🤖 Analyse par intelligence artificielle
+- 🗺️ Exploration géolocalisée
+- 🐱 Collection
+- ⭐ Progression
+- 🏆 Missions et récompenses
 
-## Stack
+L'objectif est simple :
 
-- **App** : Expo 54 · React Native · TypeScript · Expo Router
-- **Backend data** : Supabase (Auth, Database, Storage) — projet & clés chez toi
-- **API analyse** : Hono + OpenAI Vision — déployée avec secrets hors Git
-- Design system : `src/theme/` via `useTheme()`
+> Explorer → Trouver un chat → Le capturer → L'identifier → Compléter son CatDex → Continuer à explorer
 
-## Démarrer (local)
+---
+
+## 📱 Fonctionnalités
+
+### 📸 Scanner un chat
+
+Photographie un chat directement depuis l'application.
+
+CatDex analyse notamment :
+
+- Couleur
+- Pelage
+- Yeux
+- Taille
+- Caractéristiques visuelles
+
+Si l'image ne contient pas de chat, la capture est refusée.
+
+### 🐱 CatDex
+
+Chaque chat découvert rejoint automatiquement ta collection.
+
+Tu peux retrouver :
+
+- Les chats capturés
+- Les chats encore inconnus
+- Leur numéro CatDex
+- Leur rareté
+- Leurs caractéristiques
+- Leur lieu de découverte
+- Le nombre d'observations
+
+### 🗺️ Exploration
+
+La carte permet de visualiser les chats découverts autour de toi et encourage l'exploration de nouvelles zones.
+
+### ⭐ Progression
+
+Les captures participent à la progression du joueur :
+
+- XP
+- Niveaux
+- Séries
+- Missions
+- Badges
+- Progression du CatDex
+
+---
+
+## 🧱 Stack
+
+### Mobile
+
+- React Native
+- Expo
+- TypeScript
+- Expo Router
+
+### Backend
+
+- Supabase
+- PostgreSQL
+- Supabase Auth
+
+### IA
+
+- OpenAI Vision
+
+### Services
+
+- Expo Location
+- Expo Camera
+- Expo Image Picker
+- Expo Secure Store
+
+---
+
+## 🏗️ Architecture
+
+```text
+CatDex/
+├── app/              # Routes et écrans Expo Router
+├── assets/           # Images, fonts et ressources
+├── src/              # Logique applicative
+├── scripts/          # Scripts du projet
+├── supabase/         # Configuration et migrations Supabase
+├── docs/             # Documentation du projet
+│
+├── .env.example
+├── app.config.js
+├── eas.json
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## 🚀 Installation
+
+### Prérequis
+
+- Node.js
+- npm
+- Expo
+- Un projet Supabase
+
+Clone le repository :
+
+```bash
+git clone <repository-url>
+cd CatDex
+```
+
+Installe les dépendances :
 
 ```bash
 npm install
+```
+
+Crée ton fichier d'environnement :
+
+```bash
 cp .env.example .env
-# Renseigne EXPO_PUBLIC_SUPABASE_* et EXPO_PUBLIC_API_URL en local uniquement
-npm start
 ```
 
-### Supabase (données / auth)
+Configure ensuite les variables nécessaires dans `.env`.
 
-Guide placeholders : **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)**  
-Schéma : `supabase/schema.sql`
+---
 
-### API d’analyse (privée)
+## 🔐 Variables d'environnement
 
-```bash
-cp server/.env.example server/.env
-# OPENAI_API_KEY + secrets Supabase serveur → machine locale ou Render, jamais Git
-npm run server
-```
-
-Sans clé OpenAI, l’API peut renvoyer une analyse mock selon la config.
-
-### Simulateur iOS (Mac)
-
-```bash
-npm run ios:sim
-```
-
-## Structure
-
-```
-catdex/
-├── app/                 # Routes Expo Router
-├── src/                 # UI, store, theme, lib client
-├── supabase/            # Schéma & migrations (pas de secrets)
-├── server/              # API Hono (code public, clés privées)
-├── docs/
-│   ├── FEATURES.md
-│   ├── PUBLIC_REPO_AGENDA.md
-│   └── releases/
-├── SECURITY.md
-└── CHANGELOG.md
-```
-
-Architecture : [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)
-
-## Commandes
-
-```bash
-npm start          # Expo
-npm run ios:sim    # Simulateur iOS
-npm run web        # Web
-npm run server     # API locale
-npm run lint
-npm run typecheck
-```
-
-## Variables d’environnement
-
-**App** (`.env`, gitignoré) — voir `.env.example` :
+Exemple :
 
 ```env
-EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-EXPO_PUBLIC_API_URL=https://your-api.example.com
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_API_URL=
 ```
 
-**Serveur** (`server/.env`, gitignoré) — voir `server/.env.example` :
+⚠️ Ne jamais commit de clés privées ou de secrets dans le repository.
 
-- `OPENAI_API_KEY`
-- `SUPABASE_URL`
-- `SUPABASE_JWT_SECRET`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `ADMIN_STATS_SECRET` (dashboard `/admin?key=…`)
+---
 
-Ces secrets ne sont **jamais** préfixés `EXPO_PUBLIC_` et ne sont **jamais**
-commitées. Détail : [SECURITY.md](./SECURITY.md) · [KEYS_TO_GET.md](./KEYS_TO_GET.md)
+## ▶️ Lancer CatDex
 
-## Docs utiles
+Démarrage classique :
 
-| Doc | Rôle |
-|-----|------|
-| [docs/PUBLIC_REPO_AGENDA.md](./docs/PUBLIC_REPO_AGENDA.md) | Plan cleanup public / privé |
-| [docs/FEATURES.md](./docs/FEATURES.md) | Carte des fonctionnalités |
-| [SECURITY.md](./SECURITY.md) | Politique secrets |
-| [CHANGELOG.md](./CHANGELOG.md) | Releases |
-| [docs/releases/WEB_BETA.md](./docs/releases/WEB_BETA.md) | Bêta web |
-| [docs/releases/STORE_CHECKLIST.md](./docs/releases/STORE_CHECKLIST.md) | Stores |
+```bash
+npx expo start
+```
 
-Guides ops historiques (Render, téléphone, etc.) restent dans le repo pour
-référence ; les **valeurs réelles** vont uniquement dans tes dashboards.
+Avec nettoyage du cache :
 
-## Licence
+```bash
+npx expo start --clear
+```
 
-Voir [LICENSE](./LICENSE)
+Puis ouvre l'application avec :
+
+- Expo Go
+- iOS Simulator
+- Android Emulator
+- Development Build
+
+---
+
+## 🧪 Vérification du projet
+
+Avant une Pull Request :
+
+```bash
+npm run lint
+```
+
+```bash
+npx tsc --noEmit
+```
+
+Et vérifie que l'application démarre correctement :
+
+```bash
+npx expo start --clear
+```
+
+---
+
+## 🌿 Git workflow
+
+La branche `main` doit toujours rester stable.
+
+Pour une nouvelle fonctionnalité :
+
+```bash
+git checkout main
+git pull
+git checkout -b feature/nom-feature
+```
+
+Pour une correction :
+
+```bash
+git checkout -b fix/nom-fix
+```
+
+Pour du nettoyage ou de la maintenance :
+
+```bash
+git checkout -b chore/nom-changement
+```
+
+Une fois le travail terminé :
+
+```text
+branche
+   ↓
+Pull Request
+   ↓
+Review
+   ↓
+Tests
+   ↓
+Merge
+   ↓
+main
+```
+
+---
+
+## 📚 Documentation
+
+La documentation technique et produit se trouve dans :
+
+```text
+/docs
+```
+
+Elle contient notamment :
+
+- Architecture
+- Déploiement
+- Supabase
+- Product
+- UX/UI
+- Audits
+- Git workflow
+
+Le `README.md` reste volontairement simple et sert de point d'entrée au projet.
+
+---
+
+## 🗺️ Roadmap
+
+CatDex est actuellement en développement.
+
+Les principaux chantiers concernent :
+
+- Fiabilisation de la reconnaissance des chats
+- Amélioration de l'expérience de capture
+- Gamification
+- Progression joueur
+- Missions
+- Exploration sur la carte
+- Enrichissement des fiches chats
+- Performance et stabilité
+
+---
+
+## 🐾 Vision
+
+CatDex veut rendre les chats du monde réel collectionnables.
+
+Chaque promenade peut devenir une exploration.
+
+Chaque chat rencontré peut devenir une nouvelle découverte.
+
+**Attrape-les tous. Enfin... prends-les en photo. 🐱**
