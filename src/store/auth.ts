@@ -311,7 +311,7 @@ export const useAuthStore = create<AuthState>()(
       initialize: async () => {
         if (!supabase) {
           console.log('📝 Auth mock (Supabase non configuré)');
-          set({ loading: false, hydrated: true });
+          set({ loading: false });
           return;
         }
 
@@ -342,6 +342,7 @@ export const useAuthStore = create<AuthState>()(
             });
             void syncCatsAfterAuth();
           } else {
+            // Drop persisted user if there is no live Supabase session (no JWT → analyze 401).
             set({ session: null, user: null, loading: false });
           }
 
@@ -887,10 +888,17 @@ export const useAuthStore = create<AuthState>()(
         } else if (userId && hasCompletedOnboarding(userId, ids, email)) {
           useAuthStore.setState({ onboardingCompleted: true });
         }
-        useAuthStore.getState().setHydrated(true);
-        void useAuthStore.getState().initialize().catch((error) => {
-          console.warn('[auth] initialize rejected', error);
-        });
+        // Wait for session restore before marking hydrated — otherwise /scanner can
+        // see a persisted `user` without a JWT and hit analyze-cat 401.
+        void useAuthStore
+          .getState()
+          .initialize()
+          .catch((error) => {
+            console.warn('[auth] initialize rejected', error);
+          })
+          .finally(() => {
+            useAuthStore.getState().setHydrated(true);
+          });
       },
     },
   ),

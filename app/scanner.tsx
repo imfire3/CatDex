@@ -2,7 +2,7 @@ import { BlurView } from 'expo-blur';
 import { CameraView, useCameraPermissions, type CameraType, type FlashMode } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Image,
@@ -24,6 +24,7 @@ import { PageLoading } from '@/components/Loader';
 import { ProgressBar } from '@/components/Progress';
 import { ScanFrame } from '@/components/ScanFrame';
 import { Text } from '@/components/Text';
+import { agentDebugLog } from '@/lib/agentDebugLog';
 import { analyzeCatPhoto } from '@/lib/api';
 import {
   isInParis20e,
@@ -39,6 +40,8 @@ import {
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import { compressPhotoDataUri } from '@/lib/photoStorage';
 import { sendAnalysisErrorReport } from '@/lib/sendErrorReport';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { getPostAuthHref, useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { usePendingCaptureStore } from '@/store/pendingCapture';
 import { useToastStore } from '@/store/toast';
@@ -52,6 +55,7 @@ type Step =
   | 'problem'
   | 'offline'
   | 'server'
+  | 'auth'
   | 'analysisError'
   | 'alreadyCaptured';
 
@@ -123,6 +127,10 @@ export default function ScannerScreen() {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ worldId?: string }>();
+  const user = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.session);
+  const hydrated = useAuthStore((state) => state.hydrated);
+  const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   // Any sighting id (world spawn or community UUID) so the pin can clear after capture.
   const sourceWorldId =
     typeof params.worldId === 'string' && params.worldId.trim().length > 0
@@ -300,12 +308,32 @@ export default function ScannerScreen() {
         }
       }
 
+      agentDebugLog({
+        hypothesisId: 'E',
+        location: 'app/scanner.tsx:runAnalysis',
+        message: 'analysis start',
+        data: {
+          platform: Platform.OS,
+          mimeType: payloadMime,
+          base64Len: payloadBase64.length,
+        },
+      });
       const { analysis: nextAnalysis, mocked, cutoutUri } = await analyzeCatPhoto(
         payloadBase64,
         payloadMime,
       );
       await waitMinDuration();
       if (isStale()) return;
+      agentDebugLog({
+        hypothesisId: 'D',
+        location: 'app/scanner.tsx:runAnalysis',
+        message: 'analysis success',
+        data: {
+          elapsedMs: Date.now() - startedAt,
+          breed: nextAnalysis.breed ?? null,
+          suggestedName: nextAnalysis.suggestedName ?? null,
+        },
+      });
       if (isNoCatFound(nextAnalysis)) {
         setPhotoUri(imageUri);
         setAnalysis(nextAnalysis);
@@ -324,6 +352,16 @@ export default function ScannerScreen() {
     } catch (error) {
       await waitMinDuration();
       if (isStale()) return;
+      agentDebugLog({
+        hypothesisId: 'C',
+        location: 'app/scanner.tsx:runAnalysis',
+        message: 'analysis failed',
+        data: {
+          elapsedMs: Date.now() - startedAt,
+          errorMessage:
+            error instanceof Error ? error.message.slice(0, 200) : 'unknown',
+        },
+      });
       setPhotoUri(imageUri);
       const kind = classifyThrownAnalysisError(error);
       const detail =
@@ -332,7 +370,13 @@ export default function ScannerScreen() {
           : null;
       setAnalysisErrorMessage(detail);
       setStep(
-        kind === 'offline' ? 'offline' : kind === 'server' ? 'server' : 'analysisError',
+        kind === 'offline'
+          ? 'offline'
+          : kind === 'server'
+            ? 'server'
+            : kind === 'auth'
+              ? 'auth'
+              : 'analysisError',
       );
     } finally {
       if (!isStale()) setAnalyzing(false);
@@ -466,6 +510,33 @@ export default function ScannerScreen() {
     resetToCamera();
   };
 
+  if (!hydrated) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <PageLoading label="Chargement…" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+
+  if (!onboardingCompleted) {
+    return <Redirect href={getPostAuthHref(false)} />;
+  }
+
+  // Live JWT required for remote analyze-cat (persisted user alone is not enough).
+  if (isSupabaseConfigured && !session?.access_token) {
+    agentDebugLog({
+      hypothesisId: 'A',
+      location: 'app/scanner.tsx:authGate',
+      message: 'scanner blocked — user without access_token',
+      data: { userId: user.id, hasSession: Boolean(session) },
+    });
+    return <Redirect href="/(auth)/login" />;
+  }
+
   if (step === 'alreadyCaptured' && existingCat) {
     const copy = ERROR_CATALOG.alreadyCaptured;
     return (
@@ -584,6 +655,50 @@ export default function ScannerScreen() {
     );
   }
 
+  if (step === 'auth') {
+    const copy = ERROR_CATALOG.auth;
+    return (
+      <View
+        style={[
+          styles.root,
+          styles.centered,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            paddingHorizontal: spacing[24],
+          },
+        ]}
+      >
+        <ErrorState
+          icon={copy.icon}
+          title={copy.title}
+          description={analysisErrorMessage ?? copy.description}
+          primaryLabel={copy.primaryLabel}
+          onPrimary={() => {
+            router.replace('/(auth)/login');
+          }}
+          secondaryLabel={copy.secondaryLabel}
+          onSecondary={() => {
+            void (async () => {
+              const report = await sendAnalysisErrorReport({
+                errorKind: 'auth',
+                message: analysisErrorMessage ?? copy.description,
+              });
+              showToast({
+                title: report.emailed ? 'Rapport envoyé' : 'Rapport prêt',
+                description: report.emailed
+                  ? 'Les logs JSON sont partis par e-mail.'
+                  : 'Ouvre ton app mail pour finaliser l’envoi.',
+                tone: 'success',
+              });
+            })();
+          }}
+        />
+      </View>
+    );
+  }
+
   if (step === 'analysisError') {
     const copy = ERROR_CATALOG.analysis;
     return (
@@ -608,13 +723,15 @@ export default function ScannerScreen() {
           secondaryLabel={copy.secondaryLabel}
           onSecondary={() => {
             void (async () => {
-              await sendAnalysisErrorReport({
+              const report = await sendAnalysisErrorReport({
                 errorKind: 'analysis',
                 message: analysisErrorMessage ?? 'Impossible d’identifier ce chat',
               });
               showToast({
-                title: 'Rapport envoyé',
-                description: 'Merci — on regarde ça.',
+                title: report.emailed ? 'Rapport envoyé' : 'Rapport prêt',
+                description: report.emailed
+                  ? 'Les logs JSON sont partis par e-mail.'
+                  : 'Ouvre ton app mail pour finaliser l’envoi.',
                 tone: 'success',
               });
             })();

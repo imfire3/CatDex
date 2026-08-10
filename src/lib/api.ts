@@ -1,6 +1,10 @@
+import { agentDebugLog } from '@/lib/agentDebugLog';
 import { getApiCandidateUrls } from '@/lib/apiUrl';
 import { supabase } from '@/lib/supabase';
 import type { CatAnalysis } from '@/types/cat';
+
+const AUTH_REQUIRED_MESSAGE =
+  'Non autorisé. Connecte-toi pour analyser une photo.';
 
 type AnalyzeResponse = {
   analysis: CatAnalysis;
@@ -41,20 +45,65 @@ function stripDataUrl(imageBase64: string): { base64: string; mimeType?: string 
   return { mimeType: match[1], base64: match[2] };
 }
 
+function isLocalApiBase(apiBase: string): boolean {
+  try {
+    const host = new URL(apiBase).hostname;
+    return (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host.startsWith('192.168.') ||
+      host.startsWith('10.')
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function getAccessToken(): Promise<string | null> {
-  if (!supabase) return null;
+  if (!supabase) {
+    agentDebugLog({
+      hypothesisId: 'A',
+      location: 'src/lib/api.ts:getAccessToken',
+      message: 'supabase client null',
+      data: { hasSupabase: false },
+    });
+    return null;
+  }
   try {
     const { data } = await supabase.auth.getSession();
     let token = data.session?.access_token?.trim() || null;
+    const expiresAt = data.session?.expires_at ?? null;
+    agentDebugLog({
+      hypothesisId: 'A',
+      location: 'src/lib/api.ts:getAccessToken',
+      message: 'session snapshot',
+      data: {
+        hasToken: Boolean(token),
+        expiresAt,
+        expiredSoon: Boolean(expiresAt && expiresAt * 1000 < Date.now() + 60_000),
+        userId: data.session?.user?.id ?? null,
+      },
+    });
     if (!token) return null;
 
-    const expiresAt = data.session?.expires_at;
     if (expiresAt && expiresAt * 1000 < Date.now() + 60_000) {
       const { data: refreshed } = await supabase.auth.refreshSession();
       token = refreshed.session?.access_token?.trim() || token;
+      agentDebugLog({
+        hypothesisId: 'B',
+        location: 'src/lib/api.ts:getAccessToken',
+        message: 'refresh attempted',
+        data: { hasTokenAfterRefresh: Boolean(token) },
+      });
     }
     return token;
-  } catch {
+  } catch (error) {
+    agentDebugLog({
+      hypothesisId: 'B',
+      location: 'src/lib/api.ts:getAccessToken',
+      message: 'getSession threw',
+      data: { errorName: error instanceof Error ? error.name : 'unknown' },
+    });
     return null;
   }
 }
@@ -71,6 +120,15 @@ async function requestAnalyze(
   const accessToken = await getAccessToken();
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
+  } else if (!isLocalApiBase(apiBase)) {
+    // Prod / remote API always requires JWT — fail before a useless 401 round-trip.
+    agentDebugLog({
+      hypothesisId: 'A',
+      location: 'src/lib/api.ts:requestAnalyze',
+      message: 'blocked analyze without token on remote API',
+      data: { apiBase, hasAuth: false },
+    });
+    throw new Error(AUTH_REQUIRED_MESSAGE);
   }
 
   console.log('[analyzeCatPhoto] POST', {
@@ -80,6 +138,7 @@ async function requestAnalyze(
     hasAuth: Boolean(accessToken),
   });
 
+  const startedAt = Date.now();
   const response = await fetch(`${apiBase}/analyze-cat`, {
     method: 'POST',
     headers,
@@ -97,10 +156,22 @@ async function requestAnalyze(
     data = null;
   }
 
+  agentDebugLog({
+    hypothesisId: 'C',
+    location: 'src/lib/api.ts:requestAnalyze',
+    message: 'analyze response',
+    data: {
+      apiBase,
+      status: response.status,
+      hasAuth: Boolean(accessToken),
+      latencyMs: Date.now() - startedAt,
+      error: data?.error ?? null,
+      hasAnalysis: Boolean(data?.analysis),
+    },
+  });
+
   if (response.status === 401) {
-    throw new Error(
-      data?.error || 'Connecte-toi pour identifier un chat.',
-    );
+    throw new Error(data?.error || AUTH_REQUIRED_MESSAGE);
   }
   if (response.status === 429) {
     throw new Error(

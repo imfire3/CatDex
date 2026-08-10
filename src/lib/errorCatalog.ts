@@ -11,6 +11,7 @@ export type CaptureErrorKind =
   | 'locationPermission'
   | 'offline'
   | 'server'
+  | 'auth'
   | 'analysis'
   | 'invalidPhoto'
   | 'blurryPhoto'
@@ -76,6 +77,15 @@ export const ERROR_CATALOG: Record<CaptureErrorKind, CaptureErrorCopy> = {
     description:
       'L’analyse Vision ne répond pas. En local : lance `npm run server` avec OPENAI_API_KEY dans server/.env.',
     primaryLabel: 'Réessayer',
+    preservePhoto: true,
+  },
+  auth: {
+    kind: 'auth',
+    icon: 'analysis',
+    title: 'Connexion requise',
+    description: 'Connecte-toi pour analyser une photo. Sans session, l’API refuse l’identification.',
+    primaryLabel: 'Se connecter',
+    secondaryLabel: 'Envoyer le rapport',
     preservePhoto: true,
   },
   analysis: {
@@ -177,7 +187,7 @@ export function resolvePhotoProblemCopy(
 
 export function classifyThrownAnalysisError(
   error: unknown,
-): 'offline' | 'server' | 'analysis' {
+): 'offline' | 'server' | 'auth' | 'analysis' {
   const message =
     error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
   if (
@@ -190,6 +200,15 @@ export function classifyThrownAnalysisError(
     message.includes('pas de connexion')
   ) {
     return 'offline';
+  }
+  if (
+    message.includes('non autorisé') ||
+    message.includes('connecte-toi') ||
+    message.includes('connecte-toi pour') ||
+    message.includes('unauthorized') ||
+    message.includes('401')
+  ) {
+    return 'auth';
   }
   if (
     message.includes('503') ||

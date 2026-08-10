@@ -29,6 +29,7 @@ import {
   type VisionJson,
 } from './normalizeVisionAnalysis';
 import { renderAdminDashboardHtml } from './adminDashboard';
+import { sendReportEmail } from './sendReportEmail';
 import { getRuntimeAnalyzeStats, recordAnalyzeEvent } from './statsStore';
 import { fetchSupabaseProductStats } from './supabaseProductStats';
 
@@ -119,6 +120,72 @@ app.delete('/account', async (c) => {
     return c.json({ error: result.error }, result.status as 401 | 502 | 503);
   }
   return c.json({ ok: true });
+});
+
+const reportErrorSchema = z.object({
+  kind: z.string().max(80).optional(),
+  detail: z.string().max(2000).optional(),
+  createdAt: z.string().max(64).optional(),
+  platform: z.string().max(32).optional(),
+  appVersion: z.string().max(64).nullable().optional(),
+  apiCandidates: z.array(z.string().max(200)).max(8).optional(),
+  session: z
+    .object({
+      hasSupabase: z.boolean().optional(),
+      userId: z.string().max(128).nullable().optional(),
+      email: z.string().max(320).nullable().optional(),
+    })
+    .optional(),
+  logs: z
+    .array(
+      z.object({
+        ts: z.number().optional(),
+        location: z.string().max(200).optional(),
+        message: z.string().max(400).optional(),
+        hypothesisId: z.string().max(40).optional(),
+        data: z.record(z.string(), z.unknown()).optional(),
+      }),
+    )
+    .max(64)
+    .optional(),
+});
+
+/** Client “Envoyer le rapport” — emails JSON logs to REPORT_EMAIL_TO / Resend. */
+app.post('/report-error', async (c) => {
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ ok: false, error: 'JSON invalide' }, 400);
+  }
+
+  const parsed = reportErrorSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ ok: false, error: 'Payload invalide' }, 400);
+  }
+
+  const payload = parsed.data;
+  const kind = payload.kind?.trim() || 'analysis';
+  const subject = `CatDex — rapport erreur (${kind})`;
+  const text = JSON.stringify(payload, null, 2);
+
+  console.info('[report-error]', {
+    kind,
+    platform: payload.platform,
+    logCount: payload.logs?.length ?? 0,
+    userId: payload.session?.userId ?? null,
+  });
+
+  const emailed = await sendReportEmail({ subject, text });
+  if (!emailed.ok) {
+    return c.json({
+      ok: true,
+      emailed: false,
+      reason: emailed.reason,
+    });
+  }
+
+  return c.json({ ok: true, emailed: true, id: emailed.id });
 });
 
 /** Require Supabase JWT (prod) + rate-limit per user. */
