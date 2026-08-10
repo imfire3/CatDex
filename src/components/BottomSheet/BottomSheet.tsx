@@ -27,13 +27,15 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
         style={[
           styles.sheet,
           {
+            left: spacing[16],
+            right: spacing[16],
+            bottom: Math.max(insets.bottom, spacing[16]),
             backgroundColor: colors.surface,
-            borderTopLeftRadius: radius.sheet,
-            borderTopRightRadius: radius.sheet,
+            borderRadius: radius.sheet,
             paddingHorizontal: spacing[24],
             paddingTop: spacing[8],
-            paddingBottom: Math.max(insets.bottom, spacing[24]),
-            borderTopWidth: 1,
+            paddingBottom: spacing[24],
+            borderWidth: 1,
             borderColor: colors.border,
           },
           shadow.floating,
@@ -64,9 +66,6 @@ const styles = StyleSheet.create({
   },
   sheet: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
   },
   handle: {
     alignSelf: 'center',
