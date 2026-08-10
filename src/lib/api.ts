@@ -49,20 +49,6 @@ function stripDataUrl(imageBase64: string): { base64: string; mimeType?: string 
   return { mimeType: match[1], base64: match[2] };
 }
 
-function isLocalApiBase(apiBase: string): boolean {
-  try {
-    const host = new URL(apiBase).hostname;
-    return (
-      host === 'localhost' ||
-      host === '127.0.0.1' ||
-      host.startsWith('192.168.') ||
-      host.startsWith('10.')
-    );
-  } catch {
-    return false;
-  }
-}
-
 async function getAccessToken(): Promise<string | null> {
   if (!supabase) {
     agentDebugLog({

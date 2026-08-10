@@ -54,7 +54,9 @@ export function getApiCandidateUrls(): string[] {
     candidates.push(normalized);
   };
 
-  const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
+  // Must read process.env.EXPO_PUBLIC_* without optional chaining so Expo can inline it.
+  const rawApiUrl = process.env.EXPO_PUBLIC_API_URL;
+  const fromEnv = typeof rawApiUrl === 'string' ? rawApiUrl.trim() : '';
 
   // Production / store builds must only hit the configured HTTPS API.
   if (!__DEV__) {

@@ -1,2 +1,6 @@
-# SPA fallback for Expo Router (zip / CLI deploys ignore repo netlify.toml redirects)
+# Vision API (same-origin Netlify functions) — must be before SPA fallback
+/analyze-cat    /.netlify/functions/analyze-cat   200
+/health         /.netlify/functions/health        200
+
+# SPA fallback for Expo Router
 /*    /index.html   200

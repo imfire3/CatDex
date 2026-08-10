@@ -16,6 +16,23 @@
   # Version de Node.js
   NODE_VERSION = "20"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Vision API on same origin (avoids broken Render JWT gate during beta)
+[[redirects]]
+  from = "/analyze-cat"
+  to = "/.netlify/functions/analyze-cat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/health"
+  status = 200
+  force = true
+
 # Redirections pour SPA (Single Page Application)
 # Toutes les routes doivent pointer vers index.html
 [[redirects]]
