@@ -47,7 +47,14 @@ app.use(
   }),
 );
 
-app.get('/health', (c) => c.json({ ok: true, service: 'catdex-api' }));
+app.get('/health', (c) =>
+  c.json({
+    ok: true,
+    service: 'catdex-api',
+    version: 'analyze-auth-v3',
+    allowUnauthAnalyze: allowUnauthAnalyze(),
+  }),
+);
 
 function getAdminStatsSecret(): string | null {
   return process.env.ADMIN_STATS_SECRET?.trim() || null;

@@ -150,16 +150,9 @@ async function requestAnalyze(
   const accessToken = await getAccessToken();
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
-  } else if (!isLocalApiBase(apiBase)) {
-    // Prod / remote API always requires JWT — fail before a useless 401 round-trip.
-    agentDebugLog({
-      hypothesisId: 'A',
-      location: 'src/lib/api.ts:requestAnalyze',
-      message: 'blocked analyze without token on remote API',
-      data: { apiBase, hasAuth: false },
-    });
-    throw new Error(AUTH_REQUIRED_MESSAGE);
   }
+  // Always call the API — beta Render may allow unauth analyze; never block OpenAI
+  // locally before the request when the session token is briefly missing.
 
   console.log('[analyzeCatPhoto] POST', {
     apiBase,

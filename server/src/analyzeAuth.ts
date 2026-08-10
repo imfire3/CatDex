@@ -19,15 +19,9 @@ export function isProductionRuntime(): boolean {
 }
 
 export function allowUnauthAnalyze(): boolean {
-  if (isProductionRuntime()) return false;
-  // Local / staging: allow analyze without JWT by default so Expo + API work
-  // even when SUPABASE_JWT_SECRET is missing. Set ALLOW_UNAUTH_ANALYZE=0 to force JWT.
-  if (
-    process.env.ALLOW_UNAUTH_ANALYZE === '0' ||
-    process.env.ALLOW_UNAUTH_ANALYZE === 'false'
-  ) {
-    return false;
-  }
+  const flag = process.env.ALLOW_UNAUTH_ANALYZE?.trim().toLowerCase();
+  // Explicit lock-down only. Beta keeps Vision working even when JWT verify is broken.
+  if (flag === '0' || flag === 'false') return false;
   return true;
 }
 
@@ -161,13 +155,17 @@ async function verifyViaSupabaseAuthApi(
 }
 
 /**
- * Verify Supabase access token (HS256 secret, asymmetric JWKS, or Auth /user).
+ * Verify Supabase access token (Auth /user first, then HS256 / JWKS).
+ * Auth API is preferred: Render often has a wrong JWT secret while URL+keys are correct.
  */
 export async function verifySupabaseAccessToken(
   token: string,
 ): Promise<AnalyzeAuthUser | null> {
   const trimmed = token.trim();
   if (!trimmed) return null;
+
+  const viaAuthApi = await verifyViaSupabaseAuthApi(trimmed);
+  if (viaAuthApi) return viaAuthApi;
 
   const secret = getJwtSecret();
   if (secret) {
@@ -177,7 +175,7 @@ export async function verifySupabaseAccessToken(
       });
       return payloadToUser(payload);
     } catch {
-      // Fall through to JWKS (newer Supabase projects).
+      // Fall through to JWKS.
     }
   }
 
@@ -187,11 +185,11 @@ export async function verifySupabaseAccessToken(
       const { payload } = await jwtVerify(trimmed, remoteJwks);
       return payloadToUser(payload);
     } catch {
-      // Fall through to Auth API.
+      return null;
     }
   }
 
-  return verifyViaSupabaseAuthApi(trimmed);
+  return null;
 }
 
 export function extractBearerToken(authorizationHeader: string | undefined): string | null {

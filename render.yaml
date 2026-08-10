@@ -25,5 +25,9 @@ services:
         sync: false
       - key: ADMIN_STATS_SECRET
         sync: false
+      # Beta: allow Vision analyze even if JWT verify is misconfigured on Render.
+      # Set to "0" once SUPABASE_JWT_SECRET (or Auth API keys) is confirmed.
+      - key: ALLOW_UNAUTH_ANALYZE
+        value: "1"
       - key: API_SECRET
         generateValue: true
