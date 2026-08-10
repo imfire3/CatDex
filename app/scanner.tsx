@@ -2,7 +2,7 @@ import { BlurView } from 'expo-blur';
 import { CameraView, useCameraPermissions, type CameraType, type FlashMode } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Image,
@@ -31,6 +31,7 @@ import {
 } from '@/lib/constants';
 import { enrichAnalysis, isNoCatFound } from '@/lib/catTraits';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
+import { getPostAuthHref, useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { usePendingCaptureStore } from '@/store/pendingCapture';
 import { useToastStore } from '@/store/toast';
@@ -134,6 +135,9 @@ export default function ScannerScreen() {
   const { colors, fonts, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ worldId?: string }>();
+  const user = useAuthStore((state) => state.user);
+  const hydrated = useAuthStore((state) => state.hydrated);
+  const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const sourceWorldId =
     typeof params.worldId === 'string' && params.worldId.startsWith('world-')
       ? params.worldId
@@ -411,6 +415,22 @@ export default function ScannerScreen() {
     }
     resetToCamera();
   };
+
+  if (!hydrated) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <PageLoading label="Chargement…" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+
+  if (!onboardingCompleted) {
+    return <Redirect href={getPostAuthHref(false)} />;
+  }
 
   if (step === 'problem') {
     return (
