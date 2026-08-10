@@ -34,6 +34,8 @@ type Props = {
   nearbyCatIds?: string[];
   /** Ids of cats already in the player CatDex. */
   capturedCatIds?: string[];
+  /** Purple callout above nearby pins — e.g. "Praline · 1 m". */
+  pinCallouts?: Record<string, string>;
 };
 
 type ExtraMaps = {
@@ -69,6 +71,7 @@ export function CatMap({
   userCoordinate,
   nearbyCatIds,
   capturedCatIds,
+  pinCallouts,
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
@@ -167,6 +170,7 @@ export function CatMap({
             onPress={onSelectCat}
             isNearby={nearbyCatIds?.includes(cat.id) ?? false}
             captured={owned}
+            callout={pinCallouts?.[cat.id] ?? null}
           />
           );
         })}

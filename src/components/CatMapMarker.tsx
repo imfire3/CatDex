@@ -9,6 +9,7 @@ import Animated, {
 
 import {
   CAT_PIN_AVATAR,
+  CAT_PIN_SILHOUETTE,
   CAT_PIN_TIP_H,
   CatPinVisual,
 } from '@/components/maps/CatPinVisual';
@@ -22,22 +23,25 @@ type Props = {
   isNearby?: boolean;
   /** Dim / mystery look for not-yet-captured world cats. */
   captured?: boolean;
+  /** Purple bubble above featured pins — e.g. "Nox · 90 m". */
+  callout?: string | null;
 };
 
 /**
- * Map pin — flat face circle + tip. No float animation (keeps tip on lat/lng).
+ * Map pin — featured photo+callout when nearby, grey silhouette otherwise.
  */
 function CatMapMarkerComponent({
   cat,
   onPress,
   isNearby = false,
   captured = true,
+  callout = null,
 }: Props) {
   const { spacing } = useTheme();
-  const size = isNearby ? spacing[48] : CAT_PIN_AVATAR;
-  // Tight box: tip is the bottom edge → Marker anchor y=1 stays on the ground.
-  const wrapW = size + spacing[16];
-  const wrapH = size + CAT_PIN_TIP_H;
+  const size = isNearby ? spacing[48] : CAT_PIN_SILHOUETTE;
+  const calloutPad = callout ? spacing[24] : 0;
+  const wrapW = Math.max(size + spacing[16], spacing[96]);
+  const wrapH = size + (isNearby ? CAT_PIN_TIP_H : 0) + calloutPad;
 
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
   const appear = useSharedValue(0);
@@ -45,7 +49,7 @@ function CatMapMarkerComponent({
   useEffect(() => {
     appear.value = withSpring(1, motionEasing.standard);
     setTracksViewChanges(true);
-  }, [appear, cat.id, cat.photoUri, isNearby]);
+  }, [appear, cat.id, cat.photoUri, isNearby, callout]);
 
   // Safety net if onLoad never fires (sprite-only pins settle via callback).
   useEffect(() => {
@@ -69,12 +73,12 @@ function CatMapMarkerComponent({
       tracksViewChanges={tracksViewChanges}
       anchor={{ x: 0.5, y: 1 }}
       tracksInfoWindowChanges={false}
-      zIndex={captured ? 12 : 10}
+      zIndex={isNearby ? 20 : captured ? 12 : 10}
     >
       <Animated.View
         style={[
           styles.wrap,
-          { width: wrapW, height: wrapH },
+          { width: wrapW, height: wrapH, minWidth: CAT_PIN_AVATAR },
           bodyStyle,
         ]}
       >
@@ -83,6 +87,7 @@ function CatMapMarkerComponent({
           captured={captured}
           isNearby={isNearby}
           size={size}
+          callout={callout}
           onVisualSettled={onVisualSettled}
         />
       </Animated.View>

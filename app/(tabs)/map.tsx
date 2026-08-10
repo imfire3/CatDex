@@ -10,7 +10,7 @@ import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner
 import { MapCatModal } from '@/components/maps/MapCatModal';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
 import { useCaptureGate } from '@/hooks/useCaptureGate';
-import { PARIS_20E } from '@/lib/constants';
+import { formatDistanceMeters, PARIS_20E } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
 import {
   getCurrentLocationCoordinate,
@@ -129,6 +129,15 @@ export default function MapScreen() {
         .map(({ cat }) => cat.id),
     [sortedCats],
   );
+
+  const pinCallouts = useMemo(() => {
+    const next: Record<string, string> = {};
+    for (const { cat, distanceM } of sortedCats) {
+      if (distanceM > PROXIMITY_ALERT_M) continue;
+      next[cat.id] = `${cat.name} · ${formatDistanceMeters(distanceM)}`;
+    }
+    return next;
+  }, [sortedCats]);
 
   /** Fly camera to a coordinate (always re-triggers, even if already centered). */
   const flyToCoordinate = useCallback(
@@ -290,6 +299,7 @@ export default function MapScreen() {
           userCoordinate={userCoordinate}
           nearbyCatIds={nearbyCatIds}
           capturedCatIds={capturedCatIdList}
+          pinCallouts={pinCallouts}
           onSelectCat={(item) => {
             setSelected(item);
             setSheetVisible(true);

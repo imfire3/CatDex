@@ -1,14 +1,19 @@
-import { Modal as RNModal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useEffect, useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { Pressable, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
+import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
 import { CatImage } from '@/components/CatImage';
-import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
 import { formatDistanceMeters } from '@/lib/constants';
+import {
+  catDexRarityLabel,
+  rarityTokens,
+  resolveRevealRarity,
+} from '@/lib/catTheme';
 import { isCatPhotoRef } from '@/lib/photoStorage';
+import { PROXIMITY_ALERT_M } from '@/lib/mapExplore';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -25,9 +30,7 @@ type Props = {
 };
 
 /**
- * Full-screen cat preview from the map — same canvas background as the app.
- *
- * Owned pins reveal identity; community sightings stay mystery until captured.
+ * Explorer cat sheet — compact bottom card matching the product mock.
  */
 export function MapCatModal({
   visible,
@@ -39,8 +42,7 @@ export function MapCatModal({
   onGoThere,
   onCapture,
 }: Props) {
-  const { colors, fonts, spacing, radius, iconStroke, motion } = useTheme();
-  const insets = useSafeAreaInsets();
+  const { colors, fonts, spacing, radius, iconStroke } = useTheme();
   const [photoFailed, setPhotoFailed] = useState(false);
 
   useEffect(() => {
@@ -51,9 +53,14 @@ export function MapCatModal({
 
   const distanceLabel =
     typeof distanceM === 'number' ? formatDistanceMeters(distanceM) : null;
+  const inRange =
+    typeof distanceM === 'number' && distanceM <= PROXIMITY_ALERT_M;
+  const rarityId = resolveRevealRarity(cat.analysis, cat.number);
+  const rarity = rarityTokens[rarityId];
+  const rarityLabel = catDexRarityLabel(rarityId);
+  const breedLabel = cat.analysis?.breed?.trim() || 'Chat';
 
   const canShowPhoto =
-    captured &&
     Boolean(cat.photoUri) &&
     !photoFailed &&
     !cat.photoUri.startsWith('blob:') &&
@@ -62,74 +69,31 @@ export function MapCatModal({
       cat.photoUri.startsWith('http') ||
       cat.photoUri.startsWith('file:'));
 
+  const primaryTitle = captured
+    ? 'Voir la fiche'
+    : inRange
+      ? 'Photographier'
+      : 'Lancer l’approche';
+  const onPrimary = captured
+    ? onViewCard
+    : inRange
+      ? onCapture
+      : onGoThere;
+
   return (
-    <RNModal
-      visible={visible}
-      animationType="slide"
-      onRequestClose={onClose}
-      accessibilityViewIsModal
-    >
-      <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <BottomSheet visible={visible} onClose={onClose}>
+      <View style={{ gap: spacing[16] }}>
         <View
           style={{
-            paddingTop: insets.top + spacing[8],
-            paddingHorizontal: spacing[24],
-            paddingBottom: spacing[8],
             flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: colors.background,
+            gap: spacing[16],
           }}
-        >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Retour"
-            onPress={onClose}
-            style={({ pressed }) => ({
-              width: spacing[40],
-              height: spacing[40],
-              borderRadius: radius[8],
-              backgroundColor: colors.surfaceElevated,
-              borderWidth: 1,
-              borderColor: colors.border,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 0.85 : 1,
-              transform: [{ scale: pressed ? motion.pressScale : 1 }],
-            })}
-          >
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M15 18 9 12l6-6"
-                stroke={colors.brand}
-                strokeWidth={iconStroke.regular}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </Pressable>
-
-          <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-            CatDex
-          </Text>
-
-          <View style={{ width: spacing[40], height: spacing[40] }} />
-        </View>
-
-        <ScrollView
-          style={{ flex: 1, backgroundColor: colors.background }}
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingHorizontal: spacing[24],
-            paddingBottom: insets.bottom + spacing[24],
-            gap: spacing[24],
-          }}
-          showsVerticalScrollIndicator={false}
         >
           <View
             style={{
-              width: '100%',
-              aspectRatio: 1,
+              width: spacing[80],
+              height: spacing[80],
               borderRadius: radius[8],
               backgroundColor: colors.surfaceSecondary,
               overflow: 'hidden',
@@ -147,87 +111,125 @@ export function MapCatModal({
                 accessibilityLabel={`Photo de ${cat.name}`}
                 onError={() => setPhotoFailed(true)}
               />
-            ) : captured ? (
-              <CatSprite
-                colorLabel={cat.analysis?.color ?? 'Roux'}
-                seed={cat.number}
-                size={180}
-                faceOnly
-              />
             ) : (
-              <View style={{ alignItems: 'center', gap: spacing[16] }}>
-                <Svg width={72} height={72} viewBox="0 0 24 24" fill="none">
-                  <Circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    stroke={colors.textMuted}
-                    strokeWidth={iconStroke.regular}
-                  />
-                  <Path
-                    d="M9.2 9.2a2.8 2.8 0 0 1 5.4.9c0 1.6-1.4 2.2-2.1 2.7-.6.4-.9.9-.9 1.6"
-                    stroke={colors.textMuted}
-                    strokeWidth={iconStroke.regular}
-                    strokeLinecap="round"
-                  />
-                  <Circle cx="12" cy="17.2" r="1.1" fill={colors.textMuted} />
-                </Svg>
-                <Text variant="bodySmall" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
-                  Mystère
-                </Text>
-              </View>
+              <Text variant="h2" color="textMuted">
+                ?
+              </Text>
             )}
           </View>
 
-          <View style={{ gap: spacing[8], width: '100%' }}>
+          <View style={{ flex: 1, gap: spacing[8] }}>
             <Text
-              variant="h2"
+              variant="h3"
               color="textBrand"
+              numberOfLines={1}
               style={{ fontFamily: fonts.display }}
             >
-              {captured ? cat.name : 'Chat mystère'}
+              {captured || canShowPhoto ? cat.name : 'Chat mystère'}
             </Text>
-            <Text variant="bodySmall" color="textSecondary">
-              {captured
-                ? `${cat.analysis.breed} · ${cat.analysis.color}`
-                : 'Repéré par un autre explorateur'}
-              {distanceLabel ? ` · ${distanceLabel}` : ''}
-            </Text>
-          </View>
 
-          {captured ? (
-            <Text variant="body" color="textBody">
-              {cat.analysis.description}
-            </Text>
-          ) : (
-            <Text variant="body" color="textSecondary">
-              Tu ne l’as pas encore capturé. Approche-toi et photographie-le pour
-              l’ajouter à ton CatDex.
-            </Text>
-          )}
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: spacing[8],
+              }}
+            >
+              <Text variant="bodySmall" color="textSecondary" numberOfLines={1}>
+                {breedLabel}
+              </Text>
+              <View
+                style={{
+                  paddingHorizontal: spacing[8],
+                  paddingVertical: spacing[4],
+                  borderRadius: radius.full,
+                  backgroundColor: rarity.background,
+                  borderWidth: 1,
+                  borderColor: rarity.border,
+                }}
+              >
+                <Text
+                  variant="caption"
+                  style={{ fontFamily: fonts.bodySemi, color: rarity.foreground }}
+                >
+                  {rarityLabel}
+                </Text>
+              </View>
+            </View>
 
-          <View style={{ marginTop: 'auto', width: '100%', gap: spacing[8] }}>
-            {captured ? (
-              <Button title="Voir la fiche" onPress={onViewCard} />
-            ) : (
-              <>
-                <Button title="Le découvrir" onPress={onCapture} />
-                <Button title="J’y vais" variant="secondary" onPress={onGoThere} />
-              </>
-            )}
-            {captured ? (
-              <Button title="Retour" variant="secondary" onPress={onClose} />
+            {distanceLabel ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing[4],
+                }}
+              >
+                <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11Z"
+                    stroke={colors.brand}
+                    strokeWidth={iconStroke.regular}
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
+                    stroke={colors.brand}
+                    strokeWidth={iconStroke.regular}
+                  />
+                </Svg>
+                <Text
+                  variant="bodySmall"
+                  color="textSecondary"
+                  style={{ fontFamily: fonts.bodySemi }}
+                >
+                  À {distanceLabel}
+                </Text>
+              </View>
             ) : null}
           </View>
-        </ScrollView>
+        </View>
+
+        <View style={{ gap: spacing[8] }}>
+          <Button title={primaryTitle} onPress={onPrimary} />
+          {!captured ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Voir la fiche"
+              onPress={onViewCard}
+              style={({ pressed }) => ({
+                alignItems: 'center',
+                paddingVertical: spacing[8],
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text
+                variant="bodySmall"
+                color="textBrand"
+                style={{ fontFamily: fonts.bodySemi }}
+              >
+                Voir la fiche
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Fermer"
+              onPress={onClose}
+              style={({ pressed }) => ({
+                alignItems: 'center',
+                paddingVertical: spacing[8],
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text variant="bodySmall" color="textSecondary">
+                Fermer
+              </Text>
+            </Pressable>
+          )}
+        </View>
       </View>
-    </RNModal>
+    </BottomSheet>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    width: '100%',
-  },
-});
