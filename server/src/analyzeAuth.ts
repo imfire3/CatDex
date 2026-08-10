@@ -86,6 +86,15 @@ function getSupabaseUrl(): string | null {
   return url ? url.replace(/\/+$/, '') : null;
 }
 
+function getSupabaseApiKey(): string | null {
+  return (
+    process.env.SUPABASE_ANON_KEY?.trim() ||
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    null
+  );
+}
+
 function getJwtSecret(): Uint8Array | null {
   const secret =
     process.env.SUPABASE_JWT_SECRET?.trim() ||
@@ -120,8 +129,39 @@ function payloadToUser(payload: JWTPayload): AnalyzeAuthUser | null {
   return { id, email };
 }
 
+/** Ask Supabase Auth directly — works even when local JWT secret / JWKS misconfigured. */
+async function verifyViaSupabaseAuthApi(
+  token: string,
+): Promise<AnalyzeAuthUser | null> {
+  const base = getSupabaseUrl();
+  const apikey = getSupabaseApiKey();
+  if (!base || !apikey) return null;
+
+  try {
+    const response = await fetch(`${base}/auth/v1/user`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey,
+      },
+    });
+    if (!response.ok) return null;
+    const body = (await response.json()) as {
+      id?: string;
+      email?: string | null;
+    };
+    if (!body.id) return null;
+    return {
+      id: body.id,
+      email: typeof body.email === 'string' ? body.email : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Verify Supabase access token (HS256 secret or asymmetric JWKS).
+ * Verify Supabase access token (HS256 secret, asymmetric JWKS, or Auth /user).
  */
 export async function verifySupabaseAccessToken(
   token: string,
@@ -142,14 +182,16 @@ export async function verifySupabaseAccessToken(
   }
 
   const remoteJwks = getJwks();
-  if (!remoteJwks) return null;
-
-  try {
-    const { payload } = await jwtVerify(trimmed, remoteJwks);
-    return payloadToUser(payload);
-  } catch {
-    return null;
+  if (remoteJwks) {
+    try {
+      const { payload } = await jwtVerify(trimmed, remoteJwks);
+      return payloadToUser(payload);
+    } catch {
+      // Fall through to Auth API.
+    }
   }
+
+  return verifyViaSupabaseAuthApi(trimmed);
 }
 
 export function extractBearerToken(authorizationHeader: string | undefined): string | null {

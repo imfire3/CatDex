@@ -1,10 +1,14 @@
 import { agentDebugLog } from '@/lib/agentDebugLog';
 import { getApiCandidateUrls } from '@/lib/apiUrl';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/auth';
 import type { CatAnalysis } from '@/types/cat';
 
 const AUTH_REQUIRED_MESSAGE =
   'Non autorisé. Connecte-toi pour analyser une photo.';
+
+const AUTH_SESSION_REJECTED_MESSAGE =
+  'Session refusée par l’API. Déconnecte-toi puis reconnecte-toi, puis réessaie.';
 
 type AnalyzeResponse = {
   analysis: CatAnalysis;
@@ -72,7 +76,21 @@ async function getAccessToken(): Promise<string | null> {
   try {
     const { data } = await supabase.auth.getSession();
     let token = data.session?.access_token?.trim() || null;
-    const expiresAt = data.session?.expires_at ?? null;
+    let expiresAt = data.session?.expires_at ?? null;
+
+    // Zustand may already hold a live session while getSession() briefly returns null on web.
+    if (!token) {
+      const storeSession = useAuthStore.getState().session;
+      token = storeSession?.access_token?.trim() || null;
+      expiresAt = storeSession?.expires_at ?? expiresAt;
+      agentDebugLog({
+        hypothesisId: 'A',
+        location: 'src/lib/api.ts:getAccessToken',
+        message: 'fallback to auth store session',
+        data: { hasToken: Boolean(token), userId: storeSession?.user?.id ?? null },
+      });
+    }
+
     agentDebugLog({
       hypothesisId: 'A',
       location: 'src/lib/api.ts:getAccessToken',
@@ -81,21 +99,33 @@ async function getAccessToken(): Promise<string | null> {
         hasToken: Boolean(token),
         expiresAt,
         expiredSoon: Boolean(expiresAt && expiresAt * 1000 < Date.now() + 60_000),
-        userId: data.session?.user?.id ?? null,
+        userId: data.session?.user?.id ?? useAuthStore.getState().user?.id ?? null,
       },
     });
-    if (!token) return null;
 
-    if (expiresAt && expiresAt * 1000 < Date.now() + 60_000) {
-      const { data: refreshed } = await supabase.auth.refreshSession();
-      token = refreshed.session?.access_token?.trim() || token;
+    const needsRefresh =
+      !token || Boolean(expiresAt && expiresAt * 1000 < Date.now() + 60_000);
+
+    if (needsRefresh) {
+      const { data: refreshed, error } = await supabase.auth.refreshSession();
+      if (!error && refreshed.session?.access_token) {
+        token = refreshed.session.access_token.trim();
+        useAuthStore.setState({
+          session: refreshed.session,
+          user: useAuthStore.getState().user,
+        });
+      }
       agentDebugLog({
         hypothesisId: 'B',
         location: 'src/lib/api.ts:getAccessToken',
         message: 'refresh attempted',
-        data: { hasTokenAfterRefresh: Boolean(token) },
+        data: {
+          hasTokenAfterRefresh: Boolean(token),
+          refreshError: error?.message?.slice(0, 120) ?? null,
+        },
       });
     }
+
     return token;
   } catch (error) {
     agentDebugLog({
@@ -104,7 +134,7 @@ async function getAccessToken(): Promise<string | null> {
       message: 'getSession threw',
       data: { errorName: error instanceof Error ? error.name : 'unknown' },
     });
-    return null;
+    return useAuthStore.getState().session?.access_token?.trim() || null;
   }
 }
 
@@ -171,6 +201,63 @@ async function requestAnalyze(
   });
 
   if (response.status === 401) {
+    // Token present but API rejected it — try one refresh + retry.
+    if (accessToken) {
+      try {
+        const { data: refreshed } = await supabase!.auth.refreshSession();
+        const nextToken = refreshed.session?.access_token?.trim();
+        if (nextToken && nextToken !== accessToken) {
+          agentDebugLog({
+            hypothesisId: 'C',
+            location: 'src/lib/api.ts:requestAnalyze',
+            message: '401 then refresh retry',
+            data: { apiBase },
+          });
+          const retry = await fetch(`${apiBase}/analyze-cat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${nextToken}`,
+            },
+            body: JSON.stringify({
+              imageBase64: base64,
+              mimeType,
+            }),
+            signal,
+          });
+          let retryData: AnalyzeApiPayload | null = null;
+          try {
+            retryData = (await retry.json()) as AnalyzeApiPayload;
+          } catch {
+            retryData = null;
+          }
+          if (retry.ok && retryData?.analysis) {
+            return {
+              analysis: retryData.analysis,
+              mocked: false,
+              error: retryData.error,
+              cutoutUri: retryData.cutoutBase64
+                ? `data:${retryData.cutoutMimeType ?? 'image/png'};base64,${retryData.cutoutBase64}`
+                : undefined,
+            };
+          }
+          if (retry.status === 401) {
+            throw new Error(
+              retryData?.error || AUTH_SESSION_REJECTED_MESSAGE,
+            );
+          }
+        }
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          (error.message.includes('Session refusée') ||
+            error.message.includes('Non autorisé'))
+        ) {
+          throw error;
+        }
+      }
+      throw new Error(data?.error || AUTH_SESSION_REJECTED_MESSAGE);
+    }
     throw new Error(data?.error || AUTH_REQUIRED_MESSAGE);
   }
   if (response.status === 429) {

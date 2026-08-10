@@ -40,7 +40,7 @@ import {
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import { compressPhotoDataUri } from '@/lib/photoStorage';
 import { sendAnalysisErrorReport } from '@/lib/sendErrorReport';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { getPostAuthHref, useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { usePendingCaptureStore } from '@/store/pendingCapture';
@@ -186,6 +186,37 @@ export default function ScannerScreen() {
       setCameraError(null);
     }
   }, [step]);
+
+  // Restore JWT into the auth store when the user is logged in but session is missing.
+  useEffect(() => {
+    if (!hydrated || !user || !isSupabaseConfigured) return;
+    if (session?.access_token) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data, error } = await supabase!.auth.getSession();
+        if (cancelled) return;
+        if (!error && data.session?.access_token) {
+          useAuthStore.setState({ session: data.session });
+          return;
+        }
+        const refreshed = await supabase!.auth.refreshSession();
+        if (cancelled) return;
+        if (refreshed.data.session?.access_token) {
+          useAuthStore.setState({ session: refreshed.data.session });
+          return;
+        }
+        router.replace('/(auth)/login');
+      } catch {
+        if (!cancelled) router.replace('/(auth)/login');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, user, session?.access_token]);
 
   // US-03: auto-retry analysis when connectivity returns.
   useEffect(() => {
@@ -526,15 +557,19 @@ export default function ScannerScreen() {
     return <Redirect href={getPostAuthHref(false)} />;
   }
 
-  // Live JWT required for remote analyze-cat (persisted user alone is not enough).
+  // Logged-in user without in-memory JWT yet — wait for refresh, don't bounce to login.
   if (isSupabaseConfigured && !session?.access_token) {
     agentDebugLog({
       hypothesisId: 'A',
       location: 'app/scanner.tsx:authGate',
-      message: 'scanner blocked — user without access_token',
+      message: 'scanner waiting — user without access_token',
       data: { userId: user.id, hasSession: Boolean(session) },
     });
-    return <Redirect href="/(auth)/login" />;
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <PageLoading label="Vérification de la session…" />
+      </View>
+    );
   }
 
   if (step === 'alreadyCaptured' && existingCat) {
