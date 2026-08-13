@@ -355,16 +355,6 @@ export default function MapScreen() {
           setSheetVisible(false);
           router.push({ pathname: '/cat/[id]', params: { id: selected.id } });
         }}
-        onGoThere={() => {
-          if (!selected) return;
-          setFollowUser(false);
-          flyToCoordinate({
-            latitude: selected.latitude,
-            longitude: selected.longitude,
-          });
-          setSheetVisible(false);
-          setSelected(null);
-        }}
         onCapture={() => {
           if (!selected) return;
           const sightingId = selected.id;

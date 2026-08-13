@@ -28,7 +28,6 @@ type Props = {
   distanceM?: number | null;
   onClose: () => void;
   onViewCard: () => void;
-  onGoThere: () => void;
   /** Primary action for uncaptured world cats — open the scanner. */
   onCapture: () => void;
 };
@@ -44,7 +43,6 @@ export function MapCatModal({
   distanceM,
   onClose,
   onViewCard,
-  onGoThere,
   onCapture,
 }: Props) {
   const { colors, fonts, spacing, radius, shadow, iconStroke } = useTheme();
@@ -77,16 +75,9 @@ export function MapCatModal({
       cat.photoUri.startsWith('http') ||
       cat.photoUri.startsWith('file:'));
 
-  const primaryTitle = captured
-    ? 'Voir la fiche'
-    : inRange
-      ? 'Photographier'
-      : 'S’approcher';
-  const onPrimary = captured
-    ? onViewCard
-    : inRange
-      ? onCapture
-      : onGoThere;
+  const showPrimary = captured || inRange;
+  const primaryTitle = captured ? 'Voir la fiche' : 'Photographier';
+  const onPrimary = captured ? onViewCard : onCapture;
 
   const photoSize = spacing[80];
   const clusterBottom = getMapActionClusterBottom(insets.bottom, spacing);
@@ -221,17 +212,19 @@ export function MapCatModal({
             ) : null}
           </View>
 
-          <Button
-            title={primaryTitle}
-            onPress={onPrimary}
-            fullWidth={false}
-            style={{
-              alignSelf: 'center',
-              paddingHorizontal: spacing[16],
-              minHeight: spacing[48],
-              height: spacing[48],
-            }}
-          />
+          {showPrimary ? (
+            <Button
+              title={primaryTitle}
+              onPress={onPrimary}
+              fullWidth={false}
+              style={{
+                alignSelf: 'center',
+                paddingHorizontal: spacing[16],
+                minHeight: spacing[48],
+                height: spacing[48],
+              }}
+            />
+          ) : null}
         </View>
       </View>
     </Modal>

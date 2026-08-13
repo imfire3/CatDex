@@ -11,7 +11,47 @@ const cors = {
 
 const SYSTEM_PROMPT = `Tu es le moteur Vision de CatDex. Analyse UNIQUEMENT ce qui est visible sur la photo.
 Réponds en français. N'invente pas d'histoire, de propriétaire, ni de traits invisibles.
-Si ce n'est pas un chat clairement visible, isCat=false et explique dans reason.`;
+Si ce n'est pas un chat clairement visible, isCat=false et explique dans reason.
+Si c'est un chat, name DOIT être un surnom drôle (1–2 mots) : pelage + race si visible + pose.
+Recette : un mot pelage + un mot pose.
+Exemples : Paprika Zen (roux assis), Oreo Sieste (noir et blanc allongé), Coussin Royal (persan posé), Brume Radar (gris qui guette), Tigrou Turbo (tigré en mouvement).
+Interdit: Chat, Minou, Félix, Garfield, Ombre, Roux, Noir, Blanc, Gris, Miaou, Kitty.`;
+
+const GENERIC_NAMES = new Set([
+  '', 'chat', 'minou', 'minet', 'chaton', 'felix', 'félix', 'garfield', 'ombre',
+  'roux', 'noir', 'blanc', 'gris', 'miaou', 'cat', 'kitty', 'unknown', 'inconnu',
+]);
+
+function pickFunnyName(form) {
+  const hay = `${form.coatColor || ''} ${form.coatPattern || ''} ${form.breed || ''} ${form.description || ''} ${(form.personalityTraits || []).join(' ')}`.toLowerCase();
+  const coat =
+    /roux|orange|ginger/.test(hay) ? 'Paprika'
+    : /noir et blanc|bicolor/.test(hay) ? 'Oreo'
+    : /calico|tricolore/.test(hay) ? 'Confetti'
+    : /noir|black/.test(hay) ? 'Réglisse'
+    : /blanc|white|neige/.test(hay) ? 'Meringue'
+    : /gris|grey|gray|bleu/.test(hay) ? 'Brume'
+    : /brun|chocolat|noisette/.test(hay) ? 'Choco'
+    : /tigr|tabby|rayure/.test(hay) ? 'Tigrou'
+    : 'Patoune';
+  const pose =
+    /assis|calme|zen/.test(hay) ? 'Zen'
+    : /couch|allong|sieste|dodo/.test(hay) ? 'Sieste'
+    : /curieux|espion|guette/.test(hay) ? 'Radar'
+    : /joueur|bond|saute/.test(hay) ? 'Turbo'
+    : /cache|boite/.test(hay) ? 'Ninja'
+    : /persan/.test(hay) ? 'Royal'
+    : /maine coon/.test(hay) ? 'Boule'
+    : '';
+  return pose && pose !== coat ? `${coat} ${pose}` : coat;
+}
+
+function isGenericName(name) {
+  const trimmed = (name || '').trim();
+  if (trimmed.length < 3 || trimmed.length > 22) return true;
+  if (GENERIC_NAMES.has(trimmed.toLowerCase())) return true;
+  return /^(chat|minou|kitty)\b/i.test(trimmed);
+}
 
 function json(statusCode, body) {
   return {
@@ -49,7 +89,7 @@ function mapFormToAnalysis(form) {
       breed: form.breed || 'Race inconnue',
       coat: form.furLength || '',
       description: form.description || '',
-      suggestedName: form.name || undefined,
+      suggestedName: isGenericName(form.name) ? pickFunnyName(form) : form.name,
       gender: form.sex || 'inconnu',
       eyes: form.eyeColor || undefined,
       size: form.size || undefined,
@@ -115,7 +155,7 @@ export async function handler(event) {
       },
       body: JSON.stringify({
         model,
-        temperature: 0.2,
+        temperature: 0.55,
         max_tokens: 1400,
         response_format: { type: 'json_object' },
         messages: [

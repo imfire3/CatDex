@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, memo, type ReactNode } from 'react';
 import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import Animated, {
   Easing,
-  FadeIn,
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -38,7 +38,6 @@ const TIPS = [
   'Chaque chat a des caractéristiques uniques, comme nous !',
 ] as const;
 
-/** Shown once the checklist is done but the API is still working. */
 const WAITING_MESSAGES = [
   'On peaufine les détails…',
   'Encore quelques secondes…',
@@ -51,18 +50,12 @@ type Props = {
   onBack?: () => void;
 };
 
-/**
- * Fake progress tuned for a quick analysis (~2–4s):
- * climbs to ~90% fast, then crawls while the API finishes.
- */
 function progressForElapsedMs(elapsedMs: number): number {
   if (elapsedMs <= 0) return 0.12;
   if (elapsedMs < 2_500) {
-    // 12% → ~90% in ~2.5s
     return 0.12 + 0.78 * (1 - Math.exp(-elapsedMs / 900));
   }
   const extra = elapsedMs - 2_500;
-  // 90% → ~99% while waiting on a slow network / cold start
   return Math.min(0.99, 0.9 + 0.09 * (1 - Math.exp(-extra / 8_000)));
 }
 
@@ -85,7 +78,6 @@ function StepCheck({ done, active }: { done: boolean; active?: boolean }) {
   if (done) {
     return (
       <Animated.View
-        entering={FadeIn.duration(160)}
         style={[
           {
             width: 22,
@@ -151,15 +143,19 @@ function OrbitSparkle({
 
   useEffect(() => {
     if (reduceMotion) return;
+    spin.value = phase;
     spin.value = withRepeat(
       withTiming(phase + 1, { duration, easing: Easing.linear }),
       -1,
       false,
     );
+    return () => {
+      cancelAnimation(spin);
+    };
   }, [duration, phase, reduceMotion, spin]);
 
   const style = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${spin.value * 360}deg` }, { translateY: -orbit }],
+    transform: [{ rotate: `${spin.value * 360}deg` }],
   }));
 
   return (
@@ -168,25 +164,27 @@ function OrbitSparkle({
       style={[
         {
           position: 'absolute',
+          left: 100 - size / 2,
+          top: 100 - size / 2,
           width: size,
           height: size,
-          marginLeft: -size / 2,
-          marginTop: -size / 2,
         },
         style,
       ]}
     >
-      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        <Path
-          d="M12 2.5 13.8 9l6.7 1.2-5 4.4 1.4 6.4L12 17.8 7.1 21l1.4-6.4-5-4.4L10.2 9 12 2.5Z"
-          fill={colors.brand}
-        />
-      </Svg>
+      <View style={{ transform: [{ translateY: -orbit }] }}>
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 2.5 13.8 9l6.7 1.2-5 4.4 1.4 6.4L12 17.8 7.1 21l1.4-6.4-5-4.4L10.2 9 12 2.5Z"
+            fill={colors.brand}
+          />
+        </Svg>
+      </View>
     </Animated.View>
   );
 }
 
-function ScanningHero({
+const ScanningHero = memo(function ScanningHero({
   photoUri,
   showPhoto,
   onPhotoError,
@@ -200,21 +198,25 @@ function ScanningHero({
   const rotate = useSharedValue(0);
   const halo = useSharedValue(0.7);
   const scan = useSharedValue(0);
+  const photoSource = useMemo(
+    () => (photoUri ? { uri: photoUri } : undefined),
+    [photoUri],
+  );
 
   useEffect(() => {
     if (reduceMotion) return;
     rotate.value = withRepeat(
       withSequence(
-        withTiming(2.5, { duration: 2200 }),
-        withTiming(-2.5, { duration: 2200 }),
+        withTiming(2.5, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(-2.5, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
       true,
     );
     halo.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 900 }),
-        withTiming(0.65, { duration: 900 }),
+        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.65, { duration: 900, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
       false,
@@ -224,6 +226,11 @@ function ScanningHero({
       -1,
       true,
     );
+    return () => {
+      cancelAnimation(rotate);
+      cancelAnimation(halo);
+      cancelAnimation(scan);
+    };
   }, [halo, reduceMotion, rotate, scan]);
 
   const photoStyle = useAnimatedStyle(() => ({
@@ -290,11 +297,12 @@ function ScanningHero({
           photoStyle,
         ]}
       >
-        {showPhoto ? (
+        {showPhoto && photoSource ? (
           <Image
-            source={{ uri: photoUri! }}
+            source={photoSource}
             accessibilityLabel="Photo du chat en cours d’analyse"
             resizeMode="cover"
+            fadeDuration={0}
             style={{ width: '100%', height: '100%' }}
             onError={onPhotoError}
           />
@@ -313,6 +321,180 @@ function ScanningHero({
           </View>
         )}
       </Animated.View>
+    </View>
+  );
+});
+
+function ScanStatusLine() {
+  const [elapsedMs, setElapsedMs] = useState(0);
+
+  useEffect(() => {
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      setElapsedMs(Date.now() - startedAt);
+    }, 400);
+    return () => clearInterval(timer);
+  }, []);
+
+  const waiting = elapsedMs >= 2_500;
+  const waitingIndex = Math.floor(elapsedMs / 2_200) % WAITING_MESSAGES.length;
+  const statusLabel = waiting
+    ? WAITING_MESSAGES[waitingIndex]!
+    : 'Détection rapide…';
+
+  return (
+    <Text variant="caption" color="textSecondary" align="center" numberOfLines={1}>
+      {statusLabel}
+    </Text>
+  );
+}
+
+function ScanProgressCard() {
+  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const [progress, setProgress] = useState(0.12);
+  const prevDoneCount = useRef(0);
+
+  useEffect(() => {
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      setProgress(progressForElapsedMs(Date.now() - startedAt));
+    }, 250);
+    return () => clearInterval(timer);
+  }, []);
+
+  const completedSteps = useMemo(() => {
+    const thresholds = [0.18, 0.38, 0.58, 0.78, 0.92];
+    return ANALYSIS_STEPS.map((_, index) => progress >= (thresholds[index] ?? 1));
+  }, [progress]);
+
+  useEffect(() => {
+    const doneCount = completedSteps.filter(Boolean).length;
+    if (doneCount > prevDoneCount.current && Platform.OS !== 'web') {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    prevDoneCount.current = doneCount;
+  }, [completedSteps]);
+
+  const activeIndex = Math.min(
+    ANALYSIS_STEPS.length - 1,
+    Math.max(0, completedSteps.lastIndexOf(true) + 1),
+  );
+  const waitingOnApi = progress >= 0.85;
+  const percentLabel = `${Math.round(progress * 100)}%`;
+
+  return (
+    <View
+      style={[
+        {
+          backgroundColor: colors.surface,
+          borderRadius: radius.cta,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: spacing[16],
+          gap: spacing[16],
+        },
+        shadow.low,
+      ]}
+    >
+      <View style={{ gap: spacing[8] }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
+          <View style={{ flex: 1 }}>
+            <ProgressBar progress={progress} height={10} />
+          </View>
+          <Text
+            variant="bodySmall"
+            color="textBrand"
+            style={{ fontFamily: fonts.bodySemi, minWidth: 40, textAlign: 'right' }}
+          >
+            {percentLabel}
+          </Text>
+        </View>
+        {waitingOnApi ? (
+          <Text variant="caption" color="textMuted">
+            Encore un instant si le réseau est lent…
+          </Text>
+        ) : null}
+      </View>
+
+      <View style={{ gap: spacing[16] }}>
+        {ANALYSIS_STEPS.map((label, index) => {
+          const done = completedSteps[index]!;
+          const active = !done && index === activeIndex;
+          return (
+            <View
+              key={label}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}
+            >
+              <StepCheck done={done} active={active} />
+              <Text
+                variant="bodySmall"
+                color={done || active ? 'textBrand' : 'textSecondary'}
+                style={{
+                  fontFamily: done || active ? fonts.bodySemi : fonts.body,
+                }}
+              >
+                {label}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function ScanTipCard() {
+  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const [tipIndex, setTipIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTipIndex((index) => (index + 1) % TIPS.length);
+    }, 4200);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <View
+      style={[
+        {
+          backgroundColor: colors.surface,
+          borderRadius: radius.cta,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: spacing[16],
+          flexDirection: 'row',
+          gap: spacing[16],
+          alignItems: 'flex-start',
+        },
+        shadow.low,
+      ]}
+    >
+      <View
+        style={{
+          width: spacing[40],
+          height: spacing[40],
+          borderRadius: radius.full,
+          backgroundColor: colors.brandSoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 3 13.6 8.4 19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3Z"
+            fill={colors.brand}
+          />
+        </Svg>
+      </View>
+      <View style={{ flex: 1, gap: spacing[4] }}>
+        <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+          Le savais-tu ?
+        </Text>
+        <Text variant="bodySmall" color="textBody">
+          {TIPS[tipIndex]}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -370,73 +552,19 @@ function AnalysisTab({
   );
 }
 
-/**
- * Post-capture analysis UI — light card layout with the scanned photo,
- * progress checklist and tip (product mock).
- */
 export function AnalysisLoadingView({ photoUri, onBack }: Props) {
   const { colors, fonts, spacing, radius, shadow, iconStroke, gradients } = useTheme();
   const insets = useSafeAreaInsets();
-  const [progress, setProgress] = useState(0.08);
-  const [waitingIndex, setWaitingIndex] = useState(0);
-  const [tipIndex, setTipIndex] = useState(0);
   const [photoFailed, setPhotoFailed] = useState(false);
-  const prevDoneCount = useRef(0);
+  const handlePhotoError = useCallback(() => setPhotoFailed(true), []);
   const showPhoto =
     Boolean(photoUri) &&
     !photoFailed &&
-    !photoUri!.startsWith('blob:');
+    Boolean(photoUri && !photoUri.startsWith('blob:'));
 
   useEffect(() => {
     setPhotoFailed(false);
   }, [photoUri]);
-
-  useEffect(() => {
-    const startedAt = Date.now();
-    const timer = setInterval(() => {
-      setProgress(progressForElapsedMs(Date.now() - startedAt));
-    }, 120);
-    return () => clearInterval(timer);
-  }, []);
-
-  const isWaitingOnApi = progress >= 0.85;
-
-  useEffect(() => {
-    if (!isWaitingOnApi) return;
-    const timer = setInterval(() => {
-      setWaitingIndex((index) => (index + 1) % WAITING_MESSAGES.length);
-    }, 2200);
-    return () => clearInterval(timer);
-  }, [isWaitingOnApi]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTipIndex((index) => (index + 1) % TIPS.length);
-    }, 4200);
-    return () => clearInterval(timer);
-  }, []);
-
-  const completedSteps = useMemo(() => {
-    const thresholds = [0.2, 0.45, 0.65, 0.85];
-    return ANALYSIS_STEPS.map((_, index) => progress >= thresholds[index]!);
-  }, [progress]);
-
-  useEffect(() => {
-    const doneCount = completedSteps.filter(Boolean).length;
-    if (doneCount > prevDoneCount.current && Platform.OS !== 'web') {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    prevDoneCount.current = doneCount;
-  }, [completedSteps]);
-
-  const activeIndex = Math.min(
-    ANALYSIS_STEPS.length - 1,
-    Math.max(0, completedSteps.lastIndexOf(true) + 1),
-  );
-  const percentLabel = `${Math.round(progress * 100)}%`;
-  const statusLabel = isWaitingOnApi
-    ? WAITING_MESSAGES[waitingIndex]!
-    : 'Détection rapide…';
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -453,7 +581,6 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
           paddingBottom: insets.bottom + spacing[8],
         }}
       >
-        {/* Header */}
         <View
           style={{
             paddingHorizontal: spacing[24],
@@ -490,14 +617,11 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
             >
               Découverte en cours
             </Text>
-            <Text variant="caption" color="textSecondary" align="center" numberOfLines={1}>
-              {statusLabel}
-            </Text>
+            <ScanStatusLine />
           </View>
           <View style={{ width: spacing[40] }} />
         </View>
 
-        {/* Hero */}
         <View
           style={{
             alignItems: 'center',
@@ -509,119 +633,15 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
           <ScanningHero
             photoUri={photoUri}
             showPhoto={showPhoto}
-            onPhotoError={() => setPhotoFailed(true)}
+            onPhotoError={handlePhotoError}
           />
         </View>
 
         <View style={{ flex: 1, paddingHorizontal: spacing[24], gap: spacing[16] }}>
-          {/* Progress card */}
-          <View
-            style={[
-              {
-                backgroundColor: colors.surface,
-                borderRadius: radius.cta,
-                borderWidth: 1,
-                borderColor: colors.border,
-                padding: spacing[16],
-                gap: spacing[16],
-              },
-              shadow.low,
-            ]}
-          >
-            <View style={{ gap: spacing[8] }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-                <View style={{ flex: 1 }}>
-                  <ProgressBar progress={progress} height={10} />
-                </View>
-                <Text
-                  variant="bodySmall"
-                  color="textBrand"
-                  style={{ fontFamily: fonts.bodySemi, minWidth: 40, textAlign: 'right' }}
-                >
-                  {percentLabel}
-                </Text>
-              </View>
-              {isWaitingOnApi ? (
-                <Text variant="caption" color="textMuted">
-                  Encore un instant si le réseau est lent…
-                </Text>
-              ) : null}
-            </View>
-
-            <View style={{ gap: spacing[16] }}>
-              {ANALYSIS_STEPS.map((label, index) => {
-                const done = completedSteps[index]!;
-                const active = !done && index === activeIndex;
-                return (
-                  <View
-                    key={label}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}
-                  >
-                    <StepCheck done={done} active={active} />
-                    <Text
-                      variant="bodySmall"
-                      color={done || active ? 'textBrand' : 'textSecondary'}
-                      style={{
-                        fontFamily: done || active ? fonts.bodySemi : fonts.body,
-                      }}
-                    >
-                      {label}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Tip card */}
-          <View
-            style={[
-              {
-                backgroundColor: colors.surface,
-                borderRadius: radius.cta,
-                borderWidth: 1,
-                borderColor: colors.border,
-                padding: spacing[16],
-                flexDirection: 'row',
-                gap: spacing[16],
-                alignItems: 'flex-start',
-              },
-              shadow.low,
-            ]}
-          >
-            <View
-              style={{
-                width: spacing[40],
-                height: spacing[40],
-                borderRadius: radius.full,
-                backgroundColor: colors.brandSoft,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M12 3 13.6 8.4 19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3Z"
-                  fill={colors.brand}
-                />
-              </Svg>
-            </View>
-            <View style={{ flex: 1, gap: spacing[4] }}>
-              <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-                Le savais-tu ?
-              </Text>
-              <Text
-                key={tipIndex}
-                variant="bodySmall"
-                color="textBody"
-              >
-                {TIPS[tipIndex]}
-              </Text>
-            </View>
-          </View>
+          <ScanProgressCard />
+          <ScanTipCard />
         </View>
 
-        {/* Analysis flow tabs */}
         <View
           style={[
             {

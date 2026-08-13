@@ -60,7 +60,7 @@ type Step =
   | 'alreadyCaptured';
 
 /** Brief pause so the loading UI can paint — never pad a slow API. */
-const MIN_ANALYSIS_MS = 600;
+const MIN_ANALYSIS_MS = 2_000;
 
 const FLASH_CYCLE: FlashMode[] = ['auto', 'on', 'off'];
 const FLASH_LABELS: Record<FlashMode, string> = {
