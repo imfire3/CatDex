@@ -96,6 +96,8 @@ export default function MapScreen() {
   const [watchEnabled, setWatchEnabled] = useState(false);
   /** GPS follow — paused while looking at a cat in another region. */
   const [followUser, setFollowUser] = useState(true);
+  /** Heading-up mode — map rotates with the phone compass. */
+  const [compassMode, setCompassMode] = useState(false);
 
   const lastHapticCatRef = useRef<string | null>(null);
 
@@ -398,7 +400,7 @@ export default function MapScreen() {
   }, [nearestForProximity, pushNearby, setHasNearbyCat]);
 
   const handleLocationAuthorize = useCallback(async () => {
-    // Must run synchronously in the tap — unlocks iOS motion/compass.
+    // May also unlock motion on iOS when the user accepts GPS from the modal.
     unlockWebCompassFromGesture();
     setLocationBusy(true);
     try {
@@ -418,8 +420,6 @@ export default function MapScreen() {
   }, [applyLocation, unlockWebCompassFromGesture]);
 
   const recenterOnPlayer = async () => {
-    // Must run synchronously in the tap — unlocks iOS motion/compass.
-    unlockWebCompassFromGesture();
     setFollowUser(true);
     setWatchEnabled(true);
     // Instant camera feedback from last known GPS (works even if a fresh
@@ -446,6 +446,27 @@ export default function MapScreen() {
 
     if (!userCoordinate) {
       flyToCoordinate({ ...PARIS_20E.center });
+    }
+  };
+
+  /** Toggle heading-up compass mode (same round tool UI as recenter). */
+  const handleCompassPress = () => {
+    // Sync with the tap — required for iOS Safari DeviceOrientation.
+    unlockWebCompassFromGesture();
+
+    if (compassMode && followUser) {
+      setCompassMode(false);
+      if (userCoordinate) {
+        flyToCoordinate(userCoordinate);
+      }
+      return;
+    }
+
+    setCompassMode(true);
+    setFollowUser(true);
+    setWatchEnabled(true);
+    if (userCoordinate) {
+      flyToCoordinate(userCoordinate);
     }
   };
 
@@ -476,7 +497,7 @@ export default function MapScreen() {
           }
           focusNonce={focusCoordinate?.nonce}
           userCoordinate={userCoordinate}
-          userHeading={userHeading}
+          userHeading={compassMode ? userHeading : null}
           nearbyCatIds={nearbyCatIds}
           capturedCatIds={ownedCatIdList}
           selectedCatId={selected?.id ?? null}
@@ -506,7 +527,9 @@ export default function MapScreen() {
         missionCount={openMissionCount}
         collectionCount={ownedCats.length}
         captureHighlighted={Boolean(nearbyCatIds.length)}
+        compassActive={compassMode}
         onRecenter={() => void recenterOnPlayer()}
+        onCompass={handleCompassPress}
         onCapturePress={() => {
           void captureGate.requestCapture();
         }}

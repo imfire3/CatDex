@@ -24,6 +24,10 @@ type Props = {
   missionCount?: number;
   collectionCount?: number;
   onRecenter?: () => void;
+  /** Enable / toggle compass heading-up mode. */
+  onCompass?: () => void;
+  /** When true, compass tool uses the active (brand) look. */
+  compassActive?: boolean;
   captureHighlighted?: boolean;
   /** Intercept Capture FAB (e.g. camera permission gate). */
   onCapturePress?: () => void;
@@ -33,11 +37,13 @@ function RoundTool({
   label,
   onPress,
   badge,
+  active = false,
   children,
 }: {
   label: string;
   onPress: () => void;
   badge?: number;
+  active?: boolean;
   children: React.ReactNode;
 }) {
   const { colors, spacing, radius, shadow, motion } = useTheme();
@@ -45,13 +51,14 @@ function RoundTool({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
       onPress={onPress}
       style={({ pressed }) => [
         {
           width: spacing[48],
           height: spacing[48],
           borderRadius: radius.full,
-          backgroundColor: colors.surfaceElevated,
+          backgroundColor: active ? colors.brand : colors.surfaceElevated,
           alignItems: 'center',
           justifyContent: 'center',
           transform: [{ scale: pressed ? motion.pressScale : 1 }],
@@ -152,6 +159,8 @@ export function MapExplorerHud({
   missionCount = 0,
   collectionCount = 0,
   onRecenter,
+  onCompass,
+  compassActive = false,
   captureHighlighted = false,
   onCapturePress,
 }: Props) {
@@ -168,6 +177,7 @@ export function MapExplorerHud({
   )
     .slice(0, 2)
     .toUpperCase();
+  const compassIconColor = compassActive ? colors.onBrand : colors.brand;
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
@@ -247,26 +257,62 @@ export function MapExplorerHud({
         </RoundTool>
       </View>
 
-      {onRecenter ? (
+      {onRecenter || onCompass ? (
         <View
           pointerEvents="box-none"
           style={{
             position: 'absolute',
             right: spacing[16],
             bottom: clusterBottom + MAP_CAPTURE_FAB_SIZE + spacing[16],
-            zIndex: 20 }}
+            zIndex: 20,
+            gap: spacing[8],
+            alignItems: 'center',
+          }}
         >
-          <RoundTool label="Recentrer sur ma position" onPress={onRecenter}>
-            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-              <Circle cx="12" cy="12" r="6" stroke={colors.brand} strokeWidth={stroke} />
-              <Path
-                d="M12 3v3M12 18v3M3 12h3M18 12h3"
-                stroke={colors.brand}
-                strokeWidth={stroke}
-                strokeLinecap="round"
-              />
-            </Svg>
-          </RoundTool>
+          {onRecenter ? (
+            <RoundTool label="Recentrer sur ma position" onPress={onRecenter}>
+              <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+                <Circle cx="12" cy="12" r="6" stroke={colors.brand} strokeWidth={stroke} />
+                <Path
+                  d="M12 3v3M12 18v3M3 12h3M18 12h3"
+                  stroke={colors.brand}
+                  strokeWidth={stroke}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            </RoundTool>
+          ) : null}
+          {onCompass ? (
+            <RoundTool
+              label={
+                compassActive
+                  ? 'Désactiver le mode boussole'
+                  : 'Activer le mode boussole'
+              }
+              onPress={onCompass}
+              active={compassActive}
+            >
+              <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+                <Circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke={compassIconColor}
+                  strokeWidth={stroke}
+                />
+                <Path
+                  d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21"
+                  stroke={compassIconColor}
+                  strokeWidth={stroke}
+                  strokeLinecap="round"
+                />
+                <Path
+                  d="M12 7.5 14.8 12 12 16.5 9.2 12 12 7.5Z"
+                  fill={compassIconColor}
+                />
+              </Svg>
+            </RoundTool>
+          ) : null}
         </View>
       ) : null}
 
