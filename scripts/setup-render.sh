@@ -73,7 +73,7 @@ echo ""
 read -p "Prêt à continuer ? (Y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]] && [[ ! -z $REPLY ]]; then
-  echo -e "${YELLOW}D'accord ! Consulte RENDER_SETUP_GUIDE.md pour savoir comment obtenir les clés.${NC}"
+  echo -e "${YELLOW}D'accord ! Consulte docs/ops/RENDER_SETUP_GUIDE.md pour savoir comment obtenir les clés.${NC}"
   exit 0
 fi
 
@@ -158,7 +158,7 @@ echo "4. Sélectionne le repo CatDex"
 echo "5. Configure les variables ci-dessus"
 echo "6. Clique 'Apply' et attends 3-5 minutes"
 echo ""
-echo -e "${YELLOW}📄 Guide détaillé : RENDER_SETUP_GUIDE.md${NC}"
+echo -e "${YELLOW}📄 Guide détaillé : docs/ops/RENDER_SETUP_GUIDE.md${NC}"
 echo ""
 
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -170,8 +170,8 @@ read -p "Ouvrir le guide complet maintenant ? (Y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
   if command -v less &> /dev/null; then
-    less RENDER_SETUP_GUIDE.md
+    less docs/ops/RENDER_SETUP_GUIDE.md
   else
-    cat RENDER_SETUP_GUIDE.md
+    cat docs/ops/RENDER_SETUP_GUIDE.md
   fi
 fi

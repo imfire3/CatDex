@@ -384,7 +384,7 @@ Review Apple/Google (1-3 jours)
 
 ---
 
-**Documentation complète** : Voir `DEPLOYMENT.md`, `QUICKSTART.md`, et guides dans `docs/`
+**Documentation complète** : Voir `docs/ops/DEPLOYMENT.md`, `docs/getting-started.md`, et guides dans `docs/`
 
 ## État du code avant la bêta web
 

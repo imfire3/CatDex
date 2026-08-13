@@ -368,7 +368,7 @@ Au prochain appel `/analyze-cat` :
    - Recommandé pour production
 
 3. **Utiliser Railway** (pas de cold start, $5 gratuit/mois) :
-   - Voir `DEPLOYMENT.md` → Section Railway
+   - Voir `docs/ops/DEPLOYMENT.md` → Section Railway
 
 ---
 
@@ -464,7 +464,7 @@ docker run -p 8787:8787 --env-file .env catdex-api
 
 **Solutions** :
 1. **Upgrade vers Starter** ($7/mois) → Pas de cold start
-2. **Migrer vers Railway** → Voir `DEPLOYMENT.md`
+2. **Migrer vers Railway** → Voir `docs/ops/DEPLOYMENT.md`
 3. **Keep-alive ping** (pas idéal, consomme les heures gratuites)
 
 ---
@@ -515,7 +515,7 @@ Si le cold start Render te gêne, Railway est une excellente alternative :
 - Après $5, commence à facturer
 - Moins de features gratuites que Render
 
-Voir **`DEPLOYMENT.md`** → Section Railway pour les instructions.
+Voir **`docs/ops/DEPLOYMENT.md`** → Section Railway pour les instructions.
 
 ---
 

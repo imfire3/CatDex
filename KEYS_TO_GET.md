@@ -27,4 +27,5 @@ Ce fichier est un **pointeur**. Les vraies clés restent **de ton côté**
 
 - Agenda : [`docs/PUBLIC_REPO_AGENDA.md`](./docs/PUBLIC_REPO_AGENDA.md)
 - Features : [`docs/FEATURES.md`](./docs/FEATURES.md)
-- Setup Supabase (placeholders) : [`SUPABASE_SETUP.md`](./SUPABASE_SETUP.md)
+- Setup Supabase (placeholders) : [`docs/ops/SUPABASE_SETUP.md`](./docs/ops/SUPABASE_SETUP.md)
+- Démarrage : [`docs/getting-started.md`](./docs/getting-started.md)

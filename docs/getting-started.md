@@ -1,5 +1,7 @@
 # 🚀 Démarrage Rapide - CatDex
 
+> **Navigation** : [README](../README.md) · [Ops](./ops/README.md) · [Téléphone](./phone-quickstart.md) · [Sécurité](../SECURITY.md)
+
 Guide rapide pour mettre CatDex en ligne en 30 minutes !
 
 ## Ce dont tu as besoin
@@ -175,7 +177,7 @@ Tes amis peuvent créer un compte et commencer à utiliser CatDex immédiatement
 
 ### Version Mobile (optionnel)
 
-Pour avoir une vraie app iOS/Android, voir [MOBILE_DEPLOYMENT.md](./docs/MOBILE_DEPLOYMENT.md).
+Pour avoir une vraie app iOS/Android, voir [MOBILE_DEPLOYMENT.md](./MOBILE_DEPLOYMENT.md).
 
 Temps estimé : 15-30 min + 1-3 jours de review Apple/Google.
 
@@ -240,7 +242,7 @@ L'instance s'endort après 15 min d'inactivité. Au premier appel, elle met 30-5
 
 Ne les active dans l'app qu'APRÈS avoir configuré les providers dans Supabase → Authentication → Providers.
 
-Voir [DEPLOYMENT.md](./DEPLOYMENT.md) section OAuth pour les détails.
+Voir [DEPLOYMENT.md](./ops/DEPLOYMENT.md) section OAuth pour les détails.
 
 ---
 
@@ -256,9 +258,9 @@ Voir [DEPLOYMENT.md](./DEPLOYMENT.md) section OAuth pour les détails.
 
 ## Besoin d'aide ?
 
-- **Guides complets** : [DEPLOYMENT.md](./DEPLOYMENT.md)
+- **Guides complets** : [DEPLOYMENT.md](./ops/DEPLOYMENT.md)
 - **API Render** : [docs/RENDER_DEPLOYMENT.md](./docs/RENDER_DEPLOYMENT.md)
-- **Apps mobiles** : [docs/MOBILE_DEPLOYMENT.md](./docs/MOBILE_DEPLOYMENT.md)
+- **Apps mobiles** : [docs/MOBILE_DEPLOYMENT.md](./MOBILE_DEPLOYMENT.md)
 - **Supabase** : [supabase/README.md](./supabase/README.md)
 
 **Problème ?** Ouvre une issue sur GitHub !

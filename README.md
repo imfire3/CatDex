@@ -253,23 +253,19 @@ main
 
 ## 📚 Documentation
 
-La documentation technique et produit se trouve dans :
+Point d’entrée : ce README.
 
-```text
-/docs
-```
+| Doc | Contenu |
+|---|---|
+| [docs/getting-started.md](./docs/getting-started.md) | Démarrage rapide (local + mise en ligne) |
+| [docs/phone-quickstart.md](./docs/phone-quickstart.md) | Tester sur téléphone |
+| [docs/ops/](./docs/ops/) | Déploiement Netlify / Render / Supabase |
+| [docs/FEATURES.md](./docs/FEATURES.md) | Carte des fonctionnalités |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Architecture |
+| [SECURITY.md](./SECURITY.md) | Secrets & frontière public/privé |
+| [KEYS_TO_GET.md](./KEYS_TO_GET.md) | Où récupérer les clés (jamais dans Git) |
 
-Elle contient notamment :
-
-- Architecture
-- Déploiement
-- Supabase
-- Product
-- UX/UI
-- Audits
-- Git workflow
-
-Le `README.md` reste volontairement simple et sert de point d'entrée au projet.
+Le détail technique et produit vit dans `/docs`. Ne pas rajouter de guides deploy à la racine.
 
 ---
 

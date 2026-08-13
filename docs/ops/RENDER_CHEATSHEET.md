@@ -171,7 +171,7 @@ Dashboard → Service → Logs
 - **Dashboard Render** : https://dashboard.render.com
 - **Dashboard Supabase** : https://supabase.com/dashboard
 - **OpenAI API Keys** : https://platform.openai.com/api-keys
-- **Guide complet** : `RENDER_SETUP_GUIDE.md`
+- **Guide complet** : `./RENDER_SETUP_GUIDE.md`
 - **Troubleshooting** : `docs/TROUBLESHOOTING.md`
 
 ---

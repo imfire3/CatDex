@@ -48,10 +48,9 @@ est un JWT secret / password DB → elle ne vit **jamais** dans Git.
 
 ---
 
-## Phase 2 — Nettoyage des fichiers (docs)
+## Phase 2 — Nettoyage des fichiers (docs) ✅
 
-Trop de guides root se chevauchent et parlent de secrets. Objectif : **une
-entrée**, des docs ciblées.
+Trop de guides root se chevauchaient. **Fait** : une entrée README, ops sous `docs/ops/`.
 
 | Fichier root actuel | Action |
 |---------------------|--------|
@@ -60,22 +59,15 @@ entrée**, des docs ciblées.
 | `CHANGELOG.md` | Garder — releases |
 | `LICENSE` | Garder |
 | `KEYS_TO_GET.md` | Stub → `SECURITY.md` + `.env.example` |
-| `START_HERE.md` | Fusionner vers README / `docs/FEATURES.md` |
-| `GET_STARTED_NOW.md` | Fusionner ou archiver |
-| `QUICKSTART.md` | Déplacer → `docs/getting-started.md` (placeholders only) |
-| `PHONE_QUICKSTART.md` | Déplacer → `docs/` |
-| `DEPLOY_NOW.md` / `DEPLOYMENT.md` | Déplacer → `docs/ops/` (placeholders) |
-| `RENDER_*.md` | Déplacer → `docs/ops/` |
-| `SUPABASE_SETUP.md` | Placeholders only (pas d’URL projet réel) |
-| Audits internes `docs/audits/` | OK public si pas de secrets ; sinon archiver |
+| `AGENTS.md` / `CLAUDE.md` | Garder — agents |
+| Anciens guides root | → `docs/ops/`, `docs/getting-started.md`, `docs/phone-quickstart.md`, `docs/ops/archive/` |
 
 Checklist Phase 2 :
 
-- [ ] Un seul “start here” = README
-- [ ] Ops / deploy regroupés sous `docs/ops/`
-- [ ] Aucun guide ne demande de coller une vraie clé dans un fichier tracké
-- [ ] Liens morts corrigés après déplacements
-
+- [x] Un seul “start here” = README
+- [x] Ops / deploy regroupés sous `docs/ops/`
+- [x] Aucun guide ne demande de coller une vraie clé dans un fichier tracké
+- [x] Liens morts corrigés après déplacements (scripts + stubs)
 ---
 
 ## Phase 3 — Context produit (public)

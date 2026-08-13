@@ -20,7 +20,7 @@ export const isSupabaseConfigured = Boolean(
 
 if (!isSupabaseConfigured) {
   console.warn(
-    '⚠️ Supabase non configuré — auth mock locale. Ajoute EXPO_PUBLIC_SUPABASE_URL + EXPO_PUBLIC_SUPABASE_ANON_KEY dans .env (voir SUPABASE_SETUP.md).',
+    '⚠️ Supabase non configuré — auth mock locale. Ajoute EXPO_PUBLIC_SUPABASE_URL + EXPO_PUBLIC_SUPABASE_ANON_KEY dans .env (voir docs/ops/SUPABASE_SETUP.md).',
   );
 }
 

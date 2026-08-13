@@ -154,7 +154,7 @@ Si ça marche sans token, le problème vient de la vérification JWT.
 
 3. **Migrer vers Railway** ($5 gratuit/mois)
    - Pas de cold start
-   - Voir `DEPLOYMENT.md` section Railway
+   - Voir `docs/ops/DEPLOYMENT.md` section Railway
 
 4. **Keep-alive ping** (pas recommandé)
    ```bash
@@ -284,7 +284,7 @@ Ou en dev, désactive la confirmation email :
 
 **Cause** : Même problème que Google OAuth.
 
-**Solution** : Voir [DEPLOYMENT.md](../DEPLOYMENT.md) section "Configurer OAuth (Google/Apple)"
+**Solution** : Voir [ops/DEPLOYMENT.md](./ops/DEPLOYMENT.md) section "Configurer OAuth (Google/Apple)"
 
 ---
 

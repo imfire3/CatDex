@@ -127,7 +127,7 @@ if [ "$files_ok" -eq "$files_total" ] && [ -f .env ]; then
 else
   echo -e "${YELLOW}⚠️  Quelques éléments nécessitent ton attention${NC}"
   echo ""
-  echo "Consulte DEPLOYMENT.md pour plus de détails."
+  echo "Consulte docs/ops/DEPLOYMENT.md pour plus de détails."
 fi
 
 echo ""

@@ -314,7 +314,7 @@ Configure les mêmes variables d'environnement dans Netlify :
 
 ## 📚 Ressources
 
-- **Documentation complète** : `DEPLOYMENT.md`
+- **Documentation complète** : `./DEPLOYMENT.md`
 - **Troubleshooting** : `docs/TROUBLESHOOTING.md`
 - **Architecture** : `docs/ARCHITECTURE.md`
 - **Support Render** : https://render.com/docs
@@ -324,8 +324,8 @@ Configure les mêmes variables d'environnement dans Netlify :
 ## 🎯 Prochaines Étapes
 
 1. ✅ Teste l'app avec tes amis
-2. 📱 Build les apps mobiles (voir `docs/MOBILE_DEPLOYMENT.md`)
-3. 🌐 Partage la version web (voir `QUICKSTART.md`)
+2. 📱 Build les apps mobiles (voir `../MOBILE_DEPLOYMENT.md`)
+3. 🌐 Partage la version web (voir `../getting-started.md`)
 4. 📊 Configure Google Analytics (optionnel)
 5. 🔔 Active les notifications push (optionnel)
 

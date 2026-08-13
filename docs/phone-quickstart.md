@@ -1,5 +1,7 @@
 # 📱 CatDex sur Ton Téléphone - Guide Ultra Rapide
 
+> **Navigation** : [README](../README.md) · [Getting started](./getting-started.md) · [Ops](./ops/README.md)
+
 3 méthodes simples pour tester CatDex sur ton téléphone **MAINTENANT**.
 
 ---
@@ -92,7 +94,7 @@ eas build --platform android --profile preview
 | **Tester MAINTENANT** | Expo Go (2 min) |
 | **Partager avec des amis** | Version Web (5 min) |
 | **Une vraie app Android** | APK (15 min) |
-| **Une vraie app iOS** | Voir `docs/MOBILE_DEPLOYMENT.md` |
+| **Une vraie app iOS** | Voir `MOBILE_DEPLOYMENT.md` |
 
 ---
 
@@ -115,7 +117,7 @@ curl https://ton-api.onrender.com/health
 npm run deploy:check
 ```
 
-**Pas encore fait ?** Suis d'abord `QUICKSTART.md` (30 minutes).
+**Pas encore fait ?** Suis d'abord `getting-started.md` (30 minutes).
 
 ---
 
@@ -268,9 +270,9 @@ eas build --platform android --profile preview
 ## 📚 Besoin de Plus de Détails ?
 
 - **Guide complet téléphone** : `docs/TEST_ON_PHONE.md`
-- **Déploiement production** : `DEPLOYMENT.md`
-- **Démarrage rapide** : `QUICKSTART.md`
-- **Apps mobiles stores** : `docs/MOBILE_DEPLOYMENT.md`
+- **Déploiement production** : `ops/DEPLOYMENT.md`
+- **Démarrage rapide** : `getting-started.md`
+- **Apps mobiles stores** : `MOBILE_DEPLOYMENT.md`
 
 ---
 
