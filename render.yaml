@@ -4,8 +4,9 @@ services:
   - type: web
     name: catdex-api
     runtime: docker
-    rootDir: server
-    dockerfilePath: ./Dockerfile
+    # Repo root so Docker can COPY shared/ (Vision prompt single source of truth).
+    rootDir: .
+    dockerfilePath: ./server/Dockerfile
     plan: free
     healthCheckPath: /health
     envVars:

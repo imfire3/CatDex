@@ -1,0 +1,24 @@
+# Docker build context = repo root (render.yaml rootDir: .)
+.git
+.github
+.cursor
+node_modules
+server/node_modules
+dist
+.expo
+.DS_Store
+**/*.md
+docs
+ChatDex Mobile App UI
+assets
+app
+src
+netlify
+public
+scripts
+*.png
+*.jpg
+*.jpeg
+*.webp
+.env
+.env.*
