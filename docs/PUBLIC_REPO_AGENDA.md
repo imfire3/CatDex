@@ -65,7 +65,7 @@ entrée**, des docs ciblées.
 | `QUICKSTART.md` | Déplacer → `docs/getting-started.md` (placeholders only) |
 | `PHONE_QUICKSTART.md` | Déplacer → `docs/` |
 | `DEPLOY_NOW.md` / `DEPLOYMENT.md` | Déplacer → `docs/ops/` (placeholders) |
-| `RENDER_*.md` / `FIX_EAS_COMMAND.md` | Déplacer → `docs/ops/` |
+| `RENDER_*.md` | Déplacer → `docs/ops/` |
 | `SUPABASE_SETUP.md` | Placeholders only (pas d’URL projet réel) |
 | Audits internes `docs/audits/` | OK public si pas de secrets ; sinon archiver |
 

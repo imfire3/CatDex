@@ -15,7 +15,7 @@ import { useTheme } from '@/theme';
 import { Text, Button, Card } from '@/components';
 ```
 
-Do not copy styles from `ChatDex Mobile App UI/` — that folder is a Figma/web reference, not the React Native source of truth.
+Do not invent styles from old Figma Make exports — `src/theme/` via `useTheme()` is the only UI source of truth.
 
 # Figma MCP (design system rules)
 
