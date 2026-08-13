@@ -42,16 +42,27 @@ export async function getLocationAccessState(): Promise<LocationAccessState> {
     try {
       const permission = await navigator.permissions?.query({ name: 'geolocation' });
       if (permission) {
-        const status =
-          permission.state === 'granted'
-            ? Location.PermissionStatus.GRANTED
-            : permission.state === 'denied'
-              ? Location.PermissionStatus.DENIED
-              : Location.PermissionStatus.UNDETERMINED;
+        if (permission.state === 'granted') {
+          return {
+            permission: Location.PermissionStatus.GRANTED,
+            servicesEnabled: true,
+            active: true,
+          };
+        }
+        if (permission.state === 'denied') {
+          return {
+            permission: Location.PermissionStatus.DENIED,
+            servicesEnabled: false,
+            active: false,
+          };
+        }
+        // Safari iOS often reports "prompt" after the user already allowed GPS
+        // in this tab. Don't treat that as denied — parent hides the banner
+        // once a live coordinate exists.
         return {
-          permission: status,
-          servicesEnabled: permission.state !== 'denied',
-          active: permission.state === 'granted',
+          permission: Location.PermissionStatus.UNDETERMINED,
+          servicesEnabled: true,
+          active: false,
         };
       }
     } catch {

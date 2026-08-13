@@ -317,6 +317,7 @@ export default function MapScreen() {
       </View>
 
       <LocationInactiveBanner
+        hasLiveLocation={Boolean(userCoordinate)}
         onRequestEnable={() => setLocationModalVisible(true)}
       />
 

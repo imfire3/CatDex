@@ -10,6 +10,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 type Props = {
   /** Called when the user taps Activer (parent shows the permission modal). */
   onRequestEnable: () => void;
+  /** True when the map already has a live GPS point — never show the banner. */
+  hasLiveLocation?: boolean;
   /** Poll interval for permission / services. */
   pollMs?: number;
 };
@@ -20,35 +22,54 @@ type Props = {
  */
 export function LocationInactiveBanner({
   onRequestEnable,
+  hasLiveLocation = false,
   pollMs = 8_000,
 }: Props) {
   const { colors, spacing, radius, shadow, iconStroke } = useTheme();
   const insets = useSafeAreaInsets();
-  const [visible, setVisible] = useState(false);
+  const [permissionOff, setPermissionOff] = useState(false);
   const onRequestEnableRef = useRef(onRequestEnable);
   onRequestEnableRef.current = onRequestEnable;
 
   const refresh = useCallback(async () => {
     const active = await isLocationActive();
-    setVisible(!active);
+    setPermissionOff(!active);
     return active;
   }, []);
 
   useEffect(() => {
+    if (hasLiveLocation) {
+      setPermissionOff(false);
+      return;
+    }
+
     let mounted = true;
     void refresh().catch(() => {
-      if (mounted) setVisible(true);
+      if (mounted) setPermissionOff(true);
     });
     const timer = setInterval(() => {
       void refresh();
     }, pollMs);
+
+    const onVisible = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void refresh();
+      }
+    };
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisible);
+    }
+
     return () => {
       mounted = false;
       clearInterval(timer);
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisible);
+      }
     };
-  }, [pollMs, refresh]);
+  }, [hasLiveLocation, pollMs, refresh]);
 
-  if (!visible) return null;
+  if (hasLiveLocation || !permissionOff) return null;
 
   return (
     <View
