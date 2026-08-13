@@ -3,7 +3,6 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Image,
   Platform,
   Pressable,
   Share,
@@ -28,6 +27,7 @@ import {
   type CaptureRevealResult,
 } from '@/components/CaptureReveal';
 import { Button } from '@/components/Button';
+import { CatImage } from '@/components/CatImage';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { pickCatRelatedBadgeCopy } from '@/lib/catBadgeTitle';
@@ -247,10 +247,15 @@ export default function RewardScreen() {
 
       const isFirst = catsBefore.length === 0;
       clearPending();
-      setCat(created);
+      setCat({
+        ...created,
+        // Prefer persisted ref; keep durable data:/http URI so the frame never goes blank.
+        photoUri: created.photoUri || durablePhoto,
+      });
       setXpGained(gained);
       setFirstCapture(isFirst);
-      setPhase(isFirst ? 'badge' : 'share');
+      // Badge celebration screen paused for now — go straight to share.
+      setPhase('share');
     } catch (error) {
       addingRef.current = false;
       showToast({
@@ -356,12 +361,14 @@ export default function RewardScreen() {
                       borderWidth: 3,
                       borderColor: colors.brand,
                       overflow: 'hidden',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     },
                     shadow.glow,
                   ]}
                 >
-                  <Image
-                    source={{ uri: savedCat.photoUri }}
+                  <CatImage
+                    uri={savedCat.photoUri}
                     style={{ width: badgePhotoSize, height: badgePhotoSize }}
                     resizeMode="cover"
                     accessibilityLabel={`Photo de ${savedCat.name}`}
@@ -426,18 +433,29 @@ export default function RewardScreen() {
               </Animated.View>
 
               <Animated.View entering={enterDown}>
-                <Image
-                  source={{ uri: savedCat.photoUri }}
+                <View
                   style={{
                     width: badgePhotoSize,
                     height: badgePhotoSize,
                     borderRadius: radius.cta,
                     borderWidth: 3,
                     borderColor: colors.brand,
+                    backgroundColor: colors.surfaceSecondary,
+                    overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
-                  resizeMode="cover"
-                  accessibilityLabel={`Photo de ${savedCat.name}`}
-                />
+                >
+                  <CatImage
+                    uri={savedCat.photoUri}
+                    style={{
+                      width: badgePhotoSize,
+                      height: badgePhotoSize,
+                    }}
+                    resizeMode="cover"
+                    accessibilityLabel={`Photo de ${savedCat.name}`}
+                  />
+                </View>
               </Animated.View>
 
               <View style={{ alignItems: 'center', gap: spacing[8] }}>
@@ -451,7 +469,7 @@ export default function RewardScreen() {
                 </Text>
                 {firstCapture ? (
                   <Text variant="bodySmall" color="textBody" align="center">
-                    Premier chat · Nouvelle série · Nouveau badge
+                    Premier chat · Nouvelle série
                   </Text>
                 ) : (
                   <Text variant="bodySmall" color="textBody" align="center">
