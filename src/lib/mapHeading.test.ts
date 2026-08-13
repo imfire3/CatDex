@@ -71,4 +71,8 @@ describe('headingFromDeviceOrientation', () => {
       270,
     );
   });
+
+  it('falls back to inverted alpha when webkit is missing', () => {
+    assert.equal(headingFromDeviceOrientation({ alpha: 90 }), 270);
+  });
 });

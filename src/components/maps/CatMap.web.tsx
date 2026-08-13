@@ -624,7 +624,7 @@ export function CatMap({
     map.easeTo({
       center: [userCoordinate.longitude, userCoordinate.latitude],
       bearing: userHeading,
-      duration: MAP_CAMERA_DURATION,
+      duration: Math.min(MAP_CAMERA_DURATION, 160),
       essential: true,
     });
   }, [userHeading, userCoordinate, mapReady]);

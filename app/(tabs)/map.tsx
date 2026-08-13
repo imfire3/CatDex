@@ -39,6 +39,7 @@ import {
   headingFromDeviceOrientation,
   resolveDeviceHeading,
   shouldUpdateHeading,
+  webCompassNeedsUserGesture,
 } from '@/lib/mapHeading';
 import { PROXIMITY_ALERT_M, sortCatsByDistance } from '@/lib/mapExplore';
 import { useAuthStore } from '@/store/auth';
@@ -84,6 +85,11 @@ export default function MapScreen() {
   } | null>(null);
   /** Compass heading in degrees (0 = north). Drives heading-up follow. */
   const [userHeading, setUserHeading] = useState<number | null>(null);
+  /**
+   * Bumped after a user-gesture compass unlock (iOS Safari).
+   * Re-attaches orientation listeners once permission is actually granted.
+   */
+  const [compassEpoch, setCompassEpoch] = useState(0);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
   /** Start GPS watch only after the user accepted (or already granted). */
@@ -209,10 +215,23 @@ export default function MapScreen() {
       setFollowUser(true);
       flyToCoordinate(coordinate);
       setWatchEnabled(true);
-      await requestWebCompassPermission();
     },
     [flyToCoordinate],
   );
+
+  /**
+   * iOS Safari: DeviceOrientationEvent.requestPermission() must start inside
+   * the tap handler (before any await), then listeners attach after grant.
+   */
+  const unlockWebCompassFromGesture = useCallback(() => {
+    if (Platform.OS !== 'web') return;
+    void requestWebCompassPermission().then((granted) => {
+      if (granted) {
+        setCompassEpoch((value) => value + 1);
+        setWatchEnabled(true);
+      }
+    });
+  }, []);
 
   /** First map entry after signup: in-app GPS modal, never a silent OS prompt. */
   useEffect(() => {
@@ -309,6 +328,11 @@ export default function MapScreen() {
       if (Platform.OS === 'web') {
         if (typeof window === 'undefined') return;
 
+        // iOS: wait until a tap unlocked motion; otherwise events never arrive.
+        if (webCompassNeedsUserGesture() && compassEpoch === 0) {
+          return;
+        }
+
         orientationHandler = (event: Event) => {
           const orientation = event as Event & {
             alpha: number | null;
@@ -319,8 +343,19 @@ export default function MapScreen() {
           if (next != null) applyHeading(next);
         };
 
-        window.addEventListener('deviceorientationabsolute', orientationHandler, true);
-        window.addEventListener('deviceorientation', orientationHandler, true);
+        // iOS uses deviceorientation + webkitCompassHeading; Android prefers absolute.
+        const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+        const isAppleMobile = /iPad|iPhone|iPod/.test(ua);
+        if (isAppleMobile) {
+          window.addEventListener('deviceorientation', orientationHandler, true);
+        } else {
+          window.addEventListener(
+            'deviceorientationabsolute',
+            orientationHandler,
+            true,
+          );
+          window.addEventListener('deviceorientation', orientationHandler, true);
+        }
         return;
       }
 
@@ -342,7 +377,7 @@ export default function MapScreen() {
         window.removeEventListener('deviceorientation', orientationHandler, true);
       }
     };
-  }, [watchEnabled]);
+  }, [watchEnabled, compassEpoch]);
 
   useEffect(() => {
     if (!nearestForProximity || nearestForProximity.distanceM > PROXIMITY_ALERT_M) {
@@ -363,6 +398,8 @@ export default function MapScreen() {
   }, [nearestForProximity, pushNearby, setHasNearbyCat]);
 
   const handleLocationAuthorize = useCallback(async () => {
+    // Must run synchronously in the tap — unlocks iOS motion/compass.
+    unlockWebCompassFromGesture();
     setLocationBusy(true);
     try {
       const ok = await requestLocationAccess();
@@ -378,10 +415,13 @@ export default function MapScreen() {
     } finally {
       setLocationBusy(false);
     }
-  }, [applyLocation]);
+  }, [applyLocation, unlockWebCompassFromGesture]);
 
   const recenterOnPlayer = async () => {
+    // Must run synchronously in the tap — unlocks iOS motion/compass.
+    unlockWebCompassFromGesture();
     setFollowUser(true);
+    setWatchEnabled(true);
     // Instant camera feedback from last known GPS (works even if a fresh
     // geolocation read is slow or blocked).
     if (userCoordinate) {
@@ -504,7 +544,7 @@ export default function MapScreen() {
         visible={locationModalVisible}
         kind="location"
         title="Autorise le suivi GPS"
-        description="CatDex utilise ta position pour placer les chats près de toi et te suivre pendant que tu explores. Tu peux refuser et l’activer plus tard."
+        description="CatDex utilise ta position pour placer les chats près de toi et l’orientation du téléphone pour tourner la carte. Tu peux refuser et l’activer plus tard."
         primaryLabel={locationBusy ? 'Ouverture…' : 'Autoriser le GPS'}
         onClose={() => setLocationModalVisible(false)}
         onRetry={() => {

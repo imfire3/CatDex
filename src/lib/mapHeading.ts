@@ -41,7 +41,7 @@ export function shouldUpdateHeading(
 
 /**
  * Web DeviceOrientation → compass degrees (0 = north, clockwise).
- * iOS Safari exposes webkitCompassHeading; absolute alpha needs inversion.
+ * iOS Safari: webkitCompassHeading. Elsewhere: invert alpha (absolute or relative).
  */
 export function headingFromDeviceOrientation(event: {
   alpha: number | null;
@@ -53,9 +53,21 @@ export function headingFromDeviceOrientation(event: {
     return normalizeHeading(webkit);
   }
 
-  if (event.absolute && typeof event.alpha === 'number' && Number.isFinite(event.alpha)) {
+  if (typeof event.alpha === 'number' && Number.isFinite(event.alpha)) {
     return normalizeHeading(360 - event.alpha);
   }
 
   return null;
+}
+
+/** True when the browser requires a tap to unlock DeviceOrientation (iOS Safari). */
+export function webCompassNeedsUserGesture(): boolean {
+  if (typeof window === 'undefined') return false;
+  type OrientationCtor = {
+    requestPermission?: () => Promise<'granted' | 'denied'>;
+  };
+  const OrientationEvent = (
+    window as Window & { DeviceOrientationEvent?: OrientationCtor }
+  ).DeviceOrientationEvent;
+  return typeof OrientationEvent?.requestPermission === 'function';
 }
