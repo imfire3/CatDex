@@ -17,7 +17,7 @@ export function SettingsSection({ title, children, tone = 'default' }: Props) {
 
   return (
     <View style={{ gap: spacing[16] }}>
-      <Text variant="h3" color={tone === 'danger' ? 'danger' : 'textBrand'}>
+      <Text variant="title" color={tone === 'danger' ? 'danger' : 'textBrand'}>
         {title}
       </Text>
       <View

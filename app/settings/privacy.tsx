@@ -43,7 +43,7 @@ function locationLabel(
 }
 
 export default function PrivacySettingsScreen() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const [cameraStatus, setCameraStatus] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState<Location.PermissionStatus | null>(
     null,
@@ -121,7 +121,7 @@ export default function PrivacySettingsScreen() {
           shadow.low,
         ]}
       >
-        <Text variant="bodySmall" color="textBody" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="bodySmall" weight="semibold" color="textBody">
           Astuce
         </Text>
         <Text variant="caption" color="textSecondary">

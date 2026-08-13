@@ -38,7 +38,7 @@ export function PrimaryCTA({
   loading = false,
   secondary,
 }: PrimaryCTAProps) {
-  const { colors, fonts, spacing, radius, shadow, motion, gradients } = useTheme();
+  const { colors, spacing, radius, shadow, motion, gradients } = useTheme();
   const reduceMotion = useReducedMotion();
   const pulse = useSharedValue(1);
   const isDisabled = disabled || loading;
@@ -100,18 +100,12 @@ export function PrimaryCTA({
           paddingHorizontal: spacing[32],
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: colors.brandPressed,
-        }}
+          backgroundColor: colors.brandPressed }}
       >
         {loading ? (
           <ActivityIndicator color={colors.onAccent} />
         ) : (
-          <Text
-            variant="body"
-            color="onAccent"
-            align="center"
-            style={{ fontFamily: fonts.bodySemi }}
-          >
+          <Text variant="button" color="onAccent" align="center">
             {title}
           </Text>
         )}

@@ -18,7 +18,7 @@ const previewRadius = (shape: ShapePreset) => {
 
 /** Shape presets — squared / standard / rounded corners. */
 export const ShapePresetGroup = ({ value, onChange, disabled }: Props) => {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme()
+  const { colors, spacing, radius, shadow, motion } = useTheme()
 
   return (
     <View style={{ gap: spacing[16] }}>
@@ -58,14 +58,12 @@ export const ShapePresetGroup = ({ value, onChange, disabled }: Props) => {
                   width: spacing[40],
                   height: spacing[40],
                   borderRadius: corner,
-                  backgroundColor: colors.brand,
-                }}
+                  backgroundColor: colors.brand }}
               />
               <View style={{ flex: 1, gap: spacing[4] }}>
                 <Text
-                  variant="body"
+                  variant="body" weight="semibold"
                   color="text"
-                  style={{ fontFamily: fonts.bodySemi }}
                 >
                   {preset.label}
                 </Text>

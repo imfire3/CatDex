@@ -29,7 +29,7 @@ function NotificationRow({
   item: AppNotification;
   onPress: () => void;
 }) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
 
   return (
     <Pressable
@@ -54,14 +54,13 @@ function NotificationRow({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: spacing[8],
-        }}
+          gap: spacing[8] }}
       >
         <Text
-          variant="body"
+          variant="body" weight="semibold"
           color={item.read ? 'text' : 'textBrand'}
           numberOfLines={1}
-          style={{ flex: 1, fontFamily: fonts.bodySemi }}
+          style={{ flex: 1 }}
         >
           {item.title}
         </Text>
@@ -71,8 +70,7 @@ function NotificationRow({
               width: spacing[8],
               height: spacing[8],
               borderRadius: radius.full,
-              backgroundColor: colors.brand,
-            }}
+              backgroundColor: colors.brand }}
           />
         ) : null}
       </View>
@@ -90,7 +88,7 @@ function NotificationRow({
  * Inbox of in-app alerts (proximity, etc.) — not notification settings.
  */
 export default function NotificationsScreen() {
-  const { fonts, spacing } = useTheme();
+  const { spacing } = useTheme();
   const items = useNotificationsStore((state) => state.items);
   const markRead = useNotificationsStore((state) => state.markRead);
   const markAllRead = useNotificationsStore((state) => state.markAllRead);
@@ -107,9 +105,9 @@ export default function NotificationsScreen() {
           onPress={() => router.push('/settings/notifications')}
         >
           <Text
-            variant="bodySmall"
+            variant="bodySmall" weight="semibold"
             color="textBrand"
-            style={{ fontFamily: fonts.bodySemi, textAlign: 'center' }}
+            style={{ textAlign: 'center' }}
           >
             Préférences d’alertes
           </Text>
@@ -132,9 +130,8 @@ export default function NotificationsScreen() {
               style={{ alignSelf: 'flex-end' }}
             >
               <Text
-                variant="bodySmall"
+                variant="bodySmall" weight="semibold"
                 color="textBrand"
-                style={{ fontFamily: fonts.bodySemi }}
               >
                 Tout marquer comme lu
               </Text>

@@ -28,7 +28,7 @@ type Props = {
 };
 
 export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite }: Props) {
-  const { colors, fonts, spacing, radius, shadow, iconStroke, motion } = useTheme();
+  const { colors, spacing, radius, shadow, iconStroke, motion } = useTheme();
   const analysis = enrichAnalysis(cat.analysis, cat.number);
   const theme = themeFromColorLabel(analysis.color, cat.number);
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -73,8 +73,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: colors.surfaceSecondary,
-          overflow: 'hidden',
-        }}
+          overflow: 'hidden' }}
       >
         {canShowPhoto ? (
           <CatImage
@@ -128,10 +127,10 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
       <View style={{ padding: spacing[8], gap: spacing[4] }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
           <Text
-            variant="bodySmall"
+            variant="bodySmall" weight="semibold"
             color="text"
             numberOfLines={1}
-            style={{ flex: 1, fontFamily: fonts.bodySemi }}
+            style={{ flex: 1 }}
           >
             {cat.name}
           </Text>
@@ -142,11 +141,10 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
               borderRadius: radius.full,
               backgroundColor: theme.soft,
               alignItems: 'center',
-              justifyContent: 'center',
-            }}
+              justifyContent: 'center' }}
           >
             {gender ? (
-              <Text variant="caption" style={{ color: colors.mapPlayer, lineHeight: 14 }}>
+              <Text variant="caption" style={{ color: colors.mapPlayer }}>
                 {gender}
               </Text>
             ) : (
@@ -155,13 +153,12 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
                   width: spacing[8],
                   height: spacing[8],
                   borderRadius: radius.full,
-                  backgroundColor: theme.hex,
-                }}
+                  backgroundColor: theme.hex }}
               />
             )}
           </View>
         </View>
-        <Text variant="caption" style={{ fontFamily: fonts.bodySemi, color: rarity.foreground }}>
+        <Text variant="caption" weight="semibold" style={{ color: rarity.foreground }}>
           {catDexRarityLabel(rarityId)}
         </Text>
       </View>

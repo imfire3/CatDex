@@ -77,7 +77,7 @@ export function AuthHeader({
   hero?: boolean;
   trailing?: ReactNode;
 }) {
-  const { fonts, spacing } = useTheme();
+  const { spacing } = useTheme();
   const insets = useSafeAreaInsets();
 
   if (hero) {
@@ -92,10 +92,9 @@ export function AuthHeader({
         )}
         <View style={{ gap: spacing[8], alignItems: 'center' }}>
           <Text
-            variant="h1"
+            variant="headline"
             color="textBrand"
             align="center"
-            style={{ fontFamily: fonts.display }}
           >
             {title}
           </Text>
@@ -112,35 +111,61 @@ export function AuthHeader({
   if (inline) {
     const side = spacing[40];
     return (
-      <View style={{ gap: subtitle ? spacing[16] : 0 }}>
+      <View style={{ gap: subtitle ? spacing[16] : 0, width: '100%' }}>
         <View
           style={{
-            height: side,
             flexDirection: 'row',
             alignItems: 'center',
+            minHeight: side,
+            width: '100%',
+            paddingVertical: spacing[16],
           }}
         >
-          <View style={{ width: side, zIndex: 1 }}>
+          <View
+            style={{
+              width: side,
+              flexShrink: 0,
+              alignItems: 'flex-start',
+              zIndex: 1,
+            }}
+          >
             {showBack ? (
               <AuthBackButton onPress={onBack} />
             ) : (
               <View style={{ width: side, height: side }} />
             )}
           </View>
-          <Text
-            variant="h2"
-            color="textBrand"
-            align="center"
-            numberOfLines={1}
-            style={{ flex: 1, fontFamily: fonts.display }}
+
+          <View
+            pointerEvents="none"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              paddingHorizontal: spacing[8],
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
           >
-            {title}
-          </Text>
+            <Text
+              variant="title"
+              color="textBrand"
+              align="center"
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.72}
+              style={{ width: '100%', maxWidth: '100%' }}
+            >
+              {title}
+            </Text>
+          </View>
+
           <View
             style={{
-              minWidth: side,
+              width: side,
+              flexShrink: 0,
               alignItems: 'flex-end',
               justifyContent: 'center',
+              zIndex: 1,
             }}
           >
             {trailing ?? <View style={{ width: side, height: side }} />}
@@ -159,12 +184,11 @@ export function AuthHeader({
     <View
       style={{
         paddingTop: embedded ? 0 : insets.top + spacing[16],
-        gap: spacing[24],
-      }}
+        gap: spacing[24] }}
     >
       {showBack ? <AuthBackButton onPress={onBack} /> : null}
       <View style={{ gap: spacing[8] }}>
-        <Text variant="h1" color="textBrand" style={{ fontFamily: fonts.display }}>
+        <Text variant="headline" color="textBrand">
           {title}
         </Text>
         {subtitle ? (
@@ -191,11 +215,10 @@ export function AuthDivider({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing[8],
-      }}
+        gap: spacing[8] }}
     >
       <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
-      <Text variant="caption" color="textBrand" style={{ fontWeight: '600' }}>
+      <Text variant="caption" weight="semibold" color="textBrand">
         {label}
       </Text>
       <View style={{ flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
@@ -213,7 +236,7 @@ export function TermsCheckbox({
   error?: string | null;
   light?: boolean;
 }) {
-  const { colors, spacing, radius, fonts, iconStroke } = useTheme();
+  const { colors, spacing, radius, iconStroke } = useTheme();
 
   return (
     <View style={{ gap: spacing[8] }}>
@@ -232,8 +255,7 @@ export function TermsCheckbox({
             borderColor: error ? colors.danger : checked ? colors.accent : colors.border,
             backgroundColor: checked ? colors.accent : colors.surface,
             alignItems: 'center',
-            justifyContent: 'center',
-          }}
+            justifyContent: 'center' }}
         >
           {checked ? (
             <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
@@ -250,7 +272,7 @@ export function TermsCheckbox({
         <Text
           variant="bodySmall"
           color="textBody"
-          style={{ flex: 1, fontFamily: fonts.body }}
+          style={{ flex: 1 }}
         >
           J’accepte les conditions d’utilisation
         </Text>

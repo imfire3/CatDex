@@ -18,16 +18,16 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useAuthStore, getPostAuthHref } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const WELCOME_MAP = require('../../assets/welcome-map-bg.jpg');
+const WELCOME_MAP = require('../../assets/welcome-paris-bg-v2.jpg');
 const WELCOME_CAT = require('../../assets/welcome-cat.jpg');
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 /**
  * Welcome — map wallpaper + white auth sheet.
- * Explicit screen-sized ImageBackground so the hero never collapses to brand fill.
+ * Typography: title (tagline) · headline · body · button · link.
  */
 export default function WelcomeScreen() {
-  const { colors, fonts, spacing, radius, motion, shadow } = useTheme();
+  const { colors, spacing, radius, motion, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const user = useAuthStore((state) => state.user);
@@ -87,19 +87,6 @@ export default function WelcomeScreen() {
         ]}
       >
         <BrandLogo size="hero" />
-        <Text
-          variant="bodySmall"
-          align="center"
-          style={{
-            fontFamily: fonts.bodySemi,
-            color: colors.brand,
-            textShadowColor: '#FFFFFF',
-            textShadowOffset: { width: 0, height: 1 },
-            textShadowRadius: 6,
-          }}
-        >
-          Ton quartier. Tes chats.
-        </Text>
       </Animated.View>
 
       <Animated.View
@@ -107,11 +94,11 @@ export default function WelcomeScreen() {
         style={[
           styles.sheet,
           {
-            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            paddingBottom: Math.max(insets.bottom, spacing[32]),
             paddingHorizontal: spacing[24],
             paddingTop: spacing[32],
-            borderTopLeftRadius: radius.lg,
-            borderTopRightRadius: radius.lg,
+            borderTopLeftRadius: radius.sheet,
+            borderTopRightRadius: radius.sheet,
             backgroundColor: colors.authSheet,
             borderTopWidth: 1,
             borderColor: colors.border,
@@ -119,8 +106,8 @@ export default function WelcomeScreen() {
           shadow.floating,
         ]}
       >
-        <View style={{ gap: spacing[8], marginBottom: spacing[24] }}>
-          <Text variant="h2" color="textBrand" style={{ fontFamily: fonts.display }}>
+        <View style={{ gap: spacing[8], marginBottom: spacing[32] }}>
+          <Text variant="headline" color="textBrand">
             Commence ta collection
           </Text>
           <Text variant="body" color="textSecondary">
@@ -128,10 +115,10 @@ export default function WelcomeScreen() {
           </Text>
         </View>
 
-        <View style={{ gap: spacing[8] }}>
+        <View style={{ gap: spacing[16] }}>
           <Button
             title="Créer un compte"
-            onPress={() => router.push('/(auth)/join')}
+            onPress={() => router.push('/(auth)/signup')}
           />
           <Button
             variant="secondary"

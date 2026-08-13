@@ -11,7 +11,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 const CACHE_LABEL = '≈ 12 Mo';
 
 export default function CacheSettingsScreen() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const showToast = useToastStore((s) => s.show);
   const [clearing, setClearing] = useState(false);
   const [cacheLabel, setCacheLabel] = useState(CACHE_LABEL);
@@ -56,10 +56,10 @@ export default function CacheSettingsScreen() {
           shadow.low,
         ]}
       >
-        <Text variant="caption" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="caption" weight="semibold" color="textMuted">
           Cache actuel
         </Text>
-        <Text variant="h2" color="textBrand" style={{ fontFamily: fonts.display }}>
+        <Text variant="title" color="textBrand">
           {cacheLabel}
         </Text>
         <Text variant="bodySmall" color="textSecondary">

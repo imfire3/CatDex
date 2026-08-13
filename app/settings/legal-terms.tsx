@@ -9,7 +9,7 @@ function LegalBlock({ title, children }: { title: string; children: string }) {
   const { spacing } = useTheme();
   return (
     <View style={{ gap: spacing[8] }}>
-      <Text variant="h3" color="textBrand">
+      <Text variant="title" color="textBrand">
         {title}
       </Text>
       <Text variant="body" color="textBody">

@@ -27,7 +27,7 @@ import { OnboardingCatCard } from './OnboardingCatCard';
  * Hero = carte CatDex style Pokémon (photo propre), pas un crop du welcome.
  */
 export function SightingScene() {
-  const { colors, fonts, spacing, radius, shadow, motion, gradients } = useTheme();
+  const { colors, spacing, radius, shadow, motion, gradients } = useTheme();
   const reduceMotion = useReducedMotion();
 
   const cardScale = useSharedValue(reduceMotion ? 1 : 0.86);
@@ -99,8 +99,7 @@ export function SightingScene() {
           width: spacing[96] * 2 + spacing[48],
           height: spacing[96] * 2 + spacing[48],
           borderRadius: radius.full,
-          opacity: 0.7,
-        }}
+          opacity: 0.7 }}
       />
 
       {pawPrints.map((paw, i) => (
@@ -113,8 +112,7 @@ export function SightingScene() {
             left: 'left' in paw ? paw.left : undefined,
             right: 'right' in paw ? paw.right : undefined,
             opacity: 0.16,
-            transform: [{ rotate: paw.rotate }],
-          }}
+            transform: [{ rotate: paw.rotate }] }}
         >
           <PawMark color={colors.brand} size={26} />
         </Animated.View>
@@ -126,8 +124,7 @@ export function SightingScene() {
           alignItems: 'center',
           justifyContent: 'center',
           paddingHorizontal: spacing[24],
-          gap: spacing[24],
-        }}
+          gap: spacing[24] }}
       >
         <View style={{ alignItems: 'center', justifyContent: 'center' }}>
           <Animated.View
@@ -152,14 +149,12 @@ export function SightingScene() {
           style={{
             alignItems: 'center',
             gap: spacing[16],
-            paddingHorizontal: spacing[8],
-          }}
+            paddingHorizontal: spacing[8] }}
         >
           <Text
-            variant="h2"
+            variant="title"
             color="textBrand"
             align="center"
-            style={{ fontFamily: fonts.display }}
           >
             Un chat vient d’apparaître près de toi
           </Text>
@@ -180,11 +175,11 @@ export function SightingScene() {
               shadow.low,
             ]}
           >
-            <Text variant="bodySmall" color="text" style={{ fontFamily: fonts.bodySemi }}>
+            <Text variant="bodySmall" weight="semibold" color="text">
               {DEMO_ONBOARDING_CAT.neighborhood}
             </Text>
             <View style={{ width: 1, height: spacing[16], backgroundColor: colors.border }} />
-            <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+            <Text variant="bodySmall" weight="semibold" color="textBrand">
               {DEMO_ONBOARDING_CAT.distance}
             </Text>
           </View>

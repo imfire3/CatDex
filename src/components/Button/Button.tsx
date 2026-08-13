@@ -53,7 +53,7 @@ export function Button({
   style,
   fullWidth = variant !== 'icon',
 }: ButtonProps) {
-  const { colors, spacing, radius, fonts, motion, shadow } = useTheme();
+  const { colors, spacing, radius, motion, shadow } = useTheme();
   const isDisabled = disabled || loading;
 
   const handlePress = useCallback(
@@ -114,8 +114,6 @@ export function Button({
               ? colors.danger
               : colors.brand;
 
-  const labelWeight = fonts.bodySemi;
-
   const content = (
     <View style={[styles.content, { gap: spacing[8] }]}>
       {loading ? (
@@ -125,9 +123,8 @@ export function Button({
           {icon}
           {title ? (
             <Text
-              variant="body"
+              variant="button"
               style={{
-                fontFamily: labelWeight,
                 color: labelColor,
                 textDecorationLine: variant === 'tertiary' ? 'underline' : 'none',
               }}

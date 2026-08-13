@@ -33,7 +33,7 @@ const REVEALS = [
  * Gros scan + checks qui pop toutes les ~300 ms.
  */
 export function ScanScene() {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
   const reduceMotion = useReducedMotion();
   const [count, setCount] = useState(reduceMotion ? REVEALS.length : 0);
 
@@ -104,8 +104,7 @@ export function ScanScene() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: spacing[32],
-        paddingVertical: spacing[8],
-      }}
+        paddingVertical: spacing[8] }}
     >
       {/* Camera / scan hero with cat inside */}
       <View
@@ -113,8 +112,7 @@ export function ScanScene() {
           width: frame + spacing[48],
           height: frame + spacing[48],
           alignItems: 'center',
-          justifyContent: 'center',
-        }}
+          justifyContent: 'center' }}
       >
         <Animated.View
           style={[
@@ -183,10 +181,9 @@ export function ScanScene() {
         style={{ alignItems: 'center', gap: spacing[4] }}
       >
         <Text
-          variant="h2"
+          variant="title"
           color="textBrand"
           align="center"
-          style={{ fontFamily: fonts.display }}
         >
           L’IA découvre qui il est
         </Text>
@@ -251,7 +248,7 @@ function RevealLine({
   label: string;
   visible: boolean;
 }) {
-  const { colors, fonts, spacing, radius, motion } = useTheme();
+  const { colors, spacing, radius, motion } = useTheme();
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(visible || reduceMotion ? 1 : 0.85);
   const opacity = useSharedValue(visible || reduceMotion ? 1 : 0);
@@ -297,8 +294,7 @@ function RevealLine({
           borderRadius: radius.full,
           backgroundColor: colors.successSoft,
           alignItems: 'center',
-          justifyContent: 'center',
-        }}
+          justifyContent: 'center' }}
       >
         <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
           <Path
@@ -310,7 +306,7 @@ function RevealLine({
           />
         </Svg>
       </View>
-      <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
+      <Text variant="body" weight="semibold" color="text">
         {label}
       </Text>
     </Animated.View>

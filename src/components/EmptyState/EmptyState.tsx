@@ -97,8 +97,7 @@ function DefaultIcon({ name }: { name: EmptyStateIcon }) {
         borderRadius: radius.full,
         backgroundColor: soft,
         alignItems: 'center',
-        justifyContent: 'center',
-      }}
+        justifyContent: 'center' }}
     >
       {name === 'cat' ? <CatIcon color={tint} /> : null}
       {name === 'search' ? <SearchIcon color={tint} /> : null}
@@ -136,13 +135,12 @@ export function EmptyState({
         gap: spacing[16],
         alignItems: 'center',
         justifyContent: isPage ? 'center' : 'flex-start',
-        minHeight: isPage ? 360 : undefined,
-      }}
+        minHeight: isPage ? 360 : undefined }}
     >
       {illustration ?? <DefaultIcon name={icon} />}
 
       <View style={{ gap: spacing[8], alignItems: 'center', maxWidth: 320 }}>
-        <Text variant="h2" color="text" align="center">
+        <Text variant="title" color="text" align="center">
           {title}
         </Text>
         <Text variant="body" color="textSecondary" align="center">

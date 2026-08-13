@@ -17,7 +17,7 @@ export type BadgeProps = {
  * Small pill badges — height 24, radius full, paddingH 8 (8pt grid).
  */
 export function Badge({ label, variant = 'default', color, backgroundColor }: BadgeProps) {
-  const { colors, spacing, radius, fonts } = useTheme();
+  const { colors, spacing, radius } = useTheme();
 
   const resolvedBg =
     backgroundColor ??
@@ -48,12 +48,11 @@ export function Badge({ label, variant = 'default', color, backgroundColor }: Ba
         backgroundColor: resolvedBg,
         borderRadius: radius.full,
         paddingHorizontal: spacing[8],
-        justifyContent: 'center',
-      }}
+        justifyContent: 'center' }}
     >
       <Text
-        variant="caption"
-        style={{ fontFamily: fonts.bodySemi, color: resolvedColor, lineHeight: 16 }}
+        variant="label"
+        style={{ color: resolvedColor, lineHeight: 16 }}
       >
         {label}
       </Text>

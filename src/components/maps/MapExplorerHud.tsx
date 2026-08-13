@@ -40,7 +40,7 @@ function RoundTool({
   badge?: number;
   children: React.ReactNode;
 }) {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -74,14 +74,9 @@ function RoundTool({
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 2,
-            borderColor: colors.surfaceElevated,
-          }}
+            borderColor: colors.surfaceElevated }}
         >
-          <Text
-            variant="caption"
-            color="onAccent"
-            style={{ fontFamily: fonts.bodySemi, lineHeight: 14 }}
-          >
+          <Text variant="caption" weight="semibold" color="onAccent">
             {badge > 9 ? '9+' : String(badge)}
           </Text>
         </View>
@@ -101,7 +96,7 @@ function HudPill({
   onPress: () => void;
   icon: React.ReactNode;
 }) {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -123,9 +118,8 @@ function HudPill({
     >
       {icon}
       <Text
-        variant="bodySmall"
+        variant="bodySmall" weight="semibold"
         color="textBrand"
-        style={{ fontFamily: fonts.bodySemi }}
       >
         {label}
       </Text>
@@ -143,14 +137,9 @@ function HudPill({
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 2,
-            borderColor: colors.surfaceElevated,
-          }}
+            borderColor: colors.surfaceElevated }}
         >
-          <Text
-            variant="caption"
-            color="onAccent"
-            style={{ fontFamily: fonts.bodySemi, lineHeight: 14 }}
-          >
+          <Text variant="caption" weight="semibold" color="onAccent">
             {badge > 99 ? '99+' : String(badge)}
           </Text>
         </View>
@@ -188,8 +177,7 @@ export function MapExplorerHud({
           position: 'absolute',
           top: insets.top + spacing[8],
           left: spacing[16],
-          zIndex: 24,
-        }}
+          zIndex: 24 }}
       >
         <Pressable
           accessibilityRole="button"
@@ -224,8 +212,7 @@ export function MapExplorerHud({
           right: spacing[16],
           zIndex: 24,
           flexDirection: 'row',
-          gap: spacing[8],
-        }}
+          gap: spacing[8] }}
       >
         <RoundTool
           label="Notifications"
@@ -267,8 +254,7 @@ export function MapExplorerHud({
             position: 'absolute',
             right: spacing[16],
             bottom: clusterBottom + MAP_CAPTURE_FAB_SIZE + spacing[16],
-            zIndex: 20,
-          }}
+            zIndex: 20 }}
         >
           <RoundTool label="Recentrer sur ma position" onPress={onRecenter}>
             <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
@@ -295,8 +281,7 @@ export function MapExplorerHud({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: spacing[8],
-        }}
+          gap: spacing[8] }}
       >
         <HudPill
           label="Missions"

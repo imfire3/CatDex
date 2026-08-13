@@ -11,19 +11,18 @@ type Props = {
 
 /** Four big numbers — no chrome. */
 export function ProfileStatGrid({ stats }: Props) {
-  const { colors, fonts, spacing } = useTheme()
+  const { colors, spacing } = useTheme()
 
   return (
     <View
       style={{
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: spacing[8],
-      }}
+        gap: spacing[8] }}
     >
       {stats.map((stat) => (
         <View key={stat.label} style={{ flex: 1, alignItems: 'center', gap: spacing[4] }}>
-          <Text variant="h2" color="textBrand" style={{ fontFamily: fonts.display }}>
+          <Text variant="title" color="textBrand">
             {stat.value}
           </Text>
           <Text variant="caption" color="textSecondary">

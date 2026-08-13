@@ -28,7 +28,7 @@ const FAQ = [
 ];
 
 export default function HelpCenterScreen() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const showToast = useToastStore((s) => s.show);
 
   return (
@@ -64,7 +64,7 @@ export default function HelpCenterScreen() {
         />
       </SettingsSection>
 
-      <Text variant="h3" color="textBrand">
+      <Text variant="title" color="textBrand">
         FAQ
       </Text>
       <View style={{ gap: spacing[16] }}>
@@ -86,9 +86,9 @@ export default function HelpCenterScreen() {
             <View style={{ flexDirection: 'row', gap: spacing[8], alignItems: 'flex-start' }}>
               <IconHelp />
               <Text
-                variant="body"
+                variant="body" weight="semibold"
                 color="text"
-                style={{ fontFamily: fonts.bodySemi, flex: 1 }}
+                style={{ flex: 1 }}
               >
                 {item.q}
               </Text>

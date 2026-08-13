@@ -19,7 +19,7 @@ export function OnboardingCatCard({
   size = 'hero',
   showMeta = true,
 }: OnboardingCatCardProps) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const isHero = size === 'hero';
   const cardW = isHero ? spacing[96] + spacing[80] + spacing[16] : spacing[96] + spacing[80];
   const photoH = isHero ? spacing[96] + spacing[64] : spacing[96] + spacing[48];
@@ -47,8 +47,7 @@ export function OnboardingCatCard({
           overflow: 'hidden',
           backgroundColor: colors.brandSoft,
           borderWidth: 1,
-          borderColor: colors.border,
-        }}
+          borderColor: colors.border }}
       >
         <View style={{ height: photoH, backgroundColor: colors.surfaceSecondary }}>
           <Image
@@ -66,8 +65,7 @@ export function OnboardingCatCard({
               bottom: 0,
               height: spacing[40],
               backgroundColor: colors.text,
-              opacity: 0.45,
-            }}
+              opacity: 0.45 }}
           />
           <View
             style={{
@@ -76,10 +74,9 @@ export function OnboardingCatCard({
               right: 0,
               bottom: 0,
               paddingHorizontal: spacing[8],
-              paddingBottom: spacing[8],
-            }}
+              paddingBottom: spacing[8] }}
           >
-            <Text variant="caption" color="onAccent" style={{ fontFamily: fonts.bodySemi }}>
+            <Text variant="caption" weight="semibold" color="onAccent">
               #{String(DEMO_ONBOARDING_CAT.number).padStart(3, '0')}
             </Text>
           </View>
@@ -92,10 +89,9 @@ export function OnboardingCatCard({
           paddingBottom: spacing[16],
           paddingTop: spacing[4],
           gap: spacing[8],
-          alignItems: 'center',
-        }}
+          alignItems: 'center' }}
       >
-        <Text variant={isHero ? 'h2' : 'h3'} color="text" style={{ fontFamily: fonts.display }}>
+        <Text variant="title" color="text">
           {DEMO_ONBOARDING_CAT.name}
         </Text>
         <View
@@ -103,10 +99,9 @@ export function OnboardingCatCard({
             paddingVertical: spacing[4],
             paddingHorizontal: spacing[16],
             borderRadius: radius.full,
-            backgroundColor: colors.brandSoft,
-          }}
+            backgroundColor: colors.brandSoft }}
         >
-          <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="caption" weight="semibold" color="textBrand">
             {DEMO_ONBOARDING_CAT.rarity}
           </Text>
         </View>

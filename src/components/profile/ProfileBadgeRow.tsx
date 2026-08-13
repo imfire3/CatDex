@@ -11,12 +11,12 @@ type Props = {
 };
 
 export function ProfileBadgeRow({ badges, onSeeAll }: Props) {
-  const { colors, fonts, spacing, radius, shadow, iconSize } = useTheme();
+  const { colors, spacing, radius, shadow, iconSize } = useTheme();
 
   return (
     <View style={{ gap: spacing[16] }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text variant="h3" color="textBrand">
+        <Text variant="title" color="textBrand">
           Badges
         </Text>
         {onSeeAll ? (
@@ -57,8 +57,7 @@ export function ProfileBadgeRow({ badges, onSeeAll }: Props) {
                 borderRadius: radius.full,
                 backgroundColor: badge.unlocked ? colors.accentSoft : colors.surfaceSecondary,
                 alignItems: 'center',
-                justifyContent: 'center',
-              }}
+                justifyContent: 'center' }}
             >
               {badge.unlocked ? (
                 <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
@@ -74,15 +73,14 @@ export function ProfileBadgeRow({ badges, onSeeAll }: Props) {
                     height: spacing[16],
                     borderRadius: radius.full,
                     borderWidth: 2,
-                    borderColor: colors.textMuted,
-                  }}
+                    borderColor: colors.textMuted }}
                 />
               )}
             </View>
             <Text
-              variant="bodySmall"
+              variant="bodySmall" weight="semibold"
               color="text"
-              style={{ fontFamily: fonts.bodySemi, textAlign: 'center' }}
+              style={{ textAlign: 'center' }}
               numberOfLines={2}
             >
               {badge.title}

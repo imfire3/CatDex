@@ -28,7 +28,7 @@ function SectionLabel({ title, hint }: { title: string; hint?: string }) {
   const { spacing } = useTheme()
   return (
     <View style={{ gap: spacing.xs }}>
-      <Text variant="h3" color="textBrand">
+      <Text variant="title" color="textBrand">
         {title}
       </Text>
       {hint ? (
@@ -85,8 +85,7 @@ export default function MissionsScreen() {
           paddingHorizontal: spacing[24],
           paddingTop: spacing[16],
           paddingBottom: listBottom,
-          gap: spacing[32],
-        }}
+          gap: spacing[32] }}
       >
         <Text variant="body" color="textBody">
           Progression calculée à partir de tes captures. Pas encore de notifications push.

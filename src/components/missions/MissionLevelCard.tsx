@@ -37,11 +37,10 @@ export function MissionLevelCard({
         borderWidth: 1,
         borderColor: colors.border,
         padding: spacing.md,
-        gap: spacing.md,
-      }}
+        gap: spacing.md }}
     >
       <View style={{ gap: spacing.xs }}>
-        <Text variant="h3" color="textBrand">
+        <Text variant="title" color="textBrand">
           Niveau {level} — {title}
         </Text>
         <Text variant="bodySmall" color="textSecondary">
@@ -58,16 +57,14 @@ export function MissionLevelCard({
             height: 8,
             borderRadius: radius.pill,
             backgroundColor: colors.surfaceSecondary,
-            overflow: 'hidden',
-          }}
+            overflow: 'hidden' }}
         >
           <View
             style={{
               width: `${Math.round(ratio * 100)}%`,
               height: '100%',
               backgroundColor: colors.brand,
-              borderRadius: radius.pill,
-            }}
+              borderRadius: radius.pill }}
           />
         </View>
         <Text variant="caption" color="textMuted">

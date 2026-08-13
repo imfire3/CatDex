@@ -83,7 +83,7 @@ function EditableRow({
 
   return (
     <View style={{ gap: spacing[4] }}>
-      <Text variant="bodySmall" color="textBody" style={{ fontFamily: fonts.bodySemi }}>
+      <Text variant="bodySmall" weight="semibold" color="textBody">
         {label}
       </Text>
       {editing ? (
@@ -96,8 +96,7 @@ function EditableRow({
             backgroundColor: colors.surfaceElevated,
             paddingHorizontal: spacing[16],
             paddingVertical: multiline ? spacing[16] : 0,
-            justifyContent: multiline ? 'flex-start' : 'center',
-          }}
+            justifyContent: multiline ? 'flex-start' : 'center' }}
         >
           <RNTextInput
             ref={inputRef}
@@ -120,8 +119,7 @@ function EditableRow({
               color: colors.text,
               fontFamily: fonts.body,
               fontSize: typography.body.fontSize,
-              lineHeight: typography.body.lineHeight,
-            }}
+              lineHeight: typography.body.lineHeight }}
           />
         </View>
       ) : (
@@ -144,7 +142,6 @@ function EditableRow({
           <Text
             variant="body"
             color={value.trim() ? 'text' : 'textMuted'}
-            style={{ fontFamily: fonts.body }}
             numberOfLines={multiline ? 4 : 1}
           >
             {value.trim() || placeholder}
@@ -388,11 +385,10 @@ export function CaptureReveal({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: colors.background,
-        }}
+          backgroundColor: colors.background }}
       >
         <AuthBackButton onPress={onRetake} />
-        <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="bodySmall" weight="semibold" color="textBrand">
           {dexLabel}
         </Text>
         <View style={{ width: spacing[40], height: spacing[40] }} />
@@ -406,8 +402,7 @@ export function CaptureReveal({
           paddingTop: spacing[8],
           paddingBottom: spacing[24],
           gap: spacing[24],
-          alignItems: 'center',
-        }}
+          alignItems: 'center' }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -430,13 +425,11 @@ export function CaptureReveal({
               paddingHorizontal: spacing[16],
               paddingTop: spacing[16],
               paddingBottom: spacing[8],
-              gap: spacing[4],
-            }}
+              gap: spacing[4] }}
           >
             <Text
-              variant="h1"
+              variant="headline"
               color="textBrand"
-              style={{ fontFamily: fonts.display }}
             >
               {name.trim() || aiName || 'Nouveau chat'}
               {symbol ? ` ${symbol}` : ''}
@@ -446,15 +439,14 @@ export function CaptureReveal({
                 flexDirection: 'row',
                 flexWrap: 'wrap',
                 gap: spacing[8],
-                alignItems: 'center',
-              }}
+                alignItems: 'center' }}
             >
               <Badge
                 label={catDexRarityLabel(rarityId)}
                 color={rarity.foreground}
                 backgroundColor={rarity.background}
               />
-              <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+              <Text variant="bodySmall" weight="semibold" color="textBrand">
                 {dexLabel}
               </Text>
             </View>
@@ -489,7 +481,7 @@ export function CaptureReveal({
         </View>
 
         <View style={{ width: '100%', gap: spacing[16] }}>
-          <Text variant="h3" color="text" style={{ fontFamily: fonts.display }}>
+          <Text variant="title" color="text">
             Modifier les informations
           </Text>
 
@@ -570,8 +562,7 @@ export function CaptureReveal({
           backgroundColor: colors.background,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
-          gap: spacing[8],
-        }}
+          gap: spacing[8] }}
       >
         <Button
           title="Ajouter à mon CatDex"

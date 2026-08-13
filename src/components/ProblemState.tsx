@@ -19,7 +19,7 @@ export function ProblemState({
   actionLabel = 'Retour',
   onAction,
 }: Props) {
-  const { colors, fonts, spacing } = useTheme();
+  const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -31,12 +31,11 @@ export function ProblemState({
         paddingBottom: insets.bottom + spacing[24],
         paddingHorizontal: spacing[24],
         justifyContent: 'center',
-        gap: spacing[24],
-      }}
+        gap: spacing[24] }}
       accessibilityRole="alert"
     >
       <View style={{ gap: spacing[8], alignItems: 'center' }}>
-        <Text variant="h1" color="textBrand" align="center" style={{ fontFamily: fonts.display }}>
+        <Text variant="headline" color="textBrand" align="center">
           {title}
         </Text>
         <Text variant="body" color="textSecondary" align="center">

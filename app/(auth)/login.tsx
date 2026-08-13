@@ -21,7 +21,7 @@ import {
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function LoginScreen() {
-  const { spacing, fonts } = useTheme();
+  const { spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const signInWithEmail = useAuthStore((state) => state.signInWithEmail);
@@ -126,7 +126,7 @@ export default function LoginScreen() {
             variant="tertiary"
             title="Créer un compte"
             disabled={loading}
-            onPress={() => router.push('/(auth)/join')}
+            onPress={() => router.push('/(auth)/signup')}
           />
         </View>
       }
@@ -177,9 +177,8 @@ export default function LoginScreen() {
             style={{ alignSelf: 'flex-end', paddingVertical: spacing[4] }}
           >
             <Text
-              variant="bodySmall"
+              variant="bodySmall" weight="semibold"
               color="textBrand"
-              style={{ fontFamily: fonts.bodySemi }}
             >
               Mot de passe oublié ?
             </Text>

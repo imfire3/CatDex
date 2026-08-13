@@ -109,8 +109,7 @@ function CameraCircleButton({
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: fill,
-          }}
+            backgroundColor: fill }}
         >
           {children}
         </View>
@@ -124,7 +123,7 @@ function CameraCircleButton({
 }
 
 export default function ScannerScreen() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ worldId?: string }>();
   const user = useAuthStore((state) => state.user);
@@ -829,19 +828,17 @@ export default function ScannerScreen() {
           style={{
             flex: 1,
             paddingTop: insets.top + spacing[8],
-            paddingHorizontal: spacing[24],
-          }}
+            paddingHorizontal: spacing[24] }}
         >
           <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              marginBottom: spacing[24],
-            }}
+              marginBottom: spacing[24] }}
           >
             <AuthBackButton onPress={() => router.back()} />
             <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: spacing[8] }}>
-              <Text variant="h3" color="textBrand" align="center">
+              <Text variant="title" color="textBrand" align="center">
                 Analyse
               </Text>
             </View>
@@ -853,12 +850,11 @@ export default function ScannerScreen() {
               backgroundColor: colors.surfaceElevated,
               borderRadius: radius.cta,
               padding: spacing[16],
-              gap: spacing[16],
-            }}
+              gap: spacing[16] }}
           >
             <ProgressBar progress={1} height={8} />
             <View style={{ gap: spacing[8] }}>
-              <Text variant="h2" color="textBrand">
+              <Text variant="title" color="textBrand">
                 Presque !
               </Text>
               <Text variant="bodySmall" color="textSecondary">
@@ -872,8 +868,7 @@ export default function ScannerScreen() {
               marginTop: spacing[16],
               borderRadius: radius.cta,
               overflow: 'hidden',
-              backgroundColor: colors.surfaceElevated,
-            }}
+              backgroundColor: colors.surfaceElevated }}
           >
             <Image
               source={{ uri: photoUri }}
@@ -886,8 +881,7 @@ export default function ScannerScreen() {
             style={{
               marginTop: 'auto',
               gap: spacing[8],
-              paddingBottom: Math.max(insets.bottom, spacing[16]),
-            }}
+              paddingBottom: Math.max(insets.bottom, spacing[16]) }}
           >
             <Button
               title="Relancer l’analyse"
@@ -970,7 +964,7 @@ export default function ScannerScreen() {
             },
           ]}
         >
-          <Text variant="h3" align="center" color="textBrand">
+          <Text variant="title" align="center" color="textBrand">
             Caméra indisponible
           </Text>
           <Text variant="bodySmall" color="textSecondary" align="center">
@@ -998,8 +992,7 @@ export default function ScannerScreen() {
             style={{
               flexDirection: 'row',
               alignItems: 'flex-start',
-              justifyContent: 'space-between',
-            }}
+              justifyContent: 'space-between' }}
           >
             <View style={{ alignItems: 'center', gap: spacing[4] }}>
               {showFlashControls ? (
@@ -1020,7 +1013,7 @@ export default function ScannerScreen() {
                       />
                     </Svg>
                   </CameraCircleButton>
-                  <Text variant="caption" color="onAccent" style={{ fontFamily: fonts.bodySemi }}>
+                  <Text variant="caption" weight="semibold" color="onAccent">
                     {FLASH_LABELS[flash]}
                   </Text>
                 </>
@@ -1037,7 +1030,7 @@ export default function ScannerScreen() {
               radius={radius}
               solid
             >
-              <Text color="onAccent" style={{ fontSize: 18, lineHeight: 20 }}>
+              <Text variant="body" weight="semibold" color="onAccent">
                 ✕
               </Text>
             </CameraCircleButton>
@@ -1049,24 +1042,21 @@ export default function ScannerScreen() {
               flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
-              gap: spacing[24],
-            }}
+              gap: spacing[24] }}
           >
             <ScanFrame size={scanFrameSize} color={colors.onAccent} rounded />
             <View
               style={{
                 borderRadius: radius.full,
                 overflow: 'hidden',
-                maxWidth: '92%',
-              }}
+                maxWidth: '92%' }}
             >
               {Platform.OS === 'web' ? (
                 <View
                   style={{
                     backgroundColor: colors.overlay,
                     paddingHorizontal: spacing[16],
-                    paddingVertical: spacing[8],
-                  }}
+                    paddingVertical: spacing[8] }}
                 >
                   <Text variant="bodySmall" color="onAccent" align="center">
                     {cameraReady ? 'Place le chat au centre' : 'Préparation…'}
@@ -1079,10 +1069,9 @@ export default function ScannerScreen() {
                   style={{ paddingHorizontal: spacing[16], paddingVertical: spacing[8] }}
                 >
                   <Text
-                    variant="bodySmall"
+                    variant="bodySmall" weight="semibold"
                     color="onAccent"
                     align="center"
-                    style={{ fontFamily: fonts.bodySemi }}
                   >
                     {cameraReady ? 'Place le chat au centre' : 'Préparation…'}
                   </Text>
@@ -1095,8 +1084,7 @@ export default function ScannerScreen() {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
+              justifyContent: 'space-between' }}
           >
             <CameraCircleButton
               accessibilityLabel="Galerie"
@@ -1168,8 +1156,7 @@ export default function ScannerScreen() {
                   width: shutterInnerSize,
                   height: shutterInnerSize,
                   borderRadius: radius.full,
-                  backgroundColor: colors.onAccent,
-                }}
+                  backgroundColor: colors.onAccent }}
               />
             </Pressable>
 

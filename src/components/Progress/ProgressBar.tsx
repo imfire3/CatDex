@@ -28,8 +28,7 @@ export function ProgressBar({
           height,
           borderRadius: radius.full,
           backgroundColor: colors.surfaceTertiary,
-          overflow: 'hidden',
-        }}
+          overflow: 'hidden' }}
       >
         <LinearGradient
           colors={[gradients.xp[0], gradients.xp[1]]}
@@ -51,7 +50,7 @@ export function XPBar({
   xp: number;
   xpMax: number;
 }) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const progress = xpMax > 0 ? xp / xpMax : 0;
 
   return (
@@ -69,8 +68,8 @@ export function XPBar({
       ]}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text variant="h3">Niveau {level}</Text>
-        <Text variant="caption" color="textSecondary" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="title">Niveau {level}</Text>
+        <Text variant="caption" weight="semibold" color="textSecondary">
           {xp} / {xpMax} XP
         </Text>
       </View>
@@ -88,23 +87,21 @@ export function SectionHeader({
   actionLabel?: string;
   onAction?: () => void;
 }) {
-  const { fonts, spacing } = useTheme();
+  const { spacing } = useTheme();
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'baseline',
         justifyContent: 'space-between',
-        marginBottom: spacing[16],
-      }}
+        marginBottom: spacing[16] }}
     >
-      <Text variant="h3">{title}</Text>
+      <Text variant="title">{title}</Text>
       {actionLabel && onAction ? (
         <Text
-          variant="bodySmall"
+          variant="bodySmall" weight="semibold"
           color="accent"
           onPress={onAction}
-          style={{ fontFamily: fonts.bodySemi }}
         >
           {actionLabel}
         </Text>

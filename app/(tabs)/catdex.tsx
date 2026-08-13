@@ -34,7 +34,7 @@ const RARITY_FILTERS: { id: ListFilter; label: string }[] = [
 const COLUMNS = 2;
 
 export default function CatDexScreen() {
-  const { colors, fonts, spacing, radius } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const cats = useCatsStore((state) => state.cats);
@@ -157,7 +157,7 @@ export default function CatDexScreen() {
       <TabStackHeader
         title="CatDex"
         right={
-          <Text variant="bodySmall" color="brand" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="bodySmall" weight="semibold" color="brand">
             {cats.length} / {CATDEX_TARGET}
           </Text>
         }
@@ -195,9 +195,8 @@ export default function CatDexScreen() {
                     })}
                   >
                     <Text
-                      variant="bodySmall"
+                      variant="bodySmall" weight="semibold"
                       color={selected ? 'onAccent' : 'textBrand'}
-                      style={{ fontFamily: fonts.bodySemi }}
                     >
                       {filter.label}
                     </Text>
@@ -215,8 +214,7 @@ export default function CatDexScreen() {
           paddingHorizontal: horizontalPad,
           paddingTop: spacing[16],
           paddingBottom: listBottom,
-          flexGrow: 1,
-        }}
+          flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
         {filtered.length === 0 ? (

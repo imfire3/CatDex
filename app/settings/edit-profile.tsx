@@ -24,7 +24,7 @@ function extrasKey(userId: string) {
 }
 
 export default function EditProfileScreen() {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
   const user = useAuthStore((state) => state.user);
   const loading = useAuthStore((state) => state.loading);
   const updateProfile = useAuthStore((state) => state.updateProfile);
@@ -295,7 +295,7 @@ export default function EditProfileScreen() {
           shadow.low,
         ]}
       >
-        <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.display }}>
+        <Text variant="title" color="textBrand">
           Mot de passe
         </Text>
         <Text variant="bodySmall" color="textSecondary">

@@ -76,13 +76,13 @@ export function Avatar({
           style={styles.image}
         >
           <Text
-            variant={hero || size === 'XL' ? 'h1' : 'label'}
+            variant={hero || size === 'XL' ? 'headline' : 'label'}
             color="onAccent"
             style={{
               textTransform: 'uppercase',
               fontSize:
                 hero || size === 'XL'
-                  ? typography.h1.fontSize
+                  ? typography.headline.fontSize
                   : size === 'S'
                     ? typography.caption.fontSize
                     : typography.bodySmall.fontSize,

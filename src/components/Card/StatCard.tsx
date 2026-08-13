@@ -12,7 +12,7 @@ export type StatCardProps = {
 };
 
 export function StatCard({ label, value, hint, icon, style }: StatCardProps) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
 
   return (
     <View
@@ -42,8 +42,7 @@ export function StatCard({ label, value, hint, icon, style }: StatCardProps) {
               borderRadius: radius.sm,
               backgroundColor: colors.surfaceSecondary,
               alignItems: 'center',
-              justifyContent: 'center',
-            }}
+              justifyContent: 'center' }}
           >
             {icon}
           </View>
@@ -52,7 +51,7 @@ export function StatCard({ label, value, hint, icon, style }: StatCardProps) {
           {label}
         </Text>
       </View>
-      <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.bodySemi }} numberOfLines={2}>
+      <Text variant="title" color="textBrand" numberOfLines={2}>
         {value}
       </Text>
       {hint ? (

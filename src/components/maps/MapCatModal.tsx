@@ -47,7 +47,7 @@ export function MapCatModal({
   onViewCard,
   onCapture,
 }: Props) {
-  const { colors, fonts, spacing, radius, shadow, iconStroke } = useTheme();
+  const { colors, spacing, radius, shadow, iconStroke } = useTheme();
   const insets = useSafeAreaInsets();
   const [photoFailed, setPhotoFailed] = useState(false);
 
@@ -126,8 +126,7 @@ export function MapCatModal({
               flexDirection: 'row',
               alignItems: 'center',
               gap: spacing[16],
-              width: '100%',
-            }}
+              width: '100%' }}
           >
             <View
               style={{
@@ -138,8 +137,7 @@ export function MapCatModal({
                 overflow: 'hidden',
                 alignItems: 'center',
                 justifyContent: 'center',
-                opacity: owned ? 1 : 0.9,
-              }}
+                opacity: owned ? 1 : 0.9 }}
             >
               {canShowPhoto ? (
                 <CatImage
@@ -147,14 +145,13 @@ export function MapCatModal({
                   style={{
                     width: '100%',
                     height: '100%',
-                    opacity: owned ? 1 : 0.85,
-                  }}
+                    opacity: owned ? 1 : 0.85 }}
                   resizeMode="cover"
                   accessibilityLabel={`Photo de ${cat.name}`}
                   onError={() => setPhotoFailed(true)}
                 />
               ) : (
-                <Text variant="h3" color="textMuted">
+                <Text variant="title" color="textMuted">
                   ?
                 </Text>
               )}
@@ -166,14 +163,13 @@ export function MapCatModal({
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: spacing[8],
-                }}
+                  gap: spacing[8] }}
               >
                 <Text
-                  variant="h3"
+                  variant="title"
                   color="text"
                   numberOfLines={1}
-                  style={{ fontFamily: fonts.display, flexShrink: 1 }}
+                  style={{ flexShrink: 1 }}
                 >
                   {displayName}
                 </Text>
@@ -185,13 +181,11 @@ export function MapCatModal({
                     borderRadius: radius.full,
                     backgroundColor: owned
                       ? colors.brandSoft
-                      : colors.surfaceSecondary,
-                  }}
+                      : colors.surfaceSecondary }}
                 >
                   <Text
-                    variant="caption"
+                    variant="caption" weight="semibold"
                     color={owned ? 'textBrand' : 'textSecondary'}
-                    style={{ fontFamily: fonts.bodySemi }}
                   >
                     {owned ? '✓ Dans ton CatDex' : 'À découvrir'}
                   </Text>
@@ -209,8 +203,7 @@ export function MapCatModal({
                   flexDirection: 'row',
                   flexWrap: 'wrap',
                   alignItems: 'center',
-                  gap: spacing[4],
-                }}
+                  gap: spacing[4] }}
               >
                 <Text
                   variant="bodySmall"
@@ -224,15 +217,12 @@ export function MapCatModal({
                     paddingHorizontal: spacing[8],
                     paddingVertical: spacing[4],
                     borderRadius: radius.full,
-                    backgroundColor: rarity.background,
-                  }}
+                    backgroundColor: rarity.background }}
                 >
                   <Text
-                    variant="caption"
+                    variant="caption" weight="semibold"
                     style={{
-                      fontFamily: fonts.bodySemi,
-                      color: rarity.foreground,
-                    }}
+                      color: rarity.foreground }}
                   >
                     {rarityLabel}
                   </Text>
@@ -244,8 +234,7 @@ export function MapCatModal({
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: spacing[4],
-                  marginTop: spacing[4],
-                }}
+                  marginTop: spacing[4] }}
               >
                 <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
                   <Path
@@ -282,8 +271,7 @@ export function MapCatModal({
                 width: '100%',
                 alignSelf: 'stretch',
                 minHeight: spacing[48],
-                height: spacing[48],
-              }}
+                height: spacing[48] }}
             />
           </View>
         </View>

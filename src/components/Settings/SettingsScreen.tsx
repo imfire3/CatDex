@@ -15,7 +15,7 @@ type Props = {
 
 /** Shared chrome for profile settings subpages. */
 export function SettingsScreen({ title, subtitle, children, footer }: Props) {
-  const { colors, fonts, spacing } = useTheme();
+  const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -27,8 +27,7 @@ export function SettingsScreen({ title, subtitle, children, footer }: Props) {
           paddingBottom: spacing[16],
           flexDirection: 'row',
           alignItems: 'center',
-          minHeight: spacing[40],
-        }}
+          minHeight: spacing[40] }}
       >
         <View style={{ flex: 1, alignItems: 'flex-start', zIndex: 1 }}>
           <AuthBackButton />
@@ -40,10 +39,9 @@ export function SettingsScreen({ title, subtitle, children, footer }: Props) {
             left: 0,
             right: 0,
             alignItems: 'center',
-            justifyContent: 'center',
-          }}
+            justifyContent: 'center' }}
         >
-          <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.display }}>
+          <Text variant="title" color="textBrand">
             {title}
           </Text>
         </View>
@@ -55,8 +53,7 @@ export function SettingsScreen({ title, subtitle, children, footer }: Props) {
         contentContainerStyle={{
           paddingHorizontal: spacing[24],
           paddingBottom: Math.max(insets.bottom, spacing[24]) + (footer ? spacing[80] : 0),
-          gap: spacing[24],
-        }}
+          gap: spacing[24] }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -77,8 +74,7 @@ export function SettingsScreen({ title, subtitle, children, footer }: Props) {
             backgroundColor: colors.background,
             borderTopWidth: 1,
             borderTopColor: colors.border,
-            gap: spacing[8],
-          }}
+            gap: spacing[8] }}
         >
           {footer}
         </View>

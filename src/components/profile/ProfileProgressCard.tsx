@@ -13,14 +13,14 @@ type Props = {
 };
 
 export function ProfileProgressCard({ level, title, xpIntoLevel, xpMax }: Props) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const percent = xpMax > 0 ? Math.round((xpIntoLevel / xpMax) * 100) : 0;
   const remaining = Math.max(0, xpMax - xpIntoLevel);
   const atMax = level >= MAX_LEVEL;
 
   return (
     <View style={{ gap: spacing[16] }}>
-      <Text variant="h3" color="textBrand">
+      <Text variant="title" color="textBrand">
         Ton parcours
       </Text>
       <View
@@ -37,7 +37,7 @@ export function ProfileProgressCard({ level, title, xpIntoLevel, xpMax }: Props)
         ]}
       >
         <View style={{ gap: spacing[4] }}>
-          <Text variant="h3" color="text" style={{ fontFamily: fonts.display }}>
+          <Text variant="title" color="text">
             Niveau {level}
           </Text>
           <Text variant="bodySmall" color="textSecondary">
@@ -45,7 +45,7 @@ export function ProfileProgressCard({ level, title, xpIntoLevel, xpMax }: Props)
           </Text>
         </View>
         <ProgressBar progress={xpMax ? xpIntoLevel / xpMax : 0} height={12} />
-        <Text variant="caption" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="caption" weight="semibold" color="textMuted">
           {percent}%
         </Text>
         <Text variant="body" color="textBody">

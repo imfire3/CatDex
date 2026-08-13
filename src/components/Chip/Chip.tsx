@@ -14,7 +14,7 @@ export type ChipProps = {
 
 /** Filter chip — selected uses primary CTA colors (solid accent + white label). */
 export function Chip({ label, selected, onPress, static: isStatic, disabled, icon }: ChipProps) {
-  const { colors, fonts, spacing, radius, motion } = useTheme();
+  const { colors, spacing, radius, motion } = useTheme();
 
   const backgroundColor = selected ? colors.accent : colors.surface;
   const borderColor = selected ? colors.accent : colors.borderDefault;
@@ -32,14 +32,12 @@ export function Chip({ label, selected, onPress, static: isStatic, disabled, ico
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing[8],
-        minHeight: 40,
-      }}
+        minHeight: 40 }}
     >
       {icon}
       <Text
-        variant="bodySmall"
+        variant="bodySmall" weight="semibold"
         color={selected ? 'onAccent' : 'textSecondary'}
-        style={{ fontFamily: fonts.bodySemi }}
       >
         {label}
       </Text>

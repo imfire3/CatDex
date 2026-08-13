@@ -12,7 +12,7 @@ type Props = {
 
 /** Horizontal brand swatches for rapid color swaps. */
 export const ColorSwatchGroup = ({ value, onChange, disabled }: Props) => {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme()
+  const { colors, spacing, radius, shadow, motion } = useTheme()
 
   return (
     <View style={{ gap: spacing[16] }}>
@@ -58,8 +58,8 @@ export const ColorSwatchGroup = ({ value, onChange, disabled }: Props) => {
               />
               <Text
                 variant="caption"
+                weight={selected ? 'semibold' : 'regular'}
                 color={selected ? 'textBrand' : 'textSecondary'}
-                style={{ fontFamily: selected ? fonts.bodySemi : fonts.body }}
               >
                 {preset.label}
               </Text>

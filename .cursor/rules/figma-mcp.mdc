@@ -177,7 +177,7 @@ const { colors, spacing, radius, shadow } = useTheme()
 <Text variant="h3" color="textBrand">Title</Text>
 ```
 
-Typography: iOS System; Android/web **Syne** (display) + **Manrope** (body). Prefer `color="textBrand"` for titles.
+Typography: **Kind Sans** only (`src/theme/typography.ts`). Prefer `color="textBrand"` for titles. Canonical variants: `display` · `headline` · `title` · `body` · `bodySmall` · `label` · `button` · `link` · `caption`.
 
 ---
 

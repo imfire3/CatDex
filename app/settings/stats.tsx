@@ -21,7 +21,7 @@ function StatRow({
   value: string;
   last?: boolean;
 }) {
-  const { colors, fonts, spacing } = useTheme();
+  const { colors, spacing } = useTheme();
   return (
     <View
       style={{
@@ -31,13 +31,12 @@ function StatRow({
         gap: spacing[16],
         paddingVertical: spacing[16],
         borderBottomWidth: last ? 0 : 1,
-        borderBottomColor: colors.border,
-      }}
+        borderBottomColor: colors.border }}
     >
       <Text variant="body" color="textSecondary">
         {label}
       </Text>
-      <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
+      <Text variant="body" weight="semibold" color="text">
         {value}
       </Text>
     </View>
@@ -45,7 +44,7 @@ function StatRow({
 }
 
 export default function StatsSettingsScreen() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const cats = useCatsStore((s) => s.cats);
   const streakDays = useMissionsStore((s) => s.streakDays);
   const missions = useMissionsStore((s) => s.missions);
@@ -75,10 +74,10 @@ export default function StatsSettingsScreen() {
         ]}
       >
         <View style={{ paddingVertical: spacing[16], gap: spacing[4] }}>
-          <Text variant="caption" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="caption" weight="semibold" color="textMuted">
             Titre
           </Text>
-          <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.display }}>
+          <Text variant="title" color="textBrand">
             {title}
           </Text>
         </View>

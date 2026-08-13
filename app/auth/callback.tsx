@@ -70,10 +70,9 @@ export default function AuthCallbackScreen() {
           backgroundColor: colors.background,
           justifyContent: 'center',
           padding: spacing[24],
-          gap: spacing[16],
-        }}
+          gap: spacing[16] }}
       >
-        <Text variant="h3" color="textBrand" align="center">
+        <Text variant="title" color="textBrand" align="center">
           Connexion interrompue
         </Text>
         <Text variant="body" color="textSecondary" align="center">

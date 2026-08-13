@@ -14,7 +14,7 @@ export function ProfileActivityTimeline({ items }: Props) {
 
   return (
     <View style={{ gap: spacing[16] }}>
-      <Text variant="h3" color="textBrand">
+      <Text variant="title" color="textBrand">
         Journal d’exploration
       </Text>
       {items.map((item) => (

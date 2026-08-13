@@ -10,11 +10,11 @@ type Props = {
 
 /** Clear entry into the settings hub. */
 export function ProfileSettingsLink({ onPress }: Props) {
-  const { colors, fonts, spacing, radius, shadow, iconStroke, iconSize, motion } = useTheme()
+  const { colors, spacing, radius, shadow, iconStroke, iconSize, motion } = useTheme()
 
   return (
     <View style={{ gap: spacing[8] }}>
-      <Text variant="h3" color="textBrand">
+      <Text variant="title" color="textBrand">
         Réglages
       </Text>
       <Pressable
@@ -44,8 +44,7 @@ export function ProfileSettingsLink({ onPress }: Props) {
             borderRadius: radius.full,
             backgroundColor: colors.brandSoft,
             alignItems: 'center',
-            justifyContent: 'center',
-          }}
+            justifyContent: 'center' }}
         >
           <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
             <Circle
@@ -64,7 +63,7 @@ export function ProfileSettingsLink({ onPress }: Props) {
           </Svg>
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="body" weight="semibold" color="text">
             Tous les réglages
           </Text>
           <Text variant="caption" color="textMuted">

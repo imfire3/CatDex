@@ -82,7 +82,7 @@ function RuleLabel({ met, label }: { met: boolean; label: string }) {
 
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
-      <Text variant="caption" color={color} style={{ fontWeight: '700' }}>
+      <Text variant="caption" weight="bold" color={color}>
         {match[1]}
       </Text>
       {match[2] ? (

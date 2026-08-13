@@ -38,7 +38,7 @@ export function TimelineStep({
   index = 0,
   isLast = false,
 }: TimelineStepProps) {
-  const { colors, fonts, spacing, radius, motion, shadow } = useTheme();
+  const { colors, spacing, radius, motion, shadow } = useTheme();
   const reduceMotion = useReducedMotion();
   const lineOpacity = useSharedValue(reduceMotion || isLast ? 1 : 0);
 
@@ -103,10 +103,9 @@ export function TimelineStep({
             flex: 1,
             gap: spacing[8],
             paddingBottom: isLast ? 0 : spacing[32],
-            paddingTop: spacing[4],
-          }}
+            paddingTop: spacing[4] }}
         >
-          <Text variant="bodySmall" color="text" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="bodySmall" weight="semibold" color="text">
             {label}
           </Text>
           {children}

@@ -19,7 +19,7 @@ import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function DiscoveryScreen() {
-  const { colors, fonts, spacing, radius, motion, scheme, shadow } = useTheme();
+  const { colors, spacing, radius, motion, scheme, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     photoUri: string;
@@ -110,8 +110,7 @@ export default function DiscoveryScreen() {
             style={{
               width: spacing[96] * 2,
               height: spacing[96] * 2,
-              borderRadius: radius.xl,
-            }}
+              borderRadius: radius.xl }}
           />
         </View>
 
@@ -130,8 +129,7 @@ export default function DiscoveryScreen() {
             flexWrap: 'wrap',
             justifyContent: 'center',
             gap: spacing[8],
-            marginTop: spacing[16],
-          }}
+            marginTop: spacing[16] }}
         >
           <Badge label={params.breed} color={theme.badge} backgroundColor={`${theme.hex}33`} />
           <Badge label={params.color} color={theme.badge} backgroundColor={`${theme.hex}33`} />
@@ -142,7 +140,7 @@ export default function DiscoveryScreen() {
           variant="body"
           color="textBody"
           align="center"
-          style={{ marginTop: spacing[16], paddingHorizontal: spacing[8], fontFamily: fonts.body }}
+          style={{ marginTop: spacing[16], paddingHorizontal: spacing[8] }}
         >
           {params.description}
         </Text>
@@ -152,8 +150,7 @@ export default function DiscoveryScreen() {
         style={{
           marginTop: 'auto',
           paddingBottom: Math.max(insets.bottom, spacing[16]),
-          gap: spacing[8],
-        }}
+          gap: spacing[8] }}
       >
         <Button title="Ajouter à la carte" onPress={confirm} />
         <Button

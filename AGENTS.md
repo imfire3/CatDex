@@ -4,7 +4,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before 
 
 # Design System
 
-CatDex UI must use tokens from `src/theme/` only (via `useTheme()`). Never invent hex colors, font sizes, spacing, or radii. Canvas `#F9F9FB` · white cards/CTAs · indigo brand (`#6A69F8`). Soft elevation via borders + `shadow.low|medium|floating`.
+CatDex UI must use tokens from `src/theme/` only (via `useTheme()`). Never invent hex colors, font sizes, spacing, or radii. Canvas `#F9F9FB` · white cards/CTAs · indigo brand (`#6A69F8`). Soft elevation via borders + `shadow.low|medium|floating`. Typography: **Kind Sans** via `Text variant` (`headline` / `title` / `body` / …) — never local `fontSize`.
 
 Full token tables, naming conventions, and good/bad examples: `.cursor/rules/design-system.mdc`
 

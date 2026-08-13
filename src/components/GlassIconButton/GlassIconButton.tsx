@@ -20,7 +20,7 @@ export function GlassIconButton({
   label,
   style,
 }: GlassIconButtonProps) {
-  const { colors, spacing, radius, shadow, fonts, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
 
   return (
     <Pressable
@@ -46,7 +46,7 @@ export function GlassIconButton({
       ]}
     >
       {label ? (
-        <Text variant="caption" style={{ fontFamily: fonts.bodySemi, color: colors.text }}>
+        <Text variant="caption" weight="semibold" style={{ color: colors.text }}>
           {label}
         </Text>
       ) : (

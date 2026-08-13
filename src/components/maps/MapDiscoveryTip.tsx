@@ -15,7 +15,7 @@ type Props = {
  * but the player's CatDex is still empty. Not a full onboarding screen.
  */
 export function MapDiscoveryTip({ visible, onDismiss }: Props) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
 
   if (!visible) return null;
@@ -53,9 +53,8 @@ export function MapDiscoveryTip({ visible, onDismiss }: Props) {
           ]}
         >
           <Text
-            variant="h3"
+            variant="title"
             color="textBrand"
-            style={{ fontFamily: fonts.display }}
           >
             Des chats ont été repérés près de toi ✨
           </Text>

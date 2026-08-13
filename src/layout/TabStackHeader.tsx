@@ -24,53 +24,67 @@ function goBackToMap() {
 
 /**
  * Sticky top chrome for CatDex / Missions / Profil — back + centered title.
- * Used when the floating tab bar is hidden on those screens.
+ * Matches Figma header: px 24, py 16, equal side balance, title scales on narrow screens.
  */
 export function TabStackHeader({ title, right, onBack = goBackToMap, below }: Props) {
-  const { colors, fonts, spacing } = useTheme();
+  const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
+  const side = spacing[40];
 
   return (
     <View
       style={{
-        backgroundColor: colors.background,
-        paddingTop: insets.top + spacing[8],
+        backgroundColor: colors.surface,
+        paddingTop: insets.top,
         paddingHorizontal: spacing[24],
-        paddingBottom: spacing[16],
-        gap: spacing[16],
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
         zIndex: 2,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: spacing[40] }}>
-        <View style={{ flex: 1, alignItems: 'flex-start', zIndex: 1 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          minHeight: side,
+          width: '100%',
+          paddingVertical: spacing[16],
+        }}
+      >
+        <View style={{ flex: 1, alignItems: 'flex-start', zIndex: 1, minWidth: side }}>
           <AuthBackButton onPress={onBack} />
         </View>
+
         <View
           pointerEvents="none"
           style={{
             position: 'absolute',
-            left: 0,
-            right: 0,
+            left: side + spacing[8],
+            right: side + spacing[8],
+            top: 0,
+            bottom: 0,
             alignItems: 'center',
             justifyContent: 'center',
+            paddingVertical: spacing[16],
           }}
         >
           <Text
-            variant="h3"
+            variant="title"
             color="textBrand"
             align="center"
-            style={{ fontFamily: fonts.display }}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
           >
             {title}
           </Text>
         </View>
-        <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center', zIndex: 1 }}>
-          {right ?? <View style={{ width: spacing[40], height: spacing[40] }} />}
+
+        <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center', zIndex: 1, minWidth: side }}>
+          {right ?? <View style={{ width: side, height: side }} />}
         </View>
       </View>
-      {below}
+      {below ? <View style={{ paddingBottom: spacing[16] }}>{below}</View> : null}
     </View>
   );
 }

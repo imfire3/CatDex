@@ -44,7 +44,7 @@ function RewardChip({
   index: number;
   startDelay: number;
 }) {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(reduceMotion ? 1 : 0.72);
   const opacity = useSharedValue(reduceMotion ? 1 : 0);
@@ -98,15 +98,13 @@ function RewardChip({
             borderRadius: radius.full,
             backgroundColor: colors.brandSoft,
             alignItems: 'center',
-            justifyContent: 'center',
-          }}
+            justifyContent: 'center' }}
         >
           <Glyph name={item.glyph} color={colors.brand} size={14} />
         </View>
         <Text
-          variant="bodySmall"
+          variant="bodySmall" weight="semibold"
           color="textBrand"
-          style={{ fontFamily: fonts.bodySemi }}
         >
           {item.label}
         </Text>
@@ -133,8 +131,7 @@ export function RewardChips({
         gap: spacing[8],
         justifyContent: 'center',
         alignSelf: 'stretch',
-        paddingVertical: spacing[8],
-      }}
+        paddingVertical: spacing[8] }}
       accessibilityLabel="Récompenses de première capture"
     >
       {items.map((item, index) => (

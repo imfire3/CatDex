@@ -15,6 +15,11 @@ import Svg, { Path } from 'react-native-svg';
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
+/** Figma text field — padding 12 · height 45 · radius 8 */
+const FIELD_PAD = 12 as const;
+const FIELD_HEIGHT = 45 as const;
+const FIELD_LINE_HEIGHT = 19 as const;
+
 type FieldProps = {
   label?: string;
   helperText?: string;
@@ -92,15 +97,17 @@ function FieldShell({
   containerStyle,
   children,
   focused,
-  filled,
+  filled: _filled,
+  multiline,
   onPressField,
 }: FieldProps & {
   children: React.ReactNode;
   focused?: boolean;
   filled?: boolean;
+  multiline?: boolean;
   onPressField?: () => void;
 }) {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   const showValid = Boolean(valid) && !error;
   const borderColor = error
     ? colors.borderError
@@ -108,9 +115,13 @@ function FieldShell({
       ? colors.focusRing
       : showValid
         ? colors.success
-        : colors.border;
-  const borderWidth = focused || error || showValid ? 2 : 1;
-  const elevated = focused || (filled && !disabled);
+        : colors.borderDefault;
+
+  const backgroundColor = disabled
+    ? colors.surfaceDisabled
+    : focused
+      ? colors.inputFocusFill
+      : colors.surface;
 
   return (
     <View style={[{ gap: spacing[8] }, containerStyle]}>
@@ -126,18 +137,18 @@ function FieldShell({
         style={[
           styles.field,
           {
-            backgroundColor: disabled
-              ? colors.surfaceDisabled
-              : colors.surface,
+            backgroundColor,
             borderColor,
-            borderWidth,
-            borderRadius: radius.xs,
-            paddingHorizontal: spacing[16],
-            minHeight: spacing[56],
+            borderWidth: 1,
+            borderRadius: radius[8],
+            paddingHorizontal: FIELD_PAD,
+            paddingVertical: FIELD_PAD,
+            minHeight: multiline ? spacing[96] : FIELD_HEIGHT,
             opacity: disabled ? 0.7 : 1,
             gap: spacing[8],
+            alignSelf: 'stretch',
+            alignItems: multiline ? 'flex-start' : 'center',
           },
-          elevated ? shadow.low : null,
         ]}
       >
         {leftIcon}
@@ -233,6 +244,7 @@ export function TextInput({
       containerStyle={containerStyle}
       focused={focused}
       filled={filled}
+      multiline={multiline}
       onPressField={focusInput}
     >
       <RNTextInput
@@ -251,16 +263,19 @@ export function TextInput({
             flex: 1,
             width: '100%',
             alignSelf: 'stretch',
-            minHeight: multiline ? spacing[96] : spacing[48],
+            minHeight: multiline ? spacing[96] : FIELD_LINE_HEIGHT,
             color: colors.text,
-            fontFamily: fonts.body,
+            fontFamily: fonts.bodyMedium,
             fontSize: typography.body.fontSize,
             ...(multiline
               ? { lineHeight: typography.body.lineHeight }
-              : Platform.OS === 'android'
-                ? { textAlignVertical: 'center' as const, includeFontPadding: false }
-                : null),
-            paddingVertical: multiline ? spacing[16] : Platform.OS === 'ios' ? spacing[16] : 0,
+              : {
+                  lineHeight: FIELD_LINE_HEIGHT,
+                  ...(Platform.OS === 'android'
+                    ? { textAlignVertical: 'center' as const, includeFontPadding: false }
+                    : null),
+                }),
+            paddingVertical: multiline ? spacing[16] : 0,
             margin: 0,
             textAlign: 'left',
           },
@@ -296,6 +311,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignSelf: 'stretch',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: FIELD_LINE_HEIGHT,
   },
 });

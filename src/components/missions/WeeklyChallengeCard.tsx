@@ -23,13 +23,12 @@ export function WeeklyChallengeCard({ quest }: Props) {
         borderWidth: 2,
         borderColor: quest.completed ? colors.success : colors.brand,
         padding: spacing.md,
-        gap: spacing.sm,
-      }}
+        gap: spacing.sm }}
     >
       <Text variant="label" color="textBrand">
         DÉFI DE LA SEMAINE
       </Text>
-      <Text variant="h3" color="text">
+      <Text variant="title" color="text">
         {quest.title}
       </Text>
       <View style={{ gap: spacing.xs }}>
@@ -38,16 +37,14 @@ export function WeeklyChallengeCard({ quest }: Props) {
             height: 10,
             borderRadius: radius.pill,
             backgroundColor: colors.surfaceSecondary,
-            overflow: 'hidden',
-          }}
+            overflow: 'hidden' }}
         >
           <View
             style={{
               width: `${Math.round(ratio * 100)}%`,
               height: '100%',
               backgroundColor: quest.completed ? colors.success : colors.brand,
-              borderRadius: radius.pill,
-            }}
+              borderRadius: radius.pill }}
           />
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>

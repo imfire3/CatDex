@@ -12,13 +12,13 @@ type Props = {
 };
 
 export function ProfileMissionCard({ mission, streak, onContinue }: Props) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
 
   const active = mission && !mission.completed ? mission : null;
 
   return (
     <View style={{ gap: spacing[16] }}>
-      <Text variant="h3" color="textBrand">
+      <Text variant="title" color="textBrand">
         Mission du jour
       </Text>
       <View
@@ -36,7 +36,7 @@ export function ProfileMissionCard({ mission, streak, onContinue }: Props) {
       >
         {active ? (
           <>
-            <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
+            <Text variant="body" weight="semibold" color="text">
               {active.title}
             </Text>
             <Text variant="bodySmall" color="textBody">
@@ -46,7 +46,7 @@ export function ProfileMissionCard({ mission, streak, onContinue }: Props) {
           </>
         ) : (
           <>
-            <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
+            <Text variant="body" weight="semibold" color="text">
               Mission accomplie
             </Text>
             <Text variant="bodySmall" color="textBody">

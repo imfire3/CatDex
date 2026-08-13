@@ -146,7 +146,7 @@ function PulsingBadge({ children }: { children: React.ReactNode }) {
  * Post-capture: verify infos → optional first badge → share.
  */
 export default function RewardScreen() {
-  const { colors, fonts, spacing, radius, shadow, gradients } = useTheme();
+  const { colors, spacing, radius, shadow, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const showToast = useToastStore((state) => state.show);
@@ -309,7 +309,7 @@ export default function RewardScreen() {
           },
         ]}
       >
-        <Text variant="h2" color="text" align="center">
+        <Text variant="title" color="text" align="center">
           Récompense indisponible
         </Text>
         <Button title="Retour à la carte" onPress={finishToMap} />
@@ -332,8 +332,7 @@ export default function RewardScreen() {
           paddingTop: insets.top + spacing[32],
           paddingHorizontal: spacing[24],
           paddingBottom: Math.max(insets.bottom, spacing[24]),
-          justifyContent: 'space-between',
-        }}
+          justifyContent: 'space-between' }}
       >
         {phase === 'badge' && badgeCopy && savedCat ? (
           <>
@@ -342,10 +341,9 @@ export default function RewardScreen() {
               style={{ alignItems: 'center', gap: spacing[24], paddingTop: spacing[32] }}
             >
               <Text
-                variant="h1"
+                variant="headline"
                 color="textBrand"
                 align="center"
-                style={{ fontFamily: fonts.display }}
               >
                 Nouveau badge obtenu !
               </Text>
@@ -377,17 +375,17 @@ export default function RewardScreen() {
               </PulsingBadge>
 
               <View style={{ alignItems: 'center', gap: spacing[8] }}>
-                <Text variant="h2" color="textBrand" align="center">
+                <Text variant="title" color="textBrand" align="center">
                   {badgeCopy.title}
                 </Text>
                 <Text variant="bodySmall" color="textBody" align="center">
                   {badgeCopy.subtitle}
                 </Text>
                 <Text
-                  variant="h3"
+                  variant="title"
                   color="textBrand"
                   align="center"
-                  style={{ fontFamily: fonts.bodySemi, marginTop: spacing[8] }}
+                  style={{ marginTop: spacing[8] }}
                 >
                   +{xpGained} XP
                 </Text>
@@ -418,15 +416,13 @@ export default function RewardScreen() {
                 alignItems: 'center',
                 gap: spacing[16],
                 flex: 1,
-                justifyContent: 'center',
-              }}
+                justifyContent: 'center' }}
             >
               <Animated.View entering={enterUp}>
                 <Text
-                  variant="h1"
+                  variant="headline"
                   color="textBrand"
                   align="center"
-                  style={{ fontFamily: fonts.display }}
                 >
                   {savedCat.name} rejoint ton CatDex !
                 </Text>
@@ -443,15 +439,13 @@ export default function RewardScreen() {
                     backgroundColor: colors.surfaceSecondary,
                     overflow: 'hidden',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                    justifyContent: 'center' }}
                 >
                   <CatImage
                     uri={savedCat.photoUri}
                     style={{
                       width: badgePhotoSize,
-                      height: badgePhotoSize,
-                    }}
+                      height: badgePhotoSize }}
                     resizeMode="cover"
                     accessibilityLabel={`Photo de ${savedCat.name}`}
                   />
@@ -460,10 +454,9 @@ export default function RewardScreen() {
 
               <View style={{ alignItems: 'center', gap: spacing[8] }}>
                 <Text
-                  variant="h3"
+                  variant="title"
                   color="textBrand"
                   align="center"
-                  style={{ fontFamily: fonts.bodySemi }}
                 >
                   +{xpGained} XP
                 </Text>
@@ -509,9 +502,8 @@ export default function RewardScreen() {
                   })}
                 >
                   <Text
-                    variant="bodySmall"
+                    variant="bodySmall" weight="semibold"
                     color="textBrand"
-                    style={{ fontFamily: fonts.bodySemi }}
                   >
                     Partager
                   </Text>

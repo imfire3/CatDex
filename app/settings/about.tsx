@@ -29,7 +29,7 @@ function appBuild(): string {
 }
 
 export default function AboutVersionScreen() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const showToast = useToastStore((s) => s.show);
   const version = appVersion();
   const build = appBuild();
@@ -52,10 +52,10 @@ export default function AboutVersionScreen() {
           shadow.low,
         ]}
       >
-        <Text variant="caption" color="textMuted" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="caption" weight="semibold" color="textMuted">
           CatDex
         </Text>
-        <Text variant="h2" color="textBrand" style={{ fontFamily: fonts.display }}>
+        <Text variant="title" color="textBrand">
           {version}
         </Text>
         <Text variant="bodySmall" color="textSecondary">

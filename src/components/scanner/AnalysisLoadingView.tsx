@@ -111,16 +111,14 @@ function StepCheck({ done, active }: { done: boolean; active?: boolean }) {
         borderRadius: radius.full,
         backgroundColor: active ? colors.brandSoft : colors.surfaceTertiary,
         alignItems: 'center',
-        justifyContent: 'center',
-      }}
+        justifyContent: 'center' }}
     >
       <View
         style={{
           width: 8,
           height: 8,
           borderRadius: radius.full,
-          backgroundColor: active ? colors.brand : colors.textMuted,
-        }}
+          backgroundColor: active ? colors.brand : colors.textMuted }}
       />
     </View>
   );
@@ -251,8 +249,7 @@ const ScanningHero = memo(function ScanningHero({
         width: 200,
         height: 200,
         alignItems: 'center',
-        justifyContent: 'center',
-      }}
+        justifyContent: 'center' }}
     >
       <Animated.View
         style={[
@@ -312,8 +309,7 @@ const ScanningHero = memo(function ScanningHero({
               flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: colors.brandSoft,
-            }}
+              backgroundColor: colors.brandSoft }}
           >
             <Text variant="caption" color="textBrand">
               Analyse…
@@ -350,7 +346,7 @@ function ScanStatusLine() {
 }
 
 function ScanProgressCard() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const [progress, setProgress] = useState(0.12);
   const prevDoneCount = useRef(0);
 
@@ -402,9 +398,9 @@ function ScanProgressCard() {
             <ProgressBar progress={progress} height={10} />
           </View>
           <Text
-            variant="bodySmall"
+            variant="bodySmall" weight="semibold"
             color="textBrand"
-            style={{ fontFamily: fonts.bodySemi, minWidth: 40, textAlign: 'right' }}
+            style={{ minWidth: 40, textAlign: 'right' }}
           >
             {percentLabel}
           </Text>
@@ -428,10 +424,8 @@ function ScanProgressCard() {
               <StepCheck done={done} active={active} />
               <Text
                 variant="bodySmall"
+                weight={done || active ? 'semibold' : 'regular'}
                 color={done || active ? 'textBrand' : 'textSecondary'}
-                style={{
-                  fontFamily: done || active ? fonts.bodySemi : fonts.body,
-                }}
               >
                 {label}
               </Text>
@@ -444,7 +438,7 @@ function ScanProgressCard() {
 }
 
 function ScanTipCard() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const [tipIndex, setTipIndex] = useState(0);
 
   useEffect(() => {
@@ -477,8 +471,7 @@ function ScanTipCard() {
           borderRadius: radius.full,
           backgroundColor: colors.brandSoft,
           alignItems: 'center',
-          justifyContent: 'center',
-        }}
+          justifyContent: 'center' }}
       >
         <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
           <Path
@@ -488,7 +481,7 @@ function ScanTipCard() {
         </Svg>
       </View>
       <View style={{ flex: 1, gap: spacing[4] }}>
-        <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="bodySmall" weight="semibold" color="textBrand">
           Le savais-tu ?
         </Text>
         <Text variant="bodySmall" color="textBody">
@@ -510,7 +503,7 @@ function AnalysisTab({
   onPress?: () => void;
   children: ReactNode;
 }) {
-  const { colors, fonts, spacing, radius, motion } = useTheme();
+  const { colors, spacing, radius, motion } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -536,15 +529,14 @@ function AnalysisTab({
           borderColor: active ? colors.brand : 'transparent',
           backgroundColor: active ? colors.brandSoft : 'transparent',
           alignItems: 'center',
-          justifyContent: 'center',
-        }}
+          justifyContent: 'center' }}
       >
         {children}
       </View>
       <Text
         variant="caption"
+        weight={active ? 'semibold' : 'regular'}
         color={active ? 'textBrand' : 'textMuted'}
-        style={{ fontFamily: active ? fonts.bodySemi : fonts.body }}
       >
         {label}
       </Text>
@@ -553,7 +545,7 @@ function AnalysisTab({
 }
 
 export function AnalysisLoadingView({ photoUri, onBack }: Props) {
-  const { colors, fonts, spacing, radius, shadow, iconStroke, gradients } = useTheme();
+  const { colors, spacing, radius, shadow, iconStroke, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const [photoFailed, setPhotoFailed] = useState(false);
   const handlePhotoError = useCallback(() => setPhotoFailed(true), []);
@@ -578,8 +570,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
         style={{
           flex: 1,
           paddingTop: insets.top + spacing[8],
-          paddingBottom: insets.bottom + spacing[8],
-        }}
+          paddingBottom: insets.bottom + spacing[8] }}
       >
         <View
           style={{
@@ -587,8 +578,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
             flexDirection: 'row',
             alignItems: 'center',
             minHeight: spacing[40],
-            marginBottom: spacing[16],
-          }}
+            marginBottom: spacing[16] }}
         >
           <View style={{ zIndex: 1 }}>
             <AuthBackButton
@@ -606,14 +596,12 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
               left: 0,
               right: 0,
               alignItems: 'center',
-              paddingHorizontal: spacing[48],
-            }}
+              paddingHorizontal: spacing[48] }}
           >
             <Text
-              variant="h3"
+              variant="title"
               color="textBrand"
               align="center"
-              style={{ fontFamily: fonts.display }}
             >
               Découverte en cours
             </Text>
@@ -627,8 +615,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
             alignItems: 'center',
             justifyContent: 'center',
             height: 220,
-            marginBottom: spacing[16],
-          }}
+            marginBottom: spacing[16] }}
         >
           <ScanningHero
             photoUri={photoUri}

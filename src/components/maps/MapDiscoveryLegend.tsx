@@ -9,7 +9,7 @@ import { useTheme } from '@/theme/ThemeProvider';
  * Sits under the top HUD row without covering profile / tools.
  */
 export function MapDiscoveryLegend() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -36,9 +36,8 @@ export function MapDiscoveryLegend() {
       <View style={styles.item}>
         <View style={[styles.dot, { backgroundColor: colors.brand }]} />
         <Text
-          variant="caption"
+          variant="caption" weight="semibold"
           color="textSecondary"
-          style={{ fontFamily: fonts.bodySemi }}
         >
           Capturé
         </Text>
@@ -46,9 +45,8 @@ export function MapDiscoveryLegend() {
       <View style={styles.item}>
         <View style={[styles.ring, { borderColor: colors.brand }]} />
         <Text
-          variant="caption"
+          variant="caption" weight="semibold"
           color="textSecondary"
-          style={{ fontFamily: fonts.bodySemi }}
         >
           À découvrir
         </Text>

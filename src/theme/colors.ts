@@ -40,6 +40,9 @@ const light = {
   surfaceMuted: SOFT_GRAY,
   surfaceDisabled: SOFT_GRAY,
 
+  /** Text field fill while focused (Figma input focus) */
+  inputFocusFill: '#F3F3FB',
+
   /** Secondary CTA — solid white fill (readable on canvas #F9F9FB) */
   ctaSecondary: '#FFFFFF',
   ctaSecondaryPressed: '#F3F3F7',
@@ -137,6 +140,7 @@ export type ThemeColors = {
   surfaceTertiary: string;
   surfaceMuted: string;
   surfaceDisabled: string;
+  inputFocusFill: string;
   ctaSecondary: string;
   ctaSecondaryPressed: string;
   ctaSecondaryBorder: string;

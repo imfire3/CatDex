@@ -40,20 +40,22 @@ Coat / rarity accents: `src/lib/catTheme.ts` only — never as app chrome.
 
 ## Typography
 
-Fonts: iOS System (SF); Android/web Syne (display) + Manrope (body).
+Fonts: **Kind Sans** only (Regular / Medium / SemiBold / Bold) via `src/theme/typography.ts`.
 
-Use `<Text variant="…" color="…" />` — prefer `color="textBrand"` for titles.
+Use `<Text variant="…" color="…" />` — prefer `color="textBrand"` for titles. Prefer canonical variants over legacy `h1`/`h2`/`h3`.
 
-| Variant | Size / Line / Tracking |
-|---|---|
-| `display` | 40 / 48 / -1.2 |
-| `h1` | 32 / 40 / -0.8 |
-| `h2` | 24 / 32 / -0.4 |
-| `h3` | 20 / 28 / -0.2 |
-| `body` | 16 / 24 / -0.1 |
-| `bodySmall` | 14 / 20 / 0 |
-| `caption` | 12 / 16 / 0.1 |
-| `label` | 12 / 16 / 0.8 uppercase |
+| Variant | Size / Line / Weight / Tracking | Usage |
+|---|---|---|
+| `display` | 48 / 56 / 600 / -1 | Reveal / hero rare |
+| `headline` | 32 / 40 / 600 / -0.5 | H1 écran (`h1` alias) |
+| `title` | 24 / 32 / 600 / -0.25 | Sections / cards (`h2` alias) |
+| `body` | 16 / 24 / 400 / 0 | Texte principal |
+| `bodySmall` | 14 / 20 / 400 / 0 | Secondaire |
+| `label` | 12 / 16 / 600 / 0.5 uppercase | Chips / badges |
+| `button` | 16 / 24 / 600 / 0 | CTA |
+| `link` | 14 / 20 / 500 / 0 | Actions tertiaires |
+| `caption` | 12 / 16 / 400 / 0 | Metadata |
+| `h3` | 20 / 28 / 600 / -0.2 | **Deprecated** — migrate away |
 
 ## Spacing — 8pt grid
 

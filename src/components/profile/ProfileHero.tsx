@@ -22,7 +22,7 @@ export function ProfileHero({
   xpIntoLevel,
   xpMax,
 }: Props) {
-  const { colors, fonts, spacing, gradients } = useTheme()
+  const { colors, spacing, gradients } = useTheme()
   const initials = displayName.slice(0, 2).toUpperCase()
   const coverHeight = spacing[64]
   const nextLevel = level + 1
@@ -38,8 +38,7 @@ export function ProfileHero({
             top: 0,
             left: 0,
             right: 0,
-            height: coverHeight,
-          }}
+            height: coverHeight }}
         />
       </View>
 
@@ -47,8 +46,7 @@ export function ProfileHero({
         style={{
           marginTop: -spacing[32],
           paddingHorizontal: spacing[24],
-          gap: spacing[16],
-        }}
+          gap: spacing[16] }}
       >
         <Avatar
           hero
@@ -60,7 +58,7 @@ export function ProfileHero({
         />
 
         <View style={{ gap: spacing.sm }}>
-          <Text variant="h2" color="textBrand" style={{ fontFamily: fonts.display }}>
+          <Text variant="title" color="textBrand">
             {displayName}
           </Text>
           <Text variant="body" color="textSecondary">

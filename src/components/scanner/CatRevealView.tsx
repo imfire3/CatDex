@@ -65,7 +65,7 @@ function Pill({
   label: string;
   tone: 'brand' | 'ink';
 }) {
-  const { colors, spacing, radius, fonts } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   const backgroundColor = tone === 'brand' ? colors.brand : colors.text;
 
   return (
@@ -76,14 +76,9 @@ function Pill({
         paddingHorizontal: spacing[8],
         paddingVertical: spacing[4],
         alignItems: 'center',
-        justifyContent: 'center',
-      }}
+        justifyContent: 'center' }}
     >
-      <Text
-        variant="bodySmall"
-        color="onAccent"
-        style={{ fontFamily: fonts.body, lineHeight: 14 }}
-      >
+      <Text variant="bodySmall" color="onAccent">
         {label}
       </Text>
     </View>
@@ -91,7 +86,7 @@ function Pill({
 }
 
 function InfoCard({ title, body }: { title: string; body: string }) {
-  const { colors, spacing, radius, fonts } = useTheme();
+  const { colors, spacing, radius } = useTheme();
 
   return (
     <View
@@ -101,10 +96,9 @@ function InfoCard({ title, body }: { title: string; body: string }) {
         borderWidth: 1,
         borderColor: colors.borderDefault,
         borderRadius: radius.cta,
-        padding: spacing[16],
-      }}
+        padding: spacing[16] }}
     >
-      <Text variant="body" color="text" style={{ fontFamily: fonts.body }}>
+      <Text variant="body" color="text">
         {title}
       </Text>
       <Text variant="bodySmall" color="textSecondary">
@@ -115,7 +109,7 @@ function InfoCard({ title, body }: { title: string; body: string }) {
 }
 
 function TraitCard({ label, value }: { label: string; value: string }) {
-  const { colors, spacing, radius, fonts } = useTheme();
+  const { colors, spacing, radius } = useTheme();
 
   return (
     <View
@@ -126,13 +120,12 @@ function TraitCard({ label, value }: { label: string; value: string }) {
         borderColor: colors.borderDefault,
         borderRadius: radius.cta,
         padding: spacing[16],
-        minWidth: 0,
-      }}
+        minWidth: 0 }}
     >
       <Text variant="bodySmall" color="text">
         {label}
       </Text>
-      <Text variant="body" color="textSecondary" style={{ fontFamily: fonts.bodyMedium }}>
+      <Text variant="body" weight="medium" color="textSecondary">
         {value}
       </Text>
     </View>
@@ -145,7 +138,7 @@ function GenderMark({ gender }: { gender?: CatGender }) {
 
   if (gender === 'female') {
     return (
-      <Text variant="body" color="brand" style={{ fontSize: 18, lineHeight: 20 }}>
+      <Text variant="body" weight="semibold" color="brand">
         ♀
       </Text>
     );
@@ -191,7 +184,7 @@ export function CatRevealView({
   onAdd,
   onBack,
 }: Props) {
-  const { colors, fonts, spacing, shadow } = useTheme();
+  const { colors, spacing, shadow } = useTheme();
   const insets = useSafeAreaInsets();
 
   const displayName = analysis.suggestedName?.trim() || formatCatDefaultName(dexNumber);
@@ -223,8 +216,7 @@ export function CatRevealView({
           paddingTop: insets.top + spacing[8],
           paddingHorizontal: spacing[24],
           paddingBottom: spacing[24] + spacing[56] + Math.max(insets.bottom, spacing[16]),
-          gap: spacing[24],
-        }}
+          gap: spacing[24] }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: spacing[24] }}>
@@ -250,19 +242,17 @@ export function CatRevealView({
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8], flexWrap: 'wrap' }}>
               <Text
-                variant="h2"
+                variant="title" weight="bold"
                 color="text"
                 style={{
-                  fontFamily: fonts.bodyBold,
                   textTransform: 'uppercase',
-                  flexShrink: 1,
-                }}
+                  flexShrink: 1 }}
               >
                 {displayName}
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
                 <GenderMark gender={analysis.gender} />
-                <Text variant="bodySmall" color="brand" style={{ fontFamily: fonts.bodySemi }}>
+                <Text variant="bodySmall" weight="semibold" color="brand">
                   {ageLabel}
                 </Text>
               </View>
@@ -285,10 +275,7 @@ export function CatRevealView({
           </View>
 
           <View style={{ gap: spacing[16] }}>
-            <Text
-              variant="body"
-              style={{ fontFamily: fonts.bodyBold, color: colors.textSecondary, letterSpacing: -0.36 }}
-            >
+            <Text variant="body" weight="bold" color="textSecondary">
               Caractéristiques
             </Text>
             <View style={{ gap: spacing[8] }}>
@@ -304,10 +291,7 @@ export function CatRevealView({
           </View>
 
           <View style={{ gap: spacing[16] }}>
-            <Text
-              variant="body"
-              style={{ fontFamily: fonts.bodySemi, color: colors.textSecondary, letterSpacing: -0.36 }}
-            >
+            <Text variant="body" weight="semibold" color="textSecondary">
               Traits
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[8] }}>
@@ -318,10 +302,7 @@ export function CatRevealView({
           </View>
 
           <View style={{ gap: spacing[16] }}>
-            <Text
-              variant="body"
-              style={{ fontFamily: fonts.bodySemi, color: colors.textSecondary, letterSpacing: -0.36 }}
-            >
+            <Text variant="body" weight="semibold" color="textSecondary">
               Stats
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[8] }}>

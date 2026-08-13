@@ -19,7 +19,7 @@ import { useTheme } from '@/theme/ThemeProvider'
 const OPTIONS: ThemePreference[] = ['clair', 'sombre', 'automatique']
 
 export default function AppearanceSettingsScreen() {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme()
+  const { colors, spacing, radius, shadow, motion } = useTheme()
   const prefs = useSettingsPrefsStore((s) => s.prefs)
   const hydrated = useSettingsPrefsStore((s) => s.hydrated)
   const hydrate = useSettingsPrefsStore((s) => s.hydrate)
@@ -83,9 +83,8 @@ export default function AppearanceSettingsScreen() {
           })}
         >
           <Text
-            variant="bodySmall"
+            variant="bodySmall" weight="semibold"
             color="textBrand"
-            style={{ fontFamily: fonts.bodySemi }}
           >
             Réinitialiser
           </Text>
@@ -117,8 +116,7 @@ export default function AppearanceSettingsScreen() {
                     style={{
                       height: 1,
                       backgroundColor: colors.border,
-                      marginLeft: spacing[16],
-                    }}
+                      marginLeft: spacing[16] }}
                   />
                 ) : null}
                 <Pressable
@@ -144,8 +142,7 @@ export default function AppearanceSettingsScreen() {
                       borderWidth: 2,
                       borderColor: selected ? colors.brand : colors.borderDefault,
                       alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                      justifyContent: 'center' }}
                   >
                     {selected ? (
                       <View
@@ -153,15 +150,14 @@ export default function AppearanceSettingsScreen() {
                           width: spacing[8],
                           height: spacing[8],
                           borderRadius: radius.full,
-                          backgroundColor: colors.brand,
-                        }}
+                          backgroundColor: colors.brand }}
                       />
                     ) : null}
                   </View>
                   <Text
-                    variant="body"
+                    variant="body" weight="semibold"
                     color="text"
-                    style={{ flex: 1, fontFamily: fonts.bodySemi }}
+                    style={{ flex: 1 }}
                   >
                     {formatTheme(option)}
                   </Text>

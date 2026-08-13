@@ -1,17 +1,9 @@
 import { Redirect, router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
 
-import { AuthHeader } from '@/components/Auth/AuthChrome';
-import { AuthEmailConfigBanner } from '@/components/Auth/AuthEmailConfigBanner';
-import { AuthReadyButton } from '@/components/Auth/AuthReadyButton';
 import { AuthShell } from '@/components/Auth/AuthShell';
-import { AuthSocialButtons } from '@/components/Auth/AuthSocialButtons';
+import { SignupCta, SignupForm, SignupHeader } from '@/components/Auth/Signup';
 import { isAppleAuthEnabled, isGoogleAuthEnabled } from '@/lib/authProviders';
-import { PasswordRequirements } from '@/components/Auth/PasswordRequirements';
-import { Button } from '@/components/Button';
-import { Text } from '@/components/Text';
-import { TextInput } from '@/components/Input';
 import {
   isPasswordStrong,
   livePasswordConfirmError,
@@ -20,16 +12,13 @@ import {
   validatePasswordConfirm,
   validatePseudo,
 } from '@/lib/authValidation';
-import { isSupabaseConfigured } from '@/lib/supabase';
 import {
   getAuthErrorMessage,
   getPostAuthHref,
   useAuthStore,
 } from '@/store/auth';
-import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SignupScreen() {
-  const { spacing, fonts } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const signUp = useAuthStore((state) => state.signUp);
@@ -145,112 +134,32 @@ export default function SignupScreen() {
     <AuthShell
       plain
       fullHeight
-      header={
-        <AuthHeader
-          inline
-          showBack
-          onBack={() => router.replace('/(auth)/join')}
-          title="Rejoins CatDex"
-        />
-      }
+      header={<SignupHeader />}
       footer={
-        <View style={{ gap: spacing[8] }}>
-          <View style={{ gap: spacing[4] }}>
-            <AuthReadyButton
-              title="Créer mon compte"
-              progress={formProgress}
-              ready={formReady}
-              loading={loading}
-              onPress={() => void onSubmit()}
-            />
-            <Button
-              variant="tertiary"
-              title="J’ai déjà un compte"
-              disabled={loading}
-              onPress={() => router.push('/(auth)/login')}
-            />
-          </View>
-          <Text variant="caption" color="textSecondary" align="center">
-            En créant un compte, tu acceptes les{' '}
-            <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-              Conditions d’utilisation
-            </Text>
-            {' et la '}
-            <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
-              Politique de confidentialité
-            </Text>
-            .
-          </Text>
-        </View>
+        <SignupCta
+          progress={formProgress}
+          ready={formReady}
+          loading={loading}
+          onSubmit={() => void onSubmit()}
+        />
       }
     >
-      <View style={{ gap: spacing[16] }}>
-        <View style={{ gap: spacing[8] }}>
-          {!isSupabaseConfigured ? (
-            <Text variant="caption" color="warning">
-              Mode local — ajoute ta clé Supabase dans `.env` pour l’auth réelle.
-            </Text>
-          ) : null}
-          <AuthEmailConfigBanner />
-          {formError ? (
-            <Text variant="bodySmall" color="danger">
-              {formError}
-            </Text>
-          ) : null}
-          <TextInput
-            label="Pseudo"
-            value={pseudo}
-            onChangeText={setPseudo}
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder="MiaouExplorer"
-            error={errors.pseudo ?? undefined}
-          />
-          <TextInput
-            label="Adresse e-mail"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            placeholder="toi@email.com"
-            error={errors.email ?? undefined}
-          />
-          <View style={{ gap: spacing[8] }}>
-            <TextInput
-              label="Mot de passe"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete="new-password"
-              placeholder="••••••••"
-              valid={passwordOk && !errors.password}
-              error={errors.password ?? undefined}
-            />
-            <PasswordRequirements password={password} />
-          </View>
-          <TextInput
-            label="Confirme le mot de passe"
-            value={confirm}
-            onChangeText={setConfirm}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            valid={confirmMatches && !errors.confirm}
-            error={errors.confirm ?? undefined}
-          />
-        </View>
-
-        <AuthSocialButtons
-          disabled={loading}
-          hideGoogle={!isGoogleAuthEnabled || Boolean(oauthDisabled.google)}
-          hideApple={!isAppleAuthEnabled || Boolean(oauthDisabled.apple)}
-          onGoogle={() => void enterOAuth('google')}
-          onApple={() => void enterOAuth('apple')}
-        />
-      </View>
+      <SignupForm
+        values={{ pseudo, email, password, confirm }}
+        errors={errors}
+        formError={formError}
+        passwordOk={passwordOk}
+        confirmMatches={confirmMatches}
+        loading={loading}
+        hideGoogle={!isGoogleAuthEnabled || Boolean(oauthDisabled.google)}
+        hideApple={!isAppleAuthEnabled || Boolean(oauthDisabled.apple)}
+        onChangePseudo={setPseudo}
+        onChangeEmail={setEmail}
+        onChangePassword={setPassword}
+        onChangeConfirm={setConfirm}
+        onGoogle={() => void enterOAuth('google')}
+        onApple={() => void enterOAuth('apple')}
+      />
     </AuthShell>
   );
 }

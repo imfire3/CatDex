@@ -1,10 +1,3 @@
-import {
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from '@expo-google-fonts/manrope';
-import { Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -20,6 +13,7 @@ import { useMissionSync } from '@/hooks/useMissionSync';
 import { installImageResolveAssetSourcePolyfill } from '@/lib/imageResolvePolyfill';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/colors';
+import { kindSansFontMap } from '@/theme/typography';
 
 installImageResolveAssetSourcePolyfill();
 
@@ -74,14 +68,7 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
-    Syne_600SemiBold,
-    Syne_700Bold,
-    Manrope_500Medium,
-    Manrope_600SemiBold,
-    Manrope_700Bold,
-    Manrope_800ExtraBold,
-  });
+  const [loaded] = useFonts(kindSansFontMap);
 
   useEffect(() => {
     if (loaded) {

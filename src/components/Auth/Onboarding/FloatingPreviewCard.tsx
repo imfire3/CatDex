@@ -36,7 +36,7 @@ export function FloatingPreviewCard({
   delay = 0,
   float = true,
 }: FloatingPreviewCardProps) {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
   const reduceMotion = useReducedMotion();
   const floatY = useSharedValue(0);
   const floatDuration = motion.duration.reveal * 3 + motion.duration.slow;
@@ -75,8 +75,7 @@ export function FloatingPreviewCard({
             height: thumb,
             borderRadius: radius[8],
             overflow: 'hidden',
-            backgroundColor: colors.surfaceSecondary,
-          }}
+            backgroundColor: colors.surfaceSecondary }}
         >
           <Image
             source={DEMO_CAT_IMAGE}
@@ -86,10 +85,10 @@ export function FloatingPreviewCard({
           />
         </View>
         <View style={{ flex: 1, gap: spacing[4], minWidth: 0 }}>
-          <Text variant="bodySmall" color="text" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="bodySmall" weight="semibold" color="text">
             Belleville
           </Text>
-          <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="caption" weight="semibold" color="textBrand">
             150 m
           </Text>
         </View>
@@ -105,15 +104,14 @@ export function FloatingPreviewCard({
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: StyleSheet.hairlineWidth,
-            borderColor: colors.border,
-          }}
+            borderColor: colors.border }}
         >
-          <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="bodySmall" weight="semibold" color="textBrand">
             95 %
           </Text>
         </View>
         <View style={{ flex: 1, gap: spacing[4], minWidth: 0 }}>
-          <Text variant="bodySmall" color="text" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="bodySmall" weight="semibold" color="text">
             Analyse IA
           </Text>
           <Text variant="caption" color="textSecondary">
@@ -131,8 +129,7 @@ export function FloatingPreviewCard({
             overflow: 'hidden',
             borderWidth: StyleSheet.hairlineWidth,
             borderColor: colors.brand,
-            backgroundColor: colors.surfaceSecondary,
-          }}
+            backgroundColor: colors.surfaceSecondary }}
         >
           <Image
             source={DEMO_CAT_IMAGE}
@@ -150,10 +147,9 @@ export function FloatingPreviewCard({
               height: spacing[24],
               justifyContent: 'flex-end',
               paddingHorizontal: spacing[4],
-              paddingBottom: spacing[4],
-            }}
+              paddingBottom: spacing[4] }}
           >
-            <Text variant="caption" color="onAccent" style={{ fontFamily: fonts.bodySemi }}>
+            <Text variant="caption" weight="semibold" color="onAccent">
               #001
             </Text>
           </LinearGradient>
@@ -162,10 +158,10 @@ export function FloatingPreviewCard({
           <Text variant="caption" color="textMuted">
             #001
           </Text>
-          <Text variant="bodySmall" color="text" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="bodySmall" weight="semibold" color="text">
             Miel
           </Text>
-          <Text variant="caption" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="caption" weight="semibold" color="textBrand">
             Rare
           </Text>
         </View>

@@ -22,7 +22,7 @@ export function OnboardingHero({
   description = 'Prends une photo.\nL’IA s’occupe du reste.',
   circleLabel,
 }: OnboardingHeroProps) {
-  const { fonts, spacing, motion } = useTheme();
+  const { spacing, motion } = useTheme();
   const reduceMotion = useReducedMotion();
   const enter = (delay: number) =>
     reduceMotion
@@ -35,8 +35,7 @@ export function OnboardingHero({
         alignItems: 'center',
         gap: spacing[32],
         alignSelf: 'stretch',
-        paddingTop: spacing[8],
-      }}
+        paddingTop: spacing[8] }}
     >
       <Animated.View entering={enter(40)}>
         <AnimatedCircle label={circleLabel} />
@@ -47,10 +46,9 @@ export function OnboardingHero({
         style={{ gap: spacing[16], alignItems: 'center', paddingHorizontal: spacing[8] }}
       >
         <Text
-          variant="h1"
+          variant="headline"
           color="textBrand"
           align="center"
-          style={{ fontFamily: fonts.display }}
         >
           {title}
         </Text>

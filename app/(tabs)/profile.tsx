@@ -38,7 +38,7 @@ import { useTheme } from '@/theme/ThemeProvider'
 import type { Cat } from '@/types/cat'
 
 function FavoriteCompact({ cat, onPress }: { cat: Cat; onPress: () => void }) {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme()
+  const { colors, spacing, radius, shadow, motion } = useTheme()
   const analysis = enrichAnalysis(cat.analysis, cat.number)
   const theme = themeFromColorLabel(analysis.color, cat.number)
   const canShowPhoto =
@@ -51,7 +51,7 @@ function FavoriteCompact({ cat, onPress }: { cat: Cat; onPress: () => void }) {
 
   return (
     <View style={{ gap: spacing[16] }}>
-      <Text variant="h3" color="textBrand">
+      <Text variant="title" color="textBrand">
         Compagnon favori
       </Text>
       <Pressable
@@ -80,8 +80,7 @@ function FavoriteCompact({ cat, onPress }: { cat: Cat; onPress: () => void }) {
             height: spacing[64],
             borderRadius: radius.md,
             overflow: 'hidden',
-            backgroundColor: theme.soft,
-          }}
+            backgroundColor: theme.soft }}
         >
           {canShowPhoto ? (
             <CatImage uri={cat.photoUri} style={{ width: '100%', height: '100%' }} />
@@ -92,7 +91,7 @@ function FavoriteCompact({ cat, onPress }: { cat: Cat; onPress: () => void }) {
           )}
         </View>
         <View style={{ flex: 1, gap: spacing.xs }}>
-          <Text variant="body" color="text" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="body" weight="semibold" color="text">
             {cat.name}
           </Text>
           <Text variant="caption" color="textMuted">
@@ -184,8 +183,7 @@ export default function ProfileScreen() {
           style={{
             paddingHorizontal: spacing[24],
             paddingTop: spacing[32],
-            gap: spacing[32],
-          }}
+            gap: spacing[32] }}
         >
           <ProfileStatGrid
             stats={[

@@ -13,7 +13,7 @@ export type AppModalProps = {
 };
 
 export function Modal({ visible, title, onClose, children, accessibilityLabel }: AppModalProps) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -50,7 +50,7 @@ export function Modal({ visible, title, onClose, children, accessibilityLabel }:
           ]}
         >
           {title ? (
-            <Text variant="h3" style={{ fontFamily: fonts.bodyBlack }}>
+            <Text variant="title" weight="bold">
               {title}
             </Text>
           ) : null}

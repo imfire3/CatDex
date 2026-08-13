@@ -91,10 +91,10 @@ function InfoSection({
   body?: string;
   children?: ReactNode;
 }) {
-  const { fonts, spacing } = useTheme();
+  const { spacing } = useTheme();
   return (
     <View style={{ width: '100%', gap: spacing[4] }}>
-      <Text variant="body" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+      <Text variant="body" weight="semibold" color="textBrand">
         {title}
       </Text>
       {body ? (
@@ -116,7 +116,7 @@ function TraitStat({
   value: string;
   icon?: 'eye' | 'paint' | 'paw' | 'size';
 }) {
-  const { colors, fonts, spacing, radius, iconStroke } = useTheme();
+  const { colors, spacing, radius, iconStroke } = useTheme();
   return (
     <View
       accessibilityRole="text"
@@ -129,8 +129,7 @@ function TraitStat({
         backgroundColor: colors.surfaceElevated,
         borderWidth: 1,
         borderColor: colors.border,
-        gap: spacing[8],
-      }}
+        gap: spacing[8] }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
         {icon === 'eye' ? (
@@ -175,11 +174,11 @@ function TraitStat({
             />
           </Svg>
         ) : null}
-        <Text variant="caption" color="textBody" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="caption" weight="semibold" color="textBody">
           {label}
         </Text>
       </View>
-      <Text variant="body" color="textBrand" numberOfLines={1} style={{ fontFamily: fonts.bodySemi }}>
+      <Text variant="body" weight="semibold" color="textBrand" numberOfLines={1}>
         {value}
       </Text>
     </View>
@@ -238,7 +237,7 @@ export function CatCardDetail({
   secondaryLabel,
   onSecondaryAction,
 }: CatCardDetailProps) {
-  const { colors, fonts, spacing, radius, iconStroke, scheme, motion } = useTheme();
+  const { colors, spacing, radius, iconStroke, scheme, motion } = useTheme();
   const insets = useSafeAreaInsets();
   const [photoFailed, setPhotoFailed] = useState(false);
   const analysis = enrichAnalysis(rawAnalysis, number);
@@ -278,8 +277,7 @@ export function CatCardDetail({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: colors.background,
-        }}
+          backgroundColor: colors.background }}
       >
         <Pressable
           accessibilityRole="button"
@@ -309,7 +307,7 @@ export function CatCardDetail({
           </Svg>
         </Pressable>
 
-        <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="bodySmall" weight="semibold" color="textBrand">
           CatDex
         </Text>
 
@@ -325,8 +323,7 @@ export function CatCardDetail({
           paddingTop: spacing[8],
           paddingBottom:
             insets.bottom + spacing[32] + (hasFooterActions ? spacing[96] : spacing[16]),
-          gap: spacing[24],
-        }}
+          gap: spacing[24] }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: spacing[8] }}>
@@ -346,8 +343,7 @@ export function CatCardDetail({
             alignItems: 'center',
             justifyContent: 'center',
             borderWidth: 1,
-            borderColor: colors.border,
-          }}
+            borderColor: colors.border }}
         >
           {showPhoto ? (
             <CatImage
@@ -368,24 +364,22 @@ export function CatCardDetail({
               flexDirection: 'row',
               flexWrap: 'wrap',
               alignItems: 'center',
-              gap: spacing[8],
-            }}
+              gap: spacing[8] }}
           >
             <Text
-              variant="h2"
+              variant="title"
               color="textBrand"
-              style={{ fontFamily: fonts.display }}
             >
               {name}
             </Text>
             {symbol ? (
-              <Text variant="body" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+              <Text variant="body" weight="semibold" color="textBrand">
                 {symbol}
               </Text>
             ) : null}
           </View>
 
-          <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+          <Text variant="bodySmall" weight="semibold" color="textBrand">
             {traitTags[0] ? `${traitTags[0]} · ` : ''}
             Découvert {formatPlaceDate(discoveredAt)}
             {locationLabel ? ` · ${locationLabel.split(',')[0]}` : ''}
@@ -402,7 +396,7 @@ export function CatCardDetail({
         </View>
 
         <View style={{ gap: spacing[16], width: '100%' }}>
-          <Text variant="h3" color="textBrand">
+          <Text variant="title" color="textBrand">
             Caractéristiques
           </Text>
           <View style={{ gap: spacing[8] }}>
@@ -418,14 +412,14 @@ export function CatCardDetail({
         </View>
 
         <View style={{ gap: spacing[16], width: '100%' }}>
-          <Text variant="h3" color="textBrand">
+          <Text variant="title" color="textBrand">
             Personnalité
           </Text>
           <PillRow items={traitTags.slice(0, 3)} tone="soft" />
         </View>
 
         <View style={{ gap: spacing[16], width: '100%', paddingBottom: spacing[8] }}>
-          <Text variant="h3" color="textBrand">
+          <Text variant="title" color="textBrand">
             Stats
           </Text>
           <View style={{ gap: spacing[8] }}>
@@ -453,8 +447,7 @@ export function CatCardDetail({
             backgroundColor: colors.background,
             borderTopWidth: 1,
             borderTopColor: colors.border,
-            gap: spacing[8],
-          }}
+            gap: spacing[8] }}
         >
           <Button title={primaryLabel!} onPress={onPrimaryAction!} />
           {secondaryLabel && onSecondaryAction ? (

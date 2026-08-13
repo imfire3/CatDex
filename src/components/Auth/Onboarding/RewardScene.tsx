@@ -35,7 +35,7 @@ const REWARDS = [
  * Flip / spring Pokémon-like, puis récompenses une par une.
  */
 export function RewardScene() {
-  const { colors, fonts, spacing, radius, motion } = useTheme();
+  const { colors, spacing, radius, motion } = useTheme();
   const reduceMotion = useReducedMotion();
   const [showRewards, setShowRewards] = useState(reduceMotion);
 
@@ -101,8 +101,7 @@ export function RewardScene() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: spacing[24],
-        paddingVertical: spacing[8],
-      }}
+        paddingVertical: spacing[8] }}
     >
       <OnboardingConfetti />
 
@@ -111,10 +110,9 @@ export function RewardScene() {
         style={{ alignItems: 'center', gap: spacing[4] }}
       >
         <Text
-          variant="h1"
+          variant="headline"
           color="textBrand"
           align="center"
-          style={{ fontFamily: fonts.display }}
         >
           Nouveau chat !
         </Text>
@@ -155,8 +153,7 @@ export function RewardScene() {
           gap: spacing[8],
           justifyContent: 'center',
           alignSelf: 'stretch',
-          minHeight: spacing[80],
-        }}
+          minHeight: spacing[80] }}
       >
         {showRewards
           ? REWARDS.map((item, index) => (
@@ -177,7 +174,7 @@ function RewardPop({
   glyph: 'xp' | 'badge' | 'paw' | 'book';
   index: number;
 }) {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(reduceMotion ? 1 : 0.55);
 
@@ -235,12 +232,11 @@ function RewardPop({
             borderRadius: radius.full,
             backgroundColor: colors.brandSoft,
             alignItems: 'center',
-            justifyContent: 'center',
-          }}
+            justifyContent: 'center' }}
         >
           <Glyph name={glyph} color={colors.brand} size={14} />
         </View>
-        <Text variant="bodySmall" color="textBrand" style={{ fontFamily: fonts.bodySemi }}>
+        <Text variant="bodySmall" weight="semibold" color="textBrand">
           {label}
         </Text>
       </View>

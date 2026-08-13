@@ -188,8 +188,7 @@ function IconBubble({ name }: { name: ErrorStateIcon }) {
         borderRadius: radius.full,
         backgroundColor: soft,
         alignItems: 'center',
-        justifyContent: 'center',
-      }}
+        justifyContent: 'center' }}
     >
       {name === 'camera' ? <CameraIcon color={tint} /> : null}
       {name === 'location' ? <LocationIcon color={tint} /> : null}
@@ -224,13 +223,12 @@ export function ErrorState({
       style={{
         alignItems: 'center',
         gap: compact ? spacing[16] : spacing[24],
-        paddingHorizontal: compact ? 0 : spacing[8],
-      }}
+        paddingHorizontal: compact ? 0 : spacing[8] }}
     >
       <IconBubble name={icon} />
 
       <View style={{ gap: spacing[8], alignItems: 'center', maxWidth: 320 }}>
-        <Text variant="h2" color="text" align="center">
+        <Text variant="title" color="text" align="center">
           {title}
         </Text>
         <Text variant="body" color="textSecondary" align="center">

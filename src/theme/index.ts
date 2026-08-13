@@ -9,9 +9,16 @@ export { spacing, spacingScale, type SpacingValue } from './spacing';
 export { radius, radiusScale, type RadiusValue } from './radius';
 export {
   typography,
+  typographyScale,
   fontFamilies,
+  fontWeightFamilies,
+  defaultWeightForVariant,
+  KIND_SANS,
+  kindSansFontMap,
   type TextVariant,
   type TypographyStyle,
+  type TypographyScaleKey,
+  type FontWeightToken,
 } from './typography';
 export { createShadows, createAccentShadow, shadow, accentShadow, type ShadowToken } from './shadow';
 export { motion, motionDuration, motionEasing, type MotionSpeed } from './motion';

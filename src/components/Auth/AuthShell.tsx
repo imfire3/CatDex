@@ -60,7 +60,7 @@ export function AuthShell({
 
   const sheetPadding = {
     paddingHorizontal: spacing[24],
-    paddingTop: fullHeight ? insets.top + spacing[8] : spacing[16],
+    paddingTop: fullHeight ? insets.top : spacing[16],
     paddingBottom: footer ? spacing[16] : Math.max(insets.bottom, spacing[24]),
     borderTopLeftRadius: plain || fullHeight ? 0 : radius.sheet,
     borderTopRightRadius: plain || fullHeight ? 0 : radius.sheet,
@@ -105,7 +105,6 @@ export function AuthShell({
       {header ? (
         <View
           style={{
-            paddingBottom: spacing[8],
             backgroundColor: canvas,
           }}
         >

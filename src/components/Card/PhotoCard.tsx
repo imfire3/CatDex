@@ -45,7 +45,7 @@ export function PhotoCard({
   style,
   accessibilityLabel,
 }: PhotoCardProps) {
-  const { colors, fonts, spacing, radius, shadow, motion } = useTheme();
+  const { colors, spacing, radius, shadow, motion } = useTheme();
   const surface = tint ?? colors.surface;
 
   return (
@@ -84,10 +84,9 @@ export function PhotoCard({
               borderRadius: radius.full,
               backgroundColor: colors.surface,
               borderWidth: 1,
-              borderColor: colors.border,
-            }}
+              borderColor: colors.border }}
           >
-            <Text variant="caption" color="accent" style={{ fontFamily: fonts.bodySemi }}>
+            <Text variant="caption" weight="semibold" color="accent">
               {dexLabel}
             </Text>
           </View>
@@ -96,10 +95,9 @@ export function PhotoCard({
 
       <View style={{ padding: spacing[16], gap: spacing[8] }}>
         <Text
-          variant="h3"
+          variant="title"
           color="textBrand"
           numberOfLines={1}
-          style={{ fontFamily: fonts.bodySemi }}
         >
           {title}
         </Text>

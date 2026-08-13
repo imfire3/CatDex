@@ -11,11 +11,11 @@ type Props = {
 
 /** Locked companion slot — desire, not docs. */
 export function ProfileFavoriteEmpty({ onExplore }: Props) {
-  const { colors, fonts, spacing, radius, shadow } = useTheme()
+  const { colors, spacing, radius, shadow } = useTheme()
 
   return (
     <View style={{ gap: spacing[16] }}>
-      <Text variant="h3" color="textBrand">
+      <Text variant="title" color="textBrand">
         Compagnon favori
       </Text>
       <View
@@ -33,13 +33,13 @@ export function ProfileFavoriteEmpty({ onExplore }: Props) {
           shadow.low,
         ]}
       >
-        <Text variant="h2" color="textMuted">
+        <Text variant="title" color="textMuted">
           🔒
         </Text>
         <Text
-          variant="body"
+          variant="body" weight="semibold"
           color="textBody"
-          style={{ fontFamily: fonts.bodySemi, textAlign: 'center' }}
+          style={{ textAlign: 'center' }}
         >
           Ton futur compagnon apparaîtra ici.
         </Text>

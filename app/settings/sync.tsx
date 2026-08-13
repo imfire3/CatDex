@@ -12,7 +12,7 @@ import { useSettingsPrefsStore } from '@/store/settingsPrefs';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SyncSettingsScreen() {
-  const { colors, fonts, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius, shadow } = useTheme();
   const prefs = useSettingsPrefsStore((s) => s.prefs);
   const hydrated = useSettingsPrefsStore((s) => s.hydrated);
   const hydrate = useSettingsPrefsStore((s) => s.hydrate);
@@ -42,7 +42,7 @@ export default function SyncSettingsScreen() {
           shadow.low,
         ]}
       >
-        <Text variant="h3" color="textBrand" style={{ fontFamily: fonts.display }}>
+        <Text variant="title" color="textBrand">
           Cloud CatDex
         </Text>
         <Text variant="bodySmall" color="textBody">
@@ -54,15 +54,12 @@ export default function SyncSettingsScreen() {
             backgroundColor: synced ? colors.successSoft : colors.warningSoft,
             borderRadius: radius.full,
             paddingHorizontal: spacing[16],
-            paddingVertical: spacing[8],
-          }}
+            paddingVertical: spacing[8] }}
         >
           <Text
-            variant="caption"
+            variant="caption" weight="semibold"
             style={{
-              fontFamily: fonts.bodySemi,
-              color: synced ? colors.success : colors.warning,
-            }}
+              color: synced ? colors.success : colors.warning }}
           >
             {synced ? 'Synchronisé' : 'Synchronisation en attente'}
           </Text>

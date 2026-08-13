@@ -83,7 +83,7 @@ function RowChrome({
   destructive,
   trailing,
 }: RowChromeProps) {
-  const { colors, fonts, spacing, radius } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   return (
     <View
       style={{
@@ -91,8 +91,7 @@ function RowChrome({
         alignItems: 'center',
         gap: spacing[16],
         paddingVertical: spacing[16],
-        paddingHorizontal: spacing[16],
-      }}
+        paddingHorizontal: spacing[16] }}
     >
       <View
         style={{
@@ -101,8 +100,7 @@ function RowChrome({
           borderRadius: radius.md,
           backgroundColor: destructive ? colors.dangerSoft : colors.surfaceSecondary,
           alignItems: 'center',
-          justifyContent: 'center',
-        }}
+          justifyContent: 'center' }}
       >
         {icon}
       </View>
@@ -112,13 +110,11 @@ function RowChrome({
             flexDirection: 'row',
             alignItems: 'center',
             gap: spacing[8],
-            flexWrap: 'wrap',
-          }}
+            flexWrap: 'wrap' }}
         >
           <Text
-            variant="body"
+            variant="body" weight="semibold"
             color={destructive ? 'danger' : 'text'}
-            style={{ fontFamily: fonts.bodySemi }}
             numberOfLines={1}
           >
             {title}
@@ -253,8 +249,7 @@ export function SettingsRow(props: SettingsRowProps) {
           style={{
             height: 1,
             backgroundColor: colors.border,
-            marginLeft: spacing[16] + spacing[40] + spacing[16],
-          }}
+            marginLeft: spacing[16] + spacing[40] + spacing[16] }}
         />
       ) : null}
     </>

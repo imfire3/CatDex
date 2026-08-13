@@ -26,7 +26,7 @@ export function Toast({
   onDismiss,
   tone = 'default',
 }: ToastProps) {
-  const { colors, fonts, spacing, radius, scheme, shadow } = useTheme();
+  const { colors, spacing, radius, scheme, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
 
@@ -66,11 +66,10 @@ export function Toast({
           alignItems: 'center',
           gap: spacing[16],
           padding: spacing[16],
-          backgroundColor: colors.overlay,
-        }}
+          backgroundColor: colors.overlay }}
       >
         <View style={{ flex: 1, gap: spacing[4] }}>
-          <Text variant="body" style={{ fontFamily: fonts.bodyBlack }}>
+          <Text variant="body" weight="bold">
             {title}
           </Text>
           {description ? (
@@ -93,12 +92,10 @@ export function Toast({
             })}
           >
             <Text
-              variant="caption"
+              variant="caption" weight="bold"
               color={tone === 'success' || tone === 'warning' ? 'onPrimary' : 'onPrimary'}
               style={{
-                fontFamily: fonts.bodyBlack,
-                color: tone === 'success' ? colors.background : colors.onPrimary,
-              }}
+                color: tone === 'success' ? colors.background : colors.onPrimary }}
             >
               {actionLabel}
             </Text>
