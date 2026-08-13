@@ -436,10 +436,21 @@ app.post('/analyze-cat', async (c) => {
     ]);
 
     const raw = completion.choices[0]?.message?.content ?? '{}';
-    console.log('[analyze-cat] Vision raw JSON', raw);
+    console.log('[CATDEX ANALYSIS] Raw OpenAI response:', raw);
     const json = JSON.parse(raw) as VisionJson;
+    console.log('[CATDEX ANALYSIS] Parsed response:', {
+      isCat: json.isCat,
+      name: json.name,
+      breed: json.breed,
+      breedConfidence: json.breedConfidence,
+      coatColor: json.coatColor,
+      furLength: json.furLength,
+      distinctiveFeatures: json.distinctiveFeatures,
+      personalityTraits: json.personalityTraits,
+      description: json.description?.slice(0, 160),
+    });
     const analysis = normalizeAnalysis(json);
-    console.log('[analyze-cat] Mapped analysis', {
+    console.log('[CATDEX ANALYSIS] API response (after normalization):', {
       suggestedName: analysis.suggestedName,
       breed: analysis.breed,
       color: analysis.color,

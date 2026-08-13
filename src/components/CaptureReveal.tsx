@@ -233,7 +233,7 @@ export function CaptureReveal({
   );
 
   useEffect(() => {
-    console.log('[CaptureReveal] form mapping from Vision', {
+    console.log('[CATDEX ANALYSIS] Form mapped values:', {
       name: aiName,
       breed: vision.breed,
       color: vision.color,
@@ -243,6 +243,16 @@ export function CaptureReveal({
       trait: vision.tags?.[0],
       description: vision.description?.slice(0, 120),
       confidence: vision.confidence,
+      // Clarify which fields are empty vs. filled
+      emptyFields: {
+        name: !aiName,
+        breed: !vision.breed,
+        color: !vision.color,
+        coat: !vision.coat,
+        particularite: !(vision.distinctiveFeatures?.length || vision.coatPattern),
+        trait: !vision.tags?.[0],
+        description: !vision.description,
+      },
     });
   }, [vision, aiName]);
 
@@ -486,7 +496,7 @@ export function CaptureReveal({
           <EditableRow
             label="Nom"
             value={name}
-            placeholder="Ex. Caramel"
+            placeholder="(Tape un nom)"
             editing={editingField === 'name'}
             autoCapitalize="words"
             onStartEdit={() => setEditingField('name')}
@@ -496,7 +506,7 @@ export function CaptureReveal({
           <EditableRow
             label="Race"
             value={breed}
-            placeholder="Ex. Européen"
+            placeholder="(Indique la race si connue)"
             editing={editingField === 'breed'}
             onStartEdit={() => setEditingField('breed')}
             onChangeText={setBreed}
@@ -505,7 +515,7 @@ export function CaptureReveal({
           <EditableRow
             label="Couleur"
             value={color}
-            placeholder="Ex. Roux et blanc"
+            placeholder="(Indique la couleur)"
             editing={editingField === 'color'}
             onStartEdit={() => setEditingField('color')}
             onChangeText={handleColorChange}
@@ -514,7 +524,7 @@ export function CaptureReveal({
           <EditableRow
             label="Pelage"
             value={coat}
-            placeholder="Ex. Court et lisse"
+            placeholder="(Décris le pelage)"
             editing={editingField === 'coat'}
             onStartEdit={() => setEditingField('coat')}
             onChangeText={setCoat}
@@ -523,7 +533,7 @@ export function CaptureReveal({
           <EditableRow
             label="Particularité"
             value={pattern}
-            placeholder="Ex. Poitrine blanche, queue rayée"
+            placeholder="(Marques visibles: ex. poitrine blanche)"
             editing={editingField === 'pattern'}
             onStartEdit={() => setEditingField('pattern')}
             onChangeText={setPattern}
@@ -532,7 +542,7 @@ export function CaptureReveal({
           <EditableRow
             label="Trait"
             value={tag}
-            placeholder="Ex. Curieux"
+            placeholder="(Un trait de caractère)"
             editing={editingField === 'tag'}
             onStartEdit={() => setEditingField('tag')}
             onChangeText={setTag}
@@ -541,7 +551,7 @@ export function CaptureReveal({
           <EditableRow
             label="Description"
             value={description}
-            placeholder="Décris ce chat…"
+            placeholder="(Décris ce que tu vois sur la photo)"
             editing={editingField === 'description'}
             multiline
             onStartEdit={() => setEditingField('description')}

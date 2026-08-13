@@ -1,5 +1,6 @@
 import { agentDebugLog } from '@/lib/agentDebugLog';
 import { getApiCandidateUrls } from '@/lib/apiUrl';
+import { withFunnyCatName } from '@/lib/funnyCatName';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth';
 import type { CatAnalysis } from '@/types/cat';
@@ -212,7 +213,7 @@ async function requestAnalyze(
           }
           if (retry.ok && retryData?.analysis) {
             return {
-              analysis: retryData.analysis,
+              analysis: withFunnyCatName(retryData.analysis),
               mocked: false,
               error: retryData.error,
               cutoutUri: retryData.cutoutBase64
@@ -263,7 +264,7 @@ async function requestAnalyze(
   }
 
   if (data?.analysis) {
-    console.log('[analyzeCatPhoto] Vision analysis received', {
+    console.log('[CATDEX ANALYSIS] Frontend received:', {
       suggestedName: data.analysis.suggestedName,
       breed: data.analysis.breed,
       color: data.analysis.color,
@@ -275,7 +276,7 @@ async function requestAnalyze(
       notACat: data.analysis.notACat,
     });
     return {
-      analysis: data.analysis,
+      analysis: withFunnyCatName(data.analysis),
       mocked: false,
       error: data.error,
       cutoutUri: data.cutoutBase64
