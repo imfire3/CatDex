@@ -477,7 +477,12 @@ export function CatMap({
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const didCenterOnUserRef = useRef(false);
   const headingRef = useRef(userHeading);
+  const userCoordinateRef = useRef(userCoordinate);
+  const focusCoordinateRef = useRef(focusCoordinate);
+  const userZoomRef = useRef(MAP_ZOOM);
   headingRef.current = userHeading;
+  userCoordinateRef.current = userCoordinate;
+  focusCoordinateRef.current = focusCoordinate;
   onSelectRef.current = onSelectCat;
 
   useEffect(() => {
@@ -523,11 +528,15 @@ export function CatMap({
         // Hard-clamp if a gesture briefly overshoots the configured range.
         map.on('zoomend', () => {
           const zoom = map.getZoom();
+          const clamped = Math.min(MAP_MAX_ZOOM, Math.max(MAP_MIN_ZOOM, zoom));
+          userZoomRef.current = clamped;
           if (zoom < MAP_MIN_ZOOM || zoom > MAP_MAX_ZOOM) {
-            map.jumpTo?.({
-              zoom: Math.min(MAP_MAX_ZOOM, Math.max(MAP_MIN_ZOOM, zoom)),
-            });
+            map.jumpTo?.({ zoom: clamped });
           }
+        });
+
+        map.on('zoom', () => {
+          userZoomRef.current = map.getZoom();
         });
 
         // User pans → stop auto-centering until recenter / focus.
@@ -576,13 +585,15 @@ export function CatMap({
     didCenterOnUserRef.current = true;
     const maybeStop = map as MapLibreMap & { stop?: () => void };
     maybeStop.stop?.();
+    const zoom = Math.min(
+      MAP_MAX_ZOOM,
+      Math.max(MAP_MIN_ZOOM, map.getZoom() || userZoomRef.current),
+    );
+    userZoomRef.current = zoom;
     map.easeTo({
       center: [focusCoordinate.longitude, focusCoordinate.latitude],
       // Soft recenter keeps the player's current zoom.
-      zoom: Math.min(
-        MAP_MAX_ZOOM,
-        Math.max(MAP_MIN_ZOOM, map.getZoom()),
-      ),
+      zoom,
       pitch: MAP_PITCH,
       bearing: followUser ? (headingRef.current ?? map.getBearing()) : map.getBearing(),
       duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
@@ -590,16 +601,17 @@ export function CatMap({
     });
   }, [focusCoordinate, focusNonce, followUser, mapReady]);
 
-  // Double-tap recenter — restore the default explorer framing.
+  // Double-tap recenter — restore the default explorer framing (once per nonce).
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map || !resetViewNonce) return;
-    const coordinate = userCoordinate ?? focusCoordinate;
+    const coordinate = userCoordinateRef.current ?? focusCoordinateRef.current;
     if (!coordinate) return;
 
     followingRef.current = true;
     lastFollowRef.current = coordinate;
     didCenterOnUserRef.current = true;
+    userZoomRef.current = MAP_ZOOM;
     const maybeStop = map as MapLibreMap & { stop?: () => void };
     maybeStop.stop?.();
     map.easeTo({
@@ -611,9 +623,9 @@ export function CatMap({
       essential: true,
       easing: (t: number) => 1 - (1 - t) ** 3,
     });
-  }, [resetViewNonce, mapReady, userCoordinate, focusCoordinate]);
+  }, [resetViewNonce, mapReady]);
 
-  // Soft follow — keep GPS point centered while following (Pokémon-style).
+  // Soft follow — pan only; never override the player's pinch zoom.
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map || !userCoordinate || !followingRef.current) return;
@@ -622,6 +634,7 @@ export function CatMap({
     if (!prev || !didCenterOnUserRef.current) {
       lastFollowRef.current = userCoordinate;
       didCenterOnUserRef.current = true;
+      userZoomRef.current = MAP_ZOOM;
       map.easeTo({
         center: [userCoordinate.longitude, userCoordinate.latitude],
         zoom: MAP_ZOOM,
@@ -641,14 +654,21 @@ export function CatMap({
     if (moved < MAP_FOLLOW_THRESHOLD_M) return;
 
     lastFollowRef.current = userCoordinate;
+    const zoom = Math.min(
+      MAP_MAX_ZOOM,
+      Math.max(MAP_MIN_ZOOM, map.getZoom() || userZoomRef.current),
+    );
+    userZoomRef.current = zoom;
     map.easeTo({
       center: [userCoordinate.longitude, userCoordinate.latitude],
+      zoom,
       bearing: headingRef.current ?? map.getBearing(),
+      pitch: MAP_PITCH,
       duration: MAP_CAMERA_DURATION,
     });
   }, [userCoordinate, mapReady]);
 
-  // Standing still + turning: rotate map bearing to match compass.
+  // Standing still + turning: rotate map bearing — keep current zoom.
   useEffect(() => {
     const map = mapRef.current;
     if (
@@ -666,11 +686,17 @@ export function CatMap({
       return;
     }
 
+    const zoom = Math.min(
+      MAP_MAX_ZOOM,
+      Math.max(MAP_MIN_ZOOM, map.getZoom() || userZoomRef.current),
+    );
+    userZoomRef.current = zoom;
     map.easeTo({
       center: [userCoordinate.longitude, userCoordinate.latitude],
+      zoom,
       bearing: userHeading,
+      pitch: MAP_PITCH,
       duration: MAP_HEADING_DURATION,
-      // easeOutCubic — blends overlapping heading updates into a continuous turn
       easing: (t: number) => 1 - (1 - t) ** 3,
       essential: true,
     });

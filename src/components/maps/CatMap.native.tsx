@@ -95,6 +95,11 @@ export function CatMap({
   const keepCenteredRef = useRef(true);
   const headingRef = useRef(userHeading);
   headingRef.current = userHeading;
+  const userCoordinateRef = useRef(userCoordinate);
+  userCoordinateRef.current = userCoordinate;
+  const focusCoordinateRef = useRef(focusCoordinate);
+  focusCoordinateRef.current = focusCoordinate;
+  const userZoomRef = useRef<number | null>(null);
   const ownedIds = useMemo(
     () => new Set(capturedCatIds ?? []),
     [capturedCatIds],
@@ -112,11 +117,15 @@ export function CatMap({
     didCenterOnUserRef.current = true;
     void (async () => {
       const current = await mapRef.current?.getCamera();
+      if (typeof current?.zoom === 'number') {
+        userZoomRef.current = current.zoom;
+      }
       mapRef.current?.animateCamera(
         buildFollowCamera(
           focusCoordinate,
           current,
           followUser ? headingRef.current : current?.heading ?? 0,
+          userZoomRef.current,
         ),
         {
           duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
@@ -125,21 +134,23 @@ export function CatMap({
     })();
   }, [focusCoordinate, focusNonce, followUser]);
 
-  // Double-tap recenter — restore default zoom + pitch framing.
+  // Double-tap recenter — restore default zoom + pitch framing (once per nonce).
   useEffect(() => {
     if (!resetViewNonce) return;
-    const coordinate = userCoordinate ?? focusCoordinate;
+    const coordinate =
+      userCoordinateRef.current ?? focusCoordinateRef.current;
     if (!coordinate) return;
     lastFollowRef.current = coordinate;
     keepCenteredRef.current = true;
     didCenterOnUserRef.current = true;
+    userZoomRef.current = null;
     mapRef.current?.animateCamera(
       buildMapCamera(coordinate, {
         heading: headingRef.current ?? 0,
       }),
       { duration: MAP_FLY_TO_PIN_DURATION },
     );
-  }, [resetViewNonce, userCoordinate, focusCoordinate]);
+  }, [resetViewNonce]);
 
   // Soft follow while walking — pan + compass heading, never override pinch zoom.
   // First GPS lock: center the camera on the player (game default framing).
@@ -151,6 +162,7 @@ export function CatMap({
     if (!prev || !didCenterOnUserRef.current) {
       lastFollowRef.current = userCoordinate;
       didCenterOnUserRef.current = true;
+      userZoomRef.current = null;
       mapRef.current?.animateCamera(
         buildMapCamera(userCoordinate, {
           heading: headingRef.current ?? 0,
@@ -172,8 +184,16 @@ export function CatMap({
     void (async () => {
       if (!keepCenteredRef.current) return;
       const current = await mapRef.current?.getCamera();
+      if (typeof current?.zoom === 'number') {
+        userZoomRef.current = current.zoom;
+      }
       mapRef.current?.animateCamera(
-        buildFollowCamera(userCoordinate, current, headingRef.current),
+        buildFollowCamera(
+          userCoordinate,
+          current,
+          headingRef.current,
+          userZoomRef.current,
+        ),
         { duration: MAP_CAMERA_DURATION },
       );
     })();
@@ -197,8 +217,16 @@ export function CatMap({
       if (headingDeltaDegrees(prevHeading, userHeading) < MAP_HEADING_THRESHOLD_DEG) {
         return;
       }
+      if (typeof current?.zoom === 'number') {
+        userZoomRef.current = current.zoom;
+      }
       mapRef.current?.animateCamera(
-        buildFollowCamera(userCoordinate, current, userHeading),
+        buildFollowCamera(
+          userCoordinate,
+          current,
+          userHeading,
+          userZoomRef.current,
+        ),
         { duration: MAP_HEADING_DURATION },
       );
     })();
