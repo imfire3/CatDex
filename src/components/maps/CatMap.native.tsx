@@ -33,6 +33,8 @@ type Props = {
   focusCoordinate?: { latitude: number; longitude: number } | null;
   /** Bumps on each recenter request so the camera re-animates. */
   focusNonce?: number;
+  /** Bumps to snap zoom/pitch back to the default explorer framing. */
+  resetViewNonce?: number;
   /** Player position for the custom CatDex location indicator. */
   userCoordinate?: { latitude: number; longitude: number } | null;
   /** Device compass heading in degrees (0 = north) — rotates the map while following. */
@@ -78,6 +80,7 @@ export function CatMap({
   onSelectCat,
   focusCoordinate,
   focusNonce,
+  resetViewNonce = 0,
   userCoordinate,
   userHeading = null,
   nearbyCatIds,
@@ -101,20 +104,42 @@ export function CatMap({
     keepCenteredRef.current = followUser;
   }, [followUser]);
 
+  // Soft recenter — pan to coordinate, keep the player's current zoom.
   useEffect(() => {
     if (!focusCoordinate) return;
     lastFollowRef.current = focusCoordinate;
     keepCenteredRef.current = followUser;
     didCenterOnUserRef.current = true;
-    mapRef.current?.animateCamera(
-      buildMapCamera(focusCoordinate, {
-        heading: followUser ? (headingRef.current ?? 0) : 0,
-      }),
-      {
-        duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
-      },
-    );
+    void (async () => {
+      const current = await mapRef.current?.getCamera();
+      mapRef.current?.animateCamera(
+        buildFollowCamera(
+          focusCoordinate,
+          current,
+          followUser ? headingRef.current : current?.heading ?? 0,
+        ),
+        {
+          duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
+        },
+      );
+    })();
   }, [focusCoordinate, focusNonce, followUser]);
+
+  // Double-tap recenter — restore default zoom + pitch framing.
+  useEffect(() => {
+    if (!resetViewNonce) return;
+    const coordinate = userCoordinate ?? focusCoordinate;
+    if (!coordinate) return;
+    lastFollowRef.current = coordinate;
+    keepCenteredRef.current = true;
+    didCenterOnUserRef.current = true;
+    mapRef.current?.animateCamera(
+      buildMapCamera(coordinate, {
+        heading: headingRef.current ?? 0,
+      }),
+      { duration: MAP_FLY_TO_PIN_DURATION },
+    );
+  }, [resetViewNonce, userCoordinate, focusCoordinate]);
 
   // Soft follow while walking — pan + compass heading, never override pinch zoom.
   // First GPS lock: center the camera on the player (game default framing).

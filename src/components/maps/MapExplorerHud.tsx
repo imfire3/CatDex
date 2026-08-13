@@ -3,6 +3,7 @@
  * recenter, Missions / Capture / CatDex.
  */
 import { router } from 'expo-router';
+import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
@@ -24,6 +25,8 @@ type Props = {
   missionCount?: number;
   collectionCount?: number;
   onRecenter?: () => void;
+  /** Double-tap recenter — restore default zoom / pitch framing. */
+  onRecenterReset?: () => void;
   /** Enable / toggle compass heading-up mode. */
   onCompass?: () => void;
   /** When true, compass tool uses the active (brand) look. */
@@ -33,26 +36,43 @@ type Props = {
   onCapturePress?: () => void;
 };
 
+const DOUBLE_TAP_MS = 320;
+
 function RoundTool({
   label,
   onPress,
+  onDoublePress,
   badge,
   active = false,
   children,
 }: {
   label: string;
   onPress: () => void;
+  onDoublePress?: () => void;
   badge?: number;
   active?: boolean;
   children: React.ReactNode;
 }) {
   const { colors, spacing, radius, shadow, motion } = useTheme();
+  const lastTapRef = useRef(0);
+
+  const handlePress = () => {
+    const now = Date.now();
+    if (onDoublePress && now - lastTapRef.current < DOUBLE_TAP_MS) {
+      lastTapRef.current = 0;
+      onDoublePress();
+      return;
+    }
+    lastTapRef.current = now;
+    onPress();
+  };
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
-      onPress={onPress}
+      onPress={handlePress}
       style={({ pressed }) => [
         {
           width: spacing[48],
@@ -159,6 +179,7 @@ export function MapExplorerHud({
   missionCount = 0,
   collectionCount = 0,
   onRecenter,
+  onRecenterReset,
   onCompass,
   compassActive = false,
   captureHighlighted = false,
@@ -270,7 +291,11 @@ export function MapExplorerHud({
           }}
         >
           {onRecenter ? (
-            <RoundTool label="Recentrer sur ma position" onPress={onRecenter}>
+            <RoundTool
+              label="Recentrer sur ma position. Double tap pour la vue principale."
+              onPress={onRecenter}
+              onDoublePress={onRecenterReset}
+            >
               <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
                 <Circle cx="12" cy="12" r="6" stroke={colors.brand} strokeWidth={stroke} />
                 <Path

@@ -79,6 +79,7 @@ export default function MapScreen() {
     longitude: number;
     nonce: number;
   } | null>(null);
+  const [resetViewNonce, setResetViewNonce] = useState(0);
   const [userCoordinate, setUserCoordinate] = useState<{
     latitude: number;
     longitude: number;
@@ -449,6 +450,16 @@ export default function MapScreen() {
     }
   };
 
+  /** Double-tap recenter — default zoom + pitch on the player. */
+  const resetMainView = () => {
+    setFollowUser(true);
+    setWatchEnabled(true);
+    setResetViewNonce((value) => value + 1);
+    if (userCoordinate) {
+      flyToCoordinate(userCoordinate);
+    }
+  };
+
   /** Toggle heading-up compass mode (same round tool UI as recenter). */
   const handleCompassPress = () => {
     // Sync with the tap — required for iOS Safari DeviceOrientation.
@@ -496,6 +507,7 @@ export default function MapScreen() {
               : null
           }
           focusNonce={focusCoordinate?.nonce}
+          resetViewNonce={resetViewNonce}
           userCoordinate={userCoordinate}
           userHeading={compassMode ? userHeading : null}
           nearbyCatIds={nearbyCatIds}
@@ -529,6 +541,7 @@ export default function MapScreen() {
         captureHighlighted={Boolean(nearbyCatIds.length)}
         compassActive={compassMode}
         onRecenter={() => void recenterOnPlayer()}
+        onRecenterReset={resetMainView}
         onCompass={handleCompassPress}
         onCapturePress={() => {
           void captureGate.requestCapture();

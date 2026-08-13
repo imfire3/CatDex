@@ -27,9 +27,9 @@ export const MAP_FLY_TO_PIN_DURATION = Math.max(motionDuration.reveal, 640);
 /** Approximate altitude (meters) for iOS when zoom is unavailable. */
 export const MAP_ALTITUDE = 720;
 
-/** How far the player may pinch out / in. */
-export const MAP_MIN_ZOOM = 13;
-export const MAP_MAX_ZOOM = 19;
+/** How far the player may pinch out / in around street-level framing. */
+export const MAP_MIN_ZOOM = 15;
+export const MAP_MAX_ZOOM = 18;
 
 /** Min meters before soft follow re-centers on the player. */
 export const MAP_FOLLOW_THRESHOLD_M = 5;

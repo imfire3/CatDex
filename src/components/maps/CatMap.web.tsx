@@ -8,6 +8,8 @@ import {
   MAP_FLY_TO_PIN_DURATION,
   MAP_FOLLOW_THRESHOLD_M,
   MAP_HEADING_DURATION,
+  MAP_MAX_ZOOM,
+  MAP_MIN_ZOOM,
   MAP_PITCH,
   MAP_ZOOM,
 } from '@/components/maps/mapCamera';
@@ -35,6 +37,8 @@ type Props = {
   onSelectCat: (cat: Cat) => void;
   focusCoordinate?: { latitude: number; longitude: number } | null;
   focusNonce?: number;
+  /** Bumps to snap zoom/pitch back to the default explorer framing. */
+  resetViewNonce?: number;
   userCoordinate?: { latitude: number; longitude: number } | null;
   /** Device compass heading in degrees (0 = north) — rotates the map while following. */
   userHeading?: number | null;
@@ -68,6 +72,9 @@ type MapLibreMap = {
   remove: () => void;
   setLayoutProperty: (id: string, name: string, value: unknown) => void;
   setPaintProperty: (id: string, name: string, value: unknown) => void;
+  setMaxZoom?: (zoom: number) => void;
+  setMinZoom?: (zoom: number) => void;
+  jumpTo?: (opts: Record<string, unknown>) => void;
 };
 
 type MapLibreMarker = {
@@ -450,6 +457,7 @@ export function CatMap({
   onSelectCat,
   focusCoordinate,
   focusNonce,
+  resetViewNonce = 0,
   userCoordinate,
   userHeading = null,
   nearbyCatIds,
@@ -496,8 +504,8 @@ export function CatMap({
           pitch: MAP_PITCH,
           bearing: 0,
           maxPitch: 60,
-          minZoom: 13,
-          maxZoom: 19,
+          minZoom: MAP_MIN_ZOOM,
+          maxZoom: MAP_MAX_ZOOM,
           attributionControl: { compact: true },
         });
 
@@ -505,9 +513,21 @@ export function CatMap({
           // Host may finish Flex layout after Map construct — force a redraw.
           const maybeResize = map as MapLibreMap & { resize?: () => void };
           maybeResize.resize?.();
+          map.setMinZoom?.(MAP_MIN_ZOOM);
+          map.setMaxZoom?.(MAP_MAX_ZOOM);
           ensureFlatBuildings(map);
           map.easeTo({ pitch: MAP_PITCH, bearing: 0, duration: 500 });
           if (!cancelled) setMapReady(true);
+        });
+
+        // Hard-clamp if a gesture briefly overshoots the configured range.
+        map.on('zoomend', () => {
+          const zoom = map.getZoom();
+          if (zoom < MAP_MIN_ZOOM || zoom > MAP_MAX_ZOOM) {
+            map.jumpTo?.({
+              zoom: Math.min(MAP_MAX_ZOOM, Math.max(MAP_MIN_ZOOM, zoom)),
+            });
+          }
         });
 
         // User pans → stop auto-centering until recenter / focus.
@@ -558,13 +578,40 @@ export function CatMap({
     maybeStop.stop?.();
     map.easeTo({
       center: [focusCoordinate.longitude, focusCoordinate.latitude],
-      zoom: Math.max(map.getZoom(), MAP_ZOOM),
+      // Soft recenter keeps the player's current zoom.
+      zoom: Math.min(
+        MAP_MAX_ZOOM,
+        Math.max(MAP_MIN_ZOOM, map.getZoom()),
+      ),
       pitch: MAP_PITCH,
       bearing: followUser ? (headingRef.current ?? map.getBearing()) : map.getBearing(),
       duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
       essential: true,
     });
   }, [focusCoordinate, focusNonce, followUser, mapReady]);
+
+  // Double-tap recenter — restore the default explorer framing.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map || !resetViewNonce) return;
+    const coordinate = userCoordinate ?? focusCoordinate;
+    if (!coordinate) return;
+
+    followingRef.current = true;
+    lastFollowRef.current = coordinate;
+    didCenterOnUserRef.current = true;
+    const maybeStop = map as MapLibreMap & { stop?: () => void };
+    maybeStop.stop?.();
+    map.easeTo({
+      center: [coordinate.longitude, coordinate.latitude],
+      zoom: MAP_ZOOM,
+      pitch: MAP_PITCH,
+      bearing: headingRef.current ?? 0,
+      duration: MAP_FLY_TO_PIN_DURATION,
+      essential: true,
+      easing: (t: number) => 1 - (1 - t) ** 3,
+    });
+  }, [resetViewNonce, mapReady, userCoordinate, focusCoordinate]);
 
   // Soft follow — keep GPS point centered while following (Pokémon-style).
   useEffect(() => {
@@ -577,7 +624,7 @@ export function CatMap({
       didCenterOnUserRef.current = true;
       map.easeTo({
         center: [userCoordinate.longitude, userCoordinate.latitude],
-        zoom: Math.max(map.getZoom(), MAP_ZOOM),
+        zoom: MAP_ZOOM,
         pitch: MAP_PITCH,
         bearing: headingRef.current ?? map.getBearing(),
         duration: MAP_CAMERA_DURATION,
