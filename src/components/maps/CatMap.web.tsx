@@ -7,6 +7,7 @@ import {
   MAP_CAMERA_DURATION,
   MAP_FLY_TO_PIN_DURATION,
   MAP_FOLLOW_THRESHOLD_M,
+  MAP_HEADING_DURATION,
   MAP_PITCH,
   MAP_ZOOM,
 } from '@/components/maps/mapCamera';
@@ -624,7 +625,9 @@ export function CatMap({
     map.easeTo({
       center: [userCoordinate.longitude, userCoordinate.latitude],
       bearing: userHeading,
-      duration: Math.min(MAP_CAMERA_DURATION, 160),
+      duration: MAP_HEADING_DURATION,
+      // easeOutCubic — blends overlapping heading updates into a continuous turn
+      easing: (t: number) => 1 - (1 - t) ** 3,
       essential: true,
     });
   }, [userHeading, userCoordinate, mapReady]);

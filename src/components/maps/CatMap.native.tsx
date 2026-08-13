@@ -16,6 +16,7 @@ import {
   MAP_CAMERA_DURATION,
   MAP_FLY_TO_PIN_DURATION,
   MAP_FOLLOW_THRESHOLD_M,
+  MAP_HEADING_DURATION,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
 } from '@/components/maps/mapCamera';
@@ -173,7 +174,7 @@ export function CatMap({
       }
       mapRef.current?.animateCamera(
         buildFollowCamera(userCoordinate, current, userHeading),
-        { duration: MAP_CAMERA_DURATION },
+        { duration: MAP_HEADING_DURATION },
       );
     })();
   }, [userHeading, userCoordinate]);

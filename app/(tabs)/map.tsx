@@ -96,8 +96,8 @@ export default function MapScreen() {
   const [watchEnabled, setWatchEnabled] = useState(false);
   /** GPS follow — paused while looking at a cat in another region. */
   const [followUser, setFollowUser] = useState(true);
-  /** Heading-up mode — map rotates with the phone compass. */
-  const [compassMode, setCompassMode] = useState(false);
+  /** Heading-up mode — map rotates with the phone compass. On by default. */
+  const [compassMode, setCompassMode] = useState(true);
 
   const lastHapticCatRef = useRef<string | null>(null);
 

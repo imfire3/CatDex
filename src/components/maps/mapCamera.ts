@@ -12,6 +12,12 @@ export const MAP_PITCH = 62;
 /** Camera animation duration — within 150–300 ms. */
 export const MAP_CAMERA_DURATION = Math.min(motionDuration.slow, 280);
 
+/**
+ * Compass rotate duration — longer ease so heading-up feels continuous,
+ * not stepped, when the phone turns.
+ */
+export const MAP_HEADING_DURATION = Math.max(motionDuration.slow, 420);
+
 /** Longer fly when jumping to a cat in another quartier. */
 export const MAP_FLY_TO_PIN_DURATION = Math.max(motionDuration.reveal, 640);
 
