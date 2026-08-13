@@ -12,6 +12,9 @@ export const MAP_PITCH = 62;
 /** Camera animation duration — within 150–300 ms. */
 export const MAP_CAMERA_DURATION = Math.min(motionDuration.slow, 280);
 
+/** Longer fly when jumping to a cat in another quartier. */
+export const MAP_FLY_TO_PIN_DURATION = Math.max(motionDuration.reveal, 640);
+
 /** Approximate altitude (meters) for iOS when zoom is unavailable. */
 export const MAP_ALTITUDE = 580;
 

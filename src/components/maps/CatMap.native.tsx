@@ -14,6 +14,7 @@ import {
   buildMapCamera,
   INITIAL_MAP_CAMERA,
   MAP_CAMERA_DURATION,
+  MAP_FLY_TO_PIN_DURATION,
   MAP_FOLLOW_THRESHOLD_M,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
@@ -36,6 +37,8 @@ type Props = {
   capturedCatIds?: string[];
   /** Currently selected cat — larger pin + pulse rings. */
   selectedCatId?: string | null;
+  /** When false, GPS follow is paused so the camera can stay on a selected cat. */
+  followUser?: boolean;
   /** @deprecated Option-1 mock has no name callout on pins. */
   pinCallouts?: Record<string, string>;
 };
@@ -74,6 +77,7 @@ export function CatMap({
   nearbyCatIds,
   capturedCatIds,
   selectedCatId,
+  followUser = true,
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
@@ -81,16 +85,19 @@ export function CatMap({
   /** When true, camera keeps the GPS point centered (Pokémon-style). */
   const keepCenteredRef = useRef(true);
 
-  // Explicit recenter — restores game default zoom/pitch and re-enables follow.
+  useEffect(() => {
+    keepCenteredRef.current = followUser;
+  }, [followUser]);
+
   useEffect(() => {
     if (!focusCoordinate) return;
     lastFollowRef.current = focusCoordinate;
-    keepCenteredRef.current = true;
+    keepCenteredRef.current = followUser;
     didCenterOnUserRef.current = true;
     mapRef.current?.animateCamera(buildMapCamera(focusCoordinate), {
-      duration: MAP_CAMERA_DURATION,
+      duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
     });
-  }, [focusCoordinate, focusNonce]);
+  }, [focusCoordinate, focusNonce, followUser]);
 
   // Soft follow while walking — pan only, never override pinch zoom.
   // First GPS lock: center the camera on the player (game default framing).

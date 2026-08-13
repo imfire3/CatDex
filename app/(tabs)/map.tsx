@@ -63,6 +63,8 @@ export default function MapScreen() {
   const [locationBusy, setLocationBusy] = useState(false);
   /** Start GPS watch only after the user accepted (or already granted). */
   const [watchEnabled, setWatchEnabled] = useState(false);
+  /** GPS follow — paused while looking at a cat in another region. */
+  const [followUser, setFollowUser] = useState(true);
 
   const lastHapticCatRef = useRef<string | null>(null);
 
@@ -146,6 +148,7 @@ export default function MapScreen() {
   const applyLocation = useCallback(
     async (coordinate: { latitude: number; longitude: number }) => {
       setUserCoordinate(coordinate);
+      setFollowUser(true);
       flyToCoordinate(coordinate);
       setWatchEnabled(true);
     },
@@ -257,6 +260,7 @@ export default function MapScreen() {
   }, [applyLocation]);
 
   const recenterOnPlayer = async () => {
+    setFollowUser(true);
     // Instant camera feedback from last known GPS (works even if a fresh
     // geolocation read is slow or blocked).
     if (userCoordinate) {
@@ -309,9 +313,15 @@ export default function MapScreen() {
           nearbyCatIds={nearbyCatIds}
           capturedCatIds={capturedCatIdList}
           selectedCatId={selected?.id ?? null}
+          followUser={followUser}
           onSelectCat={(item) => {
             setSelected(item);
             setSheetVisible(true);
+            setFollowUser(false);
+            flyToCoordinate({
+              latitude: item.latitude,
+              longitude: item.longitude,
+            });
           }}
         />
       </View>
@@ -347,6 +357,7 @@ export default function MapScreen() {
         }}
         onGoThere={() => {
           if (!selected) return;
+          setFollowUser(false);
           flyToCoordinate({
             latitude: selected.latitude,
             longitude: selected.longitude,

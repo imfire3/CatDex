@@ -5,6 +5,7 @@ import { loadPaleIsometricStyle } from '@/components/maps/applyPaleIsometricStyl
 import {
   INITIAL_MAP_CAMERA,
   MAP_CAMERA_DURATION,
+  MAP_FLY_TO_PIN_DURATION,
   MAP_FOLLOW_THRESHOLD_M,
   MAP_PITCH,
   MAP_ZOOM,
@@ -31,6 +32,8 @@ type Props = {
   capturedCatIds?: string[];
   /** Currently selected cat — larger pin + pulse rings. */
   selectedCatId?: string | null;
+  /** When false, GPS follow is paused so the camera can stay on a selected cat. */
+  followUser?: boolean;
   /** @deprecated Option-1 mock has no name callout on pins. */
   pinCallouts?: Record<string, string>;
 };
@@ -329,6 +332,7 @@ export function CatMap({
   nearbyCatIds,
   capturedCatIds,
   selectedCatId,
+  followUser = true,
 }: Props) {
   const { colors, spacing } = useTheme();
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -417,9 +421,13 @@ export function CatMap({
   }, []);
 
   useEffect(() => {
+    followingRef.current = followUser;
+  }, [followUser]);
+
+  useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map || !focusCoordinate) return;
-    followingRef.current = true;
+    followingRef.current = followUser;
     lastFollowRef.current = focusCoordinate;
     didCenterOnUserRef.current = true;
     const maybeStop = map as MapLibreMap & { stop?: () => void };
@@ -428,10 +436,10 @@ export function CatMap({
       center: [focusCoordinate.longitude, focusCoordinate.latitude],
       zoom: Math.max(map.getZoom(), MAP_ZOOM),
       pitch: MAP_PITCH,
-      duration: MAP_CAMERA_DURATION,
+      duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
       essential: true,
     });
-  }, [focusCoordinate, focusNonce, mapReady]);
+  }, [focusCoordinate, focusNonce, followUser, mapReady]);
 
   // Soft follow — keep GPS point centered while following (Pokémon-style).
   useEffect(() => {
