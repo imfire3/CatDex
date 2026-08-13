@@ -56,7 +56,7 @@ type ExtraMaps = {
 
 /**
  * Google customMapStyle works on Android (and iOS when PROVIDER_GOOGLE + API key).
- * Without an iOS Google key we keep Apple Maps + POI suppression + pitch + overlay.
+ * Without an iOS Google key we keep Apple Maps + POI suppression + flat overlay.
  */
 function resolveMapProvider() {
   if (Platform.OS === 'android') return PROVIDER_GOOGLE;
@@ -195,9 +195,9 @@ export function CatMap({
         showsScale={false}
         showsTraffic={false}
         showsIndoors={false}
-        showsBuildings
+        showsBuildings={false}
         showsPointsOfInterest={false}
-        pitchEnabled
+        pitchEnabled={false}
         rotateEnabled
         scrollEnabled
         zoomEnabled

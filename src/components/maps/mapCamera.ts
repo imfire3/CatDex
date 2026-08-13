@@ -6,8 +6,8 @@ import { motionDuration } from '@/theme/motion';
 /** Street-level framing for the 3D explorer. */
 export const MAP_ZOOM = 16.6;
 
-/** Strong quartier tilt (degrees) — buildings readable in 3D. */
-export const MAP_PITCH = 62;
+/** Top-down framing — flat map for readable streets & pins. */
+export const MAP_PITCH = 0;
 
 /** Camera animation duration — within 150–300 ms. */
 export const MAP_CAMERA_DURATION = Math.min(motionDuration.slow, 280);
@@ -22,7 +22,7 @@ export const MAP_HEADING_DURATION = Math.max(motionDuration.slow, 420);
 export const MAP_FLY_TO_PIN_DURATION = Math.max(motionDuration.reveal, 640);
 
 /** Approximate altitude (meters) for iOS when zoom is unavailable. */
-export const MAP_ALTITUDE = 580;
+export const MAP_ALTITUDE = 900;
 
 /** How far the player may pinch out / in. */
 export const MAP_MIN_ZOOM = 13;
@@ -46,7 +46,7 @@ export function buildMapCamera(
 }
 
 /**
- * Soft follow — keeps zoom / pitch, orients toward compass heading when known.
+ * Soft follow — keeps zoom, forces flat pitch, orients toward compass when known.
  */
 export function buildFollowCamera(
   coordinate: { latitude: number; longitude: number },
@@ -55,7 +55,7 @@ export function buildFollowCamera(
 ): Camera {
   return {
     center: coordinate,
-    pitch: current?.pitch ?? MAP_PITCH,
+    pitch: MAP_PITCH,
     heading: heading ?? current?.heading ?? 0,
     zoom: current?.zoom ?? MAP_ZOOM,
     altitude: current?.altitude ?? MAP_ALTITUDE,

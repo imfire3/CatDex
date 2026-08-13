@@ -1,5 +1,5 @@
 /**
- * Build CatDex pale isometric MapLibre style from OpenFreeMap liberty JSON.
+ * Build CatDex pale flat MapLibre style from OpenFreeMap liberty JSON.
  * Prefers transforming the style object before `new Map()` so labels/roads
  * are correct on first paint (runtime setPaintProperty can miss expression layers).
  */
@@ -37,7 +37,7 @@ const HIDDEN_LAYER_IDS = new Set([
   'tunnel_transit_rail_hatching',
   'bridge_major_rail',
   'bridge_major_rail_hatching',
-  'building', // extrusion-only look when building-3d exists
+  'building-3d', // flat footprints only — extrusions hurt pin readability
 ]);
 
 function isRoadLine(id: string) {
@@ -83,12 +83,11 @@ function thinRoadWidth(existing: unknown): unknown {
 }
 
 /**
- * Deep-clone + restyle liberty JSON into CatDex pale isometric world.
+ * Deep-clone + restyle liberty JSON into CatDex pale flat world.
  */
 export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
   const style: MapStyle = JSON.parse(JSON.stringify(base));
   const layers = style.layers ?? [];
-  const hasBuilding3d = layers.some((l) => l.id === 'building-3d');
 
   for (const layer of layers) {
     const id = layer.id;
@@ -101,7 +100,8 @@ export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
       continue;
     }
 
-    if (HIDDEN_LAYER_IDS.has(id) || (id === 'building' && hasBuilding3d)) {
+    // No extruded buildings — keep the map top-down and readable.
+    if (layer.type === 'fill-extrusion' || HIDDEN_LAYER_IDS.has(id)) {
       layout.visibility = 'none';
       continue;
     }
@@ -165,10 +165,11 @@ export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
       case 'waterway_tunnel':
         paint['line-color'] = p.water;
         break;
-      case 'building-3d':
-        paint['fill-extrusion-color'] = p.building;
-        paint['fill-extrusion-opacity'] = 0.96;
-        paint['fill-extrusion-vertical-gradient'] = true;
+      case 'building':
+        layout.visibility = 'visible';
+        paint['fill-color'] = p.building;
+        paint['fill-opacity'] = 0.92;
+        paint['fill-outline-color'] = p.buildingShadow;
         break;
       default:
         break;

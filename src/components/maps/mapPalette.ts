@@ -1,9 +1,9 @@
 /**
- * CatDex map tile palette — pale isometric game world.
+ * CatDex map tile palette — pale flat game world.
  * Used by Google Maps `customMapStyle` and MapLibre style overrides.
  * Hex here are intentional (map style JSON cannot consume theme tokens).
  *
- * Reference look: high-key off-white ground, white extruded buildings,
+ * Reference look: high-key off-white ground, white flat building footprints,
  * thin lavender roads, soft mint parks, pale blue water — no labels.
  */
 export const mapPalette = {

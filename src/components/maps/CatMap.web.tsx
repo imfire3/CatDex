@@ -49,7 +49,7 @@ type Props = {
 };
 
 /** OpenFreeMap liberty — fetched + restyled to pale isometric before Map init. */
-const BUILDINGS_LAYER_ID = 'catdex-3d-buildings';
+const BUILDINGS_LAYER_ID = 'catdex-flat-buildings';
 const MAPLIBRE_JS = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';
 const MAPLIBRE_CSS = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css';
 
@@ -136,9 +136,19 @@ function loadMapLibre(): Promise<MapLibreNS> {
   });
 }
 
-function ensure3dBuildings(map: MapLibreMap) {
-  // Liberty already ships `building-3d` after pale transform — restyle only.
-  if (map.getLayer('building-3d') || map.getLayer(BUILDINGS_LAYER_ID)) return;
+/** Ensure flat building footprints exist (never extrusions). */
+function ensureFlatBuildings(map: MapLibreMap) {
+  if (map.getLayer('building') || map.getLayer(BUILDINGS_LAYER_ID)) {
+    // Hide any leftover 3D extrusion layers from the base style.
+    if (map.getLayer('building-3d')) {
+      try {
+        map.setLayoutProperty('building-3d', 'visibility', 'none');
+      } catch {
+        // ignore
+      }
+    }
+    return;
+  }
 
   const style = map.getStyle();
   const sourceId =
@@ -148,36 +158,23 @@ function ensure3dBuildings(map: MapLibreMap) {
     }) ?? 'openmaptiles';
 
   try {
+    if (map.getLayer('building-3d')) {
+      map.setLayoutProperty('building-3d', 'visibility', 'none');
+    }
     map.addLayer({
       id: BUILDINGS_LAYER_ID,
       source: sourceId,
       'source-layer': 'building',
-      type: 'fill-extrusion',
-      minzoom: 14,
-      filter: ['!=', ['get', 'hide_3d'], true],
+      type: 'fill',
+      minzoom: 13,
       paint: {
-        'fill-extrusion-color': mapPalette.building,
-        'fill-extrusion-height': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          14,
-          0,
-          15,
-          ['coalesce', ['get', 'render_height'], ['get', 'height'], 12],
-        ],
-        'fill-extrusion-base': [
-          'coalesce',
-          ['get', 'render_min_height'],
-          ['get', 'min_height'],
-          0,
-        ],
-        'fill-extrusion-opacity': 0.96,
-        'fill-extrusion-vertical-gradient': true,
+        'fill-color': mapPalette.building,
+        'fill-opacity': 0.92,
+        'fill-outline-color': mapPalette.buildingShadow,
       },
     });
   } catch {
-    // Style may already include extrusions — pitch alone still reads 3D.
+    // Style may already include a flat building fill.
   }
 }
 
@@ -445,7 +442,7 @@ function applyMarkerZoomScale(map: MapLibreMap, markers: MapLibreMarker[]) {
 }
 
 /**
- * Web Explorer map — MapLibre (CDN) with pitch + extruded buildings.
+ * Web Explorer map — MapLibre (CDN), flat top-down for readable pins.
  * Loaded from CDN to avoid Metro ESM/CJS interop issues with maplibre-gl.
  */
 export function CatMap({
@@ -497,8 +494,8 @@ export function CatMap({
           center: [center.longitude, center.latitude],
           zoom: MAP_ZOOM,
           pitch: MAP_PITCH,
-          bearing: -18,
-          maxPitch: 75,
+          bearing: 0,
+          maxPitch: 0,
           minZoom: 13,
           maxZoom: 19,
           attributionControl: { compact: true },
@@ -508,8 +505,8 @@ export function CatMap({
           // Host may finish Flex layout after Map construct — force a redraw.
           const maybeResize = map as MapLibreMap & { resize?: () => void };
           maybeResize.resize?.();
-          ensure3dBuildings(map);
-          map.easeTo({ pitch: MAP_PITCH, bearing: -18, duration: 600 });
+          ensureFlatBuildings(map);
+          map.easeTo({ pitch: MAP_PITCH, bearing: 0, duration: 400 });
           if (!cancelled) setMapReady(true);
         });
 
@@ -808,13 +805,13 @@ export function MiniMap({
           style: paleStyle,
           center: [longitude, latitude],
           zoom: 15,
-          pitch: 48,
-          bearing: -12,
+          pitch: 0,
+          bearing: 0,
           interactive: false,
           attributionControl: false,
         });
         map.on('load', () => {
-          if (map) ensure3dBuildings(map);
+          if (map) ensureFlatBuildings(map);
         });
         new maplibregl.Marker({ color: colors.brand })
           .setLngLat([longitude, latitude])
