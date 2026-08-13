@@ -18,6 +18,7 @@ import {
 } from '@/components/maps/CatPinVisual';
 import { canShowPinPhoto } from '@/components/maps/CatPinVisual';
 import { mapPalette } from '@/components/maps/mapPalette';
+import { getCatDiscoveryState } from '@/lib/catDiscovery';
 import { distanceMeters } from '@/lib/constants';
 import { resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -182,18 +183,24 @@ function makePinElement(opts: {
   size: number;
   selected?: boolean;
   photoUrl?: string | null;
+  /** owned = solid ring + ✓ ; discoverable = dashed ring + ? */
+  discoveryState?: 'owned' | 'discoverable';
+  isNearby?: boolean;
 }): HTMLButtonElement {
   const size = opts.size;
   const tipH = CAT_PIN_TIP_H;
   const tipW = 16;
   const selected = Boolean(opts.selected);
+  const owned = (opts.discoveryState ?? 'owned') === 'owned';
   const pulseMax = selected ? size * 2.4 : 0;
-  const wrapW = selected ? pulseMax : size + 16;
-  const wrapH = selected ? pulseMax / 2 + size + tipH : size + tipH;
+  const wrapW = selected ? pulseMax : size + 20;
+  const wrapH = selected ? pulseMax / 2 + size + tipH : size + tipH + 4;
+  const badgeSize = 16;
 
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.setAttribute('aria-label', opts.label);
+  const a11ySuffix = owned ? 'dans ton CatDex' : 'à découvrir';
+  btn.setAttribute('aria-label', `${opts.label}, ${a11ySuffix}`);
   btn.style.cssText = [
     'border:0',
     'padding:0',
@@ -256,6 +263,22 @@ function makePinElement(opts: {
       layer.appendChild(el);
     }
     scaleRoot.appendChild(layer);
+  } else if (opts.isNearby && !owned) {
+    const halo = document.createElement('span');
+    const haloSize = size * 1.7;
+    halo.style.cssText = [
+      'position:absolute',
+      'left:50%',
+      `bottom:${tipH + size / 2 - haloSize / 2}px`,
+      `width:${haloSize}px`,
+      `height:${haloSize}px`,
+      `margin-left:${-(haloSize / 2)}px`,
+      'border-radius:999px',
+      `background:${opts.brandSoft}`,
+      'opacity:0.35',
+      'pointer-events:none',
+    ].join(';');
+    scaleRoot.appendChild(halo);
   }
 
   const column = document.createElement('span');
@@ -266,6 +289,33 @@ function makePinElement(opts: {
     'position:relative',
     'z-index:2',
   ].join(';');
+
+  const ringWrap = document.createElement('span');
+  ringWrap.style.cssText = [
+    'position:relative',
+    `width:${size + 6}px`,
+    `height:${size + 6}px`,
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+  ].join(';');
+
+  const ringSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  const ringOuter = size + 6;
+  ringSvg.setAttribute('width', String(ringOuter));
+  ringSvg.setAttribute('height', String(ringOuter));
+  ringSvg.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', String(ringOuter / 2));
+  circle.setAttribute('cy', String(ringOuter / 2));
+  circle.setAttribute('r', String((size + (owned ? 2.5 : 2)) / 2));
+  circle.setAttribute('fill', 'none');
+  circle.setAttribute('stroke', opts.brand);
+  circle.setAttribute('stroke-width', owned ? '2.5' : '1.75');
+  circle.setAttribute('stroke-opacity', owned ? '1' : '0.72');
+  if (!owned) circle.setAttribute('stroke-dasharray', '3.5 2.75');
+  ringSvg.appendChild(circle);
+  ringWrap.appendChild(ringSvg);
 
   const avatar = document.createElement('span');
   avatar.style.cssText = [
@@ -279,6 +329,8 @@ function makePinElement(opts: {
     'justify-content:center',
     'box-sizing:border-box',
     `border:2px solid ${opts.surface}`,
+    `opacity:${owned ? '1' : '0.92'}`,
+    'position:relative',
   ].join(';');
   if (opts.photoUrl) {
     const img = document.createElement('img');
@@ -291,6 +343,7 @@ function makePinElement(opts: {
       'object-fit:cover',
       'display:block',
       'pointer-events:none',
+      `opacity:${owned ? '1' : '0.78'}`,
     ].join(';');
     img.addEventListener('error', () => {
       img.remove();
@@ -299,9 +352,46 @@ function makePinElement(opts: {
       }
     });
     avatar.appendChild(img);
+    if (!owned) {
+      const veil = document.createElement('span');
+      veil.style.cssText = [
+        'position:absolute',
+        'inset:0',
+        `background:${opts.surface}`,
+        'opacity:0.22',
+        'pointer-events:none',
+      ].join(';');
+      avatar.appendChild(veil);
+    }
   } else {
     avatar.appendChild(silhouetteSvg(Math.round(size * 0.55), opts.onBrand));
   }
+
+  const badge = document.createElement('span');
+  badge.setAttribute('aria-hidden', 'true');
+  badge.textContent = owned ? '✓' : '?';
+  badge.style.cssText = [
+    'position:absolute',
+    'top:-2px',
+    'right:-2px',
+    `width:${badgeSize}px`,
+    `height:${badgeSize}px`,
+    'border-radius:999px',
+    `background:${owned ? opts.brand : opts.surface}`,
+    `border:1.5px solid ${opts.brand}`,
+    `color:${owned ? opts.onBrand : opts.brand}`,
+    'font-size:10px',
+    'font-weight:700',
+    'line-height:12px',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'z-index:4',
+    'box-sizing:border-box',
+  ].join(';');
+
+  ringWrap.appendChild(avatar);
+  ringWrap.appendChild(badge);
 
   const tip = document.createElement('span');
   tip.style.cssText = [
@@ -311,9 +401,10 @@ function makePinElement(opts: {
     `border-left:${tipW / 2}px solid transparent`,
     `border-right:${tipW / 2}px solid transparent`,
     `border-top:${tipH}px solid ${opts.brand}`,
+    `opacity:${owned ? '1' : '0.75'}`,
   ].join(';');
 
-  column.appendChild(avatar);
+  column.appendChild(ringWrap);
   column.appendChild(tip);
   scaleRoot.appendChild(column);
   btn.appendChild(scaleRoot);
@@ -402,7 +493,6 @@ export function CatMap({
           attributionControl: { compact: true },
         });
 
-        map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
         map.on('load', () => {
           // Host may finish Flex layout after Map construct — force a redraw.
           const maybeResize = map as MapLibreMap & { resize?: () => void };
@@ -514,11 +604,16 @@ export function CatMap({
 
     const buildMarkers = async () => {
       const nextMarkers: MapLibreMarker[] = [];
+      const ownedIds = new Set(capturedCatIds ?? []);
 
       for (const cat of cats) {
         if (cancelled) break;
 
         const selected = selectedCatId === cat.id;
+        const discoveryState = capturedCatIds
+          ? getCatDiscoveryState(cat, ownedIds)
+          : 'owned';
+        const isNearby = nearbyCatIds?.includes(cat.id) ?? false;
         let photoUrl: string | null = null;
         if (canShowPinPhoto(cat.photoUri)) {
           try {
@@ -538,6 +633,8 @@ export function CatMap({
           size: selected ? CAT_PIN_SELECTED : CAT_PIN_SILHOUETTE,
           selected,
           photoUrl,
+          discoveryState,
+          isNearby,
         });
         const openSheet = (event: Event) => {
           event.preventDefault();
@@ -559,7 +656,9 @@ export function CatMap({
         })
           .setLngLat([cat.longitude, cat.latitude])
           .addTo(map);
-        el.setAttribute('aria-label', `Ouvrir la fiche de ${cat.name}`);
+        const suffix =
+          discoveryState === 'owned' ? 'dans ton CatDex' : 'à découvrir';
+        el.setAttribute('aria-label', `${cat.name}, ${suffix}`);
         nextMarkers.push(marker);
       }
 
@@ -587,7 +686,7 @@ export function CatMap({
         URL.revokeObjectURL(url);
       });
     };
-  }, [cats, selectedCatId, colors, spacing, mapReady]);
+  }, [cats, selectedCatId, colors, spacing, mapReady, capturedCatIds, nearbyCatIds]);
 
   useEffect(() => {
     const map = mapRef.current;

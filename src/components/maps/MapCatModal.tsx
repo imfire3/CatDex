@@ -11,35 +11,37 @@ import {
   MAP_CAPTURE_FAB_SIZE,
 } from '@/layout/tabBarMetrics';
 import { formatDistanceMeters } from '@/lib/constants';
+import type { CatDiscoveryState } from '@/lib/catDiscovery';
 import {
   catDexRarityLabel,
   rarityTokens,
   resolveRevealRarity,
 } from '@/lib/catTheme';
 import { isCatPhotoRef } from '@/lib/photoStorage';
-import { PROXIMITY_ALERT_M } from '@/lib/mapExplore';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
 type Props = {
   visible: boolean;
   cat: Cat | null;
-  captured: boolean;
+  /** @deprecated Prefer discoveryState. */
+  captured?: boolean;
+  discoveryState?: CatDiscoveryState;
   distanceM?: number | null;
   onClose: () => void;
   onViewCard: () => void;
-  /** Primary action for uncaptured world cats — open the scanner. */
+  /** Primary action for discoverable cats — open the scanner. */
   onCapture: () => void;
 };
 
 /**
- * Explorer pin popup — horizontal card matching the product mock
- * (photo · name/breed/distance · compact CTA).
+ * Explorer pin popup — owned → Voir la fiche ; discoverable → Photographier.
  */
 export function MapCatModal({
   visible,
   cat,
-  captured,
+  captured = false,
+  discoveryState,
   distanceM,
   onClose,
   onViewCard,
@@ -49,6 +51,10 @@ export function MapCatModal({
   const insets = useSafeAreaInsets();
   const [photoFailed, setPhotoFailed] = useState(false);
 
+  const state: CatDiscoveryState =
+    discoveryState ?? (captured ? 'owned' : 'discoverable');
+  const owned = state === 'owned';
+
   useEffect(() => {
     setPhotoFailed(false);
   }, [cat?.id, cat?.photoUri]);
@@ -57,14 +63,12 @@ export function MapCatModal({
 
   const distanceLabel =
     typeof distanceM === 'number' ? formatDistanceMeters(distanceM) : null;
-  const inRange =
-    typeof distanceM === 'number' && distanceM <= PROXIMITY_ALERT_M;
   const rarityId = resolveRevealRarity(cat.analysis, cat.number);
   const rarity = rarityTokens[rarityId];
   const rarityLabel = catDexRarityLabel(rarityId);
   const breedLabel = cat.analysis?.breed?.trim() || 'Chat';
   const displayName =
-    captured || Boolean(cat.photoUri) ? cat.name : 'Chat mystère';
+    owned || Boolean(cat.photoUri) ? cat.name : 'Chat mystère';
 
   const canShowPhoto =
     Boolean(cat.photoUri) &&
@@ -75,9 +79,8 @@ export function MapCatModal({
       cat.photoUri.startsWith('http') ||
       cat.photoUri.startsWith('file:'));
 
-  const showPrimary = captured || inRange;
-  const primaryTitle = captured ? 'Voir la fiche' : 'Photographier';
-  const onPrimary = captured ? onViewCard : onCapture;
+  const primaryTitle = owned ? 'Voir la fiche' : 'Photographier';
+  const onPrimary = owned ? onViewCard : onCapture;
 
   const photoSize = spacing[80];
   const clusterBottom = getMapActionClusterBottom(insets.bottom, spacing);
@@ -112,78 +115,130 @@ export function MapCatModal({
               borderWidth: 1,
               borderColor: colors.border,
               gap: spacing[16],
+              flexDirection: 'column',
+              alignItems: 'stretch',
             },
             shadow.floating,
           ]}
         >
           <View
             style={{
-              width: photoSize,
-              height: photoSize,
-              borderRadius: radius[16],
-              backgroundColor: colors.surfaceSecondary,
-              overflow: 'hidden',
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: spacing[16],
+              width: '100%',
             }}
           >
-            {canShowPhoto ? (
-              <CatImage
-                uri={cat.photoUri}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-                accessibilityLabel={`Photo de ${cat.name}`}
-                onError={() => setPhotoFailed(true)}
-              />
-            ) : (
-              <Text variant="h3" color="textMuted">
-                ?
-              </Text>
-            )}
-          </View>
-
-          <View style={{ flex: 1, gap: spacing[4], minWidth: 0 }}>
-            <Text
-              variant="h3"
-              color="text"
-              numberOfLines={1}
-              style={{ fontFamily: fonts.display }}
-            >
-              {displayName}
-            </Text>
-
             <View
               style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
+                width: photoSize,
+                height: photoSize,
+                borderRadius: radius[16],
+                backgroundColor: colors.surfaceSecondary,
+                overflow: 'hidden',
                 alignItems: 'center',
-                gap: spacing[4],
+                justifyContent: 'center',
+                opacity: owned ? 1 : 0.9,
               }}
             >
-              <Text variant="bodySmall" color="textSecondary" numberOfLines={1}>
-                {breedLabel} ·
-              </Text>
+              {canShowPhoto ? (
+                <CatImage
+                  uri={cat.photoUri}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    opacity: owned ? 1 : 0.85,
+                  }}
+                  resizeMode="cover"
+                  accessibilityLabel={`Photo de ${cat.name}`}
+                  onError={() => setPhotoFailed(true)}
+                />
+              ) : (
+                <Text variant="h3" color="textMuted">
+                  ?
+                </Text>
+              )}
+            </View>
+
+            <View style={{ flex: 1, gap: spacing[4], minWidth: 0 }}>
               <View
                 style={{
-                  paddingHorizontal: spacing[8],
-                  paddingVertical: spacing[4],
-                  borderRadius: radius.full,
-                  backgroundColor: rarity.background,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: spacing[8],
                 }}
               >
                 <Text
-                  variant="caption"
+                  variant="h3"
+                  color="text"
+                  numberOfLines={1}
+                  style={{ fontFamily: fonts.display, flexShrink: 1 }}
+                >
+                  {displayName}
+                </Text>
+                <View
                   style={{
-                    fontFamily: fonts.bodySemi,
-                    color: rarity.foreground,
+                    flexShrink: 0,
+                    paddingHorizontal: spacing[8],
+                    paddingVertical: spacing[4],
+                    borderRadius: radius.full,
+                    backgroundColor: owned
+                      ? colors.brandSoft
+                      : colors.surfaceSecondary,
                   }}
                 >
-                  {rarityLabel}
-                </Text>
+                  <Text
+                    variant="caption"
+                    color={owned ? 'textBrand' : 'textSecondary'}
+                    style={{ fontFamily: fonts.bodySemi }}
+                  >
+                    {owned ? '✓ Dans ton CatDex' : 'À découvrir'}
+                  </Text>
+                </View>
               </View>
-            </View>
 
-            {distanceLabel ? (
+              {!owned ? (
+                <Text variant="bodySmall" color="textSecondary">
+                  Tu ne l’as pas encore rencontré.
+                </Text>
+              ) : null}
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: spacing[4],
+                }}
+              >
+                <Text
+                  variant="bodySmall"
+                  color="textSecondary"
+                  numberOfLines={1}
+                >
+                  {breedLabel} ·
+                </Text>
+                <View
+                  style={{
+                    paddingHorizontal: spacing[8],
+                    paddingVertical: spacing[4],
+                    borderRadius: radius.full,
+                    backgroundColor: rarity.background,
+                  }}
+                >
+                  <Text
+                    variant="caption"
+                    style={{
+                      fontFamily: fonts.bodySemi,
+                      color: rarity.foreground,
+                    }}
+                  >
+                    {rarityLabel}
+                  </Text>
+                </View>
+              </View>
+
               <View
                 style={{
                   flexDirection: 'row',
@@ -206,25 +261,31 @@ export function MapCatModal({
                   />
                 </Svg>
                 <Text variant="bodySmall" color="textSecondary">
-                  À {distanceLabel}
+                  {owned
+                    ? distanceLabel
+                      ? `À ${distanceLabel}`
+                      : 'Vu dans cette zone'
+                    : distanceLabel
+                      ? `Repéré près d’ici · ~${distanceLabel}`
+                      : 'Repéré près d’ici'}
                 </Text>
               </View>
-            ) : null}
+            </View>
           </View>
 
-          {showPrimary ? (
+          <View style={{ width: '100%', alignSelf: 'stretch' }}>
             <Button
               title={primaryTitle}
               onPress={onPrimary}
-              fullWidth={false}
+              fullWidth
               style={{
-                alignSelf: 'center',
-                paddingHorizontal: spacing[16],
+                width: '100%',
+                alignSelf: 'stretch',
                 minHeight: spacing[48],
                 height: spacing[48],
               }}
             />
-          ) : null}
+          </View>
         </View>
       </View>
     </Modal>
@@ -238,7 +299,6 @@ const styles = StyleSheet.create({
   },
   card: {
     position: 'absolute',
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
   },
 });

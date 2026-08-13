@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import Constants from 'expo-constants';
 import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -19,6 +19,7 @@ import {
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
 } from '@/components/maps/mapCamera';
+import { getCatDiscoveryState } from '@/lib/catDiscovery';
 import { distanceMeters } from '@/lib/constants';
 import type { Cat } from '@/types/cat';
 
@@ -84,6 +85,10 @@ export function CatMap({
   const didCenterOnUserRef = useRef(false);
   /** When true, camera keeps the GPS point centered (Pokémon-style). */
   const keepCenteredRef = useRef(true);
+  const ownedIds = useMemo(
+    () => new Set(capturedCatIds ?? []),
+    [capturedCatIds],
+  );
 
   useEffect(() => {
     keepCenteredRef.current = followUser;
@@ -168,19 +173,20 @@ export function CatMap({
         <MapWorldDecor cats={cats} />
         {userCoordinate ? <DiscoveryRadius coordinate={userCoordinate} /> : null}
         {cats.map((cat) => {
-          const owned = capturedCatIds
-            ? capturedCatIds.includes(cat.id) ||
-              Boolean(cat.remoteId && capturedCatIds.includes(cat.remoteId))
-            : true;
+          const discoveryState = capturedCatIds
+            ? getCatDiscoveryState(cat, ownedIds)
+            : 'owned';
+          const owned = discoveryState === 'owned';
           return (
-          <CatMapMarker
-            key={cat.id}
-            cat={cat}
-            onPress={onSelectCat}
-            isNearby={nearbyCatIds?.includes(cat.id) ?? false}
-            captured={owned}
-            selected={selectedCatId === cat.id}
-          />
+            <CatMapMarker
+              key={cat.id}
+              cat={cat}
+              onPress={onSelectCat}
+              isNearby={nearbyCatIds?.includes(cat.id) ?? false}
+              captured={owned}
+              discoveryState={discoveryState}
+              selected={selectedCatId === cat.id}
+            />
           );
         })}
         {userCoordinate ? (

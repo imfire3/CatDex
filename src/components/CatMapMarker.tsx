@@ -13,6 +13,7 @@ import {
   CAT_PIN_TIP_H,
   CatPinVisual,
 } from '@/components/maps/CatPinVisual';
+import type { CatDiscoveryState } from '@/lib/catDiscovery';
 import { useTheme } from '@/theme';
 import { motionEasing } from '@/theme/motion';
 import type { Cat } from '@/types/cat';
@@ -22,41 +23,44 @@ type Props = {
   onPress: (cat: Cat) => void;
   isNearby?: boolean;
   captured?: boolean;
+  discoveryState?: CatDiscoveryState;
   selected?: boolean;
   callout?: string | null;
 };
 
 /**
- * Map pin — purple silhouette; selected grows with pulse rings.
+ * Map pin — owned (✓ + solid ring) vs discoverable (? + dashed ring).
  */
 function CatMapMarkerComponent({
   cat,
   onPress,
   isNearby = false,
   captured = true,
+  discoveryState,
   selected = false,
 }: Props) {
   const { spacing } = useTheme();
   const size = selected ? CAT_PIN_SELECTED : CAT_PIN_SILHOUETTE;
   const pulseMax = selected ? size * 2.4 : 0;
-  const wrapW = selected ? pulseMax : size + spacing[16];
+  const wrapW = selected ? pulseMax : size + spacing[16] + 8;
   const wrapH = selected
     ? pulseMax / 2 + size + CAT_PIN_TIP_H
-    : size + CAT_PIN_TIP_H;
+    : size + CAT_PIN_TIP_H + 6;
 
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
   const appear = useSharedValue(0);
+  const resolvedState = discoveryState ?? (captured ? 'owned' : 'discoverable');
 
   useEffect(() => {
     appear.value = withSpring(1, motionEasing.standard);
     setTracksViewChanges(true);
-  }, [appear, cat.id, selected, cat.photoUri]);
+  }, [appear, cat.id, selected, cat.photoUri, resolvedState, isNearby]);
 
   useEffect(() => {
     if (!tracksViewChanges) return;
     const freeze = setTimeout(() => setTracksViewChanges(false), 1200);
     return () => clearTimeout(freeze);
-  }, [tracksViewChanges, cat.id, selected]);
+  }, [tracksViewChanges, cat.id, selected, resolvedState]);
 
   const onVisualSettled = useCallback(() => {
     setTracksViewChanges(false);
@@ -73,7 +77,7 @@ function CatMapMarkerComponent({
       tracksViewChanges={tracksViewChanges}
       anchor={{ x: 0.5, y: 1 }}
       tracksInfoWindowChanges={false}
-      zIndex={selected ? 30 : isNearby ? 20 : captured ? 12 : 10}
+      zIndex={selected ? 30 : isNearby ? 20 : resolvedState === 'owned' ? 12 : 10}
     >
       <Animated.View
         style={[
@@ -85,6 +89,7 @@ function CatMapMarkerComponent({
         <CatPinVisual
           cat={cat}
           captured={captured}
+          discoveryState={resolvedState}
           isNearby={isNearby}
           selected={selected}
           size={size}

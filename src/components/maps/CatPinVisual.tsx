@@ -1,12 +1,22 @@
 /**
- * Explorer map pin — purple silhouette + tip (mock left screen).
+ * Explorer map pin — owned (solid ring + ✓) vs discoverable (dashed ring + ?).
  * Selected: larger pin with concentric brand pulse rings.
  */
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { CatImage } from '@/components/CatImage';
+import { Text } from '@/components/Text';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import type { CatDiscoveryState } from '@/lib/catDiscovery';
 import { isCatPhotoRef } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
@@ -15,6 +25,7 @@ export const CAT_PIN_AVATAR = 40;
 export const CAT_PIN_TIP_H = 8;
 export const CAT_PIN_SILHOUETTE = 36;
 export const CAT_PIN_SELECTED = 48;
+const BADGE_SIZE = 16;
 
 /**
  * Scale HTML pin content with MapLibre zoom so markers feel glued to the map.
@@ -36,7 +47,9 @@ export function canShowPinPhoto(uri?: string | null): boolean {
 
 type PinVisualProps = {
   cat: Cat;
+  /** @deprecated Prefer discoveryState — kept for call-site compatibility. */
   captured?: boolean;
+  discoveryState?: CatDiscoveryState;
   isNearby?: boolean;
   selected?: boolean;
   size?: number;
@@ -71,23 +84,127 @@ export function CatSilhouetteIcon({
   );
 }
 
+function PinStatusBadge({
+  state,
+  brand,
+  onBrand,
+  surface,
+}: {
+  state: CatDiscoveryState;
+  brand: string;
+  onBrand: string;
+  surface: string;
+}) {
+  const owned = state === 'owned';
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[
+        styles.badge,
+        {
+          width: BADGE_SIZE,
+          height: BADGE_SIZE,
+          borderRadius: BADGE_SIZE / 2,
+          backgroundColor: owned ? brand : surface,
+          borderColor: brand,
+          borderWidth: 1.5,
+        },
+      ]}
+    >
+      <Text
+        variant="caption"
+        style={{
+          color: owned ? onBrand : brand,
+          fontSize: 10,
+          lineHeight: 12,
+          fontWeight: '700',
+        }}
+      >
+        {owned ? '✓' : '?'}
+      </Text>
+    </View>
+  );
+}
+
+function NearbyDiscoverPulse({
+  size,
+  brandSoft,
+  enabled,
+}: {
+  size: number;
+  brandSoft: string;
+  enabled: boolean;
+}) {
+  const reduceMotion = useReducedMotion();
+  const pulse = useSharedValue(0.55);
+
+  useEffect(() => {
+    if (!enabled || reduceMotion) {
+      pulse.value = 0.55;
+      return;
+    }
+    pulse.value = withRepeat(
+      withTiming(1, {
+        duration: 2200,
+        easing: Easing.inOut(Easing.ease),
+      }),
+      -1,
+      true,
+    );
+  }, [enabled, pulse, reduceMotion]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: enabled && !reduceMotion ? pulse.value * 0.35 : 0,
+    transform: [{ scale: 0.85 + pulse.value * 0.25 }],
+  }));
+
+  if (!enabled || reduceMotion) return null;
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.nearbyPulse,
+        {
+          width: size * 1.7,
+          height: size * 1.7,
+          borderRadius: (size * 1.7) / 2,
+          backgroundColor: brandSoft,
+          bottom: CAT_PIN_TIP_H + size / 2 - (size * 1.7) / 2,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
 /**
  * Visual-only pin body (no Map Marker wrapper).
  * Tip sits on the bottom edge — Marker anchor must be bottom-center.
  */
 export function CatPinVisual({
   cat,
+  captured = true,
+  discoveryState,
+  isNearby = false,
   selected = false,
   size,
   onVisualSettled,
 }: PinVisualProps) {
   const { colors, spacing, radius, shadow } = useTheme();
+  const state: CatDiscoveryState =
+    discoveryState ?? (captured ? 'owned' : 'discoverable');
+  const owned = state === 'owned';
   const pinSize = size ?? (selected ? CAT_PIN_SELECTED : CAT_PIN_SILHOUETTE);
   const tipW = spacing[16];
   const tipH = CAT_PIN_TIP_H;
   const pulseMax = selected ? pinSize * 2.4 : 0;
+  const ringPad = 3;
+  const ringSize = pinSize + ringPad * 2;
   const showPhoto = canShowPinPhoto(cat.photoUri);
   const [photoFailed, setPhotoFailed] = useState(false);
+  const showNearbyPulse = isNearby && !owned && !selected;
 
   useEffect(() => {
     setPhotoFailed(false);
@@ -97,7 +214,7 @@ export function CatPinVisual({
     if (!showPhoto || photoFailed) {
       onVisualSettled?.();
     }
-  }, [onVisualSettled, selected, pinSize, showPhoto, photoFailed]);
+  }, [onVisualSettled, selected, pinSize, showPhoto, photoFailed, state]);
 
   return (
     <View
@@ -112,6 +229,11 @@ export function CatPinVisual({
           : undefined,
       ]}
       pointerEvents="none"
+      accessibilityLabel={
+        owned
+          ? `${cat.name}, dans ton CatDex`
+          : `${cat.name || 'Chat'}, à découvrir`
+      }
     >
       {selected ? (
         <View
@@ -160,39 +282,91 @@ export function CatPinVisual({
         </View>
       ) : null}
 
+      <NearbyDiscoverPulse
+        size={pinSize}
+        brandSoft={colors.brandSoft}
+        enabled={showNearbyPulse}
+      />
+
       <View style={styles.column}>
-        <View
-          style={[
-            styles.avatar,
-            {
-              width: pinSize,
-              height: pinSize,
-              borderRadius: radius.full,
-              backgroundColor: colors.brand,
-              borderWidth: 2,
-              borderColor: colors.surface,
-            },
-            shadow.low,
-          ]}
-        >
-          {showPhoto && !photoFailed ? (
-            <CatImage
-              uri={cat.photoUri}
-              accessibilityLabel={cat.name}
-              style={{ width: pinSize, height: pinSize }}
-              onLoad={() => onVisualSettled?.()}
-              onError={() => {
-                setPhotoFailed(true);
-                onVisualSettled?.();
-              }}
+        <View style={{ width: ringSize, height: ringSize, alignItems: 'center', justifyContent: 'center' }}>
+          <Svg
+            width={ringSize}
+            height={ringSize}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          >
+            <Circle
+              cx={ringSize / 2}
+              cy={ringSize / 2}
+              r={(pinSize + (owned ? 2.5 : 2)) / 2}
+              stroke={colors.brand}
+              strokeWidth={owned ? 2.5 : 1.75}
+              strokeOpacity={owned ? 1 : 0.72}
+              strokeDasharray={owned ? undefined : '3.5 2.75'}
+              fill="none"
             />
-          ) : (
-            <CatSilhouetteIcon
-              color={colors.onBrand}
-              size={Math.round(pinSize * 0.55)}
+          </Svg>
+
+          <View
+            style={[
+              styles.avatar,
+              {
+                width: pinSize,
+                height: pinSize,
+                borderRadius: radius.full,
+                backgroundColor: colors.brand,
+                borderWidth: 2,
+                borderColor: colors.surface,
+                opacity: owned ? 1 : 0.92,
+              },
+              owned ? shadow.medium : shadow.low,
+            ]}
+          >
+            {showPhoto && !photoFailed ? (
+              <>
+                <CatImage
+                  uri={cat.photoUri}
+                  accessibilityLabel={cat.name}
+                  style={{
+                    width: pinSize,
+                    height: pinSize,
+                    opacity: owned ? 1 : 0.78,
+                  }}
+                  onLoad={() => onVisualSettled?.()}
+                  onError={() => {
+                    setPhotoFailed(true);
+                    onVisualSettled?.();
+                  }}
+                />
+                {!owned ? (
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      StyleSheet.absoluteFill,
+                      { backgroundColor: colors.surface, opacity: 0.22 },
+                    ]}
+                  />
+                ) : null}
+              </>
+            ) : (
+              <CatSilhouetteIcon
+                color={colors.onBrand}
+                size={Math.round(pinSize * 0.55)}
+              />
+            )}
+          </View>
+
+          <View style={styles.badgeAnchor}>
+            <PinStatusBadge
+              state={state}
+              brand={colors.brand}
+              onBrand={colors.onBrand}
+              surface={colors.surface}
             />
-          )}
+          </View>
         </View>
+
         <View
           style={{
             width: 0,
@@ -203,7 +377,8 @@ export function CatPinVisual({
             borderTopWidth: tipH,
             borderLeftColor: 'transparent',
             borderRightColor: 'transparent',
-            borderTopColor: colors.brand,
+            borderTopColor: owned ? colors.brand : colors.brand,
+            opacity: owned ? 1 : 0.75,
           }}
         />
       </View>
@@ -233,5 +408,19 @@ const styles = StyleSheet.create({
   pulseRing: {
     position: 'absolute',
     borderWidth: 2,
+  },
+  nearbyPulse: {
+    position: 'absolute',
+    alignSelf: 'center',
+  },
+  badge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeAnchor: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    zIndex: 4,
   },
 });

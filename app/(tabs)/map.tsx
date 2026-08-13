@@ -8,17 +8,34 @@ import { EnablePermissionModal } from '@/components/EnablePermissionModal';
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
+import { MapDiscoveryLegend } from '@/components/maps/MapDiscoveryLegend';
+import { MapDiscoveryTip } from '@/components/maps/MapDiscoveryTip';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
 import { useCaptureGate } from '@/hooks/useCaptureGate';
+import {
+  buildOwnedCatIdSet,
+  getCatDiscoveryState,
+} from '@/lib/catDiscovery';
 import { PARIS_20E } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
+import {
+  DEMO_COMMUNITY_CATS,
+  DEMO_OWNED_CATS,
+  isMapDemoEnabled,
+  mergeCatsById,
+} from '@/lib/demoCats';
 import {
   getCurrentLocationCoordinate,
   isLocationActive,
   openSystemLocationSettings,
   requestLocationAccess,
 } from '@/lib/locationAccess';
+import {
+  dismissMapDiscoveryTip,
+  hasDismissedMapDiscoveryTip,
+} from '@/lib/mapDiscoveryTip';
 import { PROXIMITY_ALERT_M, sortCatsByDistance } from '@/lib/mapExplore';
+import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { useMapExploreStore } from '@/store/mapExplore';
 import { useMissionsStore } from '@/store/missions';
@@ -30,26 +47,26 @@ import type { Cat } from '@/types/cat';
  * GPS & camera are gated by in-app modals (no silent OS prompts).
  */
 export default function MapScreen() {
+  const mapDemo = isMapDemoEnabled();
   const storedCats = useCatsStore((state) => state.cats);
+  const userId = useAuthStore((state) => state.user?.id);
   const setHasNearbyCat = useMapExploreStore((state) => state.setHasNearbyCat);
   const pushNearby = useNotificationsStore((state) => state.pushNearby);
   const missions = useMissionsStore((state) => state.missions);
   const openMissionCount = missions.filter((m) => !m.completed).length;
   const captureGate = useCaptureGate();
 
-  const capturedIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const cat of storedCats) {
-      ids.add(cat.id);
-      if (cat.sourceWorldId) ids.add(cat.sourceWorldId);
-      if (cat.remoteId) ids.add(cat.remoteId);
-    }
-    return ids;
-  }, [storedCats]);
+  /** Local CatDex + optional __DEV__ fake owned pins for discovery UI trials. */
+  const ownedCats = useMemo(
+    () => (mapDemo ? mergeCatsById(storedCats, DEMO_OWNED_CATS) : storedCats),
+    [mapDemo, storedCats],
+  );
+  const ownedIds = useMemo(() => buildOwnedCatIdSet(ownedCats), [ownedCats]);
 
   const [communityCats, setCommunityCats] = useState<Cat[]>([]);
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [discoveryTipVisible, setDiscoveryTipVisible] = useState(false);
   const [focusCoordinate, setFocusCoordinate] = useState<{
     latitude: number;
     longitude: number;
@@ -70,8 +87,10 @@ export default function MapScreen() {
 
   const refreshCommunityCats = useCallback(async () => {
     const remote = await pullCommunityCatsForMap();
-    setCommunityCats(remote);
-  }, []);
+    setCommunityCats(
+      mapDemo ? mergeCatsById(remote, DEMO_COMMUNITY_CATS) : remote,
+    );
+  }, [mapDemo]);
 
   useEffect(() => {
     void refreshCommunityCats();
@@ -81,6 +100,18 @@ export default function MapScreen() {
     return () => clearInterval(timer);
   }, [refreshCommunityCats, storedCats.length]);
 
+  /** Dev demo: anchor near Paris 20e so fake pins + nearby pulse are visible. */
+  useEffect(() => {
+    if (!mapDemo) return;
+    setUserCoordinate((prev) => prev ?? { ...PARIS_20E.center });
+    setFocusCoordinate((prev) =>
+      prev ?? {
+        ...PARIS_20E.center,
+        nonce: 1,
+      },
+    );
+  }, [mapDemo]);
+
   /**
    * Own CatDex pins (photo) + other players' sightings (mystery until you capture them).
    * Community pins disappear once you capture that same sighting id.
@@ -89,30 +120,49 @@ export default function MapScreen() {
     const byId = new Map<string, Cat>();
 
     for (const cat of communityCats) {
-      if (capturedIds.has(cat.id) || (cat.remoteId && capturedIds.has(cat.remoteId))) {
+      if (getCatDiscoveryState(cat, ownedIds) === 'owned') {
         continue;
       }
       byId.set(cat.id, cat);
     }
 
-    for (const cat of storedCats) {
+    for (const cat of ownedCats) {
       byId.set(cat.remoteId || cat.id, cat);
     }
 
     return [...byId.values()];
-  }, [storedCats, communityCats, capturedIds]);
+  }, [ownedCats, communityCats, ownedIds]);
 
-  const isOwnedCat = useCallback(
-    (cat: Cat) =>
-      capturedIds.has(cat.id) ||
-      Boolean(cat.remoteId && capturedIds.has(cat.remoteId)) ||
-      storedCats.some(
-        (owned) => owned.id === cat.id || owned.remoteId === cat.id,
-      ),
-    [capturedIds, storedCats],
+  const selectedDiscoveryState = selected
+    ? getCatDiscoveryState(selected, ownedIds)
+    : null;
+
+  const hasDiscoverableOnMap = useMemo(
+    () =>
+      mapCats.some((cat) => getCatDiscoveryState(cat, ownedIds) === 'discoverable'),
+    [mapCats, ownedIds],
   );
 
-  const selectedCaptured = selected ? isOwnedCat(selected) : false;
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      // Tip only when the real CatDex is empty (skip when __DEV__ fake owned are on the map).
+      if (
+        mapDemo ||
+        storedCats.length > 0 ||
+        !hasDiscoverableOnMap ||
+        !userId
+      ) {
+        if (mounted) setDiscoveryTipVisible(false);
+        return;
+      }
+      const dismissed = await hasDismissedMapDiscoveryTip(userId);
+      if (mounted) setDiscoveryTipVisible(!dismissed);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [mapDemo, storedCats.length, hasDiscoverableOnMap, userId]);
 
   const sortedCats = useMemo(
     () => sortCatsByDistance(mapCats, userCoordinate),
@@ -292,7 +342,12 @@ export default function MapScreen() {
     () => sortedCats.map(({ cat }) => cat),
     [sortedCats],
   );
-  const capturedCatIdList = useMemo(() => [...capturedIds], [capturedIds]);
+  const ownedCatIdList = useMemo(() => [...ownedIds], [ownedIds]);
+
+  const handleDismissDiscoveryTip = useCallback(() => {
+    setDiscoveryTipVisible(false);
+    void dismissMapDiscoveryTip(userId);
+  }, [userId]);
 
   return (
     <View style={styles.root}>
@@ -311,7 +366,7 @@ export default function MapScreen() {
           focusNonce={focusCoordinate?.nonce}
           userCoordinate={userCoordinate}
           nearbyCatIds={nearbyCatIds}
-          capturedCatIds={capturedCatIdList}
+          capturedCatIds={ownedCatIdList}
           selectedCatId={selected?.id ?? null}
           followUser={followUser}
           onSelectCat={(item) => {
@@ -331,9 +386,13 @@ export default function MapScreen() {
         onRequestEnable={() => setLocationModalVisible(true)}
       />
 
+      {hasDiscoverableOnMap || storedCats.length > 0 ? (
+        <MapDiscoveryLegend />
+      ) : null}
+
       <MapExplorerHud
         missionCount={openMissionCount}
-        collectionCount={storedCats.length}
+        collectionCount={ownedCats.length}
         captureHighlighted={Boolean(nearbyCatIds.length)}
         onRecenter={() => void recenterOnPlayer()}
         onCapturePress={() => {
@@ -344,7 +403,7 @@ export default function MapScreen() {
       <MapCatModal
         visible={sheetVisible}
         cat={selected}
-        captured={selectedCaptured}
+        discoveryState={selectedDiscoveryState ?? undefined}
         distanceM={selectedDistance}
         onClose={() => {
           setSheetVisible(false);
@@ -362,6 +421,11 @@ export default function MapScreen() {
           setSelected(null);
           void captureGate.requestCapture({ worldId: sightingId });
         }}
+      />
+
+      <MapDiscoveryTip
+        visible={discoveryTipVisible}
+        onDismiss={handleDismissDiscoveryTip}
       />
 
       <EnablePermissionModal
