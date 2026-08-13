@@ -46,7 +46,7 @@ export function buildMapCamera(
 }
 
 /**
- * Soft follow — keeps zoom, forces flat pitch, orients toward compass when known.
+ * Soft follow — keeps zoom, locks light camera pitch, orients toward compass when known.
  */
 export function buildFollowCamera(
   coordinate: { latitude: number; longitude: number },

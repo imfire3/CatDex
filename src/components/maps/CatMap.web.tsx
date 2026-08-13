@@ -442,7 +442,7 @@ function applyMarkerZoomScale(map: MapLibreMap, markers: MapLibreMarker[]) {
 }
 
 /**
- * Web Explorer map — MapLibre (CDN), flat top-down for readable pins.
+ * Web Explorer map — MapLibre (CDN), light camera tilt + flat building footprints.
  * Loaded from CDN to avoid Metro ESM/CJS interop issues with maplibre-gl.
  */
 export function CatMap({
@@ -495,7 +495,7 @@ export function CatMap({
           zoom: MAP_ZOOM,
           pitch: MAP_PITCH,
           bearing: 0,
-          maxPitch: 0,
+          maxPitch: 60,
           minZoom: 13,
           maxZoom: 19,
           attributionControl: { compact: true },
@@ -506,7 +506,7 @@ export function CatMap({
           const maybeResize = map as MapLibreMap & { resize?: () => void };
           maybeResize.resize?.();
           ensureFlatBuildings(map);
-          map.easeTo({ pitch: MAP_PITCH, bearing: 0, duration: 400 });
+          map.easeTo({ pitch: MAP_PITCH, bearing: 0, duration: 500 });
           if (!cancelled) setMapReady(true);
         });
 
