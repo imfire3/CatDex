@@ -16,6 +16,8 @@ import {
   isAllowedMime,
   verifySupabaseAccessToken,
 } from './analyzeAuth';
+// CatDex Vision prompt has a single source of truth.
+// Do not duplicate the prompt in this file.
 import {
   CATDEX_VISION_PROMPT,
   CATDEX_VISION_USER_TEXT,

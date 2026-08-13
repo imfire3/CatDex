@@ -1,7 +1,16 @@
 /**
  * Beta Vision endpoint on Netlify (bypasses broken Render JWT gate).
  * Same contract as server POST /analyze-cat.
+ *
+ * CatDex Vision prompt has a single source of truth.
+ * Do not duplicate the prompt in this file.
  */
+
+import {
+  CATDEX_VISION_SYSTEM_PROMPT,
+  CATDEX_VISION_USER_PROMPT,
+} from '../../shared/catdexVisionPrompt.mjs';
+import { CATDEX_FORM_RESPONSE_FORMAT } from '../../shared/catdexFormSchema.mjs';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -9,40 +18,63 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const SYSTEM_PROMPT = `Tu es le moteur Vision de CatDex. Analyse UNIQUEMENT ce qui est visible sur la photo.
-Réponds en français. N'invente pas d'histoire, de propriétaire, ni de traits invisibles.
-Si ce n'est pas un chat clairement visible, isCat=false et explique dans reason.
-Si c'est un chat, name DOIT être un surnom drôle (1–2 mots) : pelage + race si visible + pose.
-Recette : un mot pelage + un mot pose.
-Exemples : Paprika Zen (roux assis), Oreo Sieste (noir et blanc allongé), Coussin Royal (persan posé), Brume Radar (gris qui guette), Tigrou Turbo (tigré en mouvement).
-Interdit: Chat, Minou, Félix, Garfield, Ombre, Roux, Noir, Blanc, Gris, Miaou, Kitty.`;
-
 const GENERIC_NAMES = new Set([
-  '', 'chat', 'minou', 'minet', 'chaton', 'felix', 'félix', 'garfield', 'ombre',
-  'roux', 'noir', 'blanc', 'gris', 'miaou', 'cat', 'kitty', 'unknown', 'inconnu',
+  '',
+  'chat',
+  'minou',
+  'minet',
+  'chaton',
+  'felix',
+  'félix',
+  'garfield',
+  'ombre',
+  'roux',
+  'noir',
+  'blanc',
+  'gris',
+  'miaou',
+  'cat',
+  'kitty',
+  'unknown',
+  'inconnu',
 ]);
 
 function pickFunnyName(form) {
   const hay = `${form.coatColor || ''} ${form.coatPattern || ''} ${form.breed || ''} ${form.description || ''} ${(form.personalityTraits || []).join(' ')}`.toLowerCase();
   const coat =
-    /roux|orange|ginger/.test(hay) ? 'Paprika'
-    : /noir et blanc|bicolor/.test(hay) ? 'Oreo'
-    : /calico|tricolore/.test(hay) ? 'Confetti'
-    : /noir|black/.test(hay) ? 'Réglisse'
-    : /blanc|white|neige/.test(hay) ? 'Meringue'
-    : /gris|grey|gray|bleu/.test(hay) ? 'Brume'
-    : /brun|chocolat|noisette/.test(hay) ? 'Choco'
-    : /tigr|tabby|rayure/.test(hay) ? 'Tigrou'
-    : 'Patoune';
+    /roux|orange|ginger/.test(hay)
+      ? 'Paprika'
+      : /noir et blanc|bicolor/.test(hay)
+        ? 'Oreo'
+        : /calico|tricolore/.test(hay)
+          ? 'Confetti'
+          : /noir|black/.test(hay)
+            ? 'Réglisse'
+            : /blanc|white|neige/.test(hay)
+              ? 'Meringue'
+              : /gris|grey|gray|bleu/.test(hay)
+                ? 'Brume'
+                : /brun|chocolat|noisette/.test(hay)
+                  ? 'Choco'
+                  : /tigr|tabby|rayure/.test(hay)
+                    ? 'Tigrou'
+                    : 'Patoune';
   const pose =
-    /assis|calme|zen/.test(hay) ? 'Zen'
-    : /couch|allong|sieste|dodo/.test(hay) ? 'Sieste'
-    : /curieux|espion|guette/.test(hay) ? 'Radar'
-    : /joueur|bond|saute/.test(hay) ? 'Turbo'
-    : /cache|boite/.test(hay) ? 'Ninja'
-    : /persan/.test(hay) ? 'Royal'
-    : /maine coon/.test(hay) ? 'Boule'
-    : '';
+    /assis|calme|zen/.test(hay)
+      ? 'Zen'
+      : /couch|allong|sieste|dodo/.test(hay)
+        ? 'Sieste'
+        : /curieux|espion|guette/.test(hay)
+          ? 'Radar'
+          : /joueur|bond|saute/.test(hay)
+            ? 'Turbo'
+            : /cache|boite/.test(hay)
+              ? 'Ninja'
+              : /persan/.test(hay)
+                ? 'Royal'
+                : /maine coon/.test(hay)
+                  ? 'Boule'
+                  : '';
   return pose && pose !== coat ? `${coat} ${pose}` : coat;
 }
 
@@ -72,7 +104,8 @@ function mapFormToAnalysis(form) {
         notACat: true,
         errorCode: 'NOT_A_CAT',
         errorTitle: 'Ce n’est pas un chat',
-        errorMessage: form?.reason || 'Aucun chat clairement visible sur cette photo.',
+        errorMessage:
+          form?.reason || 'Aucun chat clairement visible sur cette photo.',
       },
       mocked: false,
     };
@@ -155,22 +188,20 @@ export async function handler(event) {
       },
       body: JSON.stringify({
         model,
-        temperature: 0.55,
+        temperature: 0.2,
         max_tokens: 1400,
-        response_format: { type: 'json_object' },
+        response_format: CATDEX_FORM_RESPONSE_FORMAT,
         messages: [
           {
             role: 'system',
-            content:
-              SYSTEM_PROMPT +
-              '\nRéponds UNIQUEMENT en JSON avec les clés: isCat, reason, name, breed, breedConfidence (0-100), coatColor, coatPattern, furLength, eyeColor, size, estimatedAge, sex (mâle|femelle|inconnu), distinctiveFeatures (string[]), personalityTraits (string[]), description.',
+            content: CATDEX_VISION_SYSTEM_PROMPT,
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Analyse ce chat pour la fiche CatDex.',
+                text: CATDEX_VISION_USER_PROMPT,
               },
               {
                 type: 'image_url',

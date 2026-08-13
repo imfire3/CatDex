@@ -19,6 +19,8 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  # Bundle shared Vision prompt/schema into functions (single source of truth).
+  included_files = ["shared/**"]
 
 # Vision API on same origin (avoids broken Render JWT gate during beta)
 [[redirects]]
