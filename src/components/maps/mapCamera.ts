@@ -3,11 +3,14 @@ import type { Camera } from 'react-native-maps';
 import { PARIS_20E } from '@/lib/constants';
 import { motionDuration } from '@/theme/motion';
 
-/** Street-level framing for the 3D explorer. */
+/** Street-level framing for the explorer. */
 export const MAP_ZOOM = 16.6;
 
-/** Top-down framing — flat map for readable streets & pins. */
-export const MAP_PITCH = 0;
+/**
+ * Light camera tilt (degrees) — 3D feel from the viewpoint only.
+ * Buildings stay flat footprints (no extrusions) for pin readability.
+ */
+export const MAP_PITCH = 42;
 
 /** Camera animation duration — within 150–300 ms. */
 export const MAP_CAMERA_DURATION = Math.min(motionDuration.slow, 280);
@@ -22,7 +25,7 @@ export const MAP_HEADING_DURATION = Math.max(motionDuration.slow, 420);
 export const MAP_FLY_TO_PIN_DURATION = Math.max(motionDuration.reveal, 640);
 
 /** Approximate altitude (meters) for iOS when zoom is unavailable. */
-export const MAP_ALTITUDE = 900;
+export const MAP_ALTITUDE = 720;
 
 /** How far the player may pinch out / in. */
 export const MAP_MIN_ZOOM = 13;
