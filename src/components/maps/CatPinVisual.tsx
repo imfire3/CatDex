@@ -2,10 +2,12 @@
  * Explorer map pin — purple silhouette + tip (mock left screen).
  * Selected: larger pin with concentric brand pulse rings.
  */
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { CatImage } from '@/components/CatImage';
+import { isCatPhotoRef } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -20,6 +22,16 @@ export const CAT_PIN_SELECTED = 48;
  */
 export function pinScaleForZoom(zoom: number): number {
   return Math.min(1.2, Math.max(0.55, 0.55 + (zoom - 13) * 0.11));
+}
+
+export function canShowPinPhoto(uri?: string | null): boolean {
+  if (!uri || uri.startsWith('blob:') || uri.startsWith('demo')) return false;
+  return (
+    isCatPhotoRef(uri) ||
+    uri.startsWith('data:') ||
+    uri.startsWith('http') ||
+    uri.startsWith('file:')
+  );
 }
 
 type PinVisualProps = {
@@ -64,6 +76,7 @@ export function CatSilhouetteIcon({
  * Tip sits on the bottom edge — Marker anchor must be bottom-center.
  */
 export function CatPinVisual({
+  cat,
   selected = false,
   size,
   onVisualSettled,
@@ -73,10 +86,18 @@ export function CatPinVisual({
   const tipW = spacing[16];
   const tipH = CAT_PIN_TIP_H;
   const pulseMax = selected ? pinSize * 2.4 : 0;
+  const showPhoto = canShowPinPhoto(cat.photoUri);
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   useEffect(() => {
-    onVisualSettled?.();
-  }, [onVisualSettled, selected, pinSize]);
+    setPhotoFailed(false);
+  }, [cat.id, cat.photoUri]);
+
+  useEffect(() => {
+    if (!showPhoto || photoFailed) {
+      onVisualSettled?.();
+    }
+  }, [onVisualSettled, selected, pinSize, showPhoto, photoFailed]);
 
   return (
     <View
@@ -148,14 +169,29 @@ export function CatPinVisual({
               height: pinSize,
               borderRadius: radius.full,
               backgroundColor: colors.brand,
+              borderWidth: 2,
+              borderColor: colors.surface,
             },
             shadow.low,
           ]}
         >
-          <CatSilhouetteIcon
-            color={colors.onBrand}
-            size={Math.round(pinSize * 0.55)}
-          />
+          {showPhoto && !photoFailed ? (
+            <CatImage
+              uri={cat.photoUri}
+              accessibilityLabel={cat.name}
+              style={{ width: pinSize, height: pinSize }}
+              onLoad={() => onVisualSettled?.()}
+              onError={() => {
+                setPhotoFailed(true);
+                onVisualSettled?.();
+              }}
+            />
+          ) : (
+            <CatSilhouetteIcon
+              color={colors.onBrand}
+              size={Math.round(pinSize * 0.55)}
+            />
+          )}
         </View>
         <View
           style={{

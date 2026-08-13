@@ -50,7 +50,7 @@ function CatMapMarkerComponent({
   useEffect(() => {
     appear.value = withSpring(1, motionEasing.standard);
     setTracksViewChanges(true);
-  }, [appear, cat.id, selected]);
+  }, [appear, cat.id, selected, cat.photoUri]);
 
   useEffect(() => {
     if (!tracksViewChanges) return;

@@ -16,8 +16,10 @@ import {
   CAT_PIN_TIP_H,
   pinScaleForZoom,
 } from '@/components/maps/CatPinVisual';
+import { canShowPinPhoto } from '@/components/maps/CatPinVisual';
 import { mapPalette } from '@/components/maps/mapPalette';
 import { distanceMeters } from '@/lib/constants';
+import { resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
@@ -170,14 +172,16 @@ function ensure3dBuildings(map: MapLibreMap) {
   }
 }
 
-/** Purple silhouette pin for MapLibre HTML markers (tip = ground anchor). */
+/** Purple pin for MapLibre HTML markers (tip = ground anchor). Photo when available. */
 function makePinElement(opts: {
   label: string;
   brand: string;
   brandSoft: string;
   onBrand: string;
+  surface: string;
   size: number;
   selected?: boolean;
+  photoUrl?: string | null;
 }): HTMLButtonElement {
   const size = opts.size;
   const tipH = CAT_PIN_TIP_H;
@@ -274,8 +278,30 @@ function makePinElement(opts: {
     'align-items:center',
     'justify-content:center',
     'box-sizing:border-box',
+    `border:2px solid ${opts.surface}`,
   ].join(';');
-  avatar.appendChild(silhouetteSvg(Math.round(size * 0.55), opts.onBrand));
+  if (opts.photoUrl) {
+    const img = document.createElement('img');
+    img.src = opts.photoUrl;
+    img.alt = opts.label;
+    img.draggable = false;
+    img.style.cssText = [
+      'width:100%',
+      'height:100%',
+      'object-fit:cover',
+      'display:block',
+      'pointer-events:none',
+    ].join(';');
+    img.addEventListener('error', () => {
+      img.remove();
+      if (!avatar.querySelector('svg')) {
+        avatar.appendChild(silhouetteSvg(Math.round(size * 0.55), opts.onBrand));
+      }
+    });
+    avatar.appendChild(img);
+  } else {
+    avatar.appendChild(silhouetteSvg(Math.round(size * 0.55), opts.onBrand));
+  }
 
   const tip = document.createElement('span');
   tip.style.cssText = [
@@ -484,6 +510,8 @@ export function CatMap({
     catMarkersRef.current.forEach((marker) => marker.remove());
     catMarkersRef.current = [];
 
+    const blobUrls: string[] = [];
+
     const buildMarkers = async () => {
       const nextMarkers: MapLibreMarker[] = [];
 
@@ -491,14 +519,25 @@ export function CatMap({
         if (cancelled) break;
 
         const selected = selectedCatId === cat.id;
+        let photoUrl: string | null = null;
+        if (canShowPinPhoto(cat.photoUri)) {
+          try {
+            photoUrl = await resolveCatPhotoUri(cat.photoUri);
+            if (photoUrl?.startsWith('blob:')) blobUrls.push(photoUrl);
+          } catch {
+            photoUrl = null;
+          }
+        }
 
         const el = makePinElement({
           label: cat.name,
           brand: colors.brand,
           brandSoft: colors.brandSoft,
           onBrand: colors.onBrand,
+          surface: colors.surface,
           size: selected ? CAT_PIN_SELECTED : CAT_PIN_SILHOUETTE,
           selected,
+          photoUrl,
         });
         const openSheet = (event: Event) => {
           event.preventDefault();
@@ -544,6 +583,9 @@ export function CatMap({
       map.off('zoomend', syncScale);
       catMarkersRef.current.forEach((marker) => marker.remove());
       catMarkersRef.current = [];
+      blobUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, [cats, selectedCatId, colors, spacing, mapReady]);
 
