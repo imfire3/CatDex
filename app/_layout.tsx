@@ -11,6 +11,7 @@ import { Spinner } from '@/components/Loader';
 import { ToastHost } from '@/components/Toast/ToastHost';
 import { useMissionSync } from '@/hooks/useMissionSync';
 import { installImageResolveAssetSourcePolyfill } from '@/lib/imageResolvePolyfill';
+import { MobileWebFrame } from '@/layout/MobileWebFrame';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/colors';
 import { kindSansFontMap } from '@/theme/typography';
@@ -94,9 +95,11 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.light.background }}>
       <ThemeProvider>
-        <StatusBar style="dark" />
-        <RootNavigator />
-        <ToastHost />
+        <MobileWebFrame>
+          <StatusBar style="dark" />
+          <RootNavigator />
+          <ToastHost />
+        </MobileWebFrame>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

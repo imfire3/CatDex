@@ -21,6 +21,7 @@ import {
 } from '@/components/maps/mapCamera';
 import { getCatDiscoveryState } from '@/lib/catDiscovery';
 import { distanceMeters } from '@/lib/constants';
+import { headingDeltaDegrees, MAP_HEADING_THRESHOLD_DEG } from '@/lib/mapHeading';
 import type { Cat } from '@/types/cat';
 
 type Props = {
@@ -33,6 +34,8 @@ type Props = {
   focusNonce?: number;
   /** Player position for the custom CatDex location indicator. */
   userCoordinate?: { latitude: number; longitude: number } | null;
+  /** Device compass heading in degrees (0 = north) — rotates the map while following. */
+  userHeading?: number | null;
   nearbyCatIds?: string[];
   /** Ids of cats already in the player CatDex. */
   capturedCatIds?: string[];
@@ -75,6 +78,7 @@ export function CatMap({
   focusCoordinate,
   focusNonce,
   userCoordinate,
+  userHeading = null,
   nearbyCatIds,
   capturedCatIds,
   selectedCatId,
@@ -85,6 +89,8 @@ export function CatMap({
   const didCenterOnUserRef = useRef(false);
   /** When true, camera keeps the GPS point centered (Pokémon-style). */
   const keepCenteredRef = useRef(true);
+  const headingRef = useRef(userHeading);
+  headingRef.current = userHeading;
   const ownedIds = useMemo(
     () => new Set(capturedCatIds ?? []),
     [capturedCatIds],
@@ -99,12 +105,17 @@ export function CatMap({
     lastFollowRef.current = focusCoordinate;
     keepCenteredRef.current = followUser;
     didCenterOnUserRef.current = true;
-    mapRef.current?.animateCamera(buildMapCamera(focusCoordinate), {
-      duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
-    });
+    mapRef.current?.animateCamera(
+      buildMapCamera(focusCoordinate, {
+        heading: followUser ? (headingRef.current ?? 0) : 0,
+      }),
+      {
+        duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
+      },
+    );
   }, [focusCoordinate, focusNonce, followUser]);
 
-  // Soft follow while walking — pan only, never override pinch zoom.
+  // Soft follow while walking — pan + compass heading, never override pinch zoom.
   // First GPS lock: center the camera on the player (game default framing).
   // User pan disables follow until recenter.
   useEffect(() => {
@@ -114,9 +125,12 @@ export function CatMap({
     if (!prev || !didCenterOnUserRef.current) {
       lastFollowRef.current = userCoordinate;
       didCenterOnUserRef.current = true;
-      mapRef.current?.animateCamera(buildMapCamera(userCoordinate), {
-        duration: MAP_CAMERA_DURATION,
-      });
+      mapRef.current?.animateCamera(
+        buildMapCamera(userCoordinate, {
+          heading: headingRef.current ?? 0,
+        }),
+        { duration: MAP_CAMERA_DURATION },
+      );
       return;
     }
 
@@ -132,11 +146,37 @@ export function CatMap({
     void (async () => {
       if (!keepCenteredRef.current) return;
       const current = await mapRef.current?.getCamera();
-      mapRef.current?.animateCamera(buildFollowCamera(userCoordinate, current), {
-        duration: MAP_CAMERA_DURATION,
-      });
+      mapRef.current?.animateCamera(
+        buildFollowCamera(userCoordinate, current, headingRef.current),
+        { duration: MAP_CAMERA_DURATION },
+      );
     })();
   }, [userCoordinate]);
+
+  // Standing still + turning the phone: rotate the map to match compass.
+  useEffect(() => {
+    if (
+      userHeading == null ||
+      !userCoordinate ||
+      !keepCenteredRef.current ||
+      !didCenterOnUserRef.current
+    ) {
+      return;
+    }
+
+    void (async () => {
+      if (!keepCenteredRef.current) return;
+      const current = await mapRef.current?.getCamera();
+      const prevHeading = current?.heading ?? 0;
+      if (headingDeltaDegrees(prevHeading, userHeading) < MAP_HEADING_THRESHOLD_DEG) {
+        return;
+      }
+      mapRef.current?.animateCamera(
+        buildFollowCamera(userCoordinate, current, userHeading),
+        { duration: MAP_CAMERA_DURATION },
+      );
+    })();
+  }, [userHeading, userCoordinate]);
 
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -190,7 +230,10 @@ export function CatMap({
           );
         })}
         {userCoordinate ? (
-          <PlayerLocationMarker coordinate={userCoordinate} />
+          <PlayerLocationMarker
+            coordinate={userCoordinate}
+            heading={userHeading}
+          />
         ) : null}
       </MapView>
       <MapLuminousOverlay />

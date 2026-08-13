@@ -131,3 +131,30 @@ export async function openSystemLocationSettings(): Promise<void> {
   }
   await Linking.openSettings();
 }
+
+/**
+ * iOS Safari requires a user gesture to unlock DeviceOrientation (compass).
+ * Call from authorize / recenter taps — no-op on native and unsupported browsers.
+ */
+export async function requestWebCompassPermission(): Promise<boolean> {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return true;
+
+  type OrientationCtor = {
+    requestPermission?: () => Promise<'granted' | 'denied'>;
+  };
+
+  const OrientationEvent = (
+    window as Window & { DeviceOrientationEvent?: OrientationCtor }
+  ).DeviceOrientationEvent;
+
+  if (typeof OrientationEvent?.requestPermission !== 'function') {
+    return true;
+  }
+
+  try {
+    const permission = await OrientationEvent.requestPermission();
+    return permission === 'granted';
+  } catch {
+    return false;
+  }
+}

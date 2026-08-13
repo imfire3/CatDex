@@ -15,6 +15,8 @@ import { useTheme } from '@/theme';
 
 type Props = {
   coordinate: { latitude: number; longitude: number };
+  /** Compass degrees (0 = north). Rotates the facing wedge with the map. */
+  heading?: number | null;
 };
 
 const PULSE_MS = 2200;
@@ -54,11 +56,12 @@ function PulseRing({
  * flat + centered anchor so the GPS point stays on the lat/lng (no 3D billboard drift).
  * tracksViewChanges freezes after paint so the marker does not jitter off-center.
  */
-export function PlayerLocationMarker({ coordinate }: Props) {
+export function PlayerLocationMarker({ coordinate, heading = null }: Props) {
   const { colors, spacing } = useTheme();
   const pulseA = useSharedValue(0);
   const pulseB = useSharedValue(0);
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
+  const hasHeading = heading != null && Number.isFinite(heading);
 
   useEffect(() => {
     pulseA.value = withRepeat(
@@ -80,11 +83,12 @@ export function PlayerLocationMarker({ coordinate }: Props) {
     setTracksViewChanges(true);
     const freeze = setTimeout(() => setTracksViewChanges(false), 1800);
     return () => clearTimeout(freeze);
-  }, []);
+  }, [hasHeading]);
 
   const radarSize = spacing[48];
   const coreSize = spacing[16];
   const ringSize = spacing[24];
+  const wedgeSize = spacing[8];
 
   return (
     <Marker
@@ -93,6 +97,7 @@ export function PlayerLocationMarker({ coordinate }: Props) {
       centerOffset={{ x: 0, y: 0 }}
       tracksViewChanges={tracksViewChanges}
       flat
+      rotation={hasHeading ? heading : 0}
       zIndex={999}
     >
       <View style={[styles.wrap, { width: radarSize, height: radarSize }]} collapsable={false}>
@@ -126,6 +131,20 @@ export function PlayerLocationMarker({ coordinate }: Props) {
             ]}
           />
         )}
+        {hasHeading ? (
+          <View
+            style={[
+              styles.facingWedge,
+              {
+                borderLeftWidth: wedgeSize,
+                borderRightWidth: wedgeSize,
+                borderBottomWidth: spacing[16],
+                borderBottomColor: colors.mapPlayer,
+                top: spacing[4],
+              },
+            ]}
+          />
+        ) : null}
         <View
           style={[
             styles.ring,
@@ -173,5 +192,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
+  },
+  facingWedge: {
+    position: 'absolute',
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
 });

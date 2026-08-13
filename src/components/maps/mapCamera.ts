@@ -39,15 +39,18 @@ export function buildMapCamera(
   };
 }
 
-/** Pan-only follow — keeps the user's current zoom / pitch. */
+/**
+ * Soft follow — keeps zoom / pitch, orients toward compass heading when known.
+ */
 export function buildFollowCamera(
   coordinate: { latitude: number; longitude: number },
   current?: Camera | null,
+  heading?: number | null,
 ): Camera {
   return {
     center: coordinate,
     pitch: current?.pitch ?? MAP_PITCH,
-    heading: current?.heading ?? 0,
+    heading: heading ?? current?.heading ?? 0,
     zoom: current?.zoom ?? MAP_ZOOM,
     altitude: current?.altitude ?? MAP_ALTITUDE,
   };

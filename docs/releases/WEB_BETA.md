@@ -48,6 +48,12 @@ Une fois le site publié, Safari permet de choisir **Partager → Sur l'écran
 d'accueil**. Cela crée une icône CatDex sur l'iPhone, sans passer par l'App
 Store. Ce raccourci reste une application web et nécessite une connexion.
 
+## Ordinateur (desktop)
+
+La bêta web est conçue pour le **mobile**. Sur un écran large (≥ 480 px),
+l’UI est forcée dans un cadre téléphone (~390 px) centré, avec la mention
+« Bêta web · aperçu mobile ». Sur iPhone / Android, l’app remplit l’écran.
+
 ## Validation avant partage
 
 - inscription et connexion e-mail ;

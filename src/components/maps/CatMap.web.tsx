@@ -20,6 +20,10 @@ import { canShowPinPhoto } from '@/components/maps/CatPinVisual';
 import { mapPalette } from '@/components/maps/mapPalette';
 import { getCatDiscoveryState } from '@/lib/catDiscovery';
 import { distanceMeters } from '@/lib/constants';
+import {
+  headingDeltaDegrees,
+  MAP_HEADING_THRESHOLD_DEG,
+} from '@/lib/mapHeading';
 import { resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
@@ -31,6 +35,8 @@ type Props = {
   focusCoordinate?: { latitude: number; longitude: number } | null;
   focusNonce?: number;
   userCoordinate?: { latitude: number; longitude: number } | null;
+  /** Device compass heading in degrees (0 = north) — rotates the map while following. */
+  userHeading?: number | null;
   nearbyCatIds?: string[];
   capturedCatIds?: string[];
   /** Currently selected cat — larger pin + pulse rings. */
@@ -52,6 +58,7 @@ type MapLibreMap = {
   addControl: (control: unknown, position?: string) => void;
   addLayer: (layer: Record<string, unknown>, beforeId?: string) => void;
   easeTo: (opts: Record<string, unknown>) => void;
+  getBearing: () => number;
   getLayer: (id: string) => unknown;
   getStyle: () => { layers?: Array<Record<string, unknown>>; sources?: Record<string, unknown> } | undefined;
   getZoom: () => number;
@@ -446,6 +453,7 @@ export function CatMap({
   focusCoordinate,
   focusNonce,
   userCoordinate,
+  userHeading = null,
   nearbyCatIds,
   capturedCatIds,
   selectedCatId,
@@ -462,6 +470,8 @@ export function CatMap({
   const followingRef = useRef(true);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const didCenterOnUserRef = useRef(false);
+  const headingRef = useRef(userHeading);
+  headingRef.current = userHeading;
   onSelectRef.current = onSelectCat;
 
   useEffect(() => {
@@ -552,6 +562,7 @@ export function CatMap({
       center: [focusCoordinate.longitude, focusCoordinate.latitude],
       zoom: Math.max(map.getZoom(), MAP_ZOOM),
       pitch: MAP_PITCH,
+      bearing: followUser ? (headingRef.current ?? map.getBearing()) : map.getBearing(),
       duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
       essential: true,
     });
@@ -570,6 +581,7 @@ export function CatMap({
         center: [userCoordinate.longitude, userCoordinate.latitude],
         zoom: Math.max(map.getZoom(), MAP_ZOOM),
         pitch: MAP_PITCH,
+        bearing: headingRef.current ?? map.getBearing(),
         duration: MAP_CAMERA_DURATION,
       });
       return;
@@ -586,9 +598,36 @@ export function CatMap({
     lastFollowRef.current = userCoordinate;
     map.easeTo({
       center: [userCoordinate.longitude, userCoordinate.latitude],
+      bearing: headingRef.current ?? map.getBearing(),
       duration: MAP_CAMERA_DURATION,
     });
   }, [userCoordinate, mapReady]);
+
+  // Standing still + turning: rotate map bearing to match compass.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (
+      !mapReady ||
+      !map ||
+      userHeading == null ||
+      !userCoordinate ||
+      !followingRef.current ||
+      !didCenterOnUserRef.current
+    ) {
+      return;
+    }
+
+    if (headingDeltaDegrees(map.getBearing(), userHeading) < MAP_HEADING_THRESHOLD_DEG) {
+      return;
+    }
+
+    map.easeTo({
+      center: [userCoordinate.longitude, userCoordinate.latitude],
+      bearing: userHeading,
+      duration: MAP_CAMERA_DURATION,
+      essential: true,
+    });
+  }, [userHeading, userCoordinate, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

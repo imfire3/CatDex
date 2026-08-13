@@ -3,3 +3,4 @@ export {
   FloatingActionButton,
   type FloatingActionButtonProps,
 } from './FloatingActionButton';
+export { MobileWebFrame, MOBILE_WEB_WIDTH } from './MobileWebFrame';

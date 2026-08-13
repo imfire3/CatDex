@@ -29,11 +29,17 @@ import {
   isLocationActive,
   openSystemLocationSettings,
   requestLocationAccess,
+  requestWebCompassPermission,
 } from '@/lib/locationAccess';
 import {
   dismissMapDiscoveryTip,
   hasDismissedMapDiscoveryTip,
 } from '@/lib/mapDiscoveryTip';
+import {
+  headingFromDeviceOrientation,
+  resolveDeviceHeading,
+  shouldUpdateHeading,
+} from '@/lib/mapHeading';
 import { PROXIMITY_ALERT_M, sortCatsByDistance } from '@/lib/mapExplore';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
@@ -76,6 +82,8 @@ export default function MapScreen() {
     latitude: number;
     longitude: number;
   } | null>(null);
+  /** Compass heading in degrees (0 = north). Drives heading-up follow. */
+  const [userHeading, setUserHeading] = useState<number | null>(null);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
   /** Start GPS watch only after the user accepted (or already granted). */
@@ -201,6 +209,7 @@ export default function MapScreen() {
       setFollowUser(true);
       flyToCoordinate(coordinate);
       setWatchEnabled(true);
+      await requestWebCompassPermission();
     },
     [flyToCoordinate],
   );
@@ -241,6 +250,16 @@ export default function MapScreen() {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
             });
+            const course = position.coords.heading;
+            if (
+              typeof course === 'number' &&
+              Number.isFinite(course) &&
+              course >= 0
+            ) {
+              setUserHeading((prev) =>
+                shouldUpdateHeading(prev, course) ? course : prev,
+              );
+            }
           },
           () => undefined,
           { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 },
@@ -269,6 +288,58 @@ export default function MapScreen() {
       subscription?.remove();
       if (webWatchId != null && typeof navigator !== 'undefined') {
         navigator.geolocation?.clearWatch(webWatchId);
+      }
+    };
+  }, [watchEnabled]);
+
+  /** Compass — rotate the map with the phone while GPS follow is active. */
+  useEffect(() => {
+    if (!watchEnabled) return;
+
+    let mounted = true;
+    let subscription: Location.LocationSubscription | null = null;
+    let orientationHandler: ((event: Event) => void) | null = null;
+
+    const applyHeading = (next: number) => {
+      if (!mounted) return;
+      setUserHeading((prev) => (shouldUpdateHeading(prev, next) ? next : prev));
+    };
+
+    (async () => {
+      if (Platform.OS === 'web') {
+        if (typeof window === 'undefined') return;
+
+        orientationHandler = (event: Event) => {
+          const orientation = event as Event & {
+            alpha: number | null;
+            absolute?: boolean;
+            webkitCompassHeading?: number;
+          };
+          const next = headingFromDeviceOrientation(orientation);
+          if (next != null) applyHeading(next);
+        };
+
+        window.addEventListener('deviceorientationabsolute', orientationHandler, true);
+        window.addEventListener('deviceorientation', orientationHandler, true);
+        return;
+      }
+
+      subscription = await Location.watchHeadingAsync((sample) => {
+        const next = resolveDeviceHeading(sample);
+        if (next != null) applyHeading(next);
+      });
+    })().catch(() => undefined);
+
+    return () => {
+      mounted = false;
+      subscription?.remove();
+      if (orientationHandler && typeof window !== 'undefined') {
+        window.removeEventListener(
+          'deviceorientationabsolute',
+          orientationHandler,
+          true,
+        );
+        window.removeEventListener('deviceorientation', orientationHandler, true);
       }
     };
   }, [watchEnabled]);
@@ -365,6 +436,7 @@ export default function MapScreen() {
           }
           focusNonce={focusCoordinate?.nonce}
           userCoordinate={userCoordinate}
+          userHeading={userHeading}
           nearbyCatIds={nearbyCatIds}
           capturedCatIds={ownedCatIdList}
           selectedCatId={selected?.id ?? null}
