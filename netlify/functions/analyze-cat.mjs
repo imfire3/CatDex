@@ -11,6 +11,7 @@ import {
   CATDEX_VISION_USER_PROMPT,
 } from '../../shared/catdexVisionPrompt.mjs';
 import { CATDEX_FORM_RESPONSE_FORMAT } from '../../shared/catdexFormSchema.mjs';
+import { normalizeCatGender } from '../../shared/normalizeCatGender.mjs';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -123,7 +124,7 @@ function mapFormToAnalysis(form) {
       coat: form.furLength || '',
       description: form.description || '',
       suggestedName: isGenericName(form.name) ? pickFunnyName(form) : form.name,
-      gender: form.sex || 'inconnu',
+      gender: normalizeCatGender(form.sex || 'inconnu'),
       eyes: form.eyeColor || undefined,
       size: form.size || undefined,
       estimatedAge: form.estimatedAge || undefined,

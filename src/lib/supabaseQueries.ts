@@ -1,3 +1,4 @@
+import { normalizeCatGender } from '@/lib/catGender';
 import { requireSupabase } from './supabase';
 import type { CatAnalysis } from '@/types/cat';
 
@@ -224,6 +225,8 @@ export async function createCat(input: CreateCatInput) {
     throw new Error('User must be authenticated to create a cat');
   }
 
+  const gender = normalizeCatGender(input.gender ?? input.analysis.gender);
+
   const { data: cat, error: catError } = await client
     .from('cats')
     .insert({
@@ -232,7 +235,7 @@ export async function createCat(input: CreateCatInput) {
       description: input.description,
       coat_type: input.coatType,
       breed: input.breed,
-      gender: input.gender,
+      gender,
       dex_number: input.dexNumber,
       latitude: input.latitude,
       longitude: input.longitude,
@@ -251,7 +254,7 @@ export async function createCat(input: CreateCatInput) {
     coat: input.analysis.coat,
     description: input.analysis.description,
     suggested_name: input.analysis.suggestedName,
-    gender: input.analysis.gender,
+    gender: normalizeCatGender(input.analysis.gender),
     eyes: input.analysis.eyes,
     size: input.analysis.size,
     tags: input.analysis.tags,
@@ -383,7 +386,7 @@ export async function updateCat(catId: string, input: UpdateCatInput) {
   if (input.description !== undefined) updateData.description = input.description;
   if (input.coatType !== undefined) updateData.coat_type = input.coatType;
   if (input.breed !== undefined) updateData.breed = input.breed;
-  if (input.gender !== undefined) updateData.gender = input.gender;
+  if (input.gender !== undefined) updateData.gender = normalizeCatGender(input.gender);
   if (input.dexNumber !== undefined) updateData.dex_number = input.dexNumber;
   if (input.latitude !== undefined) updateData.latitude = input.latitude;
   if (input.longitude !== undefined) updateData.longitude = input.longitude;
