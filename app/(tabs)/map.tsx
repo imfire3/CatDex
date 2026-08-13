@@ -514,6 +514,7 @@ export default function MapScreen() {
           capturedCatIds={ownedCatIdList}
           selectedCatId={selected?.id ?? null}
           followUser={followUser}
+          onBreakFollow={() => setFollowUser(false)}
           onSelectCat={(item) => {
             setSelected(item);
             setSheetVisible(true);

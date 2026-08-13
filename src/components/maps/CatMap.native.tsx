@@ -46,6 +46,8 @@ type Props = {
   selectedCatId?: string | null;
   /** When false, GPS follow is paused so the camera can stay on a selected cat. */
   followUser?: boolean;
+  /** Fired when the user pans / pinches — parent should pause GPS follow. */
+  onBreakFollow?: () => void;
   /** @deprecated Option-1 mock has no name callout on pins. */
   pinCallouts?: Record<string, string>;
 };
@@ -87,6 +89,7 @@ export function CatMap({
   capturedCatIds,
   selectedCatId,
   followUser = true,
+  onBreakFollow,
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
@@ -100,10 +103,19 @@ export function CatMap({
   const focusCoordinateRef = useRef(focusCoordinate);
   focusCoordinateRef.current = focusCoordinate;
   const userZoomRef = useRef<number | null>(null);
+  const onBreakFollowRef = useRef(onBreakFollow);
+  onBreakFollowRef.current = onBreakFollow;
+  const gestureActiveRef = useRef(false);
   const ownedIds = useMemo(
     () => new Set(capturedCatIds ?? []),
     [capturedCatIds],
   );
+
+  const pauseFollowFromGesture = () => {
+    if (!keepCenteredRef.current && !followUser) return;
+    keepCenteredRef.current = false;
+    onBreakFollowRef.current?.();
+  };
 
   useEffect(() => {
     keepCenteredRef.current = followUser;
@@ -261,7 +273,22 @@ export function CatMap({
         toolbarEnabled={false}
         mapPadding={{ top: 0, right: 0, bottom: 0, left: 0 }}
         onPanDrag={() => {
-          keepCenteredRef.current = false;
+          pauseFollowFromGesture();
+        }}
+        onRegionChange={() => {
+          // Pinch zoom / rotate also move the region without pan-drag on some builds.
+          if (gestureActiveRef.current) {
+            pauseFollowFromGesture();
+          }
+        }}
+        onTouchStart={() => {
+          gestureActiveRef.current = true;
+        }}
+        onTouchEnd={() => {
+          gestureActiveRef.current = false;
+        }}
+        onTouchCancel={() => {
+          gestureActiveRef.current = false;
         }}
       >
         <MapWorldDecor cats={cats} />

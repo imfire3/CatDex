@@ -48,6 +48,8 @@ type Props = {
   selectedCatId?: string | null;
   /** When false, GPS follow is paused so the camera can stay on a selected cat. */
   followUser?: boolean;
+  /** Fired when the user pans / pinches / rotates — parent should pause GPS follow. */
+  onBreakFollow?: () => void;
   /** @deprecated Option-1 mock has no name callout on pins. */
   pinCallouts?: Record<string, string>;
 };
@@ -67,8 +69,8 @@ type MapLibreMap = {
   getLayer: (id: string) => unknown;
   getStyle: () => { layers?: Array<Record<string, unknown>>; sources?: Record<string, unknown> } | undefined;
   getZoom: () => number;
-  on: (event: string, cb: () => void) => void;
-  off: (event: string, cb: () => void) => void;
+  on: (event: string, cb: (...args: unknown[]) => void) => void;
+  off: (event: string, cb: (...args: unknown[]) => void) => void;
   remove: () => void;
   setLayoutProperty: (id: string, name: string, value: unknown) => void;
   setPaintProperty: (id: string, name: string, value: unknown) => void;
@@ -464,6 +466,7 @@ export function CatMap({
   capturedCatIds,
   selectedCatId,
   followUser = true,
+  onBreakFollow,
 }: Props) {
   const { colors, spacing } = useTheme();
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -472,6 +475,7 @@ export function CatMap({
   const catMarkersRef = useRef<MapLibreMarker[]>([]);
   const playerMarkerRef = useRef<MapLibreMarker | null>(null);
   const onSelectRef = useRef(onSelectCat);
+  const onBreakFollowRef = useRef(onBreakFollow);
   const [mapReady, setMapReady] = useState(false);
   const followingRef = useRef(true);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
@@ -480,10 +484,34 @@ export function CatMap({
   const userCoordinateRef = useRef(userCoordinate);
   const focusCoordinateRef = useRef(focusCoordinate);
   const userZoomRef = useRef(MAP_ZOOM);
+  const programmaticCameraRef = useRef(false);
   headingRef.current = userHeading;
   userCoordinateRef.current = userCoordinate;
   focusCoordinateRef.current = focusCoordinate;
   onSelectRef.current = onSelectCat;
+  onBreakFollowRef.current = onBreakFollow;
+
+  const pauseFollowFromGesture = () => {
+    if (programmaticCameraRef.current) return;
+    if (!followingRef.current) return;
+    followingRef.current = false;
+    onBreakFollowRef.current?.();
+  };
+
+  const runProgrammaticCamera = (animate: () => void) => {
+    const map = mapRef.current;
+    programmaticCameraRef.current = true;
+    animate();
+    if (!map) {
+      programmaticCameraRef.current = false;
+      return;
+    }
+    const clear = () => {
+      programmaticCameraRef.current = false;
+      map.off('moveend', clear);
+    };
+    map.on('moveend', clear);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -539,10 +567,24 @@ export function CatMap({
           userZoomRef.current = map.getZoom();
         });
 
-        // User pans → stop auto-centering until recenter / focus.
+        // Any finger gesture frees the camera from GPS / compass follow.
+        const pauseIfUserGesture = (event?: unknown) => {
+          if (programmaticCameraRef.current) return;
+          const original =
+            event && typeof event === 'object' && 'originalEvent' in event
+              ? (event as { originalEvent?: Event }).originalEvent
+              : undefined;
+          if (original) {
+            pauseFollowFromGesture();
+          }
+        };
+
         map.on('dragstart', () => {
-          followingRef.current = false;
+          if (!programmaticCameraRef.current) pauseFollowFromGesture();
         });
+        map.on('zoomstart', pauseIfUserGesture);
+        map.on('rotatestart', pauseIfUserGesture);
+        map.on('pitchstart', pauseIfUserGesture);
 
         mapRef.current = map;
 
@@ -590,14 +632,16 @@ export function CatMap({
       Math.max(MAP_MIN_ZOOM, map.getZoom() || userZoomRef.current),
     );
     userZoomRef.current = zoom;
-    map.easeTo({
-      center: [focusCoordinate.longitude, focusCoordinate.latitude],
-      // Soft recenter keeps the player's current zoom.
-      zoom,
-      pitch: MAP_PITCH,
-      bearing: followUser ? (headingRef.current ?? map.getBearing()) : map.getBearing(),
-      duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
-      essential: true,
+    runProgrammaticCamera(() => {
+      map.easeTo({
+        center: [focusCoordinate.longitude, focusCoordinate.latitude],
+        // Soft recenter keeps the player's current zoom.
+        zoom,
+        pitch: MAP_PITCH,
+        bearing: followUser ? (headingRef.current ?? map.getBearing()) : map.getBearing(),
+        duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
+        essential: true,
+      });
     });
   }, [focusCoordinate, focusNonce, followUser, mapReady]);
 
@@ -614,14 +658,16 @@ export function CatMap({
     userZoomRef.current = MAP_ZOOM;
     const maybeStop = map as MapLibreMap & { stop?: () => void };
     maybeStop.stop?.();
-    map.easeTo({
-      center: [coordinate.longitude, coordinate.latitude],
-      zoom: MAP_ZOOM,
-      pitch: MAP_PITCH,
-      bearing: headingRef.current ?? 0,
-      duration: MAP_FLY_TO_PIN_DURATION,
-      essential: true,
-      easing: (t: number) => 1 - (1 - t) ** 3,
+    runProgrammaticCamera(() => {
+      map.easeTo({
+        center: [coordinate.longitude, coordinate.latitude],
+        zoom: MAP_ZOOM,
+        pitch: MAP_PITCH,
+        bearing: headingRef.current ?? 0,
+        duration: MAP_FLY_TO_PIN_DURATION,
+        essential: true,
+        easing: (t: number) => 1 - (1 - t) ** 3,
+      });
     });
   }, [resetViewNonce, mapReady]);
 
@@ -635,12 +681,14 @@ export function CatMap({
       lastFollowRef.current = userCoordinate;
       didCenterOnUserRef.current = true;
       userZoomRef.current = MAP_ZOOM;
-      map.easeTo({
-        center: [userCoordinate.longitude, userCoordinate.latitude],
-        zoom: MAP_ZOOM,
-        pitch: MAP_PITCH,
-        bearing: headingRef.current ?? map.getBearing(),
-        duration: MAP_CAMERA_DURATION,
+      runProgrammaticCamera(() => {
+        map.easeTo({
+          center: [userCoordinate.longitude, userCoordinate.latitude],
+          zoom: MAP_ZOOM,
+          pitch: MAP_PITCH,
+          bearing: headingRef.current ?? map.getBearing(),
+          duration: MAP_CAMERA_DURATION,
+        });
       });
       return;
     }
@@ -659,12 +707,14 @@ export function CatMap({
       Math.max(MAP_MIN_ZOOM, map.getZoom() || userZoomRef.current),
     );
     userZoomRef.current = zoom;
-    map.easeTo({
-      center: [userCoordinate.longitude, userCoordinate.latitude],
-      zoom,
-      bearing: headingRef.current ?? map.getBearing(),
-      pitch: MAP_PITCH,
-      duration: MAP_CAMERA_DURATION,
+    runProgrammaticCamera(() => {
+      map.easeTo({
+        center: [userCoordinate.longitude, userCoordinate.latitude],
+        zoom,
+        bearing: headingRef.current ?? map.getBearing(),
+        pitch: MAP_PITCH,
+        duration: MAP_CAMERA_DURATION,
+      });
     });
   }, [userCoordinate, mapReady]);
 
@@ -691,14 +741,16 @@ export function CatMap({
       Math.max(MAP_MIN_ZOOM, map.getZoom() || userZoomRef.current),
     );
     userZoomRef.current = zoom;
-    map.easeTo({
-      center: [userCoordinate.longitude, userCoordinate.latitude],
-      zoom,
-      bearing: userHeading,
-      pitch: MAP_PITCH,
-      duration: MAP_HEADING_DURATION,
-      easing: (t: number) => 1 - (1 - t) ** 3,
-      essential: true,
+    runProgrammaticCamera(() => {
+      map.easeTo({
+        center: [userCoordinate.longitude, userCoordinate.latitude],
+        zoom,
+        bearing: userHeading,
+        pitch: MAP_PITCH,
+        duration: MAP_HEADING_DURATION,
+        easing: (t: number) => 1 - (1 - t) ** 3,
+        essential: true,
+      });
     });
   }, [userHeading, userCoordinate, mapReady]);
 
