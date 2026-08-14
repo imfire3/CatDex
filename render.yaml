@@ -9,6 +9,13 @@ services:
     dockerfilePath: ./server/Dockerfile
     plan: free
     healthCheckPath: /health
+    # UI-only commits (CatDex, map HUD, etc.) must not rebuild the Vision API.
+    buildFilter:
+      paths:
+        - server/**
+        - shared/**
+        - server/Dockerfile
+        - render.yaml
     envVars:
       - key: NODE_ENV
         value: production
