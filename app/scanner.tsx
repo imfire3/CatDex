@@ -1,6 +1,5 @@
 import { BlurView } from 'expo-blur';
 import { CameraView, useCameraPermissions, type CameraType, type FlashMode } from 'expo-camera';
-import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -420,7 +419,7 @@ export default function ScannerScreen() {
     if (!cameraReady || !cameraRef.current) {
       showToast({
         title: 'Caméra pas prête',
-        description: 'Attends le flux vidéo, ou choisis une photo dans la galerie.',
+        description: 'Attends le flux vidéo.',
         tone: 'warning',
       });
       return;
@@ -449,7 +448,7 @@ export default function ScannerScreen() {
       if (!durableUri || !rawBase64) {
         showToast({
           title: 'Capture impossible',
-          description: 'Réessaie ou choisis une photo dans la galerie.',
+          description: 'Réessaie avec une autre photo.',
           tone: 'danger',
         });
         return;
@@ -466,56 +465,12 @@ export default function ScannerScreen() {
         description:
           error instanceof Error
             ? error.message
-            : 'Réessaie ou choisis une photo dans la galerie.',
+            : 'Réessaie avec une autre photo.',
         tone: 'danger',
       });
     } finally {
       setCapturing(false);
     }
-  };
-
-  const handlePickFromLibrary = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.28,
-      base64: true,
-      exif: false,
-      preferredAssetRepresentationMode:
-        ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    if (!asset.base64) {
-      showToast({
-        title: 'Image illisible',
-        description: 'Choisis une autre photo (JPEG ou PNG).',
-        tone: 'danger',
-      });
-      return;
-    }
-    const mimeType =
-      asset.mimeType && !/heic|heif/i.test(asset.mimeType)
-        ? asset.mimeType
-        : 'image/jpeg';
-    const durableUri = resolvePersistentPhotoUri({
-      uri: asset.uri,
-      base64: asset.base64,
-      mimeType,
-    });
-    if (!durableUri) {
-      showToast({
-        title: 'Image illisible',
-        description: 'Choisis une autre photo (JPEG ou PNG).',
-        tone: 'danger',
-      });
-      return;
-    }
-    setPhotoUri(durableUri);
-    setPhotoBase64(asset.base64);
-    setPhotoMimeType(mimeType);
-    setStep('analyzing');
-    setAnalyzing(true);
-    void runAnalysis(asset.base64, durableUri, mimeType);
   };
 
   const handleOpenSettings = () => {
@@ -801,8 +756,6 @@ export default function ScannerScreen() {
           onOpenSettings={
             Platform.OS === 'web' ? undefined : handleOpenSettings
           }
-          onDismissLabel="Galerie"
-          onDismiss={handlePickFromLibrary}
         />
       </View>
     );
@@ -970,7 +923,6 @@ export default function ScannerScreen() {
           <Text variant="bodySmall" color="textSecondary" align="center">
             {cameraError}
           </Text>
-          <Button title="Choisir une photo" onPress={handlePickFromLibrary} />
           <Button title="Fermer" variant="ghost" onPress={() => router.back()} />
         </View>
       ) : null}
@@ -1086,29 +1038,7 @@ export default function ScannerScreen() {
               alignItems: 'center',
               justifyContent: 'space-between' }}
           >
-            <CameraCircleButton
-              accessibilityLabel="Galerie"
-              onPress={handlePickFromLibrary}
-              size={cameraControlSize}
-              colors={colors}
-              radius={radius}
-            >
-              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z"
-                  stroke={colors.onAccent}
-                  strokeWidth={1.6}
-                />
-                <Path
-                  d="M8 14l2.5-2.5L13 14l2-2 3 3"
-                  stroke={colors.onAccent}
-                  strokeWidth={1.6}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <Circle cx="9" cy="9" r="1.2" fill={colors.onAccent} />
-              </Svg>
-            </CameraCircleButton>
+            <View style={{ width: cameraControlSize }} />
 
             <Pressable
               accessibilityRole="button"
