@@ -45,8 +45,8 @@ export function buildMapCamera(
 }
 
 /**
- * Soft follow — keeps zoom (unless overridden), flat pitch, north-up.
- * Compass heading rotates the player pin only, never the map.
+ * Soft follow — keeps zoom (unless overridden) and flat pitch.
+ * When heading is set, the map is heading-up (facing direction at the top).
  *
  * Prefer the player's pinch zoom when known. Otherwise keep the live camera
  * zoom/altitude pair together so Apple Maps does not oscillate between them.
@@ -54,7 +54,7 @@ export function buildMapCamera(
 export function buildFollowCamera(
   coordinate: { latitude: number; longitude: number },
   current?: Camera | null,
-  _heading?: number | null,
+  heading?: number | null,
   zoomOverride?: number | null,
 ): Camera {
   const zoom =
@@ -64,13 +64,16 @@ export function buildFollowCamera(
         ? current.zoom
         : MAP_ZOOM;
 
+  const mapHeading =
+    typeof heading === 'number' && Number.isFinite(heading) ? heading : 0;
+
   // When the player pinched to a zoom, omit altitude so the native map
   // derives it from zoom instead of fighting a stale altitude value.
   if (typeof zoomOverride === 'number') {
     return {
       center: coordinate,
       pitch: MAP_PITCH,
-      heading: 0,
+      heading: mapHeading,
       zoom,
     };
   }
@@ -78,7 +81,7 @@ export function buildFollowCamera(
   return {
     center: coordinate,
     pitch: MAP_PITCH,
-    heading: 0,
+    heading: mapHeading,
     zoom,
     altitude: current?.altitude ?? MAP_ALTITUDE,
   };

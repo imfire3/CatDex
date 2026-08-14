@@ -27,7 +27,7 @@ type Props = {
   onRecenter?: () => void;
   /** Double-tap recenter — restore default zoom / pitch framing. */
   onRecenterReset?: () => void;
-  /** Enable / toggle walk-follow + player-pin heading (map stays north-up). */
+  /** Enable / toggle walk-follow + heading-up camera (facing direction at the top). */
   onCompass?: () => void;
   /** When true, compass tool uses the active (brand) look. */
   compassActive?: boolean;

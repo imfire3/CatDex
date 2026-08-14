@@ -39,6 +39,12 @@ export function shouldUpdateHeading(
   return headingDeltaDegrees(previous, next) >= thresholdDeg;
 }
 
+/** Map camera bearing: the direction the player faces is up on screen. */
+export function mapBearingFromHeading(heading: number | null | undefined): number {
+  if (typeof heading !== 'number' || !Number.isFinite(heading)) return 0;
+  return normalizeHeading(heading);
+}
+
 /**
  * Web DeviceOrientation → compass degrees (0 = north, clockwise).
  * iOS Safari: webkitCompassHeading. Elsewhere: invert alpha (absolute or relative).

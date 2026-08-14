@@ -35,7 +35,7 @@ type Props = {
   resetViewNonce?: number;
   /** Player position for the custom CatDex location indicator. */
   userCoordinate?: { latitude: number; longitude: number } | null;
-  /** Device compass heading in degrees (0 = north) — rotates the player pin only. */
+  /** Device compass heading in degrees (0 = north) — heading-up camera while follow is on. */
   userHeading?: number | null;
   nearbyCatIds?: string[];
   /** Ids of cats already in the player CatDex. */
@@ -98,6 +98,8 @@ export function CatMap({
   followUserRef.current = followUser;
   const userCoordinateRef = useRef(userCoordinate);
   userCoordinateRef.current = userCoordinate;
+  const userHeadingRef = useRef(userHeading);
+  userHeadingRef.current = userHeading;
   const focusCoordinateRef = useRef(focusCoordinate);
   focusCoordinateRef.current = focusCoordinate;
   /** Last zoom chosen by the player (pinch) — never sampled mid-animation. */
@@ -162,7 +164,7 @@ export function CatMap({
         buildFollowCamera(
           target,
           current,
-          0,
+          userHeadingRef.current,
           userZoomRef.current,
         ),
         {
@@ -209,7 +211,9 @@ export function CatMap({
       userZoomRef.current = null;
       cameraGenerationRef.current += 1;
       mapRef.current?.animateCamera(
-        buildMapCamera(userCoordinate),
+        buildMapCamera(userCoordinate, {
+          heading: userHeadingRef.current ?? 0,
+        }),
         { duration: MAP_CAMERA_DURATION },
       );
       return;
@@ -234,13 +238,33 @@ export function CatMap({
         buildFollowCamera(
           userCoordinate,
           current,
-          0,
+          userHeadingRef.current,
           userZoomRef.current,
         ),
         { duration: MAP_CAMERA_DURATION },
       );
     })();
   }, [userCoordinate]);
+
+  // Compass — rotate the map so the facing direction is up.
+  useEffect(() => {
+    const coordinate = userCoordinateRef.current;
+    if (!coordinate) return;
+    const generation = ++cameraGenerationRef.current;
+    void (async () => {
+      const current = await mapRef.current?.getCamera();
+      if (generation !== cameraGenerationRef.current) return;
+      mapRef.current?.animateCamera(
+        buildFollowCamera(
+          coordinate,
+          current,
+          userHeading,
+          userZoomRef.current,
+        ),
+        { duration: MAP_CAMERA_DURATION },
+      );
+    })();
+  }, [userHeading]);
 
   return (
     <View style={StyleSheet.absoluteFill}>

@@ -544,7 +544,7 @@ export default function MapScreen() {
     }
   };
 
-  /** Toggle walk-follow (Pokémon-style). Active = camera follows GPS + pin heading. */
+  /** Toggle walk-follow. Active = camera follows GPS and rotates with the compass. */
   const handleCompassPress = () => {
     // Must run in the same tap — iOS Safari DeviceOrientation.requestPermission().
     unlockWebCompassFromGesture();

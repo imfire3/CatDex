@@ -22,6 +22,7 @@ import { canShowPinPhoto } from '@/components/maps/CatPinVisual';
 import { mapPalette } from '@/components/maps/mapPalette';
 import { getCatDiscoveryState } from '@/lib/catDiscovery';
 import { distanceMeters } from '@/lib/constants';
+import { mapBearingFromHeading } from '@/lib/mapHeading';
 import { resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
@@ -35,7 +36,7 @@ type Props = {
   /** Bumps to snap zoom/pitch back to the default explorer framing. */
   resetViewNonce?: number;
   userCoordinate?: { latitude: number; longitude: number } | null;
-  /** Device compass heading in degrees (0 = north) — rotates the player pin only. */
+  /** Device compass heading in degrees (0 = north) — heading-up camera while follow is on. */
   userHeading?: number | null;
   nearbyCatIds?: string[];
   capturedCatIds?: string[];
@@ -451,7 +452,8 @@ function applyPlayerHeading(element: HTMLElement, heading: number | null) {
   if (!rotator || !wedge) return;
   const hasHeading = heading != null && Number.isFinite(heading);
   wedge.style.opacity = hasHeading ? '1' : '0';
-  rotator.style.transform = hasHeading ? `rotate(${heading}deg)` : 'none';
+  // Heading-up camera: keep the wedge pointing to the top of the screen.
+  rotator.style.transform = 'none';
 }
 
 function createPlayerMarkerElement(
@@ -735,7 +737,7 @@ export function CatMap({
         // Soft recenter keeps the player's current zoom.
         zoom,
         pitch: MAP_PITCH,
-        bearing: 0,
+        bearing: mapBearingFromHeading(userHeadingRef.current),
         duration: shouldFollow ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
         essential: true,
       });
@@ -789,7 +791,7 @@ export function CatMap({
           center: [userCoordinate.longitude, userCoordinate.latitude],
           zoom: MAP_ZOOM,
           pitch: MAP_PITCH,
-          bearing: 0,
+          bearing: mapBearingFromHeading(userHeadingRef.current),
           duration: MAP_CAMERA_DURATION,
         });
       });
@@ -814,12 +816,31 @@ export function CatMap({
       map.easeTo({
         center: [userCoordinate.longitude, userCoordinate.latitude],
         zoom,
-        bearing: 0,
+        bearing: mapBearingFromHeading(userHeadingRef.current),
         pitch: MAP_PITCH,
         duration: MAP_CAMERA_DURATION,
       });
     });
   }, [userCoordinate, mapReady]);
+
+  // Compass — rotate the map so the facing direction is up (north / south / …).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+    const bearing = mapBearingFromHeading(userHeading);
+    const coordinate = followingRef.current ? userCoordinateRef.current : null;
+    runProgrammaticCamera(() => {
+      map.easeTo({
+        ...(coordinate
+          ? { center: [coordinate.longitude, coordinate.latitude] }
+          : {}),
+        bearing,
+        pitch: MAP_PITCH,
+        duration: MAP_CAMERA_DURATION,
+        essential: true,
+      });
+    });
+  }, [userHeading, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

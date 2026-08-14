@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   headingDeltaDegrees,
   headingFromDeviceOrientation,
+  mapBearingFromHeading,
   normalizeHeading,
   resolveDeviceHeading,
   shouldUpdateHeading,
@@ -54,6 +55,16 @@ describe('shouldUpdateHeading', () => {
     assert.equal(shouldUpdateHeading(null, 10), true);
     assert.equal(shouldUpdateHeading(10, 12), false);
     assert.equal(shouldUpdateHeading(10, 15), true);
+  });
+});
+
+describe('mapBearingFromHeading', () => {
+  it('puts the facing direction at the top of the map', () => {
+    assert.equal(mapBearingFromHeading(0), 0);
+    assert.equal(mapBearingFromHeading(90), 90);
+    assert.equal(mapBearingFromHeading(180), 180);
+    assert.equal(mapBearingFromHeading(null), 0);
+    assert.equal(mapBearingFromHeading(undefined), 0);
   });
 });
 
