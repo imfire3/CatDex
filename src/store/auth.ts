@@ -377,7 +377,7 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error) {
           console.error('Auth initialization error:', error);
-          if (isRecoverableAuthError(error)) {
+          if (isRecoverableAuthError(error) || !get().session?.user) {
             await clearLocalSupabaseSession();
             set({ session: null, user: null, loading: false, error: null });
             return;
@@ -857,7 +857,9 @@ export const useAuthStore = create<AuthState>()(
       name: 'catdex-auth',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        user: state.user,
+        // Live session comes from supabase.auth.getSession(), not a cached user.
+        // Otherwise a hard refresh keeps Explorer after the account is gone.
+        ...(isSupabaseConfigured ? {} : { user: state.user }),
         onboardingCompleted: state.onboardingCompleted,
         onboardingCompletedUserIds: state.onboardingCompletedUserIds,
       }),
@@ -871,6 +873,10 @@ export const useAuthStore = create<AuthState>()(
           state?.user?.id?.startsWith('user_')
         ) {
           useAuthStore.setState({ user: null });
+        }
+        // Old installs persisted `user`; ignore it until initialize() confirms a JWT.
+        if (isSupabaseConfigured) {
+          useAuthStore.setState({ user: null, session: null });
         }
         // Migrate legacy device-level flag → per-user for the persisted user.
         const userId = state?.user?.id;

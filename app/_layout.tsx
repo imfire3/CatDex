@@ -1,5 +1,5 @@
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Redirect, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
@@ -10,8 +10,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Spinner } from '@/components/Loader';
 import { ToastHost } from '@/components/Toast/ToastHost';
 import { useMissionSync } from '@/hooks/useMissionSync';
+import { shouldRedirectToWelcome } from '@/lib/authRoutes';
 import { installImageResolveAssetSourcePolyfill } from '@/lib/imageResolvePolyfill';
 import { MobileWebFrame } from '@/layout/MobileWebFrame';
+import { useAuthStore } from '@/store/auth';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/colors';
 import { kindSansFontMap } from '@/theme/typography';
@@ -23,48 +25,75 @@ void SystemUI.setBackgroundColorAsync(palette.light.background);
 
 function RootNavigator() {
   const { colors } = useTheme();
+  const pathname = usePathname();
+  const user = useAuthStore((state) => state.user);
+  const hydrated = useAuthStore((state) => state.hydrated);
   useMissionSync();
 
+  if (!hydrated) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.background,
+        }}
+      >
+        <Spinner color={colors.accent} />
+      </View>
+    );
+  }
+
+  const signedIn = Boolean(user);
+
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
-        animation: 'slide_from_right',
-      }}
-    >
+    <>
+      {shouldRedirectToWelcome(hydrated, user, pathname) ? (
+        <Redirect href="/(auth)/welcome" />
+      ) : null}
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
+        }}
+      >
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
       <Stack.Screen
         name="auth/callback"
         options={{ headerShown: false, animation: 'fade' }}
       />
-      <Stack.Screen
-        name="scanner"
-        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
-      />
-      <Stack.Screen
-        name="discovery"
-        options={{ presentation: 'fullScreenModal', animation: 'fade' }}
-      />
-      <Stack.Screen
-        name="reward"
-        options={{ presentation: 'fullScreenModal', animation: 'fade' }}
-      />
-      <Stack.Screen
-        name="cat/[id]"
-        options={{
-          headerShown: false,
-          animation: 'slide_from_right',
-        }}
-      />
-      <Stack.Screen name="settings" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="notifications"
-        options={{ headerShown: false, animation: 'slide_from_right' }}
-      />
+      <Stack.Protected guard={signedIn}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="scanner"
+          options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="discovery"
+          options={{ presentation: 'fullScreenModal', animation: 'fade' }}
+        />
+        <Stack.Screen
+          name="reward"
+          options={{ presentation: 'fullScreenModal', animation: 'fade' }}
+        />
+        <Stack.Screen
+          name="cat/[id]"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="notifications"
+          options={{ headerShown: false, animation: 'slide_from_right' }}
+        />
+      </Stack.Protected>
     </Stack>
+    </>
   );
 }
 
