@@ -61,7 +61,9 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
         {
           width: '100%',
           borderRadius: radius.cta,
-          backgroundColor: colors.surfaceElevated,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
           overflow: 'hidden',
           cursor: 'pointer',
           transform: [{ scale: pressed ? motion.cardPressScale : 1 }],
