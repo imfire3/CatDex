@@ -1,21 +1,30 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
+type Props = {
+  /** Zoom out and frame discoverable cats around the player. */
+  onShowDiscoverable?: () => void;
+  discoverableCount?: number;
+};
+
 /**
  * Discreet map legend — owned (solid) vs discoverable (open ring).
- * Sits under the top HUD row without covering profile / tools.
+ * Tap « À découvrir » to overview nearby mystery pins.
  */
-export function MapDiscoveryLegend() {
-  const { colors, spacing, radius, shadow } = useTheme();
+export function MapDiscoveryLegend({
+  onShowDiscoverable,
+  discoverableCount = 0,
+}: Props) {
+  const { colors, spacing, radius, shadow, motion } = useTheme();
   const insets = useSafeAreaInsets();
+  const canOverview = Boolean(onShowDiscoverable) && discoverableCount > 0;
 
   return (
     <View
-      pointerEvents="none"
-      accessibilityRole="text"
+      accessibilityRole="summary"
       accessibilityLabel="Légende : plein capturé, vide à découvrir"
       style={[
         styles.wrap,
@@ -33,24 +42,49 @@ export function MapDiscoveryLegend() {
         shadow.low,
       ]}
     >
-      <View style={styles.item}>
+      <View style={styles.item} pointerEvents="none">
         <View style={[styles.dot, { backgroundColor: colors.brand }]} />
-        <Text
-          variant="caption" weight="semibold"
-          color="textSecondary"
-        >
+        <Text variant="caption" weight="semibold" color="textSecondary">
           Capturé
         </Text>
       </View>
-      <View style={styles.item}>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          canOverview
+            ? `À découvrir, ${discoverableCount} chat${discoverableCount > 1 ? 's' : ''} autour de toi`
+            : 'À découvrir'
+        }
+        accessibilityHint={
+          canOverview
+            ? 'Dézoome la carte pour montrer les chats à découvrir autour de toi'
+            : undefined
+        }
+        disabled={!canOverview}
+        onPress={onShowDiscoverable}
+        style={({ pressed }) => [
+          styles.item,
+          {
+            opacity: canOverview ? 1 : 0.72,
+            transform: [{ scale: pressed && canOverview ? motion.pressScale : 1 }],
+            paddingHorizontal: spacing[4],
+            paddingVertical: spacing[4],
+            borderRadius: radius.full,
+            backgroundColor:
+              pressed && canOverview ? colors.brandSoft : 'transparent',
+          },
+        ]}
+      >
         <View style={[styles.ring, { borderColor: colors.brand }]} />
         <Text
-          variant="caption" weight="semibold"
-          color="textSecondary"
+          variant="caption"
+          weight="semibold"
+          color={canOverview ? 'textBrand' : 'textSecondary'}
         >
           À découvrir
         </Text>
-      </View>
+      </Pressable>
     </View>
   );
 }

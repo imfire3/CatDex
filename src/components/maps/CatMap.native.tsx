@@ -32,6 +32,12 @@ type Props = {
   focusNonce?: number;
   /** Bumps to snap zoom/pitch back to the default explorer framing. */
   resetViewNonce?: number;
+  /**
+   * Fit the camera to these coordinates (player + discoverable cats).
+   * Pair with overviewNonce so each tap re-animates.
+   */
+  overviewCoordinates?: { latitude: number; longitude: number }[] | null;
+  overviewNonce?: number;
   /** Player position for the custom CatDex location indicator. */
   userCoordinate?: { latitude: number; longitude: number } | null;
   /** Device compass heading in degrees (0 = north) — heading-up camera while follow is on. */
@@ -80,6 +86,8 @@ export function CatMap({
   focusCoordinate,
   focusNonce,
   resetViewNonce = 0,
+  overviewCoordinates = null,
+  overviewNonce = 0,
   userCoordinate,
   userHeading = null,
   nearbyCatIds,
@@ -194,6 +202,37 @@ export function CatMap({
       { duration: MAP_FLY_TO_PIN_DURATION },
     );
   }, [resetViewNonce]);
+
+  // « À découvrir » — zoom out to frame the player + mystery pins.
+  useEffect(() => {
+    if (!overviewNonce) return;
+    const points = overviewCoordinates?.filter(
+      (point) =>
+        Number.isFinite(point.latitude) && Number.isFinite(point.longitude),
+    );
+    if (!points || points.length === 0) return;
+
+    keepCenteredRef.current = false;
+    stopCameraAnimation();
+    cameraGenerationRef.current += 1;
+
+    if (points.length === 1) {
+      const [only] = points;
+      lastFollowRef.current = only;
+      userZoomRef.current = Math.max(MAP_MIN_ZOOM, 14.4);
+      mapRef.current?.animateCamera(
+        buildMapCamera(only, { zoom: userZoomRef.current, heading: 0 }),
+        { duration: MAP_FLY_TO_PIN_DURATION },
+      );
+      return;
+    }
+
+    mapRef.current?.fitToCoordinates(points, {
+      edgePadding: { top: 96, right: 48, bottom: 160, left: 48 },
+      animated: true,
+    });
+    userZoomRef.current = null;
+  }, [overviewNonce, overviewCoordinates]);
 
   // Soft follow while walking — pan + compass heading, never override pinch zoom.
   // First GPS lock: center the camera on the player (game default framing).

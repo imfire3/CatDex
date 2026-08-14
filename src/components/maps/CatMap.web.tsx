@@ -35,6 +35,12 @@ type Props = {
   focusNonce?: number;
   /** Bumps to snap zoom/pitch back to the default explorer framing. */
   resetViewNonce?: number;
+  /**
+   * Fit the camera to these coordinates (player + discoverable cats).
+   * Pair with overviewNonce so each tap re-animates.
+   */
+  overviewCoordinates?: { latitude: number; longitude: number }[] | null;
+  overviewNonce?: number;
   userCoordinate?: { latitude: number; longitude: number } | null;
   /** Device compass heading in degrees (0 = north) — heading-up camera while follow is on. */
   userHeading?: number | null;
@@ -73,6 +79,10 @@ type MapLibreMap = {
   setMaxZoom?: (zoom: number) => void;
   setMinZoom?: (zoom: number) => void;
   jumpTo?: (opts: Record<string, unknown>) => void;
+  fitBounds?: (
+    bounds: [[number, number], [number, number]],
+    opts?: Record<string, unknown>,
+  ) => void;
 };
 
 type MapLibreMarker = {
@@ -523,6 +533,8 @@ export function CatMap({
   focusCoordinate,
   focusNonce,
   resetViewNonce = 0,
+  overviewCoordinates = null,
+  overviewNonce = 0,
   userCoordinate,
   userHeading = null,
   nearbyCatIds,
@@ -775,6 +787,76 @@ export function CatMap({
       });
     });
   }, [resetViewNonce, mapReady]);
+
+  // « À découvrir » — zoom out to frame the player + mystery pins.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map || !overviewNonce) return;
+    const points = overviewCoordinates?.filter(
+      (point) =>
+        Number.isFinite(point.latitude) && Number.isFinite(point.longitude),
+    );
+    if (!points || points.length === 0) return;
+
+    followingRef.current = false;
+    const maybeStop = map as MapLibreMap & { stop?: () => void };
+    maybeStop.stop?.();
+
+    if (points.length === 1) {
+      const [only] = points;
+      const zoom = Math.max(MAP_MIN_ZOOM, MAP_ZOOM - 2.2);
+      userZoomRef.current = zoom;
+      lastFollowRef.current = only;
+      runProgrammaticCamera(() => {
+        map.easeTo({
+          center: [only.longitude, only.latitude],
+          zoom,
+          pitch: MAP_PITCH,
+          bearing: 0,
+          duration: MAP_FLY_TO_PIN_DURATION,
+          essential: true,
+          easing: (t: number) => 1 - (1 - t) ** 3,
+        });
+      });
+      return;
+    }
+
+    let minLng = points[0]!.longitude;
+    let maxLng = points[0]!.longitude;
+    let minLat = points[0]!.latitude;
+    let maxLat = points[0]!.latitude;
+    for (const point of points) {
+      minLng = Math.min(minLng, point.longitude);
+      maxLng = Math.max(maxLng, point.longitude);
+      minLat = Math.min(minLat, point.latitude);
+      maxLat = Math.max(maxLat, point.latitude);
+    }
+
+    // Tiny pad when pins are almost stacked so fitBounds still dezooms a bit.
+    const padLng = Math.max((maxLng - minLng) * 0.12, 0.0012);
+    const padLat = Math.max((maxLat - minLat) * 0.12, 0.0009);
+
+    runProgrammaticCamera(() => {
+      map.fitBounds?.(
+        [
+          [minLng - padLng, minLat - padLat],
+          [maxLng + padLng, maxLat + padLat],
+        ],
+        {
+          padding: { top: 96, bottom: 160, left: 48, right: 48 },
+          duration: MAP_FLY_TO_PIN_DURATION,
+          maxZoom: MAP_ZOOM - 1.4,
+          pitch: MAP_PITCH,
+          bearing: 0,
+          essential: true,
+        },
+      );
+      const afterZoom = map.getZoom();
+      if (typeof afterZoom === 'number') {
+        userZoomRef.current = afterZoom;
+      }
+    });
+  }, [overviewNonce, overviewCoordinates, mapReady]);
 
   // Soft follow — pan only; never override the player's pinch zoom.
   useEffect(() => {

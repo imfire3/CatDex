@@ -24,6 +24,7 @@ import {
   isMapDemoEnabled,
   mergeCatsById,
 } from '@/lib/demoCats';
+import { coordinatesForDiscoveryOverview } from '@/lib/mapDiscoveryOverview';
 import {
   getCurrentLocationCoordinate,
   isLocationActive,
@@ -81,6 +82,10 @@ export default function MapScreen() {
     nonce: number;
   } | null>(null);
   const [resetViewNonce, setResetViewNonce] = useState(0);
+  const [overviewNonce, setOverviewNonce] = useState(0);
+  const [overviewCoordinates, setOverviewCoordinates] = useState<
+    { latitude: number; longitude: number }[] | null
+  >(null);
   const [userCoordinate, setUserCoordinate] = useState<{
     latitude: number;
     longitude: number;
@@ -188,6 +193,31 @@ export default function MapScreen() {
       mapCats.some((cat) => getCatDiscoveryState(cat, ownedIds) === 'discoverable'),
     [mapCats, ownedIds],
   );
+
+  const discoverableCats = useMemo(
+    () =>
+      mapCats.filter(
+        (cat) => getCatDiscoveryState(cat, ownedIds) === 'discoverable',
+      ),
+    [mapCats, ownedIds],
+  );
+
+  const handleShowDiscoverable = useCallback(() => {
+    if (discoverableCats.length === 0) return;
+    const points = coordinatesForDiscoveryOverview(
+      userCoordinate,
+      discoverableCats.map((cat) => ({
+        latitude: cat.latitude,
+        longitude: cat.longitude,
+      })),
+    );
+    setOverviewCoordinates(points);
+    setOverviewNonce((value) => value + 1);
+    setFollowUser(false);
+    setCompassMode(false);
+    setSheetVisible(false);
+    setSelected(null);
+  }, [discoverableCats, userCoordinate]);
 
   useEffect(() => {
     let mounted = true;
@@ -594,6 +624,8 @@ export default function MapScreen() {
           focusCoordinate={mapFocusCoordinate}
           focusNonce={focusCoordinate?.nonce}
           resetViewNonce={resetViewNonce}
+          overviewCoordinates={overviewCoordinates}
+          overviewNonce={overviewNonce}
           userCoordinate={userCoordinate}
           userHeading={compassMode ? (userHeading ?? 0) : null}
           nearbyCatIds={nearbyCatIds}
@@ -623,7 +655,12 @@ export default function MapScreen() {
       />
 
       {hasDiscoverableOnMap || storedCats.length > 0 ? (
-        <MapDiscoveryLegend />
+        <MapDiscoveryLegend
+          discoverableCount={discoverableCats.length}
+          onShowDiscoverable={
+            discoverableCats.length > 0 ? handleShowDiscoverable : undefined
+          }
+        />
       ) : null}
 
       <MapExplorerHud
