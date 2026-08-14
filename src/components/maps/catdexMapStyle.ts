@@ -1,7 +1,7 @@
 /**
  * CatDex Google Maps JSON style — pale isometric quartier.
  * Applied via `customMapStyle` (Google provider only; ignored by Apple Maps).
- * No labels / POI / transit — soft land, white buildings, lavender roads.
+ * No labels / POI / transit — soft land, white buildings, gray roads.
  */
 import type { MapStyleElement } from 'react-native-maps';
 

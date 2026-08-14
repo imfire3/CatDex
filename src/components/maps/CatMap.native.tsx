@@ -5,7 +5,6 @@ import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native
 
 import { CatMapMarker } from '@/components/CatMapMarker';
 import { DiscoveryRadius } from '@/components/maps/DiscoveryRadius';
-import { MapLuminousOverlay } from '@/components/maps/MapLuminousOverlay';
 import { MapWorldDecor } from '@/components/maps/MapWorldDecor';
 import { PlayerLocationMarker } from '@/components/maps/PlayerLocationMarker';
 import { catdexMapStyle } from '@/components/maps/catdexMapStyle';
@@ -58,7 +57,7 @@ type ExtraMaps = {
 
 /**
  * Google customMapStyle works on Android (and iOS when PROVIDER_GOOGLE + API key).
- * Without an iOS Google key we keep Apple Maps + POI suppression + flat overlay.
+ * Without an iOS Google key we keep Apple Maps + POI suppression.
  */
 function resolveMapProvider() {
   if (Platform.OS === 'android') return PROVIDER_GOOGLE;
@@ -347,7 +346,6 @@ export function CatMap({
           />
         ) : null}
       </MapView>
-      <MapLuminousOverlay />
     </View>
   );
 }

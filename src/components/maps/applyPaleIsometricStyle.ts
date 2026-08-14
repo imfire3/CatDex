@@ -117,8 +117,7 @@ export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
         break;
       case 'park':
         paint['fill-color'] = p.park;
-        paint['fill-opacity'] = 0.92;
-        paint['fill-outline-color'] = p.parkDeep;
+        paint['fill-opacity'] = 1;
         break;
       case 'park_outline':
         paint['line-color'] = p.parkDeep;
@@ -127,11 +126,11 @@ export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
         break;
       case 'landcover_wood':
         paint['fill-color'] = p.forest;
-        paint['fill-opacity'] = 0.7;
+        paint['fill-opacity'] = 1;
         break;
       case 'landcover_grass':
         paint['fill-color'] = p.park;
-        paint['fill-opacity'] = 0.75;
+        paint['fill-opacity'] = 1;
         break;
       case 'landcover_sand':
         paint['fill-color'] = p.landSoft;
@@ -144,7 +143,7 @@ export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
         break;
       case 'landuse_residential':
         paint['fill-color'] = p.landSoft;
-        paint['fill-opacity'] = 0.3;
+        paint['fill-opacity'] = 1;
         break;
       case 'landuse_pitch':
       case 'landuse_track':
@@ -168,14 +167,13 @@ export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
       case 'building':
         layout.visibility = 'visible';
         paint['fill-color'] = p.building;
-        paint['fill-opacity'] = 0.92;
-        paint['fill-outline-color'] = p.buildingShadow;
+        paint['fill-opacity'] = 1;
         break;
       default:
         break;
     }
 
-    // Roads / tunnels / bridges — lavender fills, quiet casings
+    // Roads / tunnels / bridges — gray fills, quiet casings
     if (layer.type === 'line' && isRoadLine(id) && !id.includes('rail')) {
       if (id.includes('casing') || id.includes('path_pedestrian')) {
         if (id.includes('path_pedestrian') && !id.includes('casing')) {
@@ -189,7 +187,7 @@ export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
         }
       } else {
         paint['line-color'] = roadFillColor(id);
-        paint['line-opacity'] = 0.95;
+        paint['line-opacity'] = 1;
         paint['line-width'] = thinRoadWidth(paint['line-width']);
       }
     }

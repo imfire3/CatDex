@@ -174,7 +174,7 @@ function ensureFlatBuildings(map: MapLibreMap) {
       minzoom: 13,
       paint: {
         'fill-color': mapPalette.building,
-        'fill-opacity': 0.92,
+        'fill-opacity': 1,
         'fill-outline-color': mapPalette.buildingShadow,
       },
     });
@@ -984,8 +984,6 @@ export function CatMap({
           height: '100%',
         },
       })}
-      {/* High-key veil matching the pale isometric reference */}
-      <View pointerEvents="none" style={styles.veil} />
     </View>
   );
 }
@@ -1059,10 +1057,6 @@ export function MiniMap({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  veil: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(244, 243, 248, 0.08)',
   },
   miniWrap: {
     overflow: 'hidden',

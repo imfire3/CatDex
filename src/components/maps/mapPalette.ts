@@ -3,16 +3,16 @@
  * Used by Google Maps `customMapStyle` and MapLibre style overrides.
  * Hex here are intentional (map style JSON cannot consume theme tokens).
  *
- * Reference look: high-key off-white ground, white flat building footprints,
- * thin lavender roads, soft mint parks, pale blue water — no labels.
+ * Matches app canvas (#F9F9FB): off-white ground, white buildings, gray
+ * roads, mint parks, pale blue water — no labels, no brand wash.
  */
 export const mapPalette = {
-  /** Ground / canvas */
-  land: '#F4F3F8',
-  landSoft: '#EFEEF5',
+  /** Ground / canvas — same as theme background */
+  land: '#F9F9FB',
+  landSoft: '#EEF0F2',
   /** Building footprints + extrusions */
   building: '#FFFFFF',
-  buildingShadow: '#E6E5EF',
+  buildingShadow: '#D8DBDF',
   /** Parks & soft greenery */
   park: '#D8EFD0',
   parkDeep: '#B9DDB0',
@@ -21,14 +21,14 @@ export const mapPalette = {
   /** Water */
   water: '#C9E4F5',
   waterLabel: '#8BB8D0',
-  /** Delicate lavender / periwinkle roads */
-  roadLocal: '#D0CBE6',
-  roadArterial: '#C4BEE0',
-  roadArterialStroke: '#B6AED6',
-  roadHighway: '#B8B0D8',
-  roadHighwayStroke: '#A69EC8',
-  roadStroke: '#C8C2E0',
+  /** Neutral gray roads — brand stays on HUD / pins only */
+  roadLocal: '#E4E6EA',
+  roadArterial: '#D8DBDF',
+  roadArterialStroke: '#CBD0D6',
+  roadHighway: '#CBD0D6',
+  roadHighwayStroke: '#B8BDC4',
+  roadStroke: '#D8DBDF',
   /** Labels (kept muted; style usually hides them) */
-  label: '#B0AEC0',
-  labelStroke: '#F4F3F8',
+  label: '#98A2B3',
+  labelStroke: '#F9F9FB',
 } as const;
