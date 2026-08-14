@@ -7,7 +7,6 @@ import {
   MAP_CAMERA_DURATION,
   MAP_FLY_TO_PIN_DURATION,
   MAP_FOLLOW_THRESHOLD_M,
-  MAP_HEADING_DURATION,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
   MAP_PITCH,
@@ -23,10 +22,6 @@ import { canShowPinPhoto } from '@/components/maps/CatPinVisual';
 import { mapPalette } from '@/components/maps/mapPalette';
 import { getCatDiscoveryState } from '@/lib/catDiscovery';
 import { distanceMeters } from '@/lib/constants';
-import {
-  headingDeltaDegrees,
-  MAP_HEADING_THRESHOLD_DEG,
-} from '@/lib/mapHeading';
 import { resolveCatPhotoUri } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
@@ -40,7 +35,7 @@ type Props = {
   /** Bumps to snap zoom/pitch back to the default explorer framing. */
   resetViewNonce?: number;
   userCoordinate?: { latitude: number; longitude: number } | null;
-  /** Device compass heading in degrees (0 = north) — rotates the map while following. */
+  /** Device compass heading in degrees (0 = north) — rotates the player pin only. */
   userHeading?: number | null;
   nearbyCatIds?: string[];
   capturedCatIds?: string[];
@@ -461,7 +456,7 @@ export function CatMap({
   focusNonce,
   resetViewNonce = 0,
   userCoordinate,
-  userHeading = null,
+  userHeading: _userHeading = null,
   nearbyCatIds,
   capturedCatIds,
   selectedCatId,
@@ -480,12 +475,10 @@ export function CatMap({
   const followingRef = useRef(true);
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const didCenterOnUserRef = useRef(false);
-  const headingRef = useRef(userHeading);
   const userCoordinateRef = useRef(userCoordinate);
   const focusCoordinateRef = useRef(focusCoordinate);
   const userZoomRef = useRef(MAP_ZOOM);
   const programmaticCameraRef = useRef(false);
-  headingRef.current = userHeading;
   userCoordinateRef.current = userCoordinate;
   focusCoordinateRef.current = focusCoordinate;
   onSelectRef.current = onSelectCat;
@@ -536,9 +529,11 @@ export function CatMap({
           zoom: MAP_ZOOM,
           pitch: MAP_PITCH,
           bearing: 0,
-          maxPitch: 60,
+          maxPitch: 0,
           minZoom: MAP_MIN_ZOOM,
           maxZoom: MAP_MAX_ZOOM,
+          dragRotate: false,
+          touchPitch: false,
           attributionControl: { compact: true },
         });
 
@@ -549,7 +544,7 @@ export function CatMap({
           map.setMinZoom?.(MAP_MIN_ZOOM);
           map.setMaxZoom?.(MAP_MAX_ZOOM);
           ensureFlatBuildings(map);
-          map.easeTo({ pitch: MAP_PITCH, bearing: 0, duration: 500 });
+          map.easeTo({ pitch: 0, bearing: 0, duration: 0 });
           if (!cancelled) setMapReady(true);
         });
 
@@ -619,31 +614,39 @@ export function CatMap({
     followingRef.current = followUser;
   }, [followUser]);
 
+  // Soft recenter — only on explicit fly requests. Never re-fly when follow toggles off.
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map || !focusCoordinate) return;
-    followingRef.current = followUser;
+    const shouldFollow = followingRef.current;
     lastFollowRef.current = focusCoordinate;
     didCenterOnUserRef.current = true;
     const maybeStop = map as MapLibreMap & { stop?: () => void };
     maybeStop.stop?.();
     const zoom = Math.min(
       MAP_MAX_ZOOM,
-      Math.max(MAP_MIN_ZOOM, map.getZoom() || userZoomRef.current),
+      Math.max(MAP_MIN_ZOOM, userZoomRef.current || map.getZoom() || MAP_ZOOM),
     );
     userZoomRef.current = zoom;
+    const { latitude, longitude } = focusCoordinate;
     runProgrammaticCamera(() => {
       map.easeTo({
-        center: [focusCoordinate.longitude, focusCoordinate.latitude],
+        center: [longitude, latitude],
         // Soft recenter keeps the player's current zoom.
         zoom,
         pitch: MAP_PITCH,
-        bearing: followUser ? (headingRef.current ?? map.getBearing()) : map.getBearing(),
-        duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
+        bearing: 0,
+        duration: shouldFollow ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
         essential: true,
       });
     });
-  }, [focusCoordinate, focusNonce, followUser, mapReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional primitive deps
+  }, [
+    focusCoordinate?.latitude,
+    focusCoordinate?.longitude,
+    focusNonce,
+    mapReady,
+  ]);
 
   // Double-tap recenter — restore the default explorer framing (once per nonce).
   useEffect(() => {
@@ -663,7 +666,7 @@ export function CatMap({
         center: [coordinate.longitude, coordinate.latitude],
         zoom: MAP_ZOOM,
         pitch: MAP_PITCH,
-        bearing: headingRef.current ?? 0,
+        bearing: 0,
         duration: MAP_FLY_TO_PIN_DURATION,
         essential: true,
         easing: (t: number) => 1 - (1 - t) ** 3,
@@ -686,7 +689,7 @@ export function CatMap({
           center: [userCoordinate.longitude, userCoordinate.latitude],
           zoom: MAP_ZOOM,
           pitch: MAP_PITCH,
-          bearing: headingRef.current ?? map.getBearing(),
+          bearing: 0,
           duration: MAP_CAMERA_DURATION,
         });
       });
@@ -711,48 +714,12 @@ export function CatMap({
       map.easeTo({
         center: [userCoordinate.longitude, userCoordinate.latitude],
         zoom,
-        bearing: headingRef.current ?? map.getBearing(),
+        bearing: 0,
         pitch: MAP_PITCH,
         duration: MAP_CAMERA_DURATION,
       });
     });
   }, [userCoordinate, mapReady]);
-
-  // Standing still + turning: rotate map bearing — keep current zoom.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (
-      !mapReady ||
-      !map ||
-      userHeading == null ||
-      !userCoordinate ||
-      !followingRef.current ||
-      !didCenterOnUserRef.current
-    ) {
-      return;
-    }
-
-    if (headingDeltaDegrees(map.getBearing(), userHeading) < MAP_HEADING_THRESHOLD_DEG) {
-      return;
-    }
-
-    const zoom = Math.min(
-      MAP_MAX_ZOOM,
-      Math.max(MAP_MIN_ZOOM, map.getZoom() || userZoomRef.current),
-    );
-    userZoomRef.current = zoom;
-    runProgrammaticCamera(() => {
-      map.easeTo({
-        center: [userCoordinate.longitude, userCoordinate.latitude],
-        zoom,
-        bearing: userHeading,
-        pitch: MAP_PITCH,
-        duration: MAP_HEADING_DURATION,
-        easing: (t: number) => 1 - (1 - t) ** 3,
-        essential: true,
-      });
-    });
-  }, [userHeading, userCoordinate, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

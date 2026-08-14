@@ -27,7 +27,7 @@ type Props = {
   onRecenter?: () => void;
   /** Double-tap recenter — restore default zoom / pitch framing. */
   onRecenterReset?: () => void;
-  /** Enable / toggle compass heading-up mode. */
+  /** Enable / toggle player-pin heading (map stays north-up). */
   onCompass?: () => void;
   /** When true, compass tool uses the active (brand) look. */
   compassActive?: boolean;

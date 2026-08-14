@@ -52,8 +52,8 @@ describe('resolveDeviceHeading', () => {
 describe('shouldUpdateHeading', () => {
   it('updates on first sample and when past threshold', () => {
     assert.equal(shouldUpdateHeading(null, 10), true);
-    assert.equal(shouldUpdateHeading(10, 11), false);
-    assert.equal(shouldUpdateHeading(10, 12), true);
+    assert.equal(shouldUpdateHeading(10, 12), false);
+    assert.equal(shouldUpdateHeading(10, 15), true);
   });
 });
 

@@ -97,7 +97,7 @@ export default function MapScreen() {
   const [watchEnabled, setWatchEnabled] = useState(false);
   /** GPS follow — paused while looking at a cat in another region. */
   const [followUser, setFollowUser] = useState(true);
-  /** Heading-up mode — map rotates with the phone compass. On by default. */
+  /** Compass heading on the player pin only — the map stays north-up. */
   const [compassMode, setCompassMode] = useState(true);
 
   const lastHapticCatRef = useRef<string | null>(null);
@@ -460,25 +460,11 @@ export default function MapScreen() {
     }
   };
 
-  /** Toggle heading-up compass mode (same round tool UI as recenter). */
+  /** Toggle player-pin heading. The map stays north-up. */
   const handleCompassPress = () => {
     // Sync with the tap — required for iOS Safari DeviceOrientation.
     unlockWebCompassFromGesture();
-
-    if (compassMode && followUser) {
-      setCompassMode(false);
-      if (userCoordinate) {
-        flyToCoordinate(userCoordinate);
-      }
-      return;
-    }
-
-    setCompassMode(true);
-    setFollowUser(true);
-    setWatchEnabled(true);
-    if (userCoordinate) {
-      flyToCoordinate(userCoordinate);
-    }
+    setCompassMode((active) => !active);
   };
 
   const mapCatList = useMemo(
@@ -486,6 +472,16 @@ export default function MapScreen() {
     [sortedCats],
   );
   const ownedCatIdList = useMemo(() => [...ownedIds], [ownedIds]);
+  const mapFocusCoordinate = useMemo(
+    () =>
+      focusCoordinate
+        ? {
+            latitude: focusCoordinate.latitude,
+            longitude: focusCoordinate.longitude,
+          }
+        : null,
+    [focusCoordinate?.latitude, focusCoordinate?.longitude],
+  );
 
   const handleDismissDiscoveryTip = useCallback(() => {
     setDiscoveryTipVisible(false);
@@ -498,14 +494,7 @@ export default function MapScreen() {
         <CatMap
           cats={mapCatList}
           scheme="light"
-          focusCoordinate={
-            focusCoordinate
-              ? {
-                  latitude: focusCoordinate.latitude,
-                  longitude: focusCoordinate.longitude,
-                }
-              : null
-          }
+          focusCoordinate={mapFocusCoordinate}
           focusNonce={focusCoordinate?.nonce}
           resetViewNonce={resetViewNonce}
           userCoordinate={userCoordinate}

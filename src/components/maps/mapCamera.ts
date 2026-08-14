@@ -7,19 +7,12 @@ import { motionDuration } from '@/theme/motion';
 export const MAP_ZOOM = 16.6;
 
 /**
- * Light camera tilt (degrees) — 3D feel from the viewpoint only.
- * Buildings stay flat footprints (no extrusions) for pin readability.
+ * Flat top-down map — no 3D tilt (pitch caused zoom/follow bugs on Apple Maps).
  */
-export const MAP_PITCH = 42;
+export const MAP_PITCH = 0;
 
 /** Camera animation duration — within 150–300 ms. */
 export const MAP_CAMERA_DURATION = Math.min(motionDuration.slow, 280);
-
-/**
- * Compass rotate duration — longer ease so heading-up feels continuous,
- * not stepped, when the phone turns.
- */
-export const MAP_HEADING_DURATION = Math.max(motionDuration.slow, 420);
 
 /** Longer fly when jumping to a cat in another quartier. */
 export const MAP_FLY_TO_PIN_DURATION = Math.max(motionDuration.reveal, 640);
@@ -49,20 +42,41 @@ export function buildMapCamera(
 }
 
 /**
- * Soft follow — keeps zoom (unless overridden), locks light camera pitch,
- * orients toward compass when known.
+ * Soft follow — keeps zoom (unless overridden), flat pitch, north-up.
+ * Compass heading rotates the player pin only, never the map.
+ *
+ * Prefer the player's pinch zoom when known. Otherwise keep the live camera
+ * zoom/altitude pair together so Apple Maps does not oscillate between them.
  */
 export function buildFollowCamera(
   coordinate: { latitude: number; longitude: number },
   current?: Camera | null,
-  heading?: number | null,
+  _heading?: number | null,
   zoomOverride?: number | null,
 ): Camera {
+  const zoom =
+    typeof zoomOverride === 'number'
+      ? zoomOverride
+      : typeof current?.zoom === 'number'
+        ? current.zoom
+        : MAP_ZOOM;
+
+  // When the player pinched to a zoom, omit altitude so the native map
+  // derives it from zoom instead of fighting a stale altitude value.
+  if (typeof zoomOverride === 'number') {
+    return {
+      center: coordinate,
+      pitch: MAP_PITCH,
+      heading: 0,
+      zoom,
+    };
+  }
+
   return {
     center: coordinate,
     pitch: MAP_PITCH,
-    heading: heading ?? current?.heading ?? 0,
-    zoom: zoomOverride ?? current?.zoom ?? MAP_ZOOM,
+    heading: 0,
+    zoom,
     altitude: current?.altitude ?? MAP_ALTITUDE,
   };
 }

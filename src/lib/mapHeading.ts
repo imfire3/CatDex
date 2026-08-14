@@ -1,5 +1,5 @@
 /** Min degrees the compass must move before the map re-orients. */
-export const MAP_HEADING_THRESHOLD_DEG = 1.5;
+export const MAP_HEADING_THRESHOLD_DEG = 4;
 
 export function normalizeHeading(degrees: number): number {
   const n = degrees % 360;

@@ -16,13 +16,11 @@ import {
   MAP_CAMERA_DURATION,
   MAP_FLY_TO_PIN_DURATION,
   MAP_FOLLOW_THRESHOLD_M,
-  MAP_HEADING_DURATION,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
 } from '@/components/maps/mapCamera';
 import { getCatDiscoveryState } from '@/lib/catDiscovery';
 import { distanceMeters } from '@/lib/constants';
-import { headingDeltaDegrees, MAP_HEADING_THRESHOLD_DEG } from '@/lib/mapHeading';
 import type { Cat } from '@/types/cat';
 
 type Props = {
@@ -37,7 +35,7 @@ type Props = {
   resetViewNonce?: number;
   /** Player position for the custom CatDex location indicator. */
   userCoordinate?: { latitude: number; longitude: number } | null;
-  /** Device compass heading in degrees (0 = north) — rotates the map while following. */
+  /** Device compass heading in degrees (0 = north) — rotates the player pin only. */
   userHeading?: number | null;
   nearbyCatIds?: string[];
   /** Ids of cats already in the player CatDex. */
@@ -96,55 +94,88 @@ export function CatMap({
   const didCenterOnUserRef = useRef(false);
   /** When true, camera keeps the GPS point centered (Pokémon-style). */
   const keepCenteredRef = useRef(true);
-  const headingRef = useRef(userHeading);
-  headingRef.current = userHeading;
+  const followUserRef = useRef(followUser);
+  followUserRef.current = followUser;
   const userCoordinateRef = useRef(userCoordinate);
   userCoordinateRef.current = userCoordinate;
   const focusCoordinateRef = useRef(focusCoordinate);
   focusCoordinateRef.current = focusCoordinate;
+  /** Last zoom chosen by the player (pinch) — never sampled mid-animation. */
   const userZoomRef = useRef<number | null>(null);
   const onBreakFollowRef = useRef(onBreakFollow);
   onBreakFollowRef.current = onBreakFollow;
   const gestureActiveRef = useRef(false);
+  /** Bumped to drop stale getCamera → animateCamera races. */
+  const cameraGenerationRef = useRef(0);
   const ownedIds = useMemo(
     () => new Set(capturedCatIds ?? []),
     [capturedCatIds],
   );
 
+  const stopCameraAnimation = () => {
+    cameraGenerationRef.current += 1;
+    const map = mapRef.current as (MapView & { stopAnimation?: () => void }) | null;
+    map?.stopAnimation?.();
+  };
+
   const pauseFollowFromGesture = () => {
-    if (!keepCenteredRef.current && !followUser) return;
+    stopCameraAnimation();
+    if (!keepCenteredRef.current && !followUserRef.current) return;
     keepCenteredRef.current = false;
     onBreakFollowRef.current?.();
+  };
+
+  const captureUserZoom = () => {
+    void (async () => {
+      const generation = cameraGenerationRef.current;
+      const current = await mapRef.current?.getCamera();
+      if (generation !== cameraGenerationRef.current) return;
+      if (typeof current?.zoom === 'number') {
+        userZoomRef.current = current.zoom;
+      }
+    })();
   };
 
   useEffect(() => {
     keepCenteredRef.current = followUser;
   }, [followUser]);
 
-  // Soft recenter — pan to coordinate, keep the player's current zoom.
+  // Soft recenter — only on explicit fly requests (nonce / coordinate).
+  // Do NOT depend on followUser: breaking GPS follow must not re-fly the camera.
+  // Depend on lat/lng primitives + nonce — never the object identity (parent may
+  // allocate a fresh `{ lat, lng }` every render).
   useEffect(() => {
     if (!focusCoordinate) return;
     lastFollowRef.current = focusCoordinate;
-    keepCenteredRef.current = followUser;
+    keepCenteredRef.current = followUserRef.current;
     didCenterOnUserRef.current = true;
+    const generation = ++cameraGenerationRef.current;
+    const shouldFollow = followUserRef.current;
+    const target = {
+      latitude: focusCoordinate.latitude,
+      longitude: focusCoordinate.longitude,
+    };
     void (async () => {
       const current = await mapRef.current?.getCamera();
-      if (typeof current?.zoom === 'number') {
-        userZoomRef.current = current.zoom;
-      }
+      if (generation !== cameraGenerationRef.current) return;
       mapRef.current?.animateCamera(
         buildFollowCamera(
-          focusCoordinate,
+          target,
           current,
-          followUser ? headingRef.current : current?.heading ?? 0,
+          0,
           userZoomRef.current,
         ),
         {
-          duration: followUser ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
+          duration: shouldFollow ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
         },
       );
     })();
-  }, [focusCoordinate, focusNonce, followUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional primitive deps
+  }, [
+    focusCoordinate?.latitude,
+    focusCoordinate?.longitude,
+    focusNonce,
+  ]);
 
   // Double-tap recenter — restore default zoom + pitch framing (once per nonce).
   useEffect(() => {
@@ -156,10 +187,9 @@ export function CatMap({
     keepCenteredRef.current = true;
     didCenterOnUserRef.current = true;
     userZoomRef.current = null;
+    stopCameraAnimation();
     mapRef.current?.animateCamera(
-      buildMapCamera(coordinate, {
-        heading: headingRef.current ?? 0,
-      }),
+      buildMapCamera(coordinate),
       { duration: MAP_FLY_TO_PIN_DURATION },
     );
   }, [resetViewNonce]);
@@ -168,17 +198,18 @@ export function CatMap({
   // First GPS lock: center the camera on the player (game default framing).
   // User pan disables follow until recenter.
   useEffect(() => {
-    if (!userCoordinate || !keepCenteredRef.current) return;
+    if (!userCoordinate || !keepCenteredRef.current || gestureActiveRef.current) {
+      return;
+    }
 
     const prev = lastFollowRef.current;
     if (!prev || !didCenterOnUserRef.current) {
       lastFollowRef.current = userCoordinate;
       didCenterOnUserRef.current = true;
       userZoomRef.current = null;
+      cameraGenerationRef.current += 1;
       mapRef.current?.animateCamera(
-        buildMapCamera(userCoordinate, {
-          heading: headingRef.current ?? 0,
-        }),
+        buildMapCamera(userCoordinate),
         { duration: MAP_CAMERA_DURATION },
       );
       return;
@@ -193,56 +224,23 @@ export function CatMap({
     if (moved < MAP_FOLLOW_THRESHOLD_M) return;
 
     lastFollowRef.current = userCoordinate;
+    const generation = ++cameraGenerationRef.current;
     void (async () => {
-      if (!keepCenteredRef.current) return;
+      if (!keepCenteredRef.current || gestureActiveRef.current) return;
       const current = await mapRef.current?.getCamera();
-      if (typeof current?.zoom === 'number') {
-        userZoomRef.current = current.zoom;
-      }
+      if (generation !== cameraGenerationRef.current) return;
+      if (!keepCenteredRef.current || gestureActiveRef.current) return;
       mapRef.current?.animateCamera(
         buildFollowCamera(
           userCoordinate,
           current,
-          headingRef.current,
+          0,
           userZoomRef.current,
         ),
         { duration: MAP_CAMERA_DURATION },
       );
     })();
   }, [userCoordinate]);
-
-  // Standing still + turning the phone: rotate the map to match compass.
-  useEffect(() => {
-    if (
-      userHeading == null ||
-      !userCoordinate ||
-      !keepCenteredRef.current ||
-      !didCenterOnUserRef.current
-    ) {
-      return;
-    }
-
-    void (async () => {
-      if (!keepCenteredRef.current) return;
-      const current = await mapRef.current?.getCamera();
-      const prevHeading = current?.heading ?? 0;
-      if (headingDeltaDegrees(prevHeading, userHeading) < MAP_HEADING_THRESHOLD_DEG) {
-        return;
-      }
-      if (typeof current?.zoom === 'number') {
-        userZoomRef.current = current.zoom;
-      }
-      mapRef.current?.animateCamera(
-        buildFollowCamera(
-          userCoordinate,
-          current,
-          userHeading,
-          userZoomRef.current,
-        ),
-        { duration: MAP_HEADING_DURATION },
-      );
-    })();
-  }, [userHeading, userCoordinate]);
 
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -263,7 +261,7 @@ export function CatMap({
         showsBuildings={false}
         showsPointsOfInterest={false}
         pitchEnabled={false}
-        rotateEnabled
+        rotateEnabled={false}
         scrollEnabled
         zoomEnabled
         zoomTapEnabled
@@ -283,12 +281,15 @@ export function CatMap({
         }}
         onTouchStart={() => {
           gestureActiveRef.current = true;
+          pauseFollowFromGesture();
         }}
         onTouchEnd={() => {
           gestureActiveRef.current = false;
+          captureUserZoom();
         }}
         onTouchCancel={() => {
           gestureActiveRef.current = false;
+          captureUserZoom();
         }}
       >
         <MapWorldDecor cats={cats} />
