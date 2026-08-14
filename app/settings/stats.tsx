@@ -44,7 +44,7 @@ function StatRow({
 }
 
 export default function StatsSettingsScreen() {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { spacing } = useTheme();
   const cats = useCatsStore((s) => s.cats);
   const streakDays = useMissionsStore((s) => s.streakDays);
   const missions = useMissionsStore((s) => s.missions);
@@ -61,18 +61,7 @@ export default function StatsSettingsScreen() {
       title="Mes statistiques"
       subtitle="Ta progression d’explorateur, en un coup d’œil."
     >
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            paddingHorizontal: spacing[16],
-          },
-          shadow.low,
-        ]}
-      >
+      <View>
         <View style={{ paddingVertical: spacing[16], gap: spacing[4] }}>
           <Text variant="caption" weight="semibold" color="textMuted">
             Titre

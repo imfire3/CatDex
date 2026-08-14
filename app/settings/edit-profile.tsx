@@ -7,7 +7,9 @@ import { Alert, Pressable, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { TextInput } from '@/components/Input';
+import { IconPencil } from '@/components/Settings/settingsIcons';
 import { SettingsScreen } from '@/components/Settings/SettingsScreen';
+import { AvatarEditBadge, ProfileUpdatedModal } from '@/components/profile';
 import { Text } from '@/components/Text';
 import { uploadAvatar } from '@/lib/supabaseStorage';
 import { useAuthStore } from '@/store/auth';
@@ -24,7 +26,7 @@ function extrasKey(userId: string) {
 }
 
 export default function EditProfileScreen() {
-  const { colors, spacing, radius, shadow, motion } = useTheme();
+  const { colors, spacing, motion, iconSize } = useTheme();
   const user = useAuthStore((state) => state.user);
   const loading = useAuthStore((state) => state.loading);
   const updateProfile = useAuthStore((state) => state.updateProfile);
@@ -42,6 +44,7 @@ export default function EditProfileScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -124,13 +127,7 @@ export default function EditProfileScreen() {
         extrasKey(user.id),
         JSON.stringify({ bio: bio.trim(), city: city.trim() } satisfies LocalProfileExtras),
       );
-      showToast({
-        title: 'Profil mis à jour',
-        description: 'Tes infos sont enregistrées.',
-        tone: 'success',
-      });
-      if (router.canGoBack()) router.back();
-      else router.replace('/(tabs)/profile');
+      setSaved(true);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Impossible d’enregistrer le profil.';
@@ -197,140 +194,138 @@ export default function EditProfileScreen() {
     }
   };
 
+  const handleDismissSaved = () => {
+    setSaved(false);
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)/profile');
+  };
+
   return (
-    <SettingsScreen
-      title="Modifier le profil"
-      subtitle="Change ton pseudo, ta photo et ton mot de passe."
-      footer={
-        <Button
-          title="Enregistrer"
-          loading={loading}
-          onPress={() => void handleSave()}
-        />
-      }
-    >
-      <View style={{ alignItems: 'center', gap: spacing[16] }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Changer la photo de profil"
-          onPress={() => {
-            void handlePickAvatar();
-          }}
-          style={({ pressed }) => ({
-            opacity: pressed ? 0.9 : 1,
-            transform: [{ scale: pressed ? motion.pressScale : 1 }],
-          })}
-        >
-          <Avatar
-            hero
-            source={avatarUri ? { uri: avatarUri } : undefined}
-            initials={initials}
-            gradient={!avatarUri}
-            accentBorder
-            accessibilityLabel="Avatar"
+    <View style={{ flex: 1 }}>
+      <SettingsScreen
+        title="Modifier le profil"
+        footer={
+          <Button
+            title="Enregistrer les modifications"
+            loading={loading}
+            onPress={() => void handleSave()}
           />
-        </Pressable>
-        <Button
-          variant="secondary"
-          title={uploadingAvatar ? 'Envoi…' : 'Modifier la photo'}
-          loading={uploadingAvatar}
-          onPress={() => void handlePickAvatar()}
-        />
-      </View>
-
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing[16],
-            gap: spacing[16],
-          },
-          shadow.low,
-        ]}
+        }
       >
-        <TextInput
-          label="Pseudo"
-          value={displayName}
-          onChangeText={setDisplayName}
-          autoCapitalize="words"
-          autoCorrect={false}
-          maxLength={32}
-          placeholder="Ton pseudo"
-          error={error ?? undefined}
-        />
-        <TextInput
-          label="Bio"
-          value={bio}
-          onChangeText={setBio}
-          placeholder="Une ligne sur toi…"
-          maxLength={120}
-          multiline
-        />
-        <TextInput
-          label="Ville (optionnelle)"
-          value={city}
-          onChangeText={setCity}
-          placeholder="Ex. Lyon"
-          autoCapitalize="words"
-          maxLength={48}
-        />
-        <Text variant="caption" color="textMuted">
-          E-mail : {user.email || '—'}
-        </Text>
-      </View>
+        <View style={{ alignItems: 'center', paddingTop: spacing[8], gap: spacing[16] }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Changer la photo de profil"
+            onPress={() => {
+              void handlePickAvatar();
+            }}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.9 : 1,
+              transform: [{ scale: pressed ? motion.pressScale : 1 }],
+            })}
+          >
+            <View>
+              <Avatar
+                hero
+                source={avatarUri ? { uri: avatarUri } : undefined}
+                initials={initials}
+                gradient={!avatarUri}
+                accessibilityLabel="Avatar"
+              />
+              <AvatarEditBadge />
+            </View>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Modifier la photo"
+            onPress={() => {
+              void handlePickAvatar();
+            }}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing[8],
+              opacity: pressed ? 0.85 : 1,
+            })}
+          >
+            <IconPencil color={colors.brand} size={iconSize.sm} />
+            <Text variant="bodySmall" weight="semibold" color="textBrand">
+              {uploadingAvatar ? 'Envoi…' : 'Modifier la photo'}
+            </Text>
+          </Pressable>
+        </View>
 
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing[16],
-            gap: spacing[16],
-          },
-          shadow.low,
-        ]}
-      >
-        <Text variant="title" color="textBrand">
-          Mot de passe
-        </Text>
-        <Text variant="bodySmall" color="textSecondary">
-          Change-le ici, ou reçois un e-mail de réinitialisation.
-        </Text>
-        <TextInput
-          label="Nouveau mot de passe"
-          value={newPassword}
-          onChangeText={setNewPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="••••••••"
-        />
-        <TextInput
-          label="Confirmer"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="••••••••"
-        />
-        <Button
-          title="Mettre à jour le mot de passe"
-          loading={passwordBusy}
-          onPress={() => void handleChangePassword()}
-        />
-        <Button
-          variant="secondary"
-          title="Envoyer un e-mail de réinitialisation"
-          loading={resetBusy}
-          onPress={() => void handleResetPassword()}
-        />
-      </View>
-    </SettingsScreen>
+        <View style={{ gap: spacing[16] }}>
+          <TextInput
+            label="Pseudo"
+            value={displayName}
+            onChangeText={setDisplayName}
+            autoCapitalize="words"
+            autoCorrect={false}
+            maxLength={32}
+            placeholder="Ton pseudo"
+            error={error ?? undefined}
+          />
+          <TextInput
+            label="Bio"
+            value={bio}
+            onChangeText={setBio}
+            placeholder="Une ligne sur toi…"
+            maxLength={120}
+            multiline
+          />
+          <TextInput
+            label="Ville (optionnelle)"
+            value={city}
+            onChangeText={setCity}
+            placeholder="Ex. Lyon"
+            autoCapitalize="words"
+            maxLength={48}
+          />
+          <Text variant="caption" color="textMuted">
+            E-mail : {user.email || '—'}
+          </Text>
+        </View>
+
+        <View style={{ gap: spacing[16] }}>
+          <Text variant="title" color="textBrand">
+            Mot de passe
+          </Text>
+          <Text variant="bodySmall" color="textSecondary">
+            Change-le ici, ou reçois un e-mail de réinitialisation.
+          </Text>
+          <TextInput
+            label="Nouveau mot de passe"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="••••••••"
+          />
+          <TextInput
+            label="Confirmer"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="••••••••"
+          />
+          <Button
+            title="Mettre à jour le mot de passe"
+            loading={passwordBusy}
+            onPress={() => void handleChangePassword()}
+          />
+          <Button
+            variant="secondary"
+            title="Envoyer un e-mail de réinitialisation"
+            loading={resetBusy}
+            onPress={() => void handleResetPassword()}
+          />
+        </View>
+      </SettingsScreen>
+      <ProfileUpdatedModal visible={saved} onDismiss={handleDismissSaved} />
+    </View>
   );
 }

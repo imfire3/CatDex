@@ -333,6 +333,27 @@ export function IconCamera({ color, size }: IconProps) {
   );
 }
 
+export function IconPencil({ color, size }: IconProps) {
+  const t = useStroke(color);
+  const s = size ?? t.size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5Z"
+        stroke={t.stroke}
+        strokeWidth={t.strokeWidth}
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M14.2 5.8 18.2 9.8"
+        stroke={t.stroke}
+        strokeWidth={t.strokeWidth}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 export function IconPin({ color, size }: IconProps) {
   const t = useStroke(color);
   const s = size ?? t.size;

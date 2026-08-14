@@ -12,7 +12,7 @@ import { useSettingsPrefsStore } from '@/store/settingsPrefs';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SyncSettingsScreen() {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   const prefs = useSettingsPrefsStore((s) => s.prefs);
   const hydrated = useSettingsPrefsStore((s) => s.hydrated);
   const hydrate = useSettingsPrefsStore((s) => s.hydrate);
@@ -29,19 +29,7 @@ export default function SyncSettingsScreen() {
       title="Synchronisation"
       subtitle="Sauvegarde automatiquement ton CatDex dans le cloud."
     >
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing[24],
-            gap: spacing[16],
-          },
-          shadow.low,
-        ]}
-      >
+      <View style={{ gap: spacing[16] }}>
         <Text variant="title" color="textBrand">
           Cloud CatDex
         </Text>

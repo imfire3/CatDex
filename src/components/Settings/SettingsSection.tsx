@@ -11,29 +11,16 @@ type Props = {
   tone?: 'default' | 'danger';
 };
 
-/** Section title + card of SettingsRow children. */
+/** Section title + settings rows on the canvas — no wrapping card. */
 export function SettingsSection({ title, children, tone = 'default' }: Props) {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { spacing } = useTheme();
 
   return (
     <View style={{ gap: spacing[16] }}>
       <Text variant="title" color={tone === 'danger' ? 'danger' : 'textBrand'}>
         {title}
       </Text>
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: tone === 'danger' ? colors.dangerSoft : colors.border,
-            overflow: 'hidden',
-          },
-          shadow.low,
-        ]}
-      >
-        {children}
-      </View>
+      <View>{children}</View>
     </View>
   );
 }

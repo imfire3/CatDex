@@ -43,7 +43,7 @@ function locationLabel(
 }
 
 export default function PrivacySettingsScreen() {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { spacing } = useTheme();
   const [cameraStatus, setCameraStatus] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState<Location.PermissionStatus | null>(
     null,
@@ -108,19 +108,7 @@ export default function PrivacySettingsScreen() {
         />
       </SettingsSection>
 
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing[16],
-            gap: spacing[8],
-          },
-          shadow.low,
-        ]}
-      >
+      <View style={{ gap: spacing[8] }}>
         <Text variant="bodySmall" weight="semibold" color="textBody">
           Astuce
         </Text>

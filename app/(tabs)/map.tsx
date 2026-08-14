@@ -21,7 +21,6 @@ import { PARIS_20E, distanceMeters } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
 import {
   DEMO_COMMUNITY_CATS,
-  DEMO_OWNED_CATS,
   isMapDemoEnabled,
   mergeCatsById,
 } from '@/lib/demoCats';
@@ -68,11 +67,8 @@ export default function MapScreen() {
   const openMissionCount = missions.filter((m) => !m.completed).length;
   const captureGate = useCaptureGate();
 
-  /** Local CatDex + optional __DEV__ fake owned pins for discovery UI trials. */
-  const ownedCats = useMemo(
-    () => (mapDemo ? mergeCatsById(storedCats, DEMO_OWNED_CATS) : storedCats),
-    [mapDemo, storedCats],
-  );
+  /** Real CatDex only — never count demo / community pins as captures. */
+  const ownedCats = storedCats;
   const ownedIds = useMemo(() => buildOwnedCatIdSet(ownedCats), [ownedCats]);
 
   const [communityCats, setCommunityCats] = useState<Cat[]>([]);
@@ -632,7 +628,7 @@ export default function MapScreen() {
 
       <MapExplorerHud
         missionCount={openMissionCount}
-        collectionCount={ownedCats.length}
+        collectionCount={storedCats.length}
         captureHighlighted={Boolean(nearbyCatIds.length)}
         compassActive={compassMode}
         onRecenter={() => void recenterOnPlayer()}

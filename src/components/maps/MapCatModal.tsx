@@ -100,11 +100,9 @@ export function MapCatModal({
         style={[
           styles.card,
           {
-            left: 0,
-            right: 0,
+            left: spacing[24],
+            right: spacing[24],
             bottom: cardBottom,
-            width: '100%',
-            maxWidth: '100%',
             backgroundColor: colors.surface,
             borderRadius: radius[16],
             padding: spacing[16],
@@ -259,16 +257,7 @@ export function MapCatModal({
           </View>
 
           <View style={{ width: '100%', alignSelf: 'stretch' }}>
-            <Button
-              title={primaryTitle}
-              onPress={onPrimary}
-              fullWidth
-              style={{
-                width: '100%',
-                alignSelf: 'stretch',
-                minHeight: spacing[48],
-                height: spacing[48] }}
-            />
+            <Button title={primaryTitle} onPress={onPrimary} fullWidth />
           </View>
       </View>
     </View>

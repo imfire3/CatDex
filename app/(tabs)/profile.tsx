@@ -2,17 +2,16 @@ import { router } from 'expo-router'
 import { Pressable, ScrollView, View } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Svg, { Circle, Path } from 'react-native-svg'
 
+import { Button } from '@/components/Button'
 import { CatImage } from '@/components/CatImage'
 import { CatSprite } from '@/components/CatSprite'
-import { GlassIconButton } from '@/components/GlassIconButton'
 import {
   ProfileActivityTimeline,
   ProfileBadgeRow,
   ProfileFavoriteEmpty,
   ProfileHero,
-  ProfileSettingsLink,
+  ProfileMenuCard,
   ProfileStatGrid,
 } from '@/components/profile'
 import { Text } from '@/components/Text'
@@ -60,7 +59,7 @@ function FavoriteCompact({ cat, onPress }: { cat: Cat; onPress: () => void }) {
         onPress={onPress}
         style={({ pressed }) => [
           {
-            borderRadius: radius.cta,
+            borderRadius: radius.lg,
             overflow: 'hidden',
             backgroundColor: colors.surfaceElevated,
             borderWidth: 1,
@@ -104,10 +103,11 @@ function FavoriteCompact({ cat, onPress }: { cat: Cat; onPress: () => void }) {
 }
 
 export default function ProfileScreen() {
-  const { colors, spacing, iconStroke, iconSize, motion } = useTheme()
+  const { colors, spacing, motion } = useTheme()
   const insets = useSafeAreaInsets()
   const reduceMotion = useReducedMotion()
   const user = useAuthStore((state) => state.user)
+  const signOut = useAuthStore((state) => state.signOut)
   const cats = useCatsStore((state) => state.cats)
   const streakDays = useMissionsStore((state) => state.streakDays)
   const showToast = useToastStore((state) => state.show)
@@ -123,46 +123,36 @@ export default function ProfileScreen() {
       : undefined)
 
   const totalXp = estimateTotalXp(cats)
-  const { level, xpIntoLevel, xpMax } = progressionFromTotalXp(totalXp)
+  const { level } = progressionFromTotalXp(totalXp)
   const places = uniquePlaces(cats)
   const streak = Math.max(streakDays, cats.length > 0 ? 1 : 0)
   const badges = buildProfileBadges(cats, level, streak)
   const badgesCount = countUnlockedBadges(cats, level, streak)
   const activity = buildRecentActivity(cats, level)
 
-  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24]
+  const listBottom = spacing[24]
   const enterHero = reduceMotion ? undefined : FadeIn.duration(motion.duration.slow)
   const enterSections = reduceMotion
     ? undefined
     : FadeInDown.delay(100).duration(motion.duration.slow)
 
   const goExplore = () => router.push('/(tabs)/map')
-  const goSettings = () => router.push('/settings')
+  const goEdit = () => router.push('/settings/edit-profile')
+
+  const handleSignOut = () => {
+    void (async () => {
+      try {
+        await signOut()
+      } finally {
+        router.replace('/(auth)/welcome')
+      }
+    })()
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <TabStackHeader
-        title="Profil"
-        right={
-          <GlassIconButton accessibilityLabel="Ouvrir les réglages" onPress={goSettings}>
-            <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
-              <Circle
-                cx="12"
-                cy="12"
-                r="3"
-                stroke={colors.brand}
-                strokeWidth={iconStroke.regular}
-              />
-              <Path
-                d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"
-                stroke={colors.brand}
-                strokeWidth={iconStroke.regular}
-                strokeLinecap="round"
-              />
-            </Svg>
-          </GlassIconButton>
-        }
-      />
+      <TabStackHeader title="Profil" />
+
       <ScrollView
         bounces={false}
         contentContainerStyle={{ paddingBottom: listBottom }}
@@ -171,10 +161,10 @@ export default function ProfileScreen() {
         <Animated.View entering={enterHero}>
           <ProfileHero
             displayName={displayName}
+            subtitle={user?.email}
             avatarUri={avatarUri}
             level={level}
-            xpIntoLevel={xpIntoLevel}
-            xpMax={xpMax}
+            onEdit={goEdit}
           />
         </Animated.View>
 
@@ -183,8 +173,19 @@ export default function ProfileScreen() {
           style={{
             paddingHorizontal: spacing[24],
             paddingTop: spacing[32],
-            gap: spacing[32] }}
+            gap: spacing[32],
+          }}
         >
+          <ProfileMenuCard
+            onEditProfile={goEdit}
+            onNotifications={() => router.push('/settings/notifications')}
+            onCatDex={() => router.push('/(tabs)/catdex')}
+            onMissions={() => router.push('/(tabs)/missions')}
+            onPrivacy={() => router.push('/settings/privacy')}
+            onAppearance={() => router.push('/settings/appearance')}
+            onSettings={() => router.push('/settings')}
+          />
+
           <ProfileStatGrid
             stats={[
               { label: 'Chats', value: String(cats.length) },
@@ -215,10 +216,26 @@ export default function ProfileScreen() {
           />
 
           <ProfileActivityTimeline items={activity} />
-
-          <ProfileSettingsLink onPress={goSettings} />
         </Animated.View>
       </ScrollView>
+
+      <View
+        style={{
+          paddingHorizontal: spacing[24],
+          paddingTop: spacing[16],
+          paddingBottom: Math.max(insets.bottom, spacing[16]),
+          backgroundColor: colors.background,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        }}
+      >
+        <Button
+          title="Déconnexion"
+          variant="destructive"
+          onPress={handleSignOut}
+          accessibilityLabel="Se déconnecter"
+        />
+      </View>
     </View>
   )
 }

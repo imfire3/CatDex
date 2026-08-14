@@ -29,7 +29,7 @@ function appBuild(): string {
 }
 
 export default function AboutVersionScreen() {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { spacing } = useTheme();
   const showToast = useToastStore((s) => s.show);
   const version = appVersion();
   const build = appBuild();
@@ -39,19 +39,7 @@ export default function AboutVersionScreen() {
       title="Version"
       subtitle="Ton quartier. Tes chats."
     >
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing[24],
-            gap: spacing[8],
-          },
-          shadow.low,
-        ]}
-      >
+      <View style={{ gap: spacing[8] }}>
         <Text variant="caption" weight="semibold" color="textMuted">
           CatDex
         </Text>

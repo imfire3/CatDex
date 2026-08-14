@@ -22,7 +22,7 @@ export function ProfileFavoriteEmpty({ onExplore }: Props) {
         style={[
           {
             backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.cta,
+            borderRadius: radius.lg,
             borderWidth: 1,
             borderColor: colors.border,
             padding: spacing[24],

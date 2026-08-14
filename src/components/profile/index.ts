@@ -6,3 +6,6 @@ export { ProfileBadgeRow } from './ProfileBadgeRow';
 export { ProfileActivityTimeline } from './ProfileActivityTimeline';
 export { ProfileFavoriteEmpty } from './ProfileFavoriteEmpty';
 export { ProfileSettingsLink } from './ProfileSettingsLink';
+export { ProfileMenuCard } from './ProfileMenuCard';
+export { ProfileUpdatedModal } from './ProfileUpdatedModal';
+export { AvatarEditBadge } from './AvatarEditBadge';

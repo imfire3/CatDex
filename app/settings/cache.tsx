@@ -11,7 +11,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 const CACHE_LABEL = '≈ 12 Mo';
 
 export default function CacheSettingsScreen() {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { spacing } = useTheme();
   const showToast = useToastStore((s) => s.show);
   const [clearing, setClearing] = useState(false);
   const [cacheLabel, setCacheLabel] = useState(CACHE_LABEL);
@@ -43,19 +43,7 @@ export default function CacheSettingsScreen() {
         />
       }
     >
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing[24],
-            gap: spacing[8],
-          },
-          shadow.low,
-        ]}
-      >
+      <View style={{ gap: spacing[8] }}>
         <Text variant="caption" weight="semibold" color="textMuted">
           Cache actuel
         </Text>

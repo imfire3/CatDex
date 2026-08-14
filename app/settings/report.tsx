@@ -12,7 +12,7 @@ import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function ReportProblemScreen() {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   const showToast = useToastStore((s) => s.show);
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -79,19 +79,7 @@ export default function ReportProblemScreen() {
         />
       }
     >
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing[16],
-            gap: spacing[16],
-          },
-          shadow.low,
-        ]}
-      >
+      <View style={{ gap: spacing[16] }}>
         <TextInput
           label="Sujet"
           value={subject}

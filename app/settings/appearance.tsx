@@ -19,7 +19,7 @@ import { useTheme } from '@/theme/ThemeProvider'
 const OPTIONS: ThemePreference[] = ['clair', 'sombre', 'automatique']
 
 export default function AppearanceSettingsScreen() {
-  const { colors, spacing, radius, shadow, motion } = useTheme()
+  const { colors, spacing, radius, motion } = useTheme()
   const prefs = useSettingsPrefsStore((s) => s.prefs)
   const hydrated = useSettingsPrefsStore((s) => s.hydrated)
   const hydrate = useSettingsPrefsStore((s) => s.hydrate)
@@ -48,19 +48,7 @@ export default function AppearanceSettingsScreen() {
     >
       <ThemeLabPreview />
 
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing[16],
-            gap: spacing[24],
-          },
-          shadow.low,
-        ]}
-      >
+      <View style={{ gap: spacing[24] }}>
         <ColorSwatchGroup
           value={lab.brandId}
           onChange={setBrandId}
@@ -95,18 +83,7 @@ export default function AppearanceSettingsScreen() {
         <Text variant="label" color="textBrand">
           Mode d’affichage
         </Text>
-        <View
-          style={[
-            {
-              backgroundColor: colors.surfaceElevated,
-              borderRadius: radius.lg,
-              borderWidth: 1,
-              borderColor: colors.border,
-              overflow: 'hidden',
-            },
-            shadow.low,
-          ]}
-        >
+        <View>
           {OPTIONS.map((option, index) => {
             const selected = prefs.theme === option
             return (

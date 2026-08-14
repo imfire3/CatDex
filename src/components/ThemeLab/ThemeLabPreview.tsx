@@ -7,26 +7,14 @@ import { useTheme } from '@/theme/ThemeProvider'
 
 /** Live preview of brand + radius tokens on shared components. */
 export const ThemeLabPreview = () => {
-  const { colors, spacing, radius, shadow } = useTheme()
+  const { spacing } = useTheme()
 
   return (
     <View style={{ gap: spacing[16] }}>
       <Text variant="label" color="textBrand">
         Aperçu
       </Text>
-      <View
-        style={[
-          {
-            backgroundColor: colors.surfaceElevated,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: spacing[16],
-            gap: spacing[16],
-          },
-          shadow.low,
-        ]}
-      >
+      <View style={{ gap: spacing[16] }}>
         <Text variant="title" color="textBrand">
           Ton quartier. Tes chats.
         </Text>

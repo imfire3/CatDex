@@ -1,75 +1,88 @@
-import { View } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
+import { Pressable, View } from 'react-native'
+import Svg, { Path } from 'react-native-svg'
 
 import { Avatar } from '@/components/Avatar'
-import { ProgressBar } from '@/components/Progress'
 import { Text } from '@/components/Text'
+import { AvatarEditBadge } from '@/components/profile/AvatarEditBadge'
 import { useTheme } from '@/theme/ThemeProvider'
 
 type Props = {
   displayName: string
+  subtitle?: string
   avatarUri?: string
   level: number
-  xpIntoLevel: number
-  xpMax: number
+  onEdit: () => void
 }
 
-/** Compact trainer header — avatar, name, level, XP bar. */
+/** Centered identity — avatar with edit badge, name, level chip. */
 export function ProfileHero({
   displayName,
+  subtitle,
   avatarUri,
   level,
-  xpIntoLevel,
-  xpMax,
+  onEdit,
 }: Props) {
-  const { colors, spacing, gradients } = useTheme()
+  const { colors, spacing, radius, iconSize, iconStroke } = useTheme()
   const initials = displayName.slice(0, 2).toUpperCase()
-  const coverHeight = spacing[64]
-  const nextLevel = level + 1
 
   return (
-    <View>
-      <View style={{ height: coverHeight }}>
-        <LinearGradient
-          colors={[gradients.primarySoft[0], gradients.primarySoft[1], colors.background]}
-          locations={[0, 0.55, 1]}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: coverHeight }}
-        />
-      </View>
-
-      <View
-        style={{
-          marginTop: -spacing[32],
-          paddingHorizontal: spacing[24],
-          gap: spacing[16] }}
+    <View
+      style={{
+        alignItems: 'center',
+        paddingHorizontal: spacing[24],
+        paddingTop: spacing[24],
+        gap: spacing[16],
+      }}
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Modifier le profil"
+        onPress={onEdit}
+        style={{ alignItems: 'center' }}
       >
-        <Avatar
-          hero
-          source={avatarUri ? { uri: avatarUri } : undefined}
-          initials={initials}
-          gradient={!avatarUri}
-          accentBorder
-          accessibilityLabel={`Avatar de ${displayName}`}
-        />
+        <View>
+          <Avatar
+            hero
+            source={avatarUri ? { uri: avatarUri } : undefined}
+            initials={initials}
+            gradient={!avatarUri}
+            accessibilityLabel={`Avatar de ${displayName}`}
+          />
+          <AvatarEditBadge />
+        </View>
+      </Pressable>
 
-        <View style={{ gap: spacing.sm }}>
-          <Text variant="title" color="textBrand">
-            {displayName}
+      <View style={{ alignItems: 'center', gap: spacing[8] }}>
+        <Text variant="title" weight="bold" color="text" align="center">
+          {displayName}
+        </Text>
+        {subtitle ? (
+          <Text variant="bodySmall" color="textSecondary" align="center">
+            {subtitle}
           </Text>
-          <Text variant="body" color="textSecondary">
+        ) : null}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing[8],
+            paddingHorizontal: spacing[16],
+            paddingVertical: spacing[8],
+            borderRadius: radius.full,
+            backgroundColor: colors.brandSoft,
+          }}
+        >
+          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M20 7 10 17l-5-5"
+              stroke={colors.brand}
+              strokeWidth={iconStroke.bold}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+          <Text variant="caption" weight="semibold" color="textBrand">
             Niveau {level}
-          </Text>
-          <Text variant="caption" color="textMuted">
-            En route vers le niveau {nextLevel}
-          </Text>
-          <ProgressBar progress={xpMax ? xpIntoLevel / xpMax : 0} height={8} />
-          <Text variant="caption" color="textMuted">
-            {xpIntoLevel} / {xpMax} XP
           </Text>
         </View>
       </View>
