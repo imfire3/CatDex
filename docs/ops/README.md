@@ -16,6 +16,7 @@ Guides opérateurs pour CatDex (bêta web Netlify, API Render, Supabase).
 | [RENDER_CHEATSHEET.md](./RENDER_CHEATSHEET.md) | Aide-mémoire Render |
 | [RENDER_IP_WHITELIST.md](./RENDER_IP_WHITELIST.md) | IP / réseau Render |
 | [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) | Supabase (placeholders only) |
+| [ADMIN_STATS.md](./ADMIN_STATS.md) | Dashboard usage (`/admin`) users + photos |
 
 Aussi dans `docs/` :
 
