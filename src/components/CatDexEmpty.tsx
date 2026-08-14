@@ -1,0 +1,250 @@
+import { Pressable, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
+
+import { Button } from '@/components/Button';
+import { Text } from '@/components/Text';
+import { IconMap, IconPin } from '@/components/Settings/settingsIcons';
+import { useTheme } from '@/theme/ThemeProvider';
+
+type Props = {
+  onExplore: () => void;
+};
+
+function Sparkle({
+  color,
+  size,
+}: {
+  color: string;
+  size: number;
+}) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 2.5 13.6 10.4 21.5 12 13.6 13.6 12 21.5 10.4 13.6 2.5 12 10.4 10.4Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
+function PawPrint({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="15.5" r="3.2" fill={color} />
+      <Circle cx="7.2" cy="10.2" r="1.8" fill={color} />
+      <Circle cx="16.8" cy="10.2" r="1.8" fill={color} />
+      <Circle cx="9.2" cy="7.2" r="1.5" fill={color} />
+      <Circle cx="14.8" cy="7.2" r="1.5" fill={color} />
+    </Svg>
+  );
+}
+
+function SleepingCatFace({ color, size }: { color: string; size: number }) {
+  const { iconStroke } = useTheme();
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M7.2 9.2 5.6 4.8l4.4 2.4M16.8 9.2 18.4 4.8l-4.4 2.4"
+        stroke={color}
+        strokeWidth={iconStroke.regular}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M6.8 11.2c0 4.4 2.3 7.4 5.2 7.4s5.2-3 5.2-7.4c0-2.5-1.4-4.5-3.1-5.4-.6-.3-1.3-.5-2.1-.5s-1.5.2-2.1.5c-1.7.9-3.1 2.9-3.1 5.4Z"
+        stroke={color}
+        strokeWidth={iconStroke.regular}
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M8.2 12.4q1.6 1.8 3.2 0"
+        stroke={color}
+        strokeWidth={iconStroke.regular}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M12.6 12.4q1.6 1.8 3.2 0"
+        stroke={color}
+        strokeWidth={iconStroke.regular}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M10.2 16.2q1.8 1.6 3.6 0"
+        stroke={color}
+        strokeWidth={iconStroke.regular}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+function EmptyIllustration() {
+  const { colors, spacing, radius, iconSize } = useTheme();
+  const box = spacing[96] + spacing[64];
+  const glow = spacing[96] + spacing[16];
+
+  return (
+    <View
+      accessibilityRole="image"
+      accessibilityLabel="Aucun chat dans le CatDex"
+      style={{
+        width: box,
+        height: box,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          width: glow,
+          height: glow,
+          borderRadius: radius.full,
+          backgroundColor: colors.captureFabHalo,
+        }}
+      />
+      <View
+        style={{
+          width: spacing[96],
+          height: spacing[96],
+          borderRadius: radius.full,
+          backgroundColor: colors.brandSoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <SleepingCatFace color={colors.brand} size={iconSize.xl} />
+      </View>
+
+      <View style={{ position: 'absolute', top: spacing[8], left: spacing[16], opacity: 0.7 }}>
+        <Sparkle color={colors.brand} size={iconSize.sm} />
+      </View>
+      <View style={{ position: 'absolute', top: spacing[24], right: spacing[8], opacity: 0.55 }}>
+        <Sparkle color={colors.brand} size={iconSize.sm} />
+      </View>
+      <View style={{ position: 'absolute', bottom: spacing[32], left: spacing[8], opacity: 0.45 }}>
+        <Sparkle color={colors.brand} size={iconSize.sm} />
+      </View>
+      <View
+        style={{
+          position: 'absolute',
+          bottom: spacing[16],
+          right: spacing[24],
+          opacity: 0.55,
+        }}
+      >
+        <PawPrint color={colors.brand} size={iconSize.sm} />
+      </View>
+      <View
+        style={{
+          position: 'absolute',
+          top: spacing[48],
+          left: 0,
+          opacity: 0.4,
+          transform: [{ rotate: '-18deg' }],
+        }}
+      >
+        <PawPrint color={colors.brand} size={iconSize.sm} />
+      </View>
+    </View>
+  );
+}
+
+function Chevron({ color, size }: { color: string; size: number }) {
+  const { iconStroke } = useTheme();
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9 6l6 6-6 6"
+        stroke={color}
+        strokeWidth={iconStroke.regular}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/**
+ * CatDex collection empty — sleeping cat, hint card, map CTA.
+ */
+export function CatDexEmpty({ onExplore }: Props) {
+  const { colors, spacing, radius, iconSize, motion } = useTheme();
+
+  return (
+    <View
+      accessibilityRole="summary"
+      style={{
+        flexGrow: 1,
+        alignSelf: 'stretch',
+        justifyContent: 'space-between',
+        gap: spacing[32],
+      }}
+    >
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing[24],
+        }}
+      >
+        <EmptyIllustration />
+
+        <View style={{ gap: spacing[8], alignItems: 'center', maxWidth: 320 }}>
+          <Text variant="title" color="text" align="center">
+            Aucun chat trouvé
+          </Text>
+          <Text variant="body" color="textSecondary" align="center">
+            Pars explorer ton quartier et capture ton premier chat !
+          </Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Explore autour de toi"
+          onPress={onExplore}
+          style={({ pressed }) => ({
+            alignSelf: 'stretch',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing[16],
+            padding: spacing[16],
+            borderRadius: radius.xl,
+            backgroundColor: colors.brandSoft,
+            opacity: pressed ? 0.92 : 1,
+            transform: [{ scale: pressed ? motion.cardPressScale : 1 }],
+          })}
+        >
+          <View
+            style={{
+              width: spacing[40],
+              height: spacing[40],
+              borderRadius: radius.full,
+              backgroundColor: colors.surface,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <IconPin color={colors.brand} size={iconSize.sm} />
+          </View>
+          <View style={{ flex: 1, gap: spacing[4] }}>
+            <Text variant="bodySmall" weight="semibold" color="text">
+              Explore autour de toi
+            </Text>
+            <Text variant="caption" color="textSecondary">
+              De nouveaux chats t’attendent peut-être juste ici !
+            </Text>
+          </View>
+          <Chevron color={colors.textMuted} size={iconSize.sm} />
+        </Pressable>
+      </View>
+
+      <Button
+        title="Découvrir la carte"
+        onPress={onExplore}
+        icon={<IconMap color={colors.onAccent} size={iconSize.sm} />}
+      />
+    </View>
+  );
+}

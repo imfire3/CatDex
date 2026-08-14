@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
@@ -59,7 +59,7 @@ export function MapCatModal({
     setPhotoFailed(false);
   }, [cat?.id, cat?.photoUri]);
 
-  if (!cat) return null;
+  if (!visible || !cat) return null;
 
   const distanceLabel =
     typeof distanceM === 'number' ? formatDistanceMeters(distanceM) : null;
@@ -87,40 +87,36 @@ export function MapCatModal({
   const cardBottom = clusterBottom + MAP_CAPTURE_FAB_SIZE + spacing[16];
 
   return (
-    <Modal
-      animationType="fade"
-      transparent
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View style={styles.root} pointerEvents="box-none">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer"
-          onPress={onClose}
-          style={StyleSheet.absoluteFill}
-        />
+    <View style={styles.root} pointerEvents="box-none">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Fermer"
+        onPress={onClose}
+        style={StyleSheet.absoluteFill}
+      />
 
-        <View
-          accessibilityViewIsModal
-          style={[
-            styles.card,
-            {
-              left: spacing[16],
-              right: spacing[16],
-              bottom: cardBottom,
-              backgroundColor: colors.surface,
-              borderRadius: radius[16],
-              padding: spacing[16],
-              borderWidth: 1,
-              borderColor: colors.border,
-              gap: spacing[16],
-              flexDirection: 'column',
-              alignItems: 'stretch',
-            },
-            shadow.floating,
-          ]}
-        >
+      <View
+        accessibilityViewIsModal
+        style={[
+          styles.card,
+          {
+            left: 0,
+            right: 0,
+            bottom: cardBottom,
+            width: '100%',
+            maxWidth: '100%',
+            backgroundColor: colors.surface,
+            borderRadius: radius[16],
+            padding: spacing[16],
+            borderWidth: 1,
+            borderColor: colors.border,
+            gap: spacing[16],
+            flexDirection: 'column',
+            alignItems: 'stretch',
+          },
+          shadow.floating,
+        ]}
+      >
           <View
             style={{
               flexDirection: 'row',
@@ -274,16 +270,16 @@ export function MapCatModal({
                 height: spacing[48] }}
             />
           </View>
-        </View>
       </View>
-    </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
+    zIndex: 20,
   },
   card: {
     position: 'absolute',

@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CatDexCard } from '@/components/CatDexCard';
+import { CatDexEmpty } from '@/components/CatDexEmpty';
 import { EmptyState } from '@/components/EmptyState';
 import { PageLoading } from '@/components/Loader';
 import { Text } from '@/components/Text';
@@ -99,16 +100,7 @@ export default function CatDexScreen() {
 
   const empty = (() => {
     if (cats.length === 0) {
-      return (
-        <EmptyState
-          layout="page"
-          icon="cat"
-          title="Ton CatDex est vide"
-          description="Pars explorer ton quartier et capture ton premier chat !"
-          actionLabel="Découvrir la carte"
-          onAction={() => router.push('/(tabs)/map')}
-        />
-      );
+      return <CatDexEmpty onExplore={() => router.push('/(tabs)/map')} />;
     }
     if (listFilter === 'favorites' && favorites.size === 0) {
       return (
