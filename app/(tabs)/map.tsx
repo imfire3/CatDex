@@ -506,7 +506,6 @@ export default function MapScreen() {
 
   const recenterOnPlayer = async () => {
     setFollowUser(true);
-    setCompassMode(true);
     setWatchEnabled(true);
     // Instant camera feedback from last known GPS (works even if a fresh
     // geolocation read is slow or blocked).
@@ -538,7 +537,6 @@ export default function MapScreen() {
   /** Double-tap recenter — default zoom + pitch on the player. */
   const resetMainView = () => {
     setFollowUser(true);
-    setCompassMode(true);
     setWatchEnabled(true);
     setResetViewNonce((value) => value + 1);
     if (userCoordinate) {
