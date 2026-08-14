@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import Animated, {
@@ -54,13 +54,12 @@ function PulseRing({
 /**
  * Player pin + radar pulse.
  * flat + centered anchor so the GPS point stays on the lat/lng (no 3D billboard drift).
- * tracksViewChanges freezes after paint so the marker does not jitter off-center.
+ * Keep tracksViewChanges on so the pin moves/rotates smoothly while walking.
  */
 export function PlayerLocationMarker({ coordinate, heading = null }: Props) {
   const { colors, spacing } = useTheme();
   const pulseA = useSharedValue(0);
   const pulseB = useSharedValue(0);
-  const [tracksViewChanges, setTracksViewChanges] = useState(true);
   const hasHeading = heading != null && Number.isFinite(heading);
 
   useEffect(() => {
@@ -79,12 +78,6 @@ export function PlayerLocationMarker({ coordinate, heading = null }: Props) {
     );
   }, [pulseA, pulseB]);
 
-  useEffect(() => {
-    setTracksViewChanges(true);
-    const freeze = setTimeout(() => setTracksViewChanges(false), 1800);
-    return () => clearTimeout(freeze);
-  }, [hasHeading]);
-
   const radarSize = spacing[48];
   const coreSize = spacing[16];
   const ringSize = spacing[24];
@@ -95,7 +88,7 @@ export function PlayerLocationMarker({ coordinate, heading = null }: Props) {
       coordinate={coordinate}
       anchor={{ x: 0.5, y: 0.5 }}
       centerOffset={{ x: 0, y: 0 }}
-      tracksViewChanges={tracksViewChanges}
+      tracksViewChanges
       flat
       rotation={hasHeading ? heading : 0}
       zIndex={999}
@@ -112,25 +105,8 @@ export function PlayerLocationMarker({ coordinate, heading = null }: Props) {
             },
           ]}
         />
-        {tracksViewChanges ? (
-          <>
-            <PulseRing progress={pulseA} size={radarSize} color={colors.mapPlayer} />
-            <PulseRing progress={pulseB} size={radarSize} color={colors.mapPlayer} />
-          </>
-        ) : (
-          <View
-            style={[
-              styles.pulseRing,
-              {
-                width: radarSize * 0.7,
-                height: radarSize * 0.7,
-                borderRadius: (radarSize * 0.7) / 2,
-                borderColor: colors.mapPlayer,
-                opacity: 0.28,
-              },
-            ]}
-          />
-        )}
+        <PulseRing progress={pulseA} size={radarSize} color={colors.mapPlayer} />
+        <PulseRing progress={pulseB} size={radarSize} color={colors.mapPlayer} />
         {hasHeading ? (
           <View
             style={[

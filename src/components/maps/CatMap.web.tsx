@@ -548,14 +548,8 @@ export function CatMap({
           if (!cancelled) setMapReady(true);
         });
 
-        // Hard-clamp if a gesture briefly overshoots the configured range.
         map.on('zoomend', () => {
-          const zoom = map.getZoom();
-          const clamped = Math.min(MAP_MAX_ZOOM, Math.max(MAP_MIN_ZOOM, zoom));
-          userZoomRef.current = clamped;
-          if (zoom < MAP_MIN_ZOOM || zoom > MAP_MAX_ZOOM) {
-            map.jumpTo?.({ zoom: clamped });
-          }
+          userZoomRef.current = map.getZoom();
         });
 
         map.on('zoom', () => {

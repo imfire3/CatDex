@@ -16,7 +16,7 @@ import {
   buildOwnedCatIdSet,
   getCatDiscoveryState,
 } from '@/lib/catDiscovery';
-import { PARIS_20E } from '@/lib/constants';
+import { PARIS_20E, distanceMeters } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
 import {
   DEMO_COMMUNITY_CATS,
@@ -101,6 +101,11 @@ export default function MapScreen() {
   const [compassMode, setCompassMode] = useState(true);
 
   const lastHapticCatRef = useRef<string | null>(null);
+  /** Last GPS point used to refresh community pins while walking. */
+  const lastCommunityPullRef = useRef<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const refreshCommunityCats = useCallback(async () => {
     const remote = await pullCommunityCatsForMap();
@@ -116,6 +121,25 @@ export default function MapScreen() {
     }, 60_000);
     return () => clearInterval(timer);
   }, [refreshCommunityCats, storedCats.length]);
+
+  /** While walking, refresh nearby pins every ~50 m so new cats appear like Pokémon Go. */
+  useEffect(() => {
+    if (!userCoordinate) return;
+    const prev = lastCommunityPullRef.current;
+    if (!prev) {
+      lastCommunityPullRef.current = userCoordinate;
+      return;
+    }
+    const moved = distanceMeters(
+      prev.latitude,
+      prev.longitude,
+      userCoordinate.latitude,
+      userCoordinate.longitude,
+    );
+    if (moved < 50) return;
+    lastCommunityPullRef.current = userCoordinate;
+    void refreshCommunityCats();
+  }, [userCoordinate, refreshCommunityCats]);
 
   /** Dev demo: anchor near Paris 20e so fake pins + nearby pulse are visible. */
   useEffect(() => {
@@ -284,16 +308,17 @@ export default function MapScreen() {
             }
           },
           () => undefined,
-          { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 },
+          { enableHighAccuracy: true, maximumAge: 1_000, timeout: 10_000 },
         );
         return;
       }
 
       subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 1200,
-          distanceInterval: 8,
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: 800,
+          distanceInterval: 2,
+          mayShowUserSettingsDialog: true,
         },
         (position) => {
           if (!mounted) return;
@@ -301,6 +326,16 @@ export default function MapScreen() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           });
+          const course = position.coords.heading;
+          if (
+            typeof course === 'number' &&
+            Number.isFinite(course) &&
+            course >= 0
+          ) {
+            setUserHeading((prev) =>
+              shouldUpdateHeading(prev, course) ? course : prev,
+            );
+          }
         },
       );
     })().catch(() => undefined);
@@ -314,7 +349,7 @@ export default function MapScreen() {
     };
   }, [watchEnabled]);
 
-  /** Compass — rotate the map with the phone while GPS follow is active. */
+  /** Compass — updates the player-pin facing while walking. */
   useEffect(() => {
     if (!watchEnabled) return;
 

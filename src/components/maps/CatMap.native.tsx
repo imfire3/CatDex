@@ -274,14 +274,14 @@ export function CatMap({
           pauseFollowFromGesture();
         }}
         onRegionChange={() => {
-          // Pinch zoom / rotate also move the region without pan-drag on some builds.
+          // Pinch zoom moves the region without pan-drag on some builds.
+          // Do not pause on touch alone — that killed Pokémon-style walk follow.
           if (gestureActiveRef.current) {
             pauseFollowFromGesture();
           }
         }}
         onTouchStart={() => {
           gestureActiveRef.current = true;
-          pauseFollowFromGesture();
         }}
         onTouchEnd={() => {
           gestureActiveRef.current = false;
@@ -290,6 +290,11 @@ export function CatMap({
         onTouchCancel={() => {
           gestureActiveRef.current = false;
           captureUserZoom();
+        }}
+        onRegionChangeComplete={() => {
+          if (!gestureActiveRef.current) {
+            captureUserZoom();
+          }
         }}
       >
         <MapWorldDecor cats={cats} />

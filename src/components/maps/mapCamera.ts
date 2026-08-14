@@ -3,7 +3,7 @@ import type { Camera } from 'react-native-maps';
 import { PARIS_20E } from '@/lib/constants';
 import { motionDuration } from '@/theme/motion';
 
-/** Street-level framing for the explorer. */
+/** Default street-level framing for the explorer. */
 export const MAP_ZOOM = 16.6;
 
 /**
@@ -20,12 +20,15 @@ export const MAP_FLY_TO_PIN_DURATION = Math.max(motionDuration.reveal, 640);
 /** Approximate altitude (meters) for iOS when zoom is unavailable. */
 export const MAP_ALTITUDE = 720;
 
-/** How far the player may pinch out / in around street-level framing. */
-export const MAP_MIN_ZOOM = 15;
-export const MAP_MAX_ZOOM = 18;
+/**
+ * Pinch range: neighborhood / arrondissement out, close street in.
+ * A tight floor (15) rubber-banded the camera back to street level on finger-up.
+ */
+export const MAP_MIN_ZOOM = 12;
+export const MAP_MAX_ZOOM = 19;
 
-/** Min meters before soft follow re-centers on the player. */
-export const MAP_FOLLOW_THRESHOLD_M = 5;
+/** Min meters before soft follow re-centers on the player while walking. */
+export const MAP_FOLLOW_THRESHOLD_M = 2;
 
 export function buildMapCamera(
   coordinate: { latitude: number; longitude: number },
