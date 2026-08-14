@@ -445,6 +445,72 @@ function applyMarkerZoomScale(map: MapLibreMap, markers: MapLibreMarker[]) {
   });
 }
 
+function applyPlayerHeading(element: HTMLElement, heading: number | null) {
+  const rotator = element.querySelector('[data-player-heading]') as HTMLElement | null;
+  const wedge = element.querySelector('[data-player-wedge]') as HTMLElement | null;
+  if (!rotator || !wedge) return;
+  const hasHeading = heading != null && Number.isFinite(heading);
+  wedge.style.opacity = hasHeading ? '1' : '0';
+  rotator.style.transform = hasHeading ? `rotate(${heading}deg)` : 'none';
+}
+
+function createPlayerMarkerElement(
+  colors: { mapPlayer: string; mapPlayerRing: string; mapPlayerSoft: string },
+  spacing: { 4: number; 8: number; 16: number; 24: number; 48: number },
+): HTMLDivElement {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = [
+    `width:${spacing[48]}px`,
+    `height:${spacing[48]}px`,
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'pointer-events:none',
+  ].join(';');
+
+  const rotator = document.createElement('div');
+  rotator.setAttribute('data-player-heading', 'true');
+  rotator.style.cssText = [
+    'position:relative',
+    'width:100%',
+    'height:100%',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'transform-origin:center center',
+  ].join(';');
+
+  const wedge = document.createElement('div');
+  wedge.setAttribute('data-player-wedge', 'true');
+  wedge.style.cssText = [
+    'position:absolute',
+    `top:${spacing[4]}px`,
+    'left:50%',
+    `margin-left:-${spacing[8]}px`,
+    'width:0',
+    'height:0',
+    `border-left:${spacing[8]}px solid transparent`,
+    `border-right:${spacing[8]}px solid transparent`,
+    `border-bottom:${spacing[16]}px solid ${colors.mapPlayer}`,
+    'opacity:0',
+  ].join(';');
+
+  const ring = document.createElement('div');
+  ring.style.cssText = [
+    `width:${spacing[24]}px`,
+    `height:${spacing[24]}px`,
+    'border-radius:999px',
+    `background:${colors.mapPlayer}`,
+    `border:3px solid ${colors.mapPlayerRing}`,
+    `box-shadow:0 0 0 8px ${colors.mapPlayerSoft}`,
+  ].join(';');
+
+  rotator.appendChild(wedge);
+  rotator.appendChild(ring);
+  wrap.appendChild(rotator);
+  return wrap;
+}
+
 /**
  * Web Explorer map — MapLibre (CDN), light camera tilt + flat building footprints.
  * Loaded from CDN to avoid Metro ESM/CJS interop issues with maplibre-gl.
@@ -456,7 +522,7 @@ export function CatMap({
   focusNonce,
   resetViewNonce = 0,
   userCoordinate,
-  userHeading: _userHeading = null,
+  userHeading = null,
   nearbyCatIds,
   capturedCatIds,
   selectedCatId,
@@ -476,10 +542,12 @@ export function CatMap({
   const lastFollowRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const didCenterOnUserRef = useRef(false);
   const userCoordinateRef = useRef(userCoordinate);
+  const userHeadingRef = useRef(userHeading);
   const focusCoordinateRef = useRef(focusCoordinate);
   const userZoomRef = useRef(MAP_ZOOM);
   const programmaticCameraRef = useRef(false);
   userCoordinateRef.current = userCoordinate;
+  userHeadingRef.current = userHeading;
   focusCoordinateRef.current = focusCoordinate;
   onSelectRef.current = onSelectCat;
   onBreakFollowRef.current = onBreakFollow;
@@ -863,15 +931,8 @@ export function CatMap({
     }
 
     if (!playerMarkerRef.current) {
-      const el = document.createElement('div');
-      el.style.cssText = [
-        `width:${spacing[24]}px`,
-        `height:${spacing[24]}px`,
-        'border-radius:999px',
-        `background:${colors.mapPlayer}`,
-        `border:3px solid ${colors.mapPlayerRing}`,
-        'box-shadow:0 0 0 8px rgba(46,201,195,0.25)',
-      ].join(';');
+      const el = createPlayerMarkerElement(colors, spacing);
+      applyPlayerHeading(el, userHeadingRef.current ?? null);
       playerMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([userCoordinate.longitude, userCoordinate.latitude])
         .addTo(map);
@@ -882,6 +943,12 @@ export function CatMap({
       ]);
     }
   }, [userCoordinate, colors, spacing, mapReady]);
+
+  useEffect(() => {
+    const marker = playerMarkerRef.current;
+    if (!marker) return;
+    applyPlayerHeading(marker.getElement(), userHeading ?? null);
+  }, [userHeading, mapReady]);
 
   return (
     <View style={[styles.root, { backgroundColor: mapPalette.land }]}>

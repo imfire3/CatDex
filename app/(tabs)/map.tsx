@@ -360,7 +360,7 @@ export default function MapScreen() {
 
   /** Compass — updates the player-pin facing while walking. */
   useEffect(() => {
-    if (!watchEnabled) return;
+    if (!watchEnabled || !compassMode) return;
 
     let mounted = true;
     let subscription: Location.LocationSubscription | null = null;
@@ -424,7 +424,7 @@ export default function MapScreen() {
         window.removeEventListener('deviceorientation', orientationHandler, true);
       }
     };
-  }, [watchEnabled, compassEpoch]);
+  }, [watchEnabled, compassEpoch, compassMode]);
 
   useEffect(() => {
     if (!nearestForProximity || nearestForProximity.distanceM > PROXIMITY_ALERT_M) {
@@ -546,7 +546,7 @@ export default function MapScreen() {
 
   /** Toggle walk-follow (Pokémon-style). Active = camera follows GPS + pin heading. */
   const handleCompassPress = () => {
-    // Sync with the tap — required for iOS Safari DeviceOrientation.
+    // Must run in the same tap — iOS Safari DeviceOrientation.requestPermission().
     unlockWebCompassFromGesture();
 
     if (compassMode) {
@@ -558,9 +558,14 @@ export default function MapScreen() {
     setCompassMode(true);
     setFollowUser(true);
     setWatchEnabled(true);
+    setCompassEpoch((value) => value + 1);
     if (userCoordinate) {
       flyToCoordinate(userCoordinate);
+      return;
     }
+    void isLocationActive().then((active) => {
+      if (!active) setLocationModalVisible(true);
+    });
   };
 
   const mapCatList = useMemo(
@@ -594,7 +599,7 @@ export default function MapScreen() {
           focusNonce={focusCoordinate?.nonce}
           resetViewNonce={resetViewNonce}
           userCoordinate={userCoordinate}
-          userHeading={compassMode ? userHeading : null}
+          userHeading={compassMode ? (userHeading ?? 0) : null}
           nearbyCatIds={nearbyCatIds}
           capturedCatIds={ownedCatIdList}
           selectedCatId={selected?.id ?? null}
