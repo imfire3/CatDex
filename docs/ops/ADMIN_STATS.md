@@ -4,7 +4,7 @@ Page privée pour voir si des gens utilisent l’app et uploadent des photos.
 
 ## Accès
 
-1. Sur **Render** → le service **live** (ex. `catdex-api-xsnh`, pas un autre clone) → **Environment**, définis :
+1. Sur **Render** → le service **live** (`catdex-api-xsnh`, pas un autre clone) → **Environment**, définis :
    - `ADMIN_STATS_SECRET` = un long secret aléatoire
    - `SUPABASE_URL` = URL du **même** projet Supabase que l’app
    - `SUPABASE_SERVICE_ROLE_KEY` = clé **service_role** (Settings → API), **pas** la clé `anon`
@@ -15,17 +15,16 @@ Page privée pour voir si des gens utilisent l’app et uploadent des photos.
 https://catdex-api-xsnh.onrender.com/admin?key=TON_ADMIN_STATS_SECRET
 ```
 
-Si les cards Profils / Chats affichent `—` ou une erreur rouge : la service_role key manque ou pointe vers le mauvais projet.
-
-JSON brut :
+JSON (même hôte). Préfère le header pour ne pas laisser le secret dans l’historique / les logs :
 
 ```text
-https://catdex-api.onrender.com/admin?key=…   → HTML
-https://catdex-api.onrender.com/admin/stats?key=…
-# ou header : x-admin-secret: TON_SECRET
+https://catdex-api-xsnh.onrender.com/admin/stats
+# header : x-admin-secret: TON_SECRET
 ```
 
 Sans le bon secret → 401.
+
+Si les cards Profils / Chats affichent `—` ou une erreur rouge : la service_role key manque ou pointe vers le mauvais projet.
 
 ## Ce que tu vois
 
@@ -43,6 +42,8 @@ Sans le bon secret → 401.
 
 **Nouveaux utilisateurs** : 20 derniers profils (`display_name`, email, date).  
 **Dernières captures** : 20 chats récents avec miniature, nom, type, owner, date.
+
+Si une liste échoue, le dashboard affiche l’erreur HTTP (ce n’est pas un tableau vide).
 
 ### API analyse (ce process)
 

@@ -222,12 +222,14 @@ export default function CatDexScreen() {
       />
 
       <ScrollView
-        style={{ flex: 1 }}
+        style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{
           paddingHorizontal: horizontalPad,
           paddingTop: spacing[16],
           paddingBottom: listBottom,
-          flexGrow: 1 }}
+          flexGrow: 1,
+          backgroundColor: colors.background,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {filtered.length === 0 ? (

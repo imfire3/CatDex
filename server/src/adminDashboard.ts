@@ -50,7 +50,13 @@ function lifestyleLabel(value: string | null): string {
   return '—';
 }
 
-function renderRecentProfiles(rows: RecentProfileRow[] | undefined): string {
+function renderRecentProfiles(
+  rows: RecentProfileRow[] | undefined,
+  error?: string,
+): string {
+  if (error) {
+    return `<tr><td colspan="3" class="danger">${esc(error)}</td></tr>`;
+  }
   if (!rows || rows.length === 0) {
     return `<tr><td colspan="3" class="muted">Aucun profil récent.</td></tr>`;
   }
@@ -69,7 +75,13 @@ function renderRecentProfiles(rows: RecentProfileRow[] | undefined): string {
     .join('');
 }
 
-function renderRecentCats(rows: RecentCatRow[] | undefined): string {
+function renderRecentCats(
+  rows: RecentCatRow[] | undefined,
+  error?: string,
+): string {
+  if (error) {
+    return `<tr><td colspan="5" class="danger">${esc(error)}</td></tr>`;
+  }
   if (!rows || rows.length === 0) {
     return `<tr><td colspan="5" class="muted">Aucune capture récente.</td></tr>`;
   }
@@ -131,7 +143,7 @@ export function renderAdminDashboardHtml(data: DashboardPayload): string {
             <th>Inscription</th>
           </tr>
         </thead>
-        <tbody>${renderRecentProfiles(data.product.recentProfiles)}</tbody>
+        <tbody>${renderRecentProfiles(data.product.recentProfiles, data.product.recentProfilesError)}</tbody>
       </table>
 
       <h2>Dernières captures</h2>
@@ -145,9 +157,9 @@ export function renderAdminDashboardHtml(data: DashboardPayload): string {
             <th>Quand</th>
           </tr>
         </thead>
-        <tbody>${renderRecentCats(data.product.recentCats)}</tbody>
+        <tbody>${renderRecentCats(data.product.recentCats, data.product.recentCatsError)}</tbody>
       </table>`
-    : `<p class="muted" style="color:#E5484D">${esc(data.product.error ?? 'Supabase indisponible')}</p>
+    : `<p class="danger">${esc(data.product.error ?? 'Supabase indisponible')}</p>
        <p class="muted">Sans <code>SUPABASE_URL</code> + <code>SUPABASE_SERVICE_ROLE_KEY</code> (clé <strong>service_role</strong> du même projet que l’app), les profils et chats n’apparaissent pas.</p>`;
 
   return `<!DOCTYPE html>
@@ -156,6 +168,7 @@ export function renderAdminDashboardHtml(data: DashboardPayload): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="refresh" content="30" />
+  <meta name="referrer" content="no-referrer" />
   <title>CatDex — Stats admin</title>
   <style>
     :root { color-scheme: light; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -163,6 +176,7 @@ export function renderAdminDashboardHtml(data: DashboardPayload): string {
     h1 { margin: 0 0 4px; font-size: 24px; color: #6A69F8; }
     h2 { margin: 28px 0 12px; font-size: 18px; }
     .muted { color: #667085; font-size: 14px; }
+    .danger { color: #E5484D; font-size: 13px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin: 16px 0 28px; }
     .card { background: #fff; border: 1px solid #EEF0F2; border-radius: 12px; padding: 16px; }
     .label { font-size: 12px; color: #98A2B3; text-transform: uppercase; letter-spacing: 0.04em; }
