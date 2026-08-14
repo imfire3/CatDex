@@ -28,12 +28,21 @@ describe('renderAdminDashboardHtml', () => {
         domestique: 3,
         sightings: 0,
         analyses: 8,
+        recentProfiles: [
+          {
+            id: 'user-1',
+            display_name: 'Miaouledea',
+            email: 'miaou@example.com',
+            created_at: '2026-08-14T09:20:00.000Z',
+          },
+        ],
         recentCats: [
           {
             id: 'cat-1',
             name: 'Pixel',
             photo_url: 'https://example.com/pixel.jpg',
             owner_id: 'user-abcdef12-3456',
+            owner_display_name: 'Miaouledea',
             lifestyle: 'sauvage',
             created_at: '2026-08-14T09:30:00.000Z',
           },
@@ -46,8 +55,33 @@ describe('renderAdminDashboardHtml', () => {
     assert.match(html, /Captures 24h/);
     assert.match(html, /Sauvage/);
     assert.match(html, /Domestique/);
+    assert.match(html, /Nouveaux utilisateurs/);
+    assert.match(html, /Miaouledea/);
+    assert.match(html, /miaou@example\.com/);
     assert.match(html, /Dernières captures/);
     assert.match(html, /Pixel/);
     assert.match(html, /https:\/\/example\.com\/pixel\.jpg/);
+  });
+
+  it('surfaces Supabase config errors in red', () => {
+    const html = renderAdminDashboardHtml({
+      generatedAt: '2026-08-14T10:00:00.000Z',
+      analyze: {
+        processStartedAt: '2026-08-14T09:00:00.000Z',
+        total: 0,
+        ok: 0,
+        errors: 0,
+        avgLatencyMs: null,
+        last24h: { ok: 0, errors: 0 },
+        recent: [],
+      },
+      product: {
+        available: false,
+        error: 'Configure SUPABASE_SERVICE_ROLE_KEY',
+      },
+    });
+
+    assert.match(html, /Configure SUPABASE_SERVICE_ROLE_KEY/);
+    assert.match(html, /service_role/);
   });
 });

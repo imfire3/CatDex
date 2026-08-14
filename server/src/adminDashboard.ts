@@ -3,7 +3,11 @@
  */
 
 import type { AnalyzeEvent } from './statsStore';
-import type { RecentCatRow, SupabaseProductStats } from './supabaseProductStats';
+import type {
+  RecentCatRow,
+  RecentProfileRow,
+  SupabaseProductStats,
+} from './supabaseProductStats';
 
 type DashboardPayload = {
   generatedAt: string;
@@ -46,6 +50,25 @@ function lifestyleLabel(value: string | null): string {
   return '—';
 }
 
+function renderRecentProfiles(rows: RecentProfileRow[] | undefined): string {
+  if (!rows || rows.length === 0) {
+    return `<tr><td colspan="3" class="muted">Aucun profil récent.</td></tr>`;
+  }
+
+  return rows
+    .map((profile) => {
+      const name = profile.display_name?.trim() || '—';
+      const email = profile.email?.trim() || '—';
+      return `
+      <tr>
+        <td>${esc(name)}</td>
+        <td>${esc(email)}</td>
+        <td>${esc(formatWhen(profile.created_at))}</td>
+      </tr>`;
+    })
+    .join('');
+}
+
 function renderRecentCats(rows: RecentCatRow[] | undefined): string {
   if (!rows || rows.length === 0) {
     return `<tr><td colspan="5" class="muted">Aucune capture récente.</td></tr>`;
@@ -56,12 +79,14 @@ function renderRecentCats(rows: RecentCatRow[] | undefined): string {
       const thumb = cat.photo_url
         ? `<img class="thumb" src="${esc(cat.photo_url)}" alt="" loading="lazy" />`
         : `<span class="muted">pas de photo</span>`;
+      const owner =
+        cat.owner_display_name?.trim() || shortId(cat.owner_id);
       return `
       <tr>
         <td>${thumb}</td>
         <td>${esc(cat.name)}</td>
         <td>${esc(lifestyleLabel(cat.lifestyle))}</td>
-        <td><code>${esc(shortId(cat.owner_id))}</code></td>
+        <td>${esc(owner)}</td>
         <td>${esc(formatWhen(cat.created_at))}</td>
       </tr>`;
     })
@@ -97,6 +122,18 @@ export function renderAdminDashboardHtml(data: DashboardPayload): string {
         <div class="card"><div class="label">Analyses DB</div><div class="value">${esc(data.product.analyses)}</div></div>
       </div>
 
+      <h2>Nouveaux utilisateurs</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Pseudo</th>
+            <th>Email</th>
+            <th>Inscription</th>
+          </tr>
+        </thead>
+        <tbody>${renderRecentProfiles(data.product.recentProfiles)}</tbody>
+      </table>
+
       <h2>Dernières captures</h2>
       <table>
         <thead>
@@ -110,7 +147,8 @@ export function renderAdminDashboardHtml(data: DashboardPayload): string {
         </thead>
         <tbody>${renderRecentCats(data.product.recentCats)}</tbody>
       </table>`
-    : `<p class="muted">${esc(data.product.error ?? 'Supabase indisponible')}</p>`;
+    : `<p class="muted" style="color:#E5484D">${esc(data.product.error ?? 'Supabase indisponible')}</p>
+       <p class="muted">Sans <code>SUPABASE_URL</code> + <code>SUPABASE_SERVICE_ROLE_KEY</code> (clé <strong>service_role</strong> du même projet que l’app), les profils et chats n’apparaissent pas.</p>`;
 
   return `<!DOCTYPE html>
 <html lang="fr">

@@ -4,14 +4,18 @@ Page privée pour voir si des gens utilisent l’app et uploadent des photos.
 
 ## Accès
 
-1. Sur **Render** → service `catdex-api` → **Environment**, définis :
+1. Sur **Render** → le service **live** (ex. `catdex-api-xsnh`, pas un autre clone) → **Environment**, définis :
    - `ADMIN_STATS_SECRET` = un long secret aléatoire
-   - `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (déjà requis pour l’API)
-2. Ouvre dans le navigateur :
+   - `SUPABASE_URL` = URL du **même** projet Supabase que l’app
+   - `SUPABASE_SERVICE_ROLE_KEY` = clé **service_role** (Settings → API), **pas** la clé `anon`
+2. **Save** + attends le redeploy **Live**
+3. Ouvre dans le navigateur (utilise l’URL **Primary** du service) :
 
 ```text
-https://catdex-api.onrender.com/admin?key=TON_ADMIN_STATS_SECRET
+https://catdex-api-xsnh.onrender.com/admin?key=TON_ADMIN_STATS_SECRET
 ```
+
+Si les cards Profils / Chats affichent `—` ou une erreur rouge : la service_role key manque ou pointe vers le mauvais projet.
 
 JSON brut :
 
@@ -37,7 +41,8 @@ Sans le bon secret → 401.
 | Sauvage / Domestique | Split `lifestyle` (après migration) |
 | Sightings / Analyses DB | Tables liées |
 
-**Dernières captures** : 20 plus récentes avec miniature, nom, type, owner, date.
+**Nouveaux utilisateurs** : 20 derniers profils (`display_name`, email, date).  
+**Dernières captures** : 20 chats récents avec miniature, nom, type, owner, date.
 
 ### API analyse (ce process)
 

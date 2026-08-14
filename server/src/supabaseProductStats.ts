@@ -7,7 +7,15 @@ export type RecentCatRow = {
   name: string;
   photo_url: string | null;
   owner_id: string;
+  owner_display_name: string | null;
   lifestyle: string | null;
+  created_at: string;
+};
+
+export type RecentProfileRow = {
+  id: string;
+  display_name: string | null;
+  email: string | null;
   created_at: string;
 };
 
@@ -25,6 +33,7 @@ export type SupabaseProductStats = {
   sightings?: number;
   analyses?: number;
   recentCats?: RecentCatRow[];
+  recentProfiles?: RecentProfileRow[];
 };
 
 function getSupabaseUrl(): string | null {
@@ -43,11 +52,12 @@ function authHeaders(serviceKey: string): Record<string, string> {
     apikey: serviceKey,
     Authorization: `Bearer ${serviceKey}`,
     Prefer: 'count=exact',
+    Range: '0-0',
   };
 }
 
 function parseCount(response: Response): number | null {
-  if (!response.ok) return null;
+  if (!response.ok && response.status !== 206) return null;
   const range = response.headers.get('content-range');
   // content-range: 0-0/12 or */12
   const match = /\/(\d+|\*)\s*$/.exec(range ?? '');
@@ -60,12 +70,48 @@ async function countTable(
   serviceKey: string,
   table: string,
   query = 'select=id',
-): Promise<number | null> {
+): Promise<{ count: number | null; status: number; detail?: string }> {
+  // GET + Range is more reliable than HEAD (some stacks drop Content-Range on HEAD).
   const response = await fetch(`${supabaseUrl}/rest/v1/${table}?${query}`, {
-    method: 'HEAD',
+    method: 'GET',
     headers: authHeaders(serviceKey),
   });
-  return parseCount(response);
+  const count = parseCount(response);
+  if (count != null) return { count, status: response.status };
+
+  let detail: string | undefined;
+  try {
+    detail = (await response.text()).slice(0, 180);
+  } catch {
+    detail = undefined;
+  }
+  return { count: null, status: response.status, detail };
+}
+
+async function fetchRecentProfiles(
+  supabaseUrl: string,
+  serviceKey: string,
+  limit = 20,
+): Promise<RecentProfileRow[]> {
+  const params = new URLSearchParams({
+    select: 'id,display_name,email,created_at',
+    order: 'created_at.desc',
+    limit: String(limit),
+  });
+  const response = await fetch(`${supabaseUrl}/rest/v1/profiles?${params}`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+    },
+  });
+  if (!response.ok) return [];
+  const rows = (await response.json()) as RecentProfileRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    display_name: row.display_name ?? null,
+    email: row.email ?? null,
+    created_at: row.created_at,
+  }));
 }
 
 async function fetchRecentCats(
@@ -73,52 +119,58 @@ async function fetchRecentCats(
   serviceKey: string,
   limit = 20,
 ): Promise<RecentCatRow[]> {
-  const params = new URLSearchParams({
-    select: 'id,name,photo_url,owner_id,lifestyle,created_at',
+  const withEmbed = new URLSearchParams({
+    select:
+      'id,name,photo_url,owner_id,lifestyle,created_at,profiles!cats_owner_id_fkey(display_name)',
     order: 'created_at.desc',
     limit: String(limit),
   });
-  const response = await fetch(`${supabaseUrl}/rest/v1/cats?${params}`, {
+  const response = await fetch(`${supabaseUrl}/rest/v1/cats?${withEmbed}`, {
     headers: {
       apikey: serviceKey,
       Authorization: `Bearer ${serviceKey}`,
     },
   });
 
-  if (!response.ok) {
-    // Column lifestyle may be missing before migration — retry without it.
-    const fallback = new URLSearchParams({
-      select: 'id,name,photo_url,owner_id,created_at',
-      order: 'created_at.desc',
-      limit: String(limit),
-    });
-    const retry = await fetch(`${supabaseUrl}/rest/v1/cats?${fallback}`, {
-      headers: {
-        apikey: serviceKey,
-        Authorization: `Bearer ${serviceKey}`,
-      },
-    });
-    if (!retry.ok) return [];
-    const rows = (await retry.json()) as Array<Omit<RecentCatRow, 'lifestyle'> & { lifestyle?: string }>;
-    return rows.map((row) => ({
+  type RawCat = {
+    id: string;
+    name: string;
+    photo_url: string | null;
+    owner_id: string;
+    lifestyle?: string | null;
+    created_at: string;
+    profiles?: { display_name?: string | null } | null;
+  };
+
+  const mapRows = (rows: RawCat[]): RecentCatRow[] =>
+    rows.map((row) => ({
       id: row.id,
       name: row.name,
       photo_url: row.photo_url,
       owner_id: row.owner_id,
+      owner_display_name: row.profiles?.display_name ?? null,
       lifestyle: row.lifestyle ?? null,
       created_at: row.created_at,
     }));
+
+  if (response.ok) {
+    return mapRows((await response.json()) as RawCat[]);
   }
 
-  const rows = (await response.json()) as RecentCatRow[];
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    photo_url: row.photo_url,
-    owner_id: row.owner_id,
-    lifestyle: row.lifestyle ?? null,
-    created_at: row.created_at,
-  }));
+  // Fallback without lifestyle / embed (older schemas).
+  const fallback = new URLSearchParams({
+    select: 'id,name,photo_url,owner_id,created_at',
+    order: 'created_at.desc',
+    limit: String(limit),
+  });
+  const retry = await fetch(`${supabaseUrl}/rest/v1/cats?${fallback}`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+    },
+  });
+  if (!retry.ok) return [];
+  return mapRows((await retry.json()) as RawCat[]);
 }
 
 export async function fetchSupabaseProductStats(): Promise<SupabaseProductStats> {
@@ -129,7 +181,7 @@ export async function fetchSupabaseProductStats(): Promise<SupabaseProductStats>
     return {
       available: false,
       error:
-        'Configure SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY pour les counts produit.',
+        'Configure SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY sur ce service Render (Settings → Environment), puis redeploy.',
     };
   }
 
@@ -150,6 +202,7 @@ export async function fetchSupabaseProductStats(): Promise<SupabaseProductStats>
       sightings,
       analyses,
       recentCats,
+      recentProfiles,
     ] = await Promise.all([
       countTable(supabaseUrl, serviceKey, 'profiles'),
       countTable(supabaseUrl, serviceKey, 'cats'),
@@ -192,22 +245,36 @@ export async function fetchSupabaseProductStats(): Promise<SupabaseProductStats>
       countTable(supabaseUrl, serviceKey, 'sightings'),
       countTable(supabaseUrl, serviceKey, 'cat_analysis'),
       fetchRecentCats(supabaseUrl, serviceKey, 20),
+      fetchRecentProfiles(supabaseUrl, serviceKey, 20),
     ]);
+
+    const coreOk = profiles.count != null || cats.count != null;
+    if (!coreOk) {
+      const hint =
+        profiles.detail ||
+        cats.detail ||
+        `HTTP profiles=${profiles.status} cats=${cats.status}`;
+      return {
+        available: false,
+        error: `Supabase counts indisponibles (${hint}). Vérifie SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (service_role, pas anon) sur Render.`,
+      };
+    }
 
     return {
       available: true,
-      profiles: profiles ?? undefined,
-      cats: cats ?? undefined,
-      catsWithPhoto: catsWithPhoto ?? undefined,
-      catsLast24h: catsLast24h ?? undefined,
-      catsLast7d: catsLast7d ?? undefined,
-      profilesLast7d: profilesLast7d ?? undefined,
+      profiles: profiles.count ?? undefined,
+      cats: cats.count ?? undefined,
+      catsWithPhoto: catsWithPhoto.count ?? undefined,
+      catsLast24h: catsLast24h.count ?? undefined,
+      catsLast7d: catsLast7d.count ?? undefined,
+      profilesLast7d: profilesLast7d.count ?? undefined,
       // Lifestyle counts may be null before migration — omit rather than 0.
-      domestique: domestique ?? undefined,
-      sauvage: sauvage ?? undefined,
-      sightings: sightings ?? undefined,
-      analyses: analyses ?? undefined,
+      domestique: domestique.count ?? undefined,
+      sauvage: sauvage.count ?? undefined,
+      sightings: sightings.count ?? undefined,
+      analyses: analyses.count ?? undefined,
       recentCats,
+      recentProfiles,
     };
   } catch (error) {
     return {
