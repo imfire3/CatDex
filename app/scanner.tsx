@@ -122,7 +122,7 @@ function CameraCircleButton({
 }
 
 export default function ScannerScreen() {
-  const { colors, spacing, radius, shadow } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ worldId?: string }>();
   const user = useAuthStore((state) => state.user);
