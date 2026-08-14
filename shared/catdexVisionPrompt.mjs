@@ -37,21 +37,29 @@ RACE
 CHAMPS
 
 OBLIGATOIRES (même si incertains) :
-- name : surnom CatDex DRÔLE obligatoire (1–2 mots, max 18 lettres).
-  Combine pelage (couleur/motif) + pose du chat + lieu si visible.
-  Recette : un mot « pelage/lieu » + un mot « pose/attitude ».
-  Exemples : « Paprika Zen » (roux assis), « Oreo Sieste » (noir et blanc allongé),
-  « Coussin Royal » (persan posé), « Brume Radar » (gris qui guette),
-  « Tigrou Turbo » (tigré en mouvement), « Meringue Ninja » (blanc caché),
-  « Rouille Balcon » (roux sur balcon), « Asphalte Scout » (noir dans la rue).
-  Interdit : Chat, Minou, Félix, Garfield, Ombre, Roux, Noir, Blanc, Gris, Miaou, Kitty.
-  
+- name : surnom CatDex façon créature de collection (style Pokémon), OBLIGATOIRE.
+  Un seul mot inventé (max 14 lettres), fun, mémorable, dérivé du pelage / motif / vibe.
+  Tu INVENTES le mot (suffixes ludiques : -ix, -or, -chu, -ette, -ion, -ax, -ou, -ette, -ki…).
+  Le joueur doit avoir envie de le collectionner — pas un surnom de voisin plat.
+
+  BONS exemples :
+  « Flambyx » (roux vif), « Oreon » (noir & blanc), « Brumix » (gris soft),
+  « Stripion » (tigré), « Merinja » (blanc furtif), « Noctix » (noir nocturne),
+  « Patchou » (écaille / calico), « Veloura » (poil long doux), « Zigrou » (tigré joueur),
+  « Mochix » (blanc crème), « Sparkit » (regard vif).
+
+  INTERDIT (trop fade / trop littéral) :
+  - Couleur seule : Roux, Noir, Blanc, Gris, Ombre, Neige, Cendre, Grisou, Tigrou
+  - Couleur + lieu/attitude : « Noir Escalade », « Roux Balcon », « Brume Radar », « Oreo Sieste »
+  - Prénoms banals : Chat, Minou, Félix, Garfield, Miaou, Kitty, Mistigri, Minette
+  - Deux mots séparés (préfère TOUJOURS un seul mot inventé)
+
 - personalityTraits : TOUJOURS 3 traits en français déduits de la pose/expression/contexte.
   Exemples : ["Curieux", "Observateur", "Calme"], ["Furtif", "Discret", "Vigilant"],
   ["Joueur", "Vif", "Espiègle"], ["Détendu", "Zen", "Paisible"],
   ["Timide", "Réservé", "Prudent"], ["Confiant", "Fier", "Territorial"].
   Ne laisse JAMAIS ce champ vide — invente si nécessaire depuis la pose.
-  
+
 - description : 2–3 phrases narratives EN FRANÇAIS incluant :
   1) Type de chat + couleur + pelage
   2) Lieu/environnement visible (rue, jardin, balcon, intérieur, parking…)
@@ -77,7 +85,7 @@ SORTIE
 Respecte exactement le schéma JSON Structured Outputs.`;
 
 export const CATDEX_VISION_USER_PROMPT =
-  "Analyse cette photo pour CatDex. Si c'est un chat, renvoie : un surnom drôle (pelage + pose + lieu), 3 traits de personnalité déduits de la pose, une description narrative 2-3 phrases (type + lieu + attitude). Champs physiques vides si invisibles. Race inconnue si confiance < 60.";
+  "Analyse cette photo pour CatDex. Si c'est un chat, renvoie : un surnom UNIQUE façon Pokémon (1 mot inventé, fun, dérivé du pelage — jamais « Noir… », « Grisou », « Roux Balcon »), 3 traits de personnalité déduits de la pose, une description narrative 2-3 phrases (type + lieu + attitude). Champs physiques vides si invisibles. Race inconnue si confiance < 60.";
 
 /** @deprecated Prefer CATDEX_VISION_SYSTEM_PROMPT */
 export const CATDEX_VISION_PROMPT = CATDEX_VISION_SYSTEM_PROMPT;

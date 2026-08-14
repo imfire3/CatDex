@@ -46,8 +46,10 @@ const REQUIRED_FORM_KEYS = [
 describe('shared CatDex Vision config', () => {
   it('exposes the full system prompt once', () => {
     assert.match(CATDEX_VISION_SYSTEM_PROMPT, /RÔLE/);
-    assert.match(CATDEX_VISION_SYSTEM_PROMPT, /Paprika Zen/);
+    assert.match(CATDEX_VISION_SYSTEM_PROMPT, /Flambyx/);
     assert.match(CATDEX_VISION_SYSTEM_PROMPT, /personalityTraits/);
+    assert.match(CATDEX_VISION_SYSTEM_PROMPT, /Pokémon/);
+    assert.doesNotMatch(CATDEX_VISION_SYSTEM_PROMPT, /Paprika Zen/);
     assert.equal(CATDEX_VISION_PROMPT, CATDEX_VISION_SYSTEM_PROMPT);
     assert.equal(CATDEX_VISION_USER_TEXT, CATDEX_VISION_USER_PROMPT);
     assert.match(CATDEX_VISION_USER_PROMPT, /Analyse cette photo pour CatDex/);

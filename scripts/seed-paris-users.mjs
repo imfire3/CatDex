@@ -24,35 +24,49 @@ const SHARED_PASSWORD = 'CatDexSeed2026!';
 const KEY = SERVICE || ANON;
 const IS_ADMIN = Boolean(SERVICE);
 
-/** Capture counts: user1=2, user2=0, user3=6, then varied. */
+/** Capture counts — dense enough to fill the Explorer map for beta tests. */
 const USERS = [
-  { slot: 1, email: 'seed.paris.1@catdex.app', displayName: 'Léa · Belleville', catCount: 2 },
+  { slot: 1, email: 'seed.paris.1@catdex.app', displayName: 'Léa · Belleville', catCount: 5 },
   { slot: 2, email: 'seed.paris.2@catdex.app', displayName: 'Noé · Nouveau', catCount: 0 },
-  { slot: 3, email: 'seed.paris.3@catdex.app', displayName: 'Inès · Père-Lachaise', catCount: 6 },
-  { slot: 4, email: 'seed.paris.4@catdex.app', displayName: 'Hugo · Ménilmontant', catCount: 4 },
-  { slot: 5, email: 'seed.paris.5@catdex.app', displayName: 'Aya · Charonne', catCount: 1 },
-  { slot: 6, email: 'seed.paris.6@catdex.app', displayName: 'Tom · Nation', catCount: 5 },
+  { slot: 3, email: 'seed.paris.3@catdex.app', displayName: 'Inès · Père-Lachaise', catCount: 10 },
+  { slot: 4, email: 'seed.paris.4@catdex.app', displayName: 'Hugo · Ménilmontant', catCount: 7 },
+  { slot: 5, email: 'seed.paris.5@catdex.app', displayName: 'Aya · Charonne', catCount: 4 },
+  { slot: 6, email: 'seed.paris.6@catdex.app', displayName: 'Tom · Nation', catCount: 8 },
 ];
 
 const PHOTOS = [
-  'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&q=80',
-  'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&q=80',
-  'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=400&q=80',
-  'https://images.unsplash.com/photo-1592194996308-7b1b9a1dedbc?w=400&q=80',
-  'https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=400&q=80',
-  'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?w=400&q=80',
-  'https://images.unsplash.com/photo-1533738363-b7f9aef958cd?w=400&q=80',
-  'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=400&q=80',
+  'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=640&q=80',
+  'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=640&q=80',
+  'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=640&q=80',
+  'https://images.unsplash.com/photo-1592194996308-7b1b9a1dedbc?w=640&q=80',
+  'https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=640&q=80',
+  'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?w=640&q=80',
+  'https://images.unsplash.com/photo-1533738363-b7f9aef958cd?w=640&q=80',
+  'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=640&q=80',
+  'https://images.unsplash.com/photo-1478098711619-5ab0b478d6e6?w=640&q=80',
+  'https://images.unsplash.com/photo-1511044568932-338cba0ad803?w=640&q=80',
+  'https://images.unsplash.com/photo-1561948955-570b270e7c36?w=640&q=80',
+  'https://images.unsplash.com/photo-1577023311546-cdc07a8454d9?w=640&q=80',
+  'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=640&q=80',
+  'https://images.unsplash.com/photo-1615789591457-74a63395c990?w=640&q=80',
+  'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=640&q=80',
+  'https://images.unsplash.com/photo-1555685812-4b943f1cb0eb?w=640&q=80',
 ];
 
 const NAMES = [
-  'Miel', 'Ombre', 'Éclair', 'Velours', 'Nuit', 'Pixel', 'Croquette', 'Moustache',
-  'Patoune', 'Tigrou', 'Neige', 'Cendre', 'Boubou', 'Miaouki', 'Grisou', 'Roux',
+  'Flambyx', 'Noctix', 'Stripion', 'Veloura', 'Merinja', 'Oreon', 'Patchou', 'Brumix',
+  'Zigrou', 'Tigrax', 'Mochix', 'Cendrax', 'Sparkit', 'Noodlix', 'Coonax', 'Mokax',
+  'Pianor', 'Éclipsor', 'Rayurix', 'Nubis', 'Confetix', 'Soufflix', 'Nyxor', 'Bandor',
+  'Crémix', 'Safaror', 'Nimbou', 'Domix', 'Braizor', 'Peluchor',
 ];
 
-const COLORS = ['Roux', 'Noir', 'Blanc', 'Tigré', 'Gris', 'Écaille de tortue'];
-const BREEDS = ['Européen', 'Chartreux', 'Siamois', 'Maine Coon', 'Persan'];
+const COLORS = ['Roux', 'Noir', 'Blanc', 'Tigré', 'Gris', 'Écaille de tortue', 'Bicolore', 'Crème'];
+const BREEDS = ['Européen', 'Chartreux', 'Siamois', 'Maine Coon', 'Persan', 'British Shorthair'];
 const COATS = ['Court', 'Mi-long', 'Long'];
+const RARITIES = ['Commun', 'Peu commun', 'Rare', 'Épique'];
+
+/** Map default / GPS anchor — keep a few pins walkable for nearby discovery. */
+const CENTER = { latitude: 48.8635, longitude: 2.3985 };
 
 const BOUNDS = {
   minLat: 48.848,
@@ -76,15 +90,30 @@ function randomParisPoint(seed) {
   };
 }
 
+/** First cats per owner stay near the map center (~40–180 m) for nearby UI. */
+function nearbyCenterPoint(seed, index) {
+  const angle = ((seed * 47) % 360) * (Math.PI / 180);
+  const meters = 40 + (index % 5) * 35 + ((seed * 13) % 40);
+  const dLat = (meters * Math.cos(angle)) / 111_320;
+  const dLng =
+    (meters * Math.sin(angle)) /
+    (111_320 * Math.cos((CENTER.latitude * Math.PI) / 180));
+  return {
+    latitude: CENTER.latitude + dLat,
+    longitude: CENTER.longitude + dLng,
+  };
+}
+
 function buildCats(ownerSlot, count) {
   const cats = [];
   for (let i = 0; i < count; i += 1) {
     const seed = ownerSlot * 100 + i + 1;
-    const point = randomParisPoint(seed);
+    const point = i < 2 ? nearbyCenterPoint(seed, i) : randomParisPoint(seed);
     const name = pick(NAMES, seed);
     const color = pick(COLORS, seed + 3);
     const breed = pick(BREEDS, seed + 5);
     const coat = pick(COATS, seed + 7);
+    const rarity = pick(RARITIES, seed + 11);
     cats.push({
       name,
       description: `Chat seed #${ownerSlot}-${i + 1} — quartier Paris 20e.`,
@@ -103,9 +132,10 @@ function buildCats(ownerSlot, count) {
         description: `${color} ${breed.toLowerCase()} aperçu près de ${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}.`,
         suggested_name: name,
         gender: pick(['male', 'female', 'unknown'], seed),
-        eyes: pick(['Verts', 'Ambre', 'Bleus'], seed),
+        eyes: pick(['Verts', 'Ambre', 'Bleus', 'Cuivre'], seed),
         size: pick(['Petit', 'Moyen', 'Grand'], seed),
-        tags: ['Seed', 'Paris', color],
+        tags: ['Seed', 'Paris', color, rarity],
+        rarity,
       },
     });
   }

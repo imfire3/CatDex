@@ -39,7 +39,7 @@ export const CATDEX_FORM_JSON_SCHEMA = {
     name: {
       type: 'string',
       description:
-        'Short suggested name inspired only by visible traits. Empty if nothing fits.',
+        'One coined Pokémon-style nickname (max 14 letters), fun and derived from coat/vibe. Never a plain color or "Noir Escalade"-style label.',
     },
     breed: {
       type: 'string',

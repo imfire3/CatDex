@@ -15,7 +15,7 @@ function analysis(partial: Partial<CatAnalysis>): CatAnalysis {
 }
 
 describe('funnyCatName', () => {
-  it('builds a ginger sitting nickname from coat and pose', () => {
+  it('builds a ginger Pokémon-style nickname from coat', () => {
     const name = funnyCatName(
       analysis({
         color: 'Roux',
@@ -24,10 +24,9 @@ describe('funnyCatName', () => {
         tags: ['calme'],
       }),
     );
-    assert.match(name, / /);
-    assert.match(name, /Paprika|Carotte|Flamby|Tikka|Curry/);
-    assert.match(name, /Zen|Buddha|Pause/);
-    assert.ok(name.length <= 22);
+    assert.match(name, /Flambyx|Papriko|Tikkax|Curryon|Braizor/);
+    assert.ok(!/\s/.test(name));
+    assert.ok(name.length <= 14);
     assert.equal(isGenericCatName(name), false);
   });
 
@@ -39,7 +38,7 @@ describe('funnyCatName', () => {
         description: 'Chat noir et blanc allongé en sieste.',
       }),
     );
-    assert.match(name, /Oreo|Domino|Yin|Piano|Cookie/);
+    assert.match(name, /Oreon|Domix|Pianor|Yinette|Cookix/);
   });
 
   it('is stable for the same traits', () => {
@@ -50,6 +49,18 @@ describe('funnyCatName', () => {
       tags: ['curieux'],
     });
     assert.equal(funnyCatName(input), funnyCatName(input));
+    assert.equal(isGenericCatName(funnyCatName(input)), false);
+  });
+});
+
+describe('isGenericCatName', () => {
+  it('rejects plain and boring legacy names', () => {
+    assert.equal(isGenericCatName('Grisou'), true);
+    assert.equal(isGenericCatName('Noir Escalade'), true);
+    assert.equal(isGenericCatName('Roux Balcon'), true);
+    assert.equal(isGenericCatName('Brume Radar'), true);
+    assert.equal(isGenericCatName('Oreo Sieste'), true);
+    assert.equal(isGenericCatName('Flambyx'), false);
   });
 });
 
@@ -66,15 +77,15 @@ describe('withFunnyCatName', () => {
     assert.equal(isGenericCatName(result.suggestedName), false);
   });
 
-  it('keeps an already funny Vision name', () => {
+  it('keeps an already coined Vision name', () => {
     const result = withFunnyCatName(
       analysis({
-        suggestedName: 'Paprika Zen',
+        suggestedName: 'Flambyx',
         color: 'Roux',
         description: 'Chat roux assis.',
       }),
     );
-    assert.equal(result.suggestedName, 'Paprika Zen');
+    assert.equal(result.suggestedName, 'Flambyx');
   });
 
   it('replaces a name that is just the coat color', () => {
@@ -86,6 +97,18 @@ describe('withFunnyCatName', () => {
       }),
     );
     assert.notEqual(result.suggestedName, 'Roux');
+  });
+
+  it('replaces Color + noun labels like Noir Escalade', () => {
+    const result = withFunnyCatName(
+      analysis({
+        suggestedName: 'Noir Escalade',
+        color: 'Noir',
+        description: 'Chat noir sur une clôture.',
+      }),
+    );
+    assert.notEqual(result.suggestedName, 'Noir Escalade');
+    assert.ok(!/\s/.test(result.suggestedName ?? ''));
   });
 
   it('leaves rejected photos unchanged', () => {

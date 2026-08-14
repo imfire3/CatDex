@@ -38,52 +38,39 @@ const GENERIC_NAMES = new Set([
   'kitty',
   'unknown',
   'inconnu',
+  'grisou',
+  'tigrou',
+  'neige',
+  'cendre',
+  'mistigri',
+  'minette',
 ]);
 
 function pickFunnyName(form) {
   const hay = `${form.coatColor || ''} ${form.coatPattern || ''} ${form.breed || ''} ${form.description || ''} ${(form.personalityTraits || []).join(' ')}`.toLowerCase();
-  const coat =
-    /roux|orange|ginger/.test(hay)
-      ? 'Paprika'
-      : /noir et blanc|bicolor/.test(hay)
-        ? 'Oreo'
-        : /calico|tricolore/.test(hay)
-          ? 'Confetti'
-          : /noir|black/.test(hay)
-            ? 'Réglisse'
-            : /blanc|white|neige/.test(hay)
-              ? 'Meringue'
-              : /gris|grey|gray|bleu/.test(hay)
-                ? 'Brume'
-                : /brun|chocolat|noisette/.test(hay)
-                  ? 'Choco'
-                  : /tigr|tabby|rayure/.test(hay)
-                    ? 'Tigrou'
-                    : 'Patoune';
-  const pose =
-    /assis|calme|zen/.test(hay)
-      ? 'Zen'
-      : /couch|allong|sieste|dodo/.test(hay)
-        ? 'Sieste'
-        : /curieux|espion|guette/.test(hay)
-          ? 'Radar'
-          : /joueur|bond|saute/.test(hay)
-            ? 'Turbo'
-            : /cache|boite/.test(hay)
-              ? 'Ninja'
-              : /persan/.test(hay)
-                ? 'Royal'
-                : /maine coon/.test(hay)
-                  ? 'Boule'
-                  : '';
-  return pose && pose !== coat ? `${coat} ${pose}` : coat;
+  if (/roux|orange|ginger/.test(hay)) return 'Flambyx';
+  if (/noir et blanc|bicolor|tuxedo/.test(hay)) return 'Oreon';
+  if (/calico|tricolore|écaille|tortie/.test(hay)) return 'Patchou';
+  if (/noir|black/.test(hay)) return 'Noctix';
+  if (/blanc|white|neige|crème|cream/.test(hay)) return 'Mochix';
+  if (/gris|grey|gray|bleu|argent/.test(hay)) return 'Brumix';
+  if (/brun|chocolat|noisette/.test(hay)) return 'Mokax';
+  if (/tigr|tabby|rayure/.test(hay)) return 'Stripion';
+  if (/persan/.test(hay)) return 'Soufflix';
+  if (/maine coon/.test(hay)) return 'Coonax';
+  if (/siamois/.test(hay)) return 'Noodlix';
+  return 'Sparkit';
 }
 
 function isGenericName(name) {
   const trimmed = (name || '').trim();
-  if (trimmed.length < 3 || trimmed.length > 22) return true;
+  if (trimmed.length < 3 || trimmed.length > 18) return true;
   if (GENERIC_NAMES.has(trimmed.toLowerCase())) return true;
-  return /^(chat|minou|kitty)\b/i.test(trimmed);
+  if (/\s/.test(trimmed)) return true;
+  if (/^(roux|noir|blanc|gris|ombre|neige|cendre|tigré|tigre)$/i.test(trimmed)) {
+    return true;
+  }
+  return /^(chat|minou|kitty|noir|roux|blanc|gris)\b/i.test(trimmed);
 }
 
 function json(statusCode, body) {

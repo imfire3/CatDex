@@ -20,48 +20,101 @@ const GENERIC_NAMES = new Set(
     'kitty',
     'unknown',
     'inconnu',
+    'grisou',
+    'tigrou',
+    'neige',
+    'cendre',
+    'mistigri',
+    'minette',
+    'ronron',
+    'patoune',
+    'moustache',
   ].map((value) => value.toLowerCase()),
 );
 
+const PLAIN_COLOR = /^(roux|noir|blanc|gris|ombre|neige|cendre|tigré|tigre)$/i;
+
+/** "Noir Escalade", "Roux Balcon", "Brume Radar" — color/plain + literal noun. */
+const BORING_TWO_WORD =
+  /^(roux|noir|blanc|gris|ombre|neige|cendre|brume|oreo|tigrou|grisou|meringue|velours|nuit|pixel)\s+\S+/i;
+
+/** Coined creature-style first halves (Pokémon vibes). */
 const COLOR_NAMES: Array<{ match: RegExp; names: string[] }> = [
-  { match: /roux|orange|ginger|cannelle|auburn/, names: ['Paprika', 'Carotte', 'Flamby', 'Tikka', 'Curry'] },
-  { match: /noir et blanc|black and white|bicolor/, names: ['Oreo', 'Domino', 'Yin', 'Piano', 'Cookie'] },
-  { match: /calico|écaille|tricolore|calico/, names: ['Confetti', 'Arlequin', 'Patch', 'Harlequin', 'Mosaïque'] },
-  { match: /noir|black|ébène|charbon/, names: ['Réglisse', 'Nuit', 'Pixel', 'Charbon', 'Eclipse'] },
-  { match: /blanc|white|neige|crème|cream/, names: ['Meringue', 'Nuage', 'Mochi', 'Lait', 'Neige'] },
-  { match: /gris|grey|gray|bleu|blue|cendre/, names: ['Brume', 'Grisou', 'Cendre', 'Souris', 'Nuageau'] },
-  { match: /brun|brown|chocolat|noisette|fauve/, names: ['Choco', 'Noisette', 'Cookie', 'Moka', 'Biscuit'] },
-  { match: /écaille de tortue|tortie/, names: ['Tortue', 'Marbre', 'Tache'] },
+  {
+    match: /roux|orange|ginger|cannelle|auburn|flamme/,
+    names: ['Flambyx', 'Papriko', 'Tikkax', 'Curryon', 'Braizor'],
+  },
+  {
+    match: /noir et blanc|black and white|bicolor|tuxedo/,
+    names: ['Oreon', 'Domix', 'Pianor', 'Yinette', 'Cookix'],
+  },
+  {
+    match: /calico|écaille|tricolore|tortie|tortue/,
+    names: ['Patchou', 'Confetix', 'Marblor', 'Harleki', 'Mosai'],
+  },
+  {
+    match: /noir|black|ébène|charbon/,
+    names: ['Noctix', 'Obsidu', 'Éclipsor', 'Charbox', 'Nyxor'],
+  },
+  {
+    match: /blanc|white|neige|crème|cream/,
+    names: ['Mochix', 'Nubis', 'Merinja', 'Laitor', 'Crémix'],
+  },
+  {
+    match: /gris|grey|gray|bleu|blue|argent|silver/,
+    names: ['Brumix', 'Cendrax', 'Miragor', 'Chromix', 'Nimbou'],
+  },
+  {
+    match: /brun|brown|chocolat|noisette|fauve|café/,
+    names: ['Mokax', 'Biscuiton', 'Chocoro', 'Noisetix', 'Caféki'],
+  },
 ];
 
 const PATTERN_NAMES: Array<{ match: RegExp; names: string[] }> = [
-  { match: /tigr|tabby|rayure|striped/, names: ['Tigrou', 'Rayure', 'Zébrito', 'Moustache'] },
-  { match: /tacheté|spotted|points|moucheté/, names: ['Confetti', 'Pois', 'Moustique'] },
-  { match: /colourpoint|colorpoint|siamois/, names: ['Noodle', 'Siam', 'Masque'] },
-  { match: /smoke|silver|argent/, names: ['Argent', 'Mirage', 'Chrome'] },
+  {
+    match: /tigr|tabby|rayure|striped/,
+    names: ['Stripion', 'Zigrou', 'Rayurix', 'Tigrax', 'Bandor'],
+  },
+  {
+    match: /tacheté|spotted|points|moucheté/,
+    names: ['Poixon', 'Confetix', 'Spotix'],
+  },
+  {
+    match: /colourpoint|colorpoint|siamois/,
+    names: ['Noodlix', 'Siamor', 'Masquix'],
+  },
+  {
+    match: /smoke|silver|argent/,
+    names: ['Argentor', 'Miragor', 'Chromix'],
+  },
 ];
 
 const BREED_NAMES: Array<{ match: RegExp; names: string[] }> = [
-  { match: /persan/, names: ['Coussin', 'Soufflé', 'Shah'] },
-  { match: /siamois|siamese/, names: ['Siam', 'Noodle', 'Banane'] },
-  { match: /maine coon|mainecoon/, names: ['Boule', 'Lionceau', 'Mammouth'] },
-  { match: /british|chartreux/, names: ['Lord', 'Pudding', 'Tweed'] },
-  { match: /sacré de birmanie|birman/, names: ['Temple', 'Moka'] },
-  { match: /bengal/, names: ['Léopard', 'Safari'] },
-  { match: /ragdoll/, names: ['Peluche', 'Doudou'] },
-  { match: /sphynx/, names: ['Velours', 'Nugget'] },
-  { match: /abyssin/, names: ['Fennec', 'Safari'] },
-  { match: /norvégien/, names: ['Fjord', 'Neigeux'] },
+  { match: /persan/, names: ['Soufflix', 'Peluchor', 'Shahki'] },
+  { match: /siamois|siamese/, names: ['Noodlix', 'Siamor', 'Banari'] },
+  { match: /maine coon|mainecoon/, names: ['Coonax', 'Mammor', 'Lionix'] },
+  { match: /british|chartreux/, names: ['Puddix', 'Tweedor', 'Lordix'] },
+  { match: /sacré de birmanie|birman/, names: ['Templor', 'Birmix'] },
+  { match: /bengal/, names: ['Safaror', 'Léopor'] },
+  { match: /ragdoll/, names: ['Doudor', 'Peluchix'] },
+  { match: /sphynx/, names: ['Nuggix', 'Velurix'] },
+  { match: /abyssin/, names: ['Fennix', 'Safaror'] },
+  { match: /norvégien/, names: ['Fjordix', 'Nordor'] },
 ];
 
-const POSE_NAMES: Array<{ match: RegExp; names: string[] }> = [
-  { match: /assis|s'assoit|\bsit\b|calme|zen|pose/, names: ['Zen', 'Buddha', 'Pause'] },
-  { match: /couch|allong|sleep|sieste|dodo|loaf|pain/, names: ['Sieste', 'Dodo', 'Canapé'] },
-  { match: /curieux|espion|guette|sentinelle/, names: ['Radar', 'Espion', 'Sentinelle'] },
-  { match: /joueur|play|bond|saute|turbo|chasse/, names: ['Turbo', 'Zigzag', 'Fusée'] },
-  { match: /cache|hide|boite|box/, names: ['Ninja', 'Planqué', 'Boîte'] },
-  { match: /toilett|leche|groom/, names: ['Glamour', 'Lèche'] },
-  { match: /marche|walk|debout|stand|patrouille/, names: ['Patrouille', 'Flâneur'] },
+const VIBE_SUFFIXES = ['ix', 'or', 'chu', 'ette', 'ax', 'ou', 'ki', 'on'];
+
+const VIBE_ROOTS = [
+  'Spar',
+  'Volt',
+  'Mist',
+  'Puff',
+  'Zap',
+  'Glow',
+  'Prowl',
+  'Dash',
+  'Soft',
+  'Bold',
 ];
 
 function normalize(value: string | undefined): string {
@@ -85,14 +138,6 @@ function hashSeed(parts: string[]): number {
   return Math.abs(hash);
 }
 
-function namesFor(haystack: string, table: Array<{ match: RegExp; names: string[] }>): string[] {
-  const found: string[] = [];
-  for (const row of table) {
-    if (row.match.test(haystack)) found.push(...row.names);
-  }
-  return found;
-}
-
 function firstNamesFor(
   haystack: string,
   table: Array<{ match: RegExp; names: string[] }>,
@@ -103,14 +148,32 @@ function firstNamesFor(
   return [];
 }
 
-export function isGenericCatName(name: string | undefined): boolean {
-  const trimmed = name?.trim() ?? '';
-  if (trimmed.length < 3 || trimmed.length > 22) return true;
-  if (GENERIC_NAMES.has(trimmed.toLowerCase())) return true;
-  return /^(chat|minou|kitty)\b/i.test(trimmed);
+function namesFor(haystack: string, table: Array<{ match: RegExp; names: string[] }>): string[] {
+  const found: string[] = [];
+  for (const row of table) {
+    if (row.match.test(haystack)) found.push(...row.names);
+  }
+  return found;
 }
 
-/** Funny 1–2 word CatDex nickname from coat, breed and pose. */
+function coinedFallback(seed: number): string {
+  const root = pick(VIBE_ROOTS, seed);
+  const suffix = pick(VIBE_SUFFIXES, seed + 7);
+  return `${root}${suffix}`;
+}
+
+export function isGenericCatName(name: string | undefined): boolean {
+  const trimmed = name?.trim() ?? '';
+  if (trimmed.length < 3 || trimmed.length > 18) return true;
+  const lower = trimmed.toLowerCase();
+  if (GENERIC_NAMES.has(lower)) return true;
+  if (PLAIN_COLOR.test(trimmed)) return true;
+  if (BORING_TWO_WORD.test(trimmed)) return true;
+  if (/\s/.test(trimmed)) return true;
+  return /^(chat|minou|kitty|noir|roux|blanc|gris)\b/i.test(trimmed);
+}
+
+/** Pokémon-style coined CatDex nickname from coat, breed and vibe. */
 export function funnyCatName(analysis: Pick<
   CatAnalysis,
   'color' | 'breed' | 'coat' | 'coatPattern' | 'tags' | 'distinctiveFeatures' | 'description' | 'habitat'
@@ -134,21 +197,12 @@ export function funnyCatName(analysis: Pick<
     ...firstNamesFor(pattern, PATTERN_NAMES),
   ];
   const breedPool = namesFor(breed, BREED_NAMES);
-  const posePool = namesFor(pose, POSE_NAMES);
-
-  const first =
+  const name =
     pick(coatPool, seed) ||
     pick(breedPool, seed + 3) ||
-    pick(['Moustache', 'Patoune', 'Croquette', 'Miaouki', 'Boubou'], seed);
+    coinedFallback(seed);
 
-  const secondPool = [...posePool, ...breedPool.filter((name) => name !== first)];
-  const second = pick(secondPool, seed + 11);
-
-  if (second && second !== first) {
-    const combo = `${first} ${second}`;
-    if (combo.length <= 22) return combo;
-  }
-  return first;
+  return name.slice(0, 14);
 }
 
 export function withFunnyCatName(analysis: CatAnalysis): CatAnalysis {
