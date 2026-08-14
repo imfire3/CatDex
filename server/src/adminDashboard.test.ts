@@ -61,6 +61,64 @@ describe('renderAdminDashboardHtml', () => {
     assert.match(html, /Dernières captures/);
     assert.match(html, /Pixel/);
     assert.match(html, /https:\/\/example\.com\/pixel\.jpg/);
+    assert.match(html, /referrer" content="no-referrer"/);
+  });
+
+  it('escapes untrusted profile names in HTML', () => {
+    const html = renderAdminDashboardHtml({
+      generatedAt: '2026-08-14T10:00:00.000Z',
+      analyze: {
+        processStartedAt: '2026-08-14T09:00:00.000Z',
+        total: 0,
+        ok: 0,
+        errors: 0,
+        avgLatencyMs: null,
+        last24h: { ok: 0, errors: 0 },
+        recent: [],
+      },
+      product: {
+        available: true,
+        recentProfiles: [
+          {
+            id: 'user-1',
+            display_name: '<img src=x onerror=alert(1)>',
+            email: 'a@b.c',
+            created_at: '2026-08-14T09:20:00.000Z',
+          },
+        ],
+      },
+    });
+
+    assert.doesNotMatch(html, /<img src=x onerror/);
+    assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  });
+
+  it('shows recent-list fetch errors instead of a fake empty state', () => {
+    const html = renderAdminDashboardHtml({
+      generatedAt: '2026-08-14T10:00:00.000Z',
+      analyze: {
+        processStartedAt: '2026-08-14T09:00:00.000Z',
+        total: 0,
+        ok: 0,
+        errors: 0,
+        avgLatencyMs: null,
+        last24h: { ok: 0, errors: 0 },
+        recent: [],
+      },
+      product: {
+        available: true,
+        profiles: 2,
+        recentProfiles: [],
+        recentProfilesError: 'HTTP 401 JWT expired',
+        recentCats: [],
+        recentCatsError: 'HTTP 400 column cats.lifestyle does not exist',
+      },
+    });
+
+    assert.match(html, /HTTP 401 JWT expired/);
+    assert.match(html, /HTTP 400 column cats\.lifestyle does not exist/);
+    assert.doesNotMatch(html, /Aucun profil récent/);
+    assert.doesNotMatch(html, /Aucune capture récente/);
   });
 
   it('surfaces Supabase config errors in red', () => {
