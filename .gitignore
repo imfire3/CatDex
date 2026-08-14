@@ -58,3 +58,4 @@ ChatDex Mobile App UI/
 web.zip
 *.zip
 .netlify
+supabase/.temp/
