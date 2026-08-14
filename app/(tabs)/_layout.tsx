@@ -38,7 +38,7 @@ export default function TabsLayout() {
         }}
       >
         <Tabs.Screen name="map" options={{ title: 'Découvrir' }} />
-        <Tabs.Screen name="catdex" options={{ title: 'Mon CatDex' }} />
+        <Tabs.Screen name="catdex" options={{ title: 'CatDex' }} />
         <Tabs.Screen name="missions" options={{ title: 'Missions' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
       </Tabs>

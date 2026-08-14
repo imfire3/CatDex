@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   Image,
+  Platform,
+  StyleSheet,
   type ImageProps,
   type ImageResizeMode,
   type StyleProp,
@@ -19,8 +21,20 @@ type Props = {
   onLoad?: ImageProps['onLoad'];
 };
 
+const OBJECT_FIT: Record<ImageResizeMode, NonNullable<CSSProperties['objectFit']>> = {
+  cover: 'cover',
+  contain: 'contain',
+  stretch: 'fill',
+  center: 'none',
+  repeat: 'none',
+};
+
 /**
  * Loads cat photos from data:/http(s)/file: URIs or `catphoto:` IndexedDB refs.
+ *
+ * On web, RN Image uses a background-image + opacity-0 &lt;img&gt; stack that often
+ * fails to fill absolute/percentage boxes. We render a real &lt;img&gt; with object-fit
+ * instead so photos always cover and center in their frame.
  */
 export function CatImage({
   uri,
@@ -81,6 +95,40 @@ export function CatImage({
   }, [uri]);
 
   if (!resolved) return null;
+
+  if (Platform.OS === 'web') {
+    const flat = StyleSheet.flatten(style) ?? {};
+    return (
+      // Real DOM img — reliable cover/center in percentage or absolute frames.
+      // eslint-disable-next-line jsx-a11y/alt-text -- alt set below
+      <img
+        src={resolved}
+        alt={accessibilityLabel ?? ''}
+        draggable={false}
+        onError={() =>
+          onErrorRef.current?.({ nativeEvent: { error: 'load failed' } } as never)
+        }
+        onLoad={(event) => {
+          const target = event.currentTarget;
+          onLoadRef.current?.({
+            nativeEvent: {
+              source: {
+                width: target.naturalWidth,
+                height: target.naturalHeight,
+                uri: resolved,
+              },
+            },
+          } as never);
+        }}
+        style={{
+          ...(flat as CSSProperties),
+          objectFit: OBJECT_FIT[resizeMode] ?? 'cover',
+          objectPosition: 'center',
+          display: 'block',
+        }}
+      />
+    );
+  }
 
   return (
     <Image

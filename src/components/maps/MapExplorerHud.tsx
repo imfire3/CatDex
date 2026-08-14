@@ -112,69 +112,6 @@ function RoundTool({
   );
 }
 
-function HudPill({
-  label,
-  badge,
-  onPress,
-  icon,
-}: {
-  label: string;
-  badge?: number;
-  onPress: () => void;
-  icon: React.ReactNode;
-}) {
-  const { colors, spacing, radius, shadow, motion } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => [
-        {
-          height: spacing[48],
-          paddingHorizontal: spacing[16],
-          borderRadius: radius.full,
-          backgroundColor: colors.surfaceElevated,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing[8],
-          transform: [{ scale: pressed ? motion.pressScale : 1 }],
-        },
-        shadow.medium,
-      ]}
-    >
-      {icon}
-      <Text
-        variant="bodySmall" weight="semibold"
-        color="textBrand"
-      >
-        {label}
-      </Text>
-      {typeof badge === 'number' && badge > 0 ? (
-        <View
-          style={{
-            position: 'absolute',
-            top: -spacing[4],
-            right: -spacing[4],
-            minWidth: spacing[24],
-            height: spacing[24],
-            paddingHorizontal: spacing[4],
-            borderRadius: radius.full,
-            backgroundColor: colors.brand,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 2,
-            borderColor: colors.surfaceElevated }}
-        >
-          <Text variant="caption" weight="semibold" color="onAccent">
-            {badge > 99 ? '99+' : String(badge)}
-          </Text>
-        </View>
-      ) : null}
-    </Pressable>
-  );
-}
-
 export function MapExplorerHud({
   missionCount = 0,
   collectionCount = 0,
@@ -352,21 +289,20 @@ export function MapExplorerHud({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: spacing[8] }}
+        }}
       >
-        <HudPill
+        <RoundTool
           label="Missions"
           badge={missionCount}
           onPress={() => router.push('/(tabs)/missions')}
-          icon={
-            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 3.5 14.8 9l6.2.9-4.5 4.4 1.1 6.2L12 17.8 6.4 20.5l1.1-6.2L3 9.9l6.2-.9L12 3.5Z"
-                fill={colors.brand}
-              />
-            </Svg>
-          }
-        />
+        >
+          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 3.5 14.8 9l6.2.9-4.5 4.4 1.1 6.2L12 17.8 6.4 20.5l1.1-6.2L3 9.9l6.2-.9L12 3.5Z"
+              fill={colors.brand}
+            />
+          </Svg>
+        </RoundTool>
 
         <Pressable
           accessibilityRole="button"
@@ -402,30 +338,67 @@ export function MapExplorerHud({
           </Svg>
         </Pressable>
 
-        <HudPill
-          label="Mon CatDex"
-          badge={collectionCount}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="CatDex"
           onPress={() => router.push('/(tabs)/catdex')}
-          icon={
-            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <Rect
-                x="5"
-                y="4"
-                width="14"
-                height="16"
-                rx="2"
-                stroke={colors.brand}
-                strokeWidth={stroke}
-              />
-              <Path
-                d="M9 4v16M9 9h6"
-                stroke={colors.brand}
-                strokeWidth={stroke}
-                strokeLinecap="round"
-              />
-            </Svg>
-          }
-        />
+          style={({ pressed }) => [
+            {
+              height: spacing[48],
+              paddingHorizontal: spacing[16],
+              borderRadius: radius.full,
+              backgroundColor: colors.surfaceElevated,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing[8],
+              transform: [{ scale: pressed ? motion.pressScale : 1 }],
+            },
+            shadow.medium,
+          ]}
+        >
+          <Text variant="bodySmall" weight="semibold" color="textBrand">
+            CatDex
+          </Text>
+          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+            <Rect
+              x="5"
+              y="4"
+              width="14"
+              height="16"
+              rx="2"
+              stroke={colors.brand}
+              strokeWidth={stroke}
+            />
+            <Path
+              d="M9 4v16M9 9h6"
+              stroke={colors.brand}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+            />
+          </Svg>
+          {collectionCount > 0 ? (
+            <View
+              style={{
+                position: 'absolute',
+                top: -spacing[4],
+                right: -spacing[4],
+                minWidth: spacing[24],
+                height: spacing[24],
+                paddingHorizontal: spacing[4],
+                borderRadius: radius.full,
+                backgroundColor: colors.brand,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 2,
+                borderColor: colors.surfaceElevated,
+              }}
+            >
+              <Text variant="caption" weight="semibold" color="onAccent">
+                {collectionCount > 99 ? '99+' : String(collectionCount)}
+              </Text>
+            </View>
+          ) : null}
+        </Pressable>
       </View>
     </View>
   );

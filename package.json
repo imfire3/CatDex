@@ -61,7 +61,8 @@
     "deploy:web": "bash scripts/deploy-web.sh",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "npm test --prefix server"
+    "test": "npm test --prefix server",
+    "seed:paris-users": "node --env-file=.env scripts/seed-paris-users.mjs"
   },
   "private": true
 }

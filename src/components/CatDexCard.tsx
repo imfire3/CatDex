@@ -3,7 +3,7 @@
  * Opens the full cat fiche on press.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { CatImage } from '@/components/CatImage';
@@ -32,6 +32,8 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
   const analysis = enrichAnalysis(cat.analysis, cat.number);
   const theme = themeFromColorLabel(analysis.color, cat.number);
   const [photoFailed, setPhotoFailed] = useState(false);
+  /** Locked square frame in px — avoids RN-web % / intrinsic-size fights. */
+  const [framePx, setFramePx] = useState(0);
 
   useEffect(() => {
     setPhotoFailed(false);
@@ -68,22 +70,36 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
       ]}
     >
       <View
+        onLayout={(event) => {
+          const next = Math.round(event.nativeEvent.layout.width);
+          if (next > 0 && next !== framePx) setFramePx(next);
+        }}
         style={{
+          width: '100%',
           aspectRatio: 1,
+          height: framePx > 0 ? framePx : undefined,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: colors.surfaceSecondary,
-          overflow: 'hidden' }}
+          overflow: 'hidden',
+          position: 'relative',
+        }}
       >
-        {canShowPhoto ? (
+        {canShowPhoto && framePx > 0 ? (
           <CatImage
             uri={cat.photoUri}
-            style={styles.photo}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: framePx,
+              height: framePx,
+            }}
             resizeMode="cover"
             accessibilityIgnoresInvertColors
             onError={() => setPhotoFailed(true)}
           />
-        ) : (
+        ) : canShowPhoto ? null : (
           <CatSprite colorLabel={analysis.color} seed={cat.number} size={80} />
         )}
 
@@ -165,11 +181,3 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  photo: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
-  },
-});

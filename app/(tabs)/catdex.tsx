@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { PageLoading } from '@/components/Loader';
 import { SearchInput } from '@/components/Input';
 import { Text } from '@/components/Text';
+import { MOBILE_WEB_WIDTH } from '@/layout/MobileWebFrame';
 import { TabStackHeader } from '@/layout/TabStackHeader';
 import { CATDEX_TARGET } from '@/lib/constants';
 import { type CatDexRarityFilter, matchesCatDexRarityFilter } from '@/lib/catTheme';
@@ -32,6 +33,8 @@ const RARITY_FILTERS: { id: ListFilter; label: string }[] = [
 ];
 
 const COLUMNS = 2;
+/** Matches MobileWebFrame desktop phone preview breakpoint. */
+const DESKTOP_WEB_BREAKPOINT = 480;
 
 export default function CatDexScreen() {
   const { colors, spacing, radius } = useTheme();
@@ -42,6 +45,8 @@ export default function CatDexScreen() {
   const [listFilter, setListFilter] = useState<ListFilter>('all');
   const [query, setQuery] = useState('');
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
+  /** Width of the grid row (inside ScrollView padding). */
+  const [gridWidth, setGridWidth] = useState(0);
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -74,10 +79,18 @@ export default function CatDexScreen() {
 
   const cardGap = spacing[16];
   const horizontalPad = spacing[24];
-  const availableWidth = Math.max(0, windowWidth - horizontalPad * 2);
+  // Fallback when grid has not laid out yet (phone frame on wide web).
+  const fallbackFrame =
+    windowWidth >= DESKTOP_WEB_BREAKPOINT
+      ? Math.min(windowWidth, MOBILE_WEB_WIDTH)
+      : windowWidth;
+  const rowWidth =
+    gridWidth > 0
+      ? gridWidth
+      : Math.max(0, fallbackFrame - horizontalPad * 2);
   const cardWidth = Math.max(
-    140,
-    Math.floor((availableWidth - cardGap * (COLUMNS - 1)) / COLUMNS),
+    0,
+    Math.floor((rowWidth - cardGap * (COLUMNS - 1)) / COLUMNS),
   );
   const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24];
 
@@ -220,9 +233,27 @@ export default function CatDexScreen() {
         {filtered.length === 0 ? (
           empty
         ) : (
-          <View style={styles.grid}>
+          <View
+            style={[styles.grid, { gap: cardGap }]}
+            onLayout={(event) => {
+              const next = event.nativeEvent.layout.width;
+              if (next > 0 && next !== gridWidth) setGridWidth(next);
+            }}
+          >
             {filtered.map((item) => (
-              <View key={item.id} style={{ width: cardWidth, marginBottom: cardGap }}>
+              <View
+                key={item.id}
+                style={{
+                  width: cardWidth,
+                  maxWidth: cardWidth,
+                  // Web flex items default to min-width:auto and grow to the
+                  // photo’s intrinsic size — that forces a single column.
+                  minWidth: 0,
+                  flexGrow: 0,
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                }}
+              >
                 <CatDexCard
                   cat={item}
                   isFavorite={favorites.has(item.id)}
@@ -248,6 +279,6 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
 });
