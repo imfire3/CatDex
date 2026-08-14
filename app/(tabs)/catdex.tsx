@@ -175,17 +175,27 @@ export default function CatDexScreen() {
           </Text>
         }
         below={
-          <View style={{ gap: spacing[16] }}>
+          <View style={{ gap: spacing[16], width: '100%', minWidth: 0 }}>
             <SearchInput
               value={query}
               onChangeText={setQuery}
               placeholder="Rechercher un chat…"
               clearButtonMode="while-editing"
             />
+          <View style={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
             <ScrollView
               horizontal
+              nestedScrollEnabled
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: spacing[8], paddingRight: spacing[8] }}
+              keyboardShouldPersistTaps="handled"
+              style={{ width: '100%', flexGrow: 0 }}
+              contentContainerStyle={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexGrow: 0,
+                gap: spacing[8],
+                paddingRight: spacing[16],
+              }}
             >
               {RARITY_FILTERS.map((filter) => {
                 const selected = listFilter === filter.id;
@@ -204,6 +214,7 @@ export default function CatDexScreen() {
                       borderColor: colors.border,
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                       opacity: pressed ? 0.9 : 1,
                     })}
                   >
@@ -217,6 +228,7 @@ export default function CatDexScreen() {
                 );
               })}
             </ScrollView>
+          </View>
           </View>
         }
       />

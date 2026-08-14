@@ -40,6 +40,8 @@ export function TabStackHeader({ title, right, onBack = goBackToMap, below }: Pr
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
         zIndex: 2,
+        width: '100%',
+        overflow: 'hidden',
       }}
     >
       <View
@@ -84,7 +86,11 @@ export function TabStackHeader({ title, right, onBack = goBackToMap, below }: Pr
           {right ?? <View style={{ width: side, height: side }} />}
         </View>
       </View>
-      {below ? <View style={{ paddingBottom: spacing[16] }}>{below}</View> : null}
+      {below ? (
+        <View style={{ paddingBottom: spacing[16], width: '100%', minWidth: 0, overflow: 'hidden' }}>
+          {below}
+        </View>
+      ) : null}
     </View>
   );
 }

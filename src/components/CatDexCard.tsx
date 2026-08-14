@@ -1,6 +1,6 @@
 /**
- * Collection tile — photo, favorite, rarity badge.
- * Opens the full cat fiche on press.
+ * Collection tile — Figma CatDex card (node 218:757).
+ * Photo, rarity pill, name + XP, breed, coat swatches, collected.
  */
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -15,10 +15,11 @@ import {
   resolveRevealRarity,
   themeFromColorLabel,
 } from '@/lib/catTheme';
-import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
+import { enrichAnalysis } from '@/lib/catTraits';
 import { isCatPhotoRef } from '@/lib/photoStorage';
+import { xpForCat } from '@/lib/progression';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { Cat } from '@/types/cat';
+import type { Cat, CatAnalysis } from '@/types/cat';
 
 type Props = {
   cat: Cat;
@@ -26,6 +27,25 @@ type Props = {
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
 };
+
+const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+function coatSwatches(analysis: CatAnalysis, fallbackHex: string): string[] {
+  const fromPalette = (analysis.colorPalette ?? [])
+    .map((value) => value.trim())
+    .filter((value) => HEX.test(value));
+  if (fromPalette.length > 0) return fromPalette.slice(0, 2);
+
+  const dots = [fallbackHex];
+  const secondary = analysis.secondaryColors?.[0]?.trim();
+  if (secondary) {
+    const next = HEX.test(secondary)
+      ? secondary
+      : themeFromColorLabel(secondary).hex;
+    if (next.toLowerCase() !== fallbackHex.toLowerCase()) dots.push(next);
+  }
+  return dots;
+}
 
 export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite }: Props) {
   const { colors, spacing, radius, shadow, iconStroke, motion } = useTheme();
@@ -50,7 +70,10 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
       cat.photoUri.startsWith('file:'));
   const rarityId = resolveRevealRarity(analysis, cat.number);
   const rarity = rarityTokens[rarityId];
-  const gender = genderSymbol(analysis.gender);
+  const swatches = coatSwatches(analysis, theme.hex);
+  const personality = analysis.tags?.[0]?.trim() ?? '';
+  const breed = analysis.breed || '';
+  const xp = xpForCat(cat);
 
   return (
     <Pressable
@@ -82,7 +105,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
           height: framePx > 0 ? framePx : undefined,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: colors.surfaceSecondary,
+          backgroundColor: colors.background,
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -105,13 +128,41 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
           <CatSprite colorLabel={analysis.color} seed={cat.number} size={80} />
         )}
 
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: spacing[8],
+            left: spacing[8],
+            zIndex: 2,
+            height: spacing[24],
+            paddingHorizontal: spacing[8],
+            borderRadius: radius.full,
+            backgroundColor: colors.surfaceMuted,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing[4],
+          }}
+        >
+          <View
+            style={{
+              width: spacing[8],
+              height: spacing[8],
+              borderRadius: radius.full,
+              backgroundColor: rarity.foreground,
+            }}
+          />
+          <Text variant="caption" weight="semibold" style={{ color: rarity.foreground }}>
+            {catDexRarityLabel(rarityId)}
+          </Text>
+        </View>
+
         {onToggleFavorite ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             hitSlop={8}
             onPress={(event) => {
-              // Prevent opening the fiche when tapping the heart (web + native).
               event?.stopPropagation?.();
               onToggleFavorite();
             }}
@@ -123,7 +174,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
               width: spacing[32],
               height: spacing[32],
               borderRadius: radius.full,
-              backgroundColor: colors.surfaceElevated,
+              backgroundColor: colors.surface,
               alignItems: 'center',
               justifyContent: 'center',
               opacity: pressed ? 0.88 : 1,
@@ -142,43 +193,71 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
         ) : null}
       </View>
 
-      <View style={{ padding: spacing[8], gap: spacing[4] }}>
+      <View
+        style={{
+          padding: spacing[16],
+          gap: spacing[8],
+          backgroundColor: colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
           <Text
-            variant="bodySmall" weight="semibold"
+            variant="body"
+            weight="semibold"
             color="text"
             numberOfLines={1}
             style={{ flex: 1 }}
           >
             {cat.name}
           </Text>
+          <Text variant="caption" color="textSecondary">
+            +{xp} XP
+          </Text>
+        </View>
+
+        {breed ? (
+          <Text variant="bodySmall" color="textSecondary" numberOfLines={1}>
+            {breed}
+          </Text>
+        ) : null}
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
           <View
             style={{
-              width: spacing[16],
-              height: spacing[16],
-              borderRadius: radius.full,
-              backgroundColor: theme.soft,
+              flex: 1,
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center' }}
+              gap: spacing[8],
+              minWidth: 0,
+            }}
           >
-            {gender ? (
-              <Text variant="caption" style={{ color: colors.mapPlayer }}>
-                {gender}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[4] }}>
+              {swatches.map((hex) => (
+                <View
+                  key={hex}
+                  style={{
+                    width: spacing[16],
+                    height: spacing[16],
+                    borderRadius: radius.full,
+                    backgroundColor: hex,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                />
+              ))}
+            </View>
+            {personality ? (
+              <Text variant="caption" color="textSecondary" numberOfLines={1} style={{ flex: 1 }}>
+                {personality}
               </Text>
-            ) : (
-              <View
-                style={{
-                  width: spacing[8],
-                  height: spacing[8],
-                  borderRadius: radius.full,
-                  backgroundColor: theme.hex }}
-              />
-            )}
+            ) : null}
           </View>
+          <Text variant="caption" weight="semibold" color="success">
+            Collecté
+          </Text>
         </View>
-        <Text variant="caption" weight="semibold" style={{ color: rarity.foreground }}>
-          {catDexRarityLabel(rarityId)}
-        </Text>
       </View>
     </Pressable>
   );
