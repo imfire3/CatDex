@@ -10,6 +10,8 @@ export type AppNotification = {
   createdAt: number;
   read: boolean;
   catId?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 type NotificationsState = {
@@ -18,6 +20,8 @@ type NotificationsState = {
     catId: string;
     catName: string;
     breed?: string | null;
+    latitude: number;
+    longitude: number;
   }) => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
@@ -30,7 +34,7 @@ export const useNotificationsStore = create<NotificationsState>()(
   persist(
     (set, get) => ({
       items: [],
-      pushNearby: ({ catId, catName, breed }) => {
+      pushNearby: ({ catId, catName, breed, latitude, longitude }) => {
         const recent = get().items.find(
           (item) =>
             item.type === 'nearby' &&
@@ -48,6 +52,8 @@ export const useNotificationsStore = create<NotificationsState>()(
           createdAt: Date.now(),
           read: false,
           catId,
+          latitude,
+          longitude,
         };
 
         set((state) => ({

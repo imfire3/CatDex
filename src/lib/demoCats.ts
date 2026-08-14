@@ -28,6 +28,7 @@ export const DEMO_OWNED_CATS: Cat[] = [
     latitude: cLat + 0.0012,
     longitude: cLng - 0.0009,
     discoveredAt: '2026-08-01T10:00:00.000Z',
+    lifestyle: 'sauvage',
     views: 3,
     analysis: {
       color: 'Roux',
@@ -47,6 +48,7 @@ export const DEMO_OWNED_CATS: Cat[] = [
     latitude: cLat - 0.0016,
     longitude: cLng + 0.0011,
     discoveredAt: '2026-08-05T18:20:00.000Z',
+    lifestyle: 'sauvage',
     views: 1,
     analysis: {
       color: 'Noir',
@@ -73,6 +75,7 @@ export const DEMO_COMMUNITY_CATS: Cat[] = [
     latitude: cLat + 0.00036,
     longitude: cLng,
     discoveredAt: '2026-08-10T09:00:00.000Z',
+    lifestyle: 'sauvage',
     views: 12,
     analysis: {
       color: 'Tigré',
@@ -92,6 +95,7 @@ export const DEMO_COMMUNITY_CATS: Cat[] = [
     latitude: cLat + 0.0021,
     longitude: cLng + 0.0018,
     discoveredAt: '2026-08-09T14:00:00.000Z',
+    lifestyle: 'sauvage',
     views: 4,
     analysis: {
       color: 'Blanc',
@@ -111,6 +115,7 @@ export const DEMO_COMMUNITY_CATS: Cat[] = [
     latitude: cLat - 0.002,
     longitude: cLng - 0.0015,
     discoveredAt: '2026-08-08T11:30:00.000Z',
+    lifestyle: 'sauvage',
     views: 7,
     analysis: {
       color: 'Gris',
@@ -130,6 +135,7 @@ export const DEMO_COMMUNITY_CATS: Cat[] = [
     latitude: cLat + 0.0008,
     longitude: cLng - 0.0024,
     discoveredAt: '2026-08-07T21:00:00.000Z',
+    lifestyle: 'sauvage',
     views: 2,
     analysis: {
       color: 'Noir',

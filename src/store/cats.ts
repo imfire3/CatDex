@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 
 import { formatCatDefaultName } from '@/lib/constants';
+import { normalizeCatLifestyle } from '@/lib/catLifestyle';
 import {
   mergeRemoteCats,
   pullMyCatsFromSupabase,
@@ -16,7 +17,7 @@ import {
 } from '@/lib/photoStorage';
 import { isDurablePhotoUri } from '@/lib/photoUri';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import type { Cat, CatAnalysis } from '@/types/cat';
+import type { Cat, CatAnalysis, CatLifestyle } from '@/types/cat';
 
 type AddCatInput = {
   photoUri: string;
@@ -27,6 +28,8 @@ type AddCatInput = {
   analysis: CatAnalysis;
   /** World pin id being captured (`world-*`). */
   sourceWorldId?: string;
+  /** Street cat on map vs private pet. */
+  lifestyle?: CatLifestyle;
 };
 
 type CatsState = {
@@ -177,6 +180,7 @@ export const useCatsStore = create<CatsState>()(
           notes: input.notes?.trim() || undefined,
           analysis: input.analysis,
           sourceWorldId: input.sourceWorldId,
+          lifestyle: normalizeCatLifestyle(input.lifestyle ?? input.analysis.habitat),
         };
 
         if (isSupabaseConfigured) {

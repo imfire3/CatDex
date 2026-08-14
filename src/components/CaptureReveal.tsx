@@ -17,6 +17,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { recordAnalysisFeedback } from '@/lib/analysisFeedback';
+import { CAT_LIFESTYLE_OPTIONS } from '@/lib/catLifestyle';
 import { formatDexNumber } from '@/lib/constants';
 import {
   catDexRarityLabel,
@@ -25,11 +26,12 @@ import {
 } from '@/lib/catTheme';
 import { genderSymbol } from '@/lib/catTraits';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { AnalysisFieldCorrection, CatAnalysis } from '@/types/cat';
+import type { AnalysisFieldCorrection, CatAnalysis, CatLifestyle } from '@/types/cat';
 
 export type CaptureRevealResult = {
   name: string;
   analysis: CatAnalysis;
+  lifestyle: CatLifestyle;
   corrections: AnalysisFieldCorrection[];
 };
 
@@ -264,6 +266,8 @@ export function CaptureReveal({
       : vision.coatPattern || '',
   );
   const [description, setDescription] = useState(vision.description || '');
+  const [lifestyle, setLifestyle] = useState<CatLifestyle>('sauvage');
+  const [lifestyleOpen, setLifestyleOpen] = useState(false);
   const [editingField, setEditingField] = useState<FieldKey | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -337,6 +341,7 @@ export function CaptureReveal({
 
     return {
       name: trimmedName,
+      lifestyle,
       corrections,
       analysis: {
         ...vision,
@@ -350,6 +355,7 @@ export function CaptureReveal({
         description: nextDescription,
         suggestedName: trimmedName,
         tags: nextTags,
+        habitat: lifestyle === 'domestique' ? 'Domestique' : 'Sauvage',
       },
     };
   };
@@ -484,6 +490,84 @@ export function CaptureReveal({
           <Text variant="title" color="text">
             Modifier les informations
           </Text>
+
+          <View style={{ gap: spacing[8] }}>
+            <Text variant="bodySmall" weight="semibold" color="textBody">
+              Type
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Choisir domestique ou sauvage"
+              accessibilityState={{ expanded: lifestyleOpen }}
+              onPress={() => {
+                setEditingField(null);
+                setLifestyleOpen((open) => !open);
+              }}
+              style={({ pressed }) => ({
+                minHeight: spacing[48],
+                justifyContent: 'center',
+                paddingHorizontal: spacing[16],
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: lifestyleOpen ? colors.focusRing : colors.border,
+                backgroundColor: colors.surfaceElevated,
+                opacity: pressed ? 0.92 : 1,
+              })}
+            >
+              <Text variant="body" color="text">
+                {CAT_LIFESTYLE_OPTIONS.find((option) => option.value === lifestyle)?.label ??
+                  'Sauvage'}
+              </Text>
+              <Text variant="caption" color="textMuted" style={{ marginTop: spacing[4] }}>
+                {CAT_LIFESTYLE_OPTIONS.find((option) => option.value === lifestyle)?.hint}
+              </Text>
+            </Pressable>
+            {lifestyleOpen ? (
+              <View
+                style={{
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surfaceElevated,
+                  overflow: 'hidden',
+                }}
+              >
+                {CAT_LIFESTYLE_OPTIONS.map((option, index) => {
+                  const selected = option.value === lifestyle;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      onPress={() => {
+                        setLifestyle(option.value);
+                        setLifestyleOpen(false);
+                      }}
+                      style={({ pressed }) => ({
+                        paddingHorizontal: spacing[16],
+                        paddingVertical: spacing[16],
+                        backgroundColor: selected ? colors.brandSoft : colors.surfaceElevated,
+                        borderTopWidth: index === 0 ? 0 : StyleSheet.hairlineWidth,
+                        borderTopColor: colors.border,
+                        opacity: pressed ? 0.92 : 1,
+                      })}
+                    >
+                      <Text
+                        variant="body"
+                        weight={selected ? 'semibold' : undefined}
+                        color={selected ? 'textBrand' : 'text'}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text variant="caption" color="textMuted" style={{ marginTop: spacing[4] }}>
+                        {option.hint}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
 
           <EditableRow
             label="Nom"

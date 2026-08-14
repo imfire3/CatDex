@@ -16,6 +16,7 @@ import {
   buildOwnedCatIdSet,
   getCatDiscoveryState,
 } from '@/lib/catDiscovery';
+import { isCatVisibleOnMap } from '@/lib/catLifestyle';
 import { PARIS_20E, distanceMeters } from '@/lib/constants';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
 import {
@@ -58,6 +59,10 @@ export default function MapScreen() {
   const storedCats = useCatsStore((state) => state.cats);
   const userId = useAuthStore((state) => state.user?.id);
   const setHasNearbyCat = useMapExploreStore((state) => state.setHasNearbyCat);
+  const pendingFocus = useMapExploreStore((state) => state.pendingFocus);
+  const consumePendingFocus = useMapExploreStore(
+    (state) => state.consumePendingFocus,
+  );
   const pushNearby = useNotificationsStore((state) => state.pushNearby);
   const missions = useMissionsStore((state) => state.missions);
   const openMissionCount = missions.filter((m) => !m.completed).length;
@@ -97,10 +102,12 @@ export default function MapScreen() {
   const [watchEnabled, setWatchEnabled] = useState(false);
   /** GPS follow — paused while looking at a cat in another region. */
   const [followUser, setFollowUser] = useState(true);
-  /** Compass heading on the player pin only — the map stays north-up. */
+  /** Walk-follow + player-pin heading. Active = camera follows you (Pokémon-style). */
   const [compassMode, setCompassMode] = useState(true);
 
   const lastHapticCatRef = useRef<string | null>(null);
+  /** Cat id to select once map pins finish loading (notification deep-link). */
+  const pendingSelectCatIdRef = useRef<string | null>(null);
   /** Last GPS point used to refresh community pins while walking. */
   const lastCommunityPullRef = useRef<{
     latitude: number;
@@ -161,6 +168,7 @@ export default function MapScreen() {
     const byId = new Map<string, Cat>();
 
     for (const cat of communityCats) {
+      if (!isCatVisibleOnMap(cat)) continue;
       if (getCatDiscoveryState(cat, ownedIds) === 'owned') {
         continue;
       }
@@ -168,6 +176,7 @@ export default function MapScreen() {
     }
 
     for (const cat of ownedCats) {
+      if (!isCatVisibleOnMap(cat)) continue;
       byId.set(cat.remoteId || cat.id, cat);
     }
 
@@ -431,9 +440,49 @@ export default function MapScreen() {
         catId: cat.id,
         catName: cat.name,
         breed: cat.analysis?.breed,
+        latitude: cat.latitude,
+        longitude: cat.longitude,
       });
     }
   }, [nearestForProximity, pushNearby, setHasNearbyCat]);
+
+  /** Open a cat from a notification — fly to its GPS pin and show the card. */
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const focus = consumePendingFocus();
+    if (!focus) return;
+
+    setFollowUser(false);
+    setCompassMode(false);
+    flyToCoordinate({
+      latitude: focus.latitude,
+      longitude: focus.longitude,
+    });
+
+    const match =
+      mapCats.find(
+        (cat) => cat.id === focus.catId || cat.remoteId === focus.catId,
+      ) ?? null;
+    if (match) {
+      pendingSelectCatIdRef.current = null;
+      setSelected(match);
+      setSheetVisible(true);
+      return;
+    }
+    pendingSelectCatIdRef.current = focus.catId;
+  }, [pendingFocus, consumePendingFocus, flyToCoordinate, mapCats]);
+
+  useEffect(() => {
+    const pendingId = pendingSelectCatIdRef.current;
+    if (!pendingId) return;
+    const match =
+      mapCats.find((cat) => cat.id === pendingId || cat.remoteId === pendingId) ??
+      null;
+    if (!match) return;
+    pendingSelectCatIdRef.current = null;
+    setSelected(match);
+    setSheetVisible(true);
+  }, [mapCats]);
 
   const handleLocationAuthorize = useCallback(async () => {
     // May also unlock motion on iOS when the user accepts GPS from the modal.
@@ -457,6 +506,7 @@ export default function MapScreen() {
 
   const recenterOnPlayer = async () => {
     setFollowUser(true);
+    setCompassMode(true);
     setWatchEnabled(true);
     // Instant camera feedback from last known GPS (works even if a fresh
     // geolocation read is slow or blocked).
@@ -488,6 +538,7 @@ export default function MapScreen() {
   /** Double-tap recenter — default zoom + pitch on the player. */
   const resetMainView = () => {
     setFollowUser(true);
+    setCompassMode(true);
     setWatchEnabled(true);
     setResetViewNonce((value) => value + 1);
     if (userCoordinate) {
@@ -495,11 +546,23 @@ export default function MapScreen() {
     }
   };
 
-  /** Toggle player-pin heading. The map stays north-up. */
+  /** Toggle walk-follow (Pokémon-style). Active = camera follows GPS + pin heading. */
   const handleCompassPress = () => {
     // Sync with the tap — required for iOS Safari DeviceOrientation.
     unlockWebCompassFromGesture();
-    setCompassMode((active) => !active);
+
+    if (compassMode) {
+      setCompassMode(false);
+      setFollowUser(false);
+      return;
+    }
+
+    setCompassMode(true);
+    setFollowUser(true);
+    setWatchEnabled(true);
+    if (userCoordinate) {
+      flyToCoordinate(userCoordinate);
+    }
   };
 
   const mapCatList = useMemo(
@@ -538,11 +601,15 @@ export default function MapScreen() {
           capturedCatIds={ownedCatIdList}
           selectedCatId={selected?.id ?? null}
           followUser={followUser}
-          onBreakFollow={() => setFollowUser(false)}
+          onBreakFollow={() => {
+            setFollowUser(false);
+            setCompassMode(false);
+          }}
           onSelectCat={(item) => {
             setSelected(item);
             setSheetVisible(true);
             setFollowUser(false);
+            setCompassMode(false);
             flyToCoordinate({
               latitude: item.latitude,
               longitude: item.longitude,

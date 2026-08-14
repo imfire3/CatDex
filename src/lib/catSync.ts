@@ -30,6 +30,7 @@ export async function pushCatToSupabase(cat: Cat): Promise<string | null> {
       address: cat.notes,
       photoUrl,
       analysis: cat.analysis,
+      lifestyle: cat.lifestyle === 'domestique' ? 'domestique' : 'sauvage',
     });
 
     return remote.id as string;
@@ -63,6 +64,7 @@ export async function pullCommunityCatsForMap(): Promise<Cat[]> {
     const rows = await getCommunityCats();
     return rows
       .filter((row) => Boolean(row.photo_url?.trim()))
+      .filter((row) => row.lifestyle !== 'domestique')
       .map((row, index) => mapRemoteCatToLocal(row, 8000 + index));
   } catch (error) {
     console.warn('[sync] pullCommunityCatsForMap failed', error);
@@ -87,6 +89,7 @@ export function mergeRemoteCats(local: Cat[], remote: Cat[]): Cat[] {
       photoUri: cat.photoUri || existing?.photoUri || '',
       remoteId: cat.remoteId || cat.id,
       sourceWorldId: existing?.sourceWorldId ?? cat.sourceWorldId,
+      lifestyle: cat.lifestyle ?? existing?.lifestyle,
     });
   }
 

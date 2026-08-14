@@ -1,5 +1,5 @@
 /** Capture FAB sits in the map HUD cluster. */
-export const MAP_CAPTURE_FAB_SIZE = 64;
+export const MAP_CAPTURE_FAB_SIZE = 72;
 export const MAP_ACTION_PILL_HEIGHT = 48;
 
 /** @deprecated legacy scanner-in-tab metrics — kept for older call sites. */

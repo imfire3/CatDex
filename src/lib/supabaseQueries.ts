@@ -14,6 +14,7 @@ export type CreateCatInput = {
   address?: string;
   photoUrl?: string;
   analysis: CatAnalysis;
+  lifestyle?: 'sauvage' | 'domestique';
 };
 
 export type UpdateCatInput = Partial<CreateCatInput>;
@@ -33,6 +34,7 @@ export type RemoteCatRow = {
   photo_url: string | null;
   sighting_count: number;
   views: number | null;
+  lifestyle?: string | null;
   created_at: string;
   updated_at: string;
   cat_analysis:
@@ -211,6 +213,10 @@ export function mapRemoteCatToLocal(row: RemoteCatRow, fallbackNumber: number) {
     discoveredAt: row.created_at,
     views: row.views ?? 0,
     notes: row.address || undefined,
+    lifestyle:
+      row.lifestyle === 'domestique'
+        ? ('domestique' as const)
+        : ('sauvage' as const),
     analysis: analysisFromRow(row),
   };
 }
@@ -227,25 +233,42 @@ export async function createCat(input: CreateCatInput) {
 
   const gender = normalizeCatGender(input.gender ?? input.analysis.gender);
 
-  const { data: cat, error: catError } = await client
+  const baseInsert = {
+    owner_id: user.id,
+    name: input.name,
+    description: input.description,
+    coat_type: input.coatType,
+    breed: input.breed,
+    gender,
+    dex_number: input.dexNumber,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    address: input.address,
+    photo_url: input.photoUrl,
+  };
+
+  let cat: { id: string };
+  const withLifestyle = await client
     .from('cats')
     .insert({
-      owner_id: user.id,
-      name: input.name,
-      description: input.description,
-      coat_type: input.coatType,
-      breed: input.breed,
-      gender,
-      dex_number: input.dexNumber,
-      latitude: input.latitude,
-      longitude: input.longitude,
-      address: input.address,
-      photo_url: input.photoUrl,
+      ...baseInsert,
+      lifestyle: input.lifestyle === 'domestique' ? 'domestique' : 'sauvage',
     })
     .select()
     .single();
 
-  if (catError) throw catError;
+  if (withLifestyle.error) {
+    const missingLifestyle =
+      /lifestyle/i.test(withLifestyle.error.message ?? '') ||
+      withLifestyle.error.code === 'PGRST204';
+    if (!missingLifestyle) throw withLifestyle.error;
+
+    const fallback = await client.from('cats').insert(baseInsert).select().single();
+    if (fallback.error) throw fallback.error;
+    cat = fallback.data;
+  } else {
+    cat = withLifestyle.data;
+  }
 
   const { error: analysisError } = await client.from('cat_analysis').insert({
     cat_id: cat.id,

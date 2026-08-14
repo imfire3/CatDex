@@ -4,11 +4,13 @@ import { Pressable, View } from 'react-native';
 import { EmptyState } from '@/components/EmptyState';
 import { SettingsScreen } from '@/components/Settings';
 import { Text } from '@/components/Text';
+import { useMapExploreStore } from '@/store/mapExplore';
 import {
   selectUnreadCount,
   useNotificationsStore,
   type AppNotification,
 } from '@/store/notifications';
+import { useCatsStore } from '@/store/cats';
 import { useTheme } from '@/theme/ThemeProvider';
 
 function formatWhen(createdAt: number): string {
@@ -92,7 +94,36 @@ export default function NotificationsScreen() {
   const items = useNotificationsStore((state) => state.items);
   const markRead = useNotificationsStore((state) => state.markRead);
   const markAllRead = useNotificationsStore((state) => state.markAllRead);
+  const requestFocusOnCat = useMapExploreStore((state) => state.requestFocusOnCat);
+  const cats = useCatsStore((state) => state.cats);
   const unread = selectUnreadCount(items);
+
+  const openNotification = (item: AppNotification) => {
+    markRead(item.id);
+    if (!item.catId) return;
+
+    const fromStore = cats.find(
+      (cat) => cat.id === item.catId || cat.remoteId === item.catId,
+    );
+    const latitude = item.latitude ?? fromStore?.latitude;
+    const longitude = item.longitude ?? fromStore?.longitude;
+    if (
+      typeof latitude !== 'number' ||
+      typeof longitude !== 'number' ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      router.push('/(tabs)/map');
+      return;
+    }
+
+    requestFocusOnCat({
+      catId: item.catId,
+      latitude,
+      longitude,
+    });
+    router.push('/(tabs)/map');
+  };
 
   return (
     <SettingsScreen
@@ -142,12 +173,7 @@ export default function NotificationsScreen() {
             <NotificationRow
               key={item.id}
               item={item}
-              onPress={() => {
-                markRead(item.id);
-                if (item.catId) {
-                  router.push({ pathname: '/cat/[id]', params: { id: item.catId } });
-                }
-              }}
+              onPress={() => openNotification(item)}
             />
           ))}
         </View>

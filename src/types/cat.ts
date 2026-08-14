@@ -1,5 +1,9 @@
 export type CatGender = 'male' | 'female' | 'unknown';
 
+/** Street cat on the map vs private pet (CatDex only). */
+export const CAT_LIFESTYLES = ['sauvage', 'domestique'] as const;
+export type CatLifestyle = (typeof CAT_LIFESTYLES)[number];
+
 export type CatAnalysisStats = {
   timesSeen?: number;
   captures?: number;
@@ -76,6 +80,11 @@ export type Cat = {
   discoveredAt: string;
   views: number;
   notes?: string;
+  /**
+   * `sauvage` → visible on the explorer map.
+   * `domestique` → private pet, CatDex only.
+   */
+  lifestyle?: CatLifestyle;
   analysis: CatAnalysis;
 };
 

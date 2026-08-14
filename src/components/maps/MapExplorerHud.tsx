@@ -27,7 +27,7 @@ type Props = {
   onRecenter?: () => void;
   /** Double-tap recenter — restore default zoom / pitch framing. */
   onRecenterReset?: () => void;
-  /** Enable / toggle player-pin heading (map stays north-up). */
+  /** Enable / toggle walk-follow + player-pin heading (map stays north-up). */
   onCompass?: () => void;
   /** When true, compass tool uses the active (brand) look. */
   compassActive?: boolean;
@@ -248,8 +248,8 @@ export function MapExplorerHud({
             <RoundTool
               label={
                 compassActive
-                  ? 'Désactiver le mode boussole'
-                  : 'Activer le mode boussole'
+                  ? 'Désactiver le suivi GPS (mode boussole)'
+                  : 'Activer le suivi GPS (mode boussole)'
               }
               onPress={onCompass}
               active={compassActive}
@@ -262,15 +262,22 @@ export function MapExplorerHud({
                   stroke={compassIconColor}
                   strokeWidth={stroke}
                 />
-                <Path
-                  d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21"
-                  stroke={compassIconColor}
-                  strokeWidth={stroke}
-                  strokeLinecap="round"
-                />
-                <Path
-                  d="M12 7.5 14.8 12 12 16.5 9.2 12 12 7.5Z"
+                <Circle
+                  cx="12"
+                  cy="12"
+                  r="1.6"
                   fill={compassIconColor}
+                />
+                {/* North needle */}
+                <Path
+                  d="M12 4.5 15.2 12 12 10.6 8.8 12 12 4.5Z"
+                  fill={compassIconColor}
+                />
+                {/* South needle */}
+                <Path
+                  d="M12 19.5 15.2 12 12 13.4 8.8 12 12 19.5Z"
+                  fill={compassIconColor}
+                  opacity={0.35}
                 />
               </Svg>
             </RoundTool>
@@ -288,21 +295,64 @@ export function MapExplorerHud({
           zIndex: 22,
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          minHeight: MAP_CAPTURE_FAB_SIZE,
         }}
       >
-        <RoundTool
-          label="Missions"
-          badge={missionCount}
-          onPress={() => router.push('/(tabs)/missions')}
+        <View
+          pointerEvents="box-none"
+          style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'center' }}
         >
-          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 3.5 14.8 9l6.2.9-4.5 4.4 1.1 6.2L12 17.8 6.4 20.5l1.1-6.2L3 9.9l6.2-.9L12 3.5Z"
-              fill={colors.brand}
-            />
-          </Svg>
-        </RoundTool>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Missions"
+            onPress={() => router.push('/(tabs)/missions')}
+            style={({ pressed }) => [
+              {
+                height: spacing[48],
+                paddingHorizontal: spacing[16],
+                borderRadius: radius.full,
+                backgroundColor: colors.surfaceElevated,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing[8],
+                transform: [{ scale: pressed ? motion.pressScale : 1 }],
+              },
+              shadow.medium,
+            ]}
+          >
+            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M12 3.5 14.8 9l6.2.9-4.5 4.4 1.1 6.2L12 17.8 6.4 20.5l1.1-6.2L3 9.9l6.2-.9L12 3.5Z"
+                fill={colors.brand}
+              />
+            </Svg>
+            <Text variant="bodySmall" weight="semibold" color="textBrand">
+              Missions
+            </Text>
+            {typeof missionCount === 'number' && missionCount > 0 ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -spacing[4],
+                  right: -spacing[4],
+                  minWidth: spacing[24],
+                  height: spacing[24],
+                  paddingHorizontal: spacing[4],
+                  borderRadius: radius.full,
+                  backgroundColor: colors.brand,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 2,
+                  borderColor: colors.surfaceElevated,
+                }}
+              >
+                <Text variant="caption" weight="semibold" color="onAccent">
+                  {missionCount > 99 ? '99+' : String(missionCount)}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
 
         <Pressable
           accessibilityRole="button"
@@ -338,67 +388,72 @@ export function MapExplorerHud({
           </Svg>
         </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="CatDex"
-          onPress={() => router.push('/(tabs)/catdex')}
-          style={({ pressed }) => [
-            {
-              height: spacing[48],
-              paddingHorizontal: spacing[16],
-              borderRadius: radius.full,
-              backgroundColor: colors.surfaceElevated,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing[8],
-              transform: [{ scale: pressed ? motion.pressScale : 1 }],
-            },
-            shadow.medium,
-          ]}
+        <View
+          pointerEvents="box-none"
+          style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}
         >
-          <Text variant="bodySmall" weight="semibold" color="textBrand">
-            CatDex
-          </Text>
-          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-            <Rect
-              x="5"
-              y="4"
-              width="14"
-              height="16"
-              rx="2"
-              stroke={colors.brand}
-              strokeWidth={stroke}
-            />
-            <Path
-              d="M9 4v16M9 9h6"
-              stroke={colors.brand}
-              strokeWidth={stroke}
-              strokeLinecap="round"
-            />
-          </Svg>
-          {collectionCount > 0 ? (
-            <View
-              style={{
-                position: 'absolute',
-                top: -spacing[4],
-                right: -spacing[4],
-                minWidth: spacing[24],
-                height: spacing[24],
-                paddingHorizontal: spacing[4],
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="CatDex"
+            onPress={() => router.push('/(tabs)/catdex')}
+            style={({ pressed }) => [
+              {
+                height: spacing[48],
+                paddingHorizontal: spacing[16],
                 borderRadius: radius.full,
-                backgroundColor: colors.brand,
+                backgroundColor: colors.surfaceElevated,
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 2,
-                borderColor: colors.surfaceElevated,
-              }}
-            >
-              <Text variant="caption" weight="semibold" color="onAccent">
-                {collectionCount > 99 ? '99+' : String(collectionCount)}
-              </Text>
-            </View>
-          ) : null}
-        </Pressable>
+                gap: spacing[8],
+                transform: [{ scale: pressed ? motion.pressScale : 1 }],
+              },
+              shadow.medium,
+            ]}
+          >
+            <Text variant="bodySmall" weight="semibold" color="textBrand">
+              CatDex
+            </Text>
+            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+              <Rect
+                x="5"
+                y="4"
+                width="14"
+                height="16"
+                rx="2"
+                stroke={colors.brand}
+                strokeWidth={stroke}
+              />
+              <Path
+                d="M9 4v16M9 9h6"
+                stroke={colors.brand}
+                strokeWidth={stroke}
+                strokeLinecap="round"
+              />
+            </Svg>
+            {collectionCount > 0 ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -spacing[4],
+                  right: -spacing[4],
+                  minWidth: spacing[24],
+                  height: spacing[24],
+                  paddingHorizontal: spacing[4],
+                  borderRadius: radius.full,
+                  backgroundColor: colors.brand,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 2,
+                  borderColor: colors.surfaceElevated,
+                }}
+              >
+                <Text variant="caption" weight="semibold" color="onAccent">
+                  {collectionCount > 99 ? '99+' : String(collectionCount)}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
       </View>
     </View>
   );

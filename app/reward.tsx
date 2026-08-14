@@ -219,6 +219,7 @@ export default function RewardScreen() {
         name,
         analysis: nextAnalysis,
         sourceWorldId: pending.sourceWorldId,
+        lifestyle: result.lifestyle,
       });
 
       if (Platform.OS !== 'web') {
