@@ -577,14 +577,40 @@ export function CatMap({
 
         mapRef.current = map;
 
+        const resizeMap = () => {
+          const maybeResize = mapRef.current as (MapLibreMap & { resize?: () => void }) | null;
+          maybeResize?.resize?.();
+        };
+
         if (typeof ResizeObserver !== 'undefined' && hostRef.current) {
-          const ro = new ResizeObserver(() => {
-            const maybeResize = mapRef.current as (MapLibreMap & { resize?: () => void }) | null;
-            maybeResize?.resize?.();
-          });
+          const ro = new ResizeObserver(() => resizeMap());
           ro.observe(hostRef.current);
           (map as MapLibreMap & { __catdexRo?: ResizeObserver }).__catdexRo = ro;
         }
+
+        if (typeof IntersectionObserver !== 'undefined' && hostRef.current) {
+          const io = new IntersectionObserver(
+            (entries) => {
+              if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0)) {
+                requestAnimationFrame(resizeMap);
+              }
+            },
+            { threshold: [0, 0.01, 1] },
+          );
+          io.observe(hostRef.current);
+          (map as MapLibreMap & { __catdexIo?: IntersectionObserver }).__catdexIo = io;
+        }
+
+        const onVis = () => {
+          if (document.visibilityState === 'visible') requestAnimationFrame(resizeMap);
+        };
+        document.addEventListener('visibilitychange', onVis);
+        window.addEventListener('focus', resizeMap);
+        (map as MapLibreMap & {
+          __catdexOnVis?: () => void;
+          __catdexOnFocus?: () => void;
+        }).__catdexOnVis = onVis;
+        (map as MapLibreMap & { __catdexOnFocus?: () => void }).__catdexOnFocus = resizeMap;
       } catch (error) {
         console.error('[CatMap.web] MapLibre init failed', error);
       }
@@ -597,8 +623,20 @@ export function CatMap({
       catMarkersRef.current = [];
       playerMarkerRef.current?.remove();
       playerMarkerRef.current = null;
-      const map = mapRef.current as (MapLibreMap & { __catdexRo?: ResizeObserver }) | null;
+      const map = mapRef.current as (MapLibreMap & {
+        __catdexRo?: ResizeObserver;
+        __catdexIo?: IntersectionObserver;
+        __catdexOnVis?: () => void;
+        __catdexOnFocus?: () => void;
+      }) | null;
       map?.__catdexRo?.disconnect();
+      map?.__catdexIo?.disconnect();
+      if (map?.__catdexOnVis) {
+        document.removeEventListener('visibilitychange', map.__catdexOnVis);
+      }
+      if (map?.__catdexOnFocus) {
+        window.removeEventListener('focus', map.__catdexOnFocus);
+      }
       map?.remove();
       mapRef.current = null;
     };

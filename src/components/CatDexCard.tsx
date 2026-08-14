@@ -1,6 +1,6 @@
 /**
  * Collection tile — Figma CatDex card (node 218:757).
- * Photo, rarity pill, name + XP, breed, coat swatches, collected.
+ * Photo, rarity pill, name, breed, coat swatches, collected.
  */
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -17,7 +17,6 @@ import {
 } from '@/lib/catTheme';
 import { enrichAnalysis } from '@/lib/catTraits';
 import { isCatPhotoRef } from '@/lib/photoStorage';
-import { xpForCat } from '@/lib/progression';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat, CatAnalysis } from '@/types/cat';
 
@@ -73,7 +72,6 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
   const swatches = coatSwatches(analysis, theme.hex);
   const personality = analysis.tags?.[0]?.trim() ?? '';
   const breed = analysis.breed || '';
-  const xp = xpForCat(cat);
 
   return (
     <Pressable
@@ -202,20 +200,14 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
           borderTopColor: colors.border,
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[8] }}>
-          <Text
-            variant="body"
-            weight="semibold"
-            color="text"
-            numberOfLines={1}
-            style={{ flex: 1 }}
-          >
-            {cat.name}
-          </Text>
-          <Text variant="caption" color="textSecondary">
-            +{xp} XP
-          </Text>
-        </View>
+        <Text
+          variant="body"
+          weight="semibold"
+          color="text"
+          numberOfLines={2}
+        >
+          {cat.name}
+        </Text>
 
         {breed ? (
           <Text variant="bodySmall" color="textSecondary" numberOfLines={1}>

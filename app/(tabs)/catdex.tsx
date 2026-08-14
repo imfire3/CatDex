@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CatDexCard } from '@/components/CatDexCard';
 import { EmptyState } from '@/components/EmptyState';
 import { PageLoading } from '@/components/Loader';
-import { SearchInput } from '@/components/Input';
 import { Text } from '@/components/Text';
 import { MOBILE_WEB_WIDTH } from '@/layout/MobileWebFrame';
 import { TabStackHeader } from '@/layout/TabStackHeader';
@@ -43,12 +43,9 @@ export default function CatDexScreen() {
   const cats = useCatsStore((state) => state.cats);
   const hydrated = useCatsStore((state) => state.hydrated);
   const [listFilter, setListFilter] = useState<ListFilter>('all');
-  const [query, setQuery] = useState('');
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
   /** Width of the grid row (inside ScrollView padding). */
   const [gridWidth, setGridWidth] = useState(0);
-
-  const normalizedQuery = query.trim().toLowerCase();
 
   const filtered = useMemo(() => {
     return cats.filter((cat) => {
@@ -62,20 +59,9 @@ export default function CatDexScreen() {
         return false;
       }
 
-      if (!normalizedQuery) return true;
-      const haystack = [
-        cat.name,
-        cat.analysis?.breed,
-        cat.analysis?.color,
-        cat.analysis?.coat,
-        cat.notes,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(normalizedQuery);
+      return true;
     });
-  }, [cats, favorites, listFilter, normalizedQuery]);
+  }, [cats, favorites, listFilter]);
 
   const cardGap = spacing[16];
   const horizontalPad = spacing[24];
@@ -136,22 +122,6 @@ export default function CatDexScreen() {
         />
       );
     }
-    if (normalizedQuery.length > 0) {
-      return (
-        <EmptyState
-          layout="page"
-          icon="search"
-          title="Aucun résultat"
-          description="Aucun chat ne correspond à ta recherche."
-          actionLabel="Effacer les filtres"
-          actionVariant="secondary"
-          onAction={() => {
-            setQuery('');
-            setListFilter('all');
-          }}
-        />
-      );
-    }
     return (
       <EmptyState
         layout="page"
@@ -175,28 +145,8 @@ export default function CatDexScreen() {
           </Text>
         }
         below={
-          <View style={{ gap: spacing[16], width: '100%', minWidth: 0 }}>
-            <SearchInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Rechercher un chat…"
-              clearButtonMode="while-editing"
-            />
-          <View style={{ width: '100%', minWidth: 0, overflow: 'hidden' }}>
-            <ScrollView
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              style={{ width: '100%', flexGrow: 0 }}
-              contentContainerStyle={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                flexGrow: 0,
-                gap: spacing[8],
-                paddingRight: spacing[16],
-              }}
-            >
+          <View style={{ width: '100%', minWidth: 0 }}>
+            <FilterChipsScroller>
               {RARITY_FILTERS.map((filter) => {
                 const selected = listFilter === filter.id;
                 return (
@@ -227,8 +177,7 @@ export default function CatDexScreen() {
                   </Pressable>
                 );
               })}
-            </ScrollView>
-          </View>
+            </FilterChipsScroller>
           </View>
         }
       />
@@ -285,6 +234,55 @@ export default function CatDexScreen() {
         )}
       </ScrollView>
     </View>
+  );
+}
+
+/** Horizontal chip row — native ScrollView grows with content on web, so use overflow-x there. */
+function FilterChipsScroller({ children }: { children: ReactNode }) {
+  const { spacing } = useTheme();
+
+  if (Platform.OS === 'web') {
+    return (
+      <div
+        role="navigation"
+        aria-label="Filtres de rareté"
+        style={{
+          boxSizing: 'border-box',
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: 0,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehaviorX: 'contain',
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'nowrap',
+          alignItems: 'center',
+          gap: spacing[8],
+          paddingRight: spacing[16],
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <ScrollView
+      horizontal
+      nestedScrollEnabled
+      showsHorizontalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing[8],
+        paddingRight: spacing[16],
+      }}
+    >
+      {children}
+    </ScrollView>
   );
 }
 

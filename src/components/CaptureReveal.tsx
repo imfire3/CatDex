@@ -18,6 +18,7 @@ import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { recordAnalysisFeedback } from '@/lib/analysisFeedback';
 import { CAT_LIFESTYLE_OPTIONS } from '@/lib/catLifestyle';
+import { catBreedOptionsForValue } from '@/lib/catBreeds';
 import { formatDexNumber } from '@/lib/constants';
 import {
   catDexRarityLabel,
@@ -268,6 +269,7 @@ export function CaptureReveal({
   const [description, setDescription] = useState(vision.description || '');
   const [lifestyle, setLifestyle] = useState<CatLifestyle>('sauvage');
   const [lifestyleOpen, setLifestyleOpen] = useState(false);
+  const [breedOpen, setBreedOpen] = useState(false);
   const [editingField, setEditingField] = useState<FieldKey | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -391,7 +393,10 @@ export function CaptureReveal({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: colors.background }}
+          backgroundColor: colors.surface,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        }}
       >
         <AuthBackButton onPress={onRetake} />
         <Text variant="bodySmall" weight="semibold" color="textBrand">
@@ -501,6 +506,7 @@ export function CaptureReveal({
               accessibilityState={{ expanded: lifestyleOpen }}
               onPress={() => {
                 setEditingField(null);
+                setBreedOpen(false);
                 setLifestyleOpen((open) => !open);
               }}
               style={({ pressed }) => ({
@@ -579,15 +585,84 @@ export function CaptureReveal({
             onChangeText={handleNameChange}
             onEndEdit={() => setEditingField(null)}
           />
-          <EditableRow
-            label="Race"
-            value={breed}
-            placeholder="(Indique la race si connue)"
-            editing={editingField === 'breed'}
-            onStartEdit={() => setEditingField('breed')}
-            onChangeText={setBreed}
-            onEndEdit={() => setEditingField(null)}
-          />
+          <View style={{ gap: spacing[8] }}>
+            <Text variant="bodySmall" weight="semibold" color="textBody">
+              Race
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Choisir une race"
+              accessibilityState={{ expanded: breedOpen }}
+              onPress={() => {
+                setEditingField(null);
+                setLifestyleOpen(false);
+                setBreedOpen((open) => !open);
+              }}
+              style={({ pressed }) => ({
+                minHeight: spacing[48],
+                justifyContent: 'center',
+                paddingHorizontal: spacing[16],
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: breedOpen ? colors.focusRing : colors.border,
+                backgroundColor: colors.surfaceElevated,
+                opacity: pressed ? 0.92 : 1,
+              })}
+            >
+              <Text variant="body" color={breed ? 'text' : 'textMuted'}>
+                {breed || 'Choisir une race'}
+              </Text>
+            </Pressable>
+            {breedOpen ? (
+              <View
+                style={{
+                  maxHeight: spacing[96] * 2,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surfaceElevated,
+                  overflow: 'hidden',
+                }}
+              >
+                <ScrollView
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                  style={{ maxHeight: spacing[96] * 2 }}
+                >
+                  {catBreedOptionsForValue(breed).map((option, index) => {
+                    const selected = option.toLowerCase() === breed.trim().toLowerCase();
+                    return (
+                      <Pressable
+                        key={option}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => {
+                          setBreed(option);
+                          setBreedOpen(false);
+                        }}
+                        style={({ pressed }) => ({
+                          paddingHorizontal: spacing[16],
+                          paddingVertical: spacing[16],
+                          backgroundColor: selected ? colors.brandSoft : colors.surfaceElevated,
+                          borderTopWidth: index === 0 ? 0 : StyleSheet.hairlineWidth,
+                          borderTopColor: colors.border,
+                          opacity: pressed ? 0.92 : 1,
+                        })}
+                      >
+                        <Text
+                          variant="body"
+                          weight={selected ? 'semibold' : undefined}
+                          color={selected ? 'textBrand' : 'text'}
+                        >
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
+          </View>
           <EditableRow
             label="Couleur"
             value={color}

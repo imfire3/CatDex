@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
+import { TabStackHeader } from '@/layout/TabStackHeader';
 import { formatDexNumber } from '@/lib/constants';
 import { themeFromColorLabel, themeSoft } from '@/lib/catTheme';
 import { enrichAnalysis, genderSymbol } from '@/lib/catTraits';
@@ -237,7 +238,7 @@ export function CatCardDetail({
   secondaryLabel,
   onSecondaryAction,
 }: CatCardDetailProps) {
-  const { colors, spacing, radius, iconStroke, scheme, motion } = useTheme();
+  const { colors, spacing, radius, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const [photoFailed, setPhotoFailed] = useState(false);
   const analysis = enrichAnalysis(rawAnalysis, number);
@@ -269,50 +270,7 @@ export function CatCardDetail({
 
   return (
     <View style={{ flex: 1, width: '100%', backgroundColor: colors.background }}>
-      <View
-        style={{
-          paddingTop: insets.top + spacing[8],
-          paddingHorizontal: spacing[24],
-          paddingBottom: spacing[8],
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: colors.background }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Retour"
-          onPress={onBack}
-          style={({ pressed }) => ({
-            width: spacing[40],
-            height: spacing[40],
-            borderRadius: radius[8],
-            backgroundColor: colors.surfaceElevated,
-            borderWidth: 1,
-            borderColor: colors.border,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: pressed ? 0.85 : 1,
-            transform: [{ scale: pressed ? motion.pressScale : 1 }],
-          })}
-        >
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M15 18 9 12l6-6"
-              stroke={colors.brand}
-              strokeWidth={iconStroke.regular}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </Pressable>
-
-        <Text variant="bodySmall" weight="semibold" color="textBrand">
-          CatDex
-        </Text>
-
-        <View style={{ width: spacing[40], height: spacing[40] }} />
-      </View>
+      <TabStackHeader title="CatDex" onBack={onBack} />
 
       <ScrollView
         style={{ flex: 1, width: '100%', backgroundColor: colors.background }}
