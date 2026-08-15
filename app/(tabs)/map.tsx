@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { EnablePermissionModal } from '@/components/EnablePermissionModal';
+import { SupportProjectModal } from '@/components/SupportProjectModal';
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
@@ -36,6 +37,10 @@ import {
   dismissMapDiscoveryTip,
   hasDismissedMapDiscoveryTip,
 } from '@/lib/mapDiscoveryTip';
+import {
+  dismissSupportModal,
+  hasDismissedSupportModal,
+} from '@/lib/supportModal';
 import {
   headingFromDeviceOrientation,
   resolveDeviceHeading,
@@ -107,6 +112,9 @@ export default function MapScreen() {
     'ask',
   );
   const [locationBusy, setLocationBusy] = useState(false);
+  /** GPS gate finished (granted or already active) — then we may show support. */
+  const [locationGateDone, setLocationGateDone] = useState(false);
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
   /** Start GPS watch only after the user accepted (or already granted). */
   const [watchEnabled, setWatchEnabled] = useState(false);
   /** GPS follow — paused while looking at a cat in another region. */
@@ -248,6 +256,23 @@ export default function MapScreen() {
     };
   }, [mapDemo, storedCats.length, hasDiscoverableOnMap, userId]);
 
+  /** After GPS is ready on the map: optional free/Revolut note (once per user). */
+  useEffect(() => {
+    if (!locationGateDone || locationModalVisible || !userId) return;
+    let mounted = true;
+    void (async () => {
+      const dismissed = await hasDismissedSupportModal(userId);
+      if (mounted && !dismissed) {
+        // Let the GPS success toast settle briefly before stacking another surface.
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        if (mounted) setSupportModalVisible(true);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [locationGateDone, locationModalVisible, userId]);
+
   const sortedCats = useMemo(
     () => sortCatsByDistance(mapCats, userCoordinate),
     [mapCats, userCoordinate],
@@ -303,23 +328,24 @@ export default function MapScreen() {
     });
   }, []);
 
-  /** First map entry after signup: in-app GPS modal, never a silent OS prompt. */
+  /** Prefer location already granted in onboarding; do not block the map with a GPS modal. */
   useEffect(() => {
     let mounted = true;
     void (async () => {
+      // Always try live watch on the explorer — permission was collected in onboarding.
+      if (mounted) setWatchEnabled(true);
+
       const active = await isLocationActive();
       if (!mounted) return;
       if (active) {
         const next = await getCurrentLocationCoordinate();
         if (next && mounted) await applyLocation(next);
-        return;
       }
-      setLocationModalPhase('ask');
-      setLocationModalVisible(true);
+      if (mounted) setLocationGateDone(true);
     })().catch(() => {
       if (mounted) {
-        setLocationModalPhase('ask');
-        setLocationModalVisible(true);
+        setWatchEnabled(true);
+        setLocationGateDone(true);
       }
     });
     return () => {
@@ -546,6 +572,7 @@ export default function MapScreen() {
         setLocationModalVisible(false);
         setLocationModalPhase('ask');
         setWatchEnabled(true);
+        setLocationGateDone(true);
         showToast({
           title: 'Position enregistrée',
           description: 'Le GPS est activé — tu peux explorer ton quartier.',
@@ -739,8 +766,16 @@ export default function MapScreen() {
       />
 
       <MapDiscoveryTip
-        visible={discoveryTipVisible}
+        visible={discoveryTipVisible && !supportModalVisible}
         onDismiss={handleDismissDiscoveryTip}
+      />
+
+      <SupportProjectModal
+        visible={supportModalVisible}
+        onContinue={() => {
+          setSupportModalVisible(false);
+          void dismissSupportModal(userId);
+        }}
       />
 
       <EnablePermissionModal
