@@ -1,5 +1,6 @@
-import { router } from 'expo-router';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useFocusEffect } from '@react-navigation/native'
+import { router } from 'expo-router'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   Platform,
   Pressable,
@@ -7,100 +8,212 @@ import {
   StyleSheet,
   useWindowDimensions,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { CatDexCard } from '@/components/CatDexCard';
-import { CatDexEmpty } from '@/components/CatDexEmpty';
-import { EmptyState } from '@/components/EmptyState';
-import { PageLoading } from '@/components/Loader';
-import { Text } from '@/components/Text';
-import { MOBILE_WEB_WIDTH } from '@/layout/MobileWebFrame';
-import { TabStackHeader } from '@/layout/TabStackHeader';
-import { CATDEX_TARGET } from '@/lib/constants';
-import { type CatDexRarityFilter, matchesCatDexRarityFilter } from '@/lib/catTheme';
-import { useCatsStore } from '@/store/cats';
-import { useTheme } from '@/theme/ThemeProvider';
+import { CatDexCard } from '@/components/CatDexCard'
+import { CatDexEmpty } from '@/components/CatDexEmpty'
+import { EmptyState } from '@/components/EmptyState'
+import { PageLoading } from '@/components/Loader'
+import { Text } from '@/components/Text'
+import { MOBILE_WEB_WIDTH } from '@/layout/MobileWebFrame'
+import { TabStackHeader } from '@/layout/TabStackHeader'
+import {
+  buildOwnedCatIdSet,
+  getCatDiscoveryState,
+} from '@/lib/catDiscovery'
+import { isCatVisibleOnMap } from '@/lib/catLifestyle'
+import { CATDEX_TARGET } from '@/lib/constants'
+import { pullCommunityCatsForMap } from '@/lib/catSync'
+import { type CatDexRarityFilter, matchesCatDexRarityFilter } from '@/lib/catTheme'
+import {
+  DEMO_COMMUNITY_CATS,
+  isMapDemoEnabled,
+  mergeCatsById,
+} from '@/lib/demoCats'
+import { getCurrentLocationCoordinate } from '@/lib/locationAccess'
+import { sortCatsByDistance } from '@/lib/mapExplore'
+import { useCatsStore } from '@/store/cats'
+import { useCommunityCatsStore } from '@/store/communityCats'
+import { useMapExploreStore } from '@/store/mapExplore'
+import { useTheme } from '@/theme/ThemeProvider'
+import type { Cat } from '@/types/cat'
 
-type ListFilter = CatDexRarityFilter | 'favorites';
+type ListFilter = CatDexRarityFilter | 'favorites' | 'discoverable'
 
 const RARITY_FILTERS: { id: ListFilter; label: string }[] = [
   { id: 'all', label: 'Tous' },
+  { id: 'discoverable', label: 'À découvrir' },
   { id: 'favorites', label: 'Favoris' },
   { id: 'common', label: 'Commun' },
   { id: 'uncommon', label: 'Rare' },
   { id: 'rare', label: 'Épique' },
   { id: 'exceptional', label: 'Légendaire' },
-];
+]
 
-const COLUMNS = 2;
+const COLUMNS = 2
 /** Matches MobileWebFrame desktop phone preview breakpoint. */
-const DESKTOP_WEB_BREAKPOINT = 480;
+const DESKTOP_WEB_BREAKPOINT = 480
 
 export default function CatDexScreen() {
-  const { colors, spacing, radius } = useTheme();
-  const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
-  const cats = useCatsStore((state) => state.cats);
-  const hydrated = useCatsStore((state) => state.hydrated);
-  const [listFilter, setListFilter] = useState<ListFilter>('all');
-  const [favorites, setFavorites] = useState<Set<string>>(() => new Set());
+  const { colors, spacing, radius } = useTheme()
+  const insets = useSafeAreaInsets()
+  const { width: windowWidth } = useWindowDimensions()
+  const ownedCats = useCatsStore((state) => state.cats)
+  const hydrated = useCatsStore((state) => state.hydrated)
+  const sharedCommunityCats = useCommunityCatsStore((state) => state.cats)
+  const setSharedCommunityCats = useCommunityCatsStore((state) => state.setCats)
+  const requestFocusOnCat = useMapExploreStore((state) => state.requestFocusOnCat)
+  const [listFilter, setListFilter] = useState<ListFilter>('all')
+  const [favorites, setFavorites] = useState<Set<string>>(() => new Set())
+  const [userCoordinate, setUserCoordinate] = useState<{
+    latitude: number
+    longitude: number
+  } | null>(null)
   /** Width of the grid row (inside ScrollView padding). */
-  const [gridWidth, setGridWidth] = useState(0);
+  const [gridWidth, setGridWidth] = useState(0)
+
+  const mapDemo = isMapDemoEnabled()
+  const ownedIds = useMemo(() => buildOwnedCatIdSet(ownedCats), [ownedCats])
+
+  const refreshCommunity = useCallback(async () => {
+    const remote = await pullCommunityCatsForMap()
+    const next = mapDemo ? mergeCatsById(remote, DEMO_COMMUNITY_CATS) : remote
+    setSharedCommunityCats(next)
+  }, [mapDemo, setSharedCommunityCats])
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshCommunity()
+    }, [refreshCommunity]),
+  )
+
+  useEffect(() => {
+    let mounted = true
+    void getCurrentLocationCoordinate().then((next) => {
+      if (mounted && next) setUserCoordinate(next)
+    })
+
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.geolocation) {
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          if (!mounted) return
+          setUserCoordinate({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          })
+        },
+        () => undefined,
+        { enableHighAccuracy: true, maximumAge: 5_000, timeout: 10_000 },
+      )
+      return () => {
+        mounted = false
+        navigator.geolocation.clearWatch(watchId)
+      }
+    }
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  /** Owned CatDex + discoverable community pins (not yet captured). */
+  const catalog = useMemo(() => {
+    const byId = new Map<string, Cat>()
+
+    for (const cat of sharedCommunityCats) {
+      if (!isCatVisibleOnMap(cat)) continue
+      if (getCatDiscoveryState(cat, ownedIds) === 'owned') continue
+      byId.set(cat.remoteId || cat.id, cat)
+    }
+
+    for (const cat of ownedCats) {
+      byId.set(cat.remoteId || cat.id, cat)
+    }
+
+    return [...byId.values()]
+  }, [sharedCommunityCats, ownedCats, ownedIds])
 
   const filtered = useMemo(() => {
-    return cats.filter((cat) => {
-      if (!cat?.id) return false;
+    const list = catalog.filter((cat) => {
+      if (!cat?.id) return false
+      const captured = getCatDiscoveryState(cat, ownedIds) === 'owned'
 
       if (listFilter === 'favorites') {
-        if (!favorites.has(cat.id)) return false;
+        if (!favorites.has(cat.id)) return false
+      } else if (listFilter === 'discoverable') {
+        if (captured) return false
       } else if (
+        listFilter !== 'all' &&
         !matchesCatDexRarityFilter(cat.analysis ?? {}, cat.number ?? 0, listFilter)
       ) {
-        return false;
+        return false
       }
 
-      return true;
-    });
-  }, [cats, favorites, listFilter]);
+      return true
+    })
 
-  const cardGap = spacing[16];
-  const horizontalPad = spacing[24];
-  // Fallback when grid has not laid out yet (phone frame on wide web).
+    return sortCatsByDistance(list, userCoordinate).sort((a, b) => {
+      const aOwned = getCatDiscoveryState(a.cat, ownedIds) === 'owned' ? 0 : 1
+      const bOwned = getCatDiscoveryState(b.cat, ownedIds) === 'owned' ? 0 : 1
+      if (aOwned !== bOwned) return aOwned - bOwned
+      return a.distanceM - b.distanceM
+    })
+  }, [catalog, favorites, listFilter, ownedIds, userCoordinate])
+
+  const cardGap = spacing[16]
+  const horizontalPad = spacing[24]
   const fallbackFrame =
     windowWidth >= DESKTOP_WEB_BREAKPOINT
       ? Math.min(windowWidth, MOBILE_WEB_WIDTH)
-      : windowWidth;
+      : windowWidth
   const rowWidth =
     gridWidth > 0
       ? gridWidth
-      : Math.max(0, fallbackFrame - horizontalPad * 2);
+      : Math.max(0, fallbackFrame - horizontalPad * 2)
   const cardWidth = Math.max(
     0,
     Math.floor((rowWidth - cardGap * (COLUMNS - 1)) / COLUMNS),
-  );
-  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24];
+  )
+  const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24]
 
   const toggleFavorite = (catId: string) => {
     setFavorites((current) => {
-      const next = new Set(current);
-      if (next.has(catId)) next.delete(catId);
-      else next.add(catId);
-      return next;
-    });
-  };
+      const next = new Set(current)
+      if (next.has(catId)) next.delete(catId)
+      else next.add(catId)
+      return next
+    })
+  }
+
+  const handlePressCat = useCallback(
+    (cat: Cat, captured: boolean) => {
+      if (captured) {
+        router.push({ pathname: '/cat/[id]', params: { id: cat.id } })
+        return
+      }
+      requestFocusOnCat({
+        catId: cat.id,
+        latitude: cat.latitude,
+        longitude: cat.longitude,
+        pinZoom: true,
+      })
+      router.push('/(tabs)/map')
+    },
+    [requestFocusOnCat],
+  )
 
   if (!hydrated) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <PageLoading label="Chargement du CatDex…" />
       </View>
-    );
+    )
   }
 
   const empty = (() => {
-    if (cats.length === 0) {
-      return <CatDexEmpty onExplore={() => router.push('/(tabs)/map')} />;
+    if (ownedCats.length === 0 && catalog.length === 0) {
+      return <CatDexEmpty onExplore={() => router.push('/(tabs)/map')} />
     }
     if (listFilter === 'favorites' && favorites.size === 0) {
       return (
@@ -112,7 +225,20 @@ export default function CatDexScreen() {
           actionLabel="Découvrir des chats"
           onAction={() => setListFilter('all')}
         />
-      );
+      )
+    }
+    if (listFilter === 'discoverable') {
+      return (
+        <EmptyState
+          layout="page"
+          icon="search"
+          title="Tout est collecté"
+          description="Plus de chats mystère autour de toi pour l’instant — reviens plus tard."
+          actionLabel="Voir tous"
+          actionVariant="secondary"
+          onAction={() => setListFilter('all')}
+        />
+      )
     }
     return (
       <EmptyState
@@ -124,8 +250,8 @@ export default function CatDexScreen() {
         actionVariant="secondary"
         onAction={() => setListFilter('all')}
       />
-    );
-  })();
+    )
+  })()
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -133,14 +259,14 @@ export default function CatDexScreen() {
         title="CatDex"
         right={
           <Text variant="bodySmall" weight="semibold" color="brand">
-            {cats.length} / {CATDEX_TARGET}
+            {ownedCats.length} / {CATDEX_TARGET}
           </Text>
         }
         below={
           <View style={{ width: '100%', minWidth: 0 }}>
             <FilterChipsScroller>
               {RARITY_FILTERS.map((filter) => {
-                const selected = listFilter === filter.id;
+                const selected = listFilter === filter.id
                 return (
                   <Pressable
                     key={filter.id}
@@ -161,13 +287,14 @@ export default function CatDexScreen() {
                     })}
                   >
                     <Text
-                      variant="bodySmall" weight="semibold"
+                      variant="bodySmall"
+                      weight="semibold"
                       color={selected ? 'onAccent' : 'textBrand'}
                     >
                       {filter.label}
                     </Text>
                   </Pressable>
-                );
+                )
               })}
             </FilterChipsScroller>
           </View>
@@ -191,47 +318,47 @@ export default function CatDexScreen() {
           <View
             style={[styles.grid, { gap: cardGap }]}
             onLayout={(event) => {
-              const next = event.nativeEvent.layout.width;
-              if (next > 0 && next !== gridWidth) setGridWidth(next);
+              const next = event.nativeEvent.layout.width
+              if (next > 0 && next !== gridWidth) setGridWidth(next)
             }}
           >
-            {filtered.map((item) => (
-              <View
-                key={item.id}
-                style={{
-                  width: cardWidth,
-                  maxWidth: cardWidth,
-                  // Web flex items default to min-width:auto and grow to the
-                  // photo’s intrinsic size — that forces a single column.
-                  minWidth: 0,
-                  flexGrow: 0,
-                  flexShrink: 0,
-                  overflow: 'hidden',
-                }}
-              >
-                <CatDexCard
-                  cat={item}
-                  isFavorite={favorites.has(item.id)}
-                  onToggleFavorite={() => toggleFavorite(item.id)}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/cat/[id]',
-                      params: { id: item.id },
-                    })
-                  }
-                />
-              </View>
-            ))}
+            {filtered.map(({ cat }) => {
+              const captured =
+                getCatDiscoveryState(cat, ownedIds) === 'owned'
+              return (
+                <View
+                  key={cat.id}
+                  style={{
+                    width: cardWidth,
+                    maxWidth: cardWidth,
+                    minWidth: 0,
+                    flexGrow: 0,
+                    flexShrink: 0,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <CatDexCard
+                    cat={cat}
+                    captured={captured}
+                    isFavorite={favorites.has(cat.id)}
+                    onToggleFavorite={
+                      captured ? () => toggleFavorite(cat.id) : undefined
+                    }
+                    onPress={() => handlePressCat(cat, captured)}
+                  />
+                </View>
+              )
+            })}
           </View>
         )}
       </ScrollView>
     </View>
-  );
+  )
 }
 
 /** Horizontal chip row — native ScrollView grows with content on web, so use overflow-x there. */
 function FilterChipsScroller({ children }: { children: ReactNode }) {
-  const { spacing } = useTheme();
+  const { spacing } = useTheme()
 
   if (Platform.OS === 'web') {
     return (
@@ -257,7 +384,7 @@ function FilterChipsScroller({ children }: { children: ReactNode }) {
       >
         {children}
       </div>
-    );
+    )
   }
 
   return (
@@ -275,7 +402,7 @@ function FilterChipsScroller({ children }: { children: ReactNode }) {
     >
       {children}
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -285,4 +412,4 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'flex-start',
   },
-});
+})

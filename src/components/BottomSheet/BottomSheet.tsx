@@ -1,21 +1,32 @@
-import { Modal, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { useTheme } from '@/theme/ThemeProvider';
+import { useTheme } from '@/theme/ThemeProvider'
 
 export type BottomSheetProps = {
-  visible: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
-};
+  visible: boolean
+  onClose: () => void
+  children: React.ReactNode
+  style?: StyleProp<ViewStyle>
+}
 
+/**
+ * In-tree bottom sheet — stays inside MobileWebFrame on desktop web
+ * (RN Modal portals to the full computer viewport).
+ * Full phone width with horizontal content padding.
+ */
 export function BottomSheet({ visible, onClose, children, style }: BottomSheetProps) {
-  const { colors, spacing, radius, shadow } = useTheme();
-  const insets = useSafeAreaInsets();
+  const { colors, spacing, radius, shadow } = useTheme()
+  const insets = useSafeAreaInsets()
+
+  if (!visible) return null
 
   return (
-    <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
+    <View
+      pointerEvents="box-none"
+      accessibilityViewIsModal
+      style={[StyleSheet.absoluteFill, styles.layer]}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Fermer"
@@ -23,19 +34,20 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
         style={[styles.backdrop, { backgroundColor: colors.overlay }]}
       />
       <View
-        accessibilityViewIsModal
         style={[
           styles.sheet,
           {
-            left: spacing[16],
-            right: spacing[16],
-            bottom: Math.max(insets.bottom, spacing[16]),
+            left: 0,
+            right: 0,
+            bottom: 0,
             backgroundColor: colors.surface,
-            borderRadius: radius.sheet,
+            borderTopLeftRadius: radius.sheet,
+            borderTopRightRadius: radius.sheet,
             paddingHorizontal: spacing[24],
             paddingTop: spacing[8],
-            paddingBottom: spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
             borderWidth: 1,
+            borderBottomWidth: 0,
             borderColor: colors.border,
           },
           shadow.floating,
@@ -56,11 +68,14 @@ export function BottomSheet({ visible, onClose, children, style }: BottomSheetPr
         />
         {children}
       </View>
-    </Modal>
-  );
+    </View>
+  )
 }
 
 const styles = StyleSheet.create({
+  layer: {
+    zIndex: 40,
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -70,4 +85,4 @@ const styles = StyleSheet.create({
   handle: {
     alignSelf: 'center',
   },
-});
+})

@@ -53,6 +53,7 @@ import { PROXIMITY_ALERT_M, sortCatsByDistance } from '@/lib/mapExplore';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { claimTargetFromCat, useClaimTargetStore } from '@/store/claimTarget';
+import { useCommunityCatsStore } from '@/store/communityCats';
 import { useMapExploreStore } from '@/store/mapExplore';
 import { useMissionsStore } from '@/store/missions';
 import { useNotificationsStore } from '@/store/notifications';
@@ -85,6 +86,7 @@ export default function MapScreen() {
   const ownedIds = useMemo(() => buildOwnedCatIdSet(ownedCats), [ownedCats]);
 
   const [communityCats, setCommunityCats] = useState<Cat[]>([]);
+  const setSharedCommunityCats = useCommunityCatsStore((state) => state.setCats);
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [discoveryTipVisible, setDiscoveryTipVisible] = useState(false);
@@ -141,10 +143,10 @@ export default function MapScreen() {
 
   const refreshCommunityCats = useCallback(async () => {
     const remote = await pullCommunityCatsForMap();
-    setCommunityCats(
-      mapDemo ? mergeCatsById(remote, DEMO_COMMUNITY_CATS) : remote,
-    );
-  }, [mapDemo]);
+    const next = mapDemo ? mergeCatsById(remote, DEMO_COMMUNITY_CATS) : remote;
+    setCommunityCats(next);
+    setSharedCommunityCats(next);
+  }, [mapDemo, setSharedCommunityCats]);
 
   useEffect(() => {
     void refreshCommunityCats();

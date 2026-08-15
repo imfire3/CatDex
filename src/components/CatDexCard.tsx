@@ -3,7 +3,7 @@
  * Photo, rarity pill, name, breed, coat swatches, collected.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { CatImage } from '@/components/CatImage';
@@ -25,6 +25,8 @@ type Props = {
   onPress: () => void;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
+  /** False = not yet in the player's CatDex (grey / locked). */
+  captured?: boolean;
 };
 
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -46,7 +48,13 @@ function coatSwatches(analysis: CatAnalysis, fallbackHex: string): string[] {
   return dots;
 }
 
-export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite }: Props) {
+export function CatDexCard({
+  cat,
+  onPress,
+  isFavorite = false,
+  onToggleFavorite,
+  captured = true,
+}: Props) {
   const { colors, spacing, radius, shadow, iconStroke, motion } = useTheme();
   const analysis = enrichAnalysis(cat.analysis, cat.number);
   const theme = themeFromColorLabel(analysis.color, cat.number);
@@ -72,11 +80,16 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
   const swatches = coatSwatches(analysis, theme.hex);
   const personality = analysis.tags?.[0]?.trim() ?? '';
   const breed = analysis.breed || '';
+  const displayName = captured ? cat.name : 'Chat mystère';
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Voir la fiche de ${cat.name}`}
+      accessibilityLabel={
+        captured
+          ? `Voir la fiche de ${cat.name}`
+          : `Voir ${displayName} sur la carte`
+      }
       onPress={onPress}
       style={({ pressed }) => [
         {
@@ -87,6 +100,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
           borderColor: colors.border,
           overflow: 'hidden',
           cursor: 'pointer',
+          opacity: captured ? 1 : 0.92,
           transform: [{ scale: pressed ? motion.cardPressScale : 1 }],
         },
         shadow.low,
@@ -103,7 +117,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
           height: framePx > 0 ? framePx : undefined,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: colors.background,
+          backgroundColor: colors.surfaceSecondary,
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -117,14 +131,34 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
               left: 0,
               width: framePx,
               height: framePx,
+              opacity: captured ? 1 : 0.38,
+              // Web-only greyscale for locked tiles.
+              ...(captured
+                ? null
+                : ({ filter: 'grayscale(1) brightness(0.92)' } as object)),
             }}
             resizeMode="cover"
             accessibilityIgnoresInvertColors
             onError={() => setPhotoFailed(true)}
           />
         ) : canShowPhoto ? null : (
-          <CatSprite colorLabel={analysis.color} seed={cat.number} size={80} />
+          <View style={{ opacity: captured ? 1 : 0.35 }}>
+            <CatSprite colorLabel={analysis.color} seed={cat.number} size={80} />
+          </View>
         )}
+
+        {!captured ? (
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              {
+                backgroundColor: colors.surfaceSecondary,
+                opacity: 0.55,
+              },
+            ]}
+          />
+        ) : null}
 
         <View
           pointerEvents="none"
@@ -140,6 +174,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
             flexDirection: 'row',
             alignItems: 'center',
             gap: spacing[4],
+            opacity: captured ? 1 : 0.7,
           }}
         >
           <View
@@ -147,15 +182,19 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
               width: spacing[8],
               height: spacing[8],
               borderRadius: radius.full,
-              backgroundColor: rarity.foreground,
+              backgroundColor: captured ? rarity.foreground : colors.textMuted,
             }}
           />
-          <Text variant="caption" weight="semibold" style={{ color: rarity.foreground }}>
+          <Text
+            variant="caption"
+            weight="semibold"
+            style={{ color: captured ? rarity.foreground : colors.textMuted }}
+          >
             {catDexRarityLabel(rarityId)}
           </Text>
         </View>
 
-        {onToggleFavorite ? (
+        {captured && onToggleFavorite ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
@@ -203,14 +242,19 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
         <Text
           variant="body"
           weight="semibold"
-          color="text"
+          color={captured ? 'text' : 'textMuted'}
           numberOfLines={2}
         >
-          {cat.name}
+          {displayName}
         </Text>
 
         {breed ? (
-          <Text variant="bodySmall" color="textSecondary" numberOfLines={1}>
+          <Text
+            variant="bodySmall"
+            color="textSecondary"
+            numberOfLines={1}
+            style={{ opacity: captured ? 1 : 0.7 }}
+          >
             {breed}
           </Text>
         ) : null}
@@ -223,6 +267,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
               alignItems: 'center',
               gap: spacing[8],
               minWidth: 0,
+              opacity: captured ? 1 : 0.55,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[4] }}>
@@ -233,7 +278,7 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
                     width: spacing[16],
                     height: spacing[16],
                     borderRadius: radius.full,
-                    backgroundColor: hex,
+                    backgroundColor: captured ? hex : colors.textMuted,
                     borderWidth: 1,
                     borderColor: colors.border,
                   }}
@@ -246,8 +291,12 @@ export function CatDexCard({ cat, onPress, isFavorite = false, onToggleFavorite 
               </Text>
             ) : null}
           </View>
-          <Text variant="caption" weight="semibold" color="success">
-            Collecté
+          <Text
+            variant="caption"
+            weight="semibold"
+            color={captured ? 'success' : 'textMuted'}
+          >
+            {captured ? 'Collecté' : 'À découvrir'}
           </Text>
         </View>
       </View>
