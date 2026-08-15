@@ -8,6 +8,7 @@ import { BrandLoader } from '@/components/Auth/Onboarding';
 import { Button } from '@/components/Button';
 import { ErrorState } from '@/components/ErrorState';
 import {
+  isLocalWebPreview,
   openSystemLocationSettings,
   requestLocationAccessResult,
   requestWebCompassPermission,
@@ -72,16 +73,33 @@ export default function PermissionLocationScreen() {
     try {
       const result = await requestLocationAccessResult();
       if (result.denied) {
+        // In Cursor / localhost, never hard-block the tester.
+        if (isLocalWebPreview()) {
+          showToast({
+            title: 'Aperçu local',
+            description: 'GPS ignoré dans Cursor — tu peux continuer.',
+            tone: 'default',
+            durationMs: 2200,
+          });
+          await continueAfterGps();
+          return;
+        }
         setPhase('denied');
         return;
       }
       if (result.granted) {
         showToast({
-          title: 'Position enregistrée',
-          description: 'Le GPS est activé — direction la carte.',
+          title: isLocalWebPreview() ? 'Aperçu local' : 'Position enregistrée',
+          description: isLocalWebPreview()
+            ? 'Tu peux tester la suite sans GPS réel.'
+            : 'Le GPS est activé — direction la carte.',
           tone: 'success',
           durationMs: 2400,
         });
+        await continueAfterGps();
+        return;
+      }
+      if (isLocalWebPreview()) {
         await continueAfterGps();
         return;
       }
@@ -151,6 +169,14 @@ export default function PermissionLocationScreen() {
               onPrimary={() => {
                 void handleAuthorize();
               }}
+              secondaryLabel={isLocalWebPreview() ? 'Continuer sans GPS' : undefined}
+              onSecondary={
+                isLocalWebPreview()
+                  ? () => {
+                      void continueAfterGps();
+                    }
+                  : undefined
+              }
               secondaryVariant="ghost"
             />
             {Platform.OS !== 'web' && phase === 'denied' ? (

@@ -31,6 +31,18 @@ type WebGeoOutcome =
   | { kind: 'denied' }
   | { kind: 'unavailable' };
 
+/** Cursor / localhost preview — geolocation prompts often hang with no callback. */
+export function isLocalWebPreview(): boolean {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host.endsWith('.local') ||
+    Boolean(typeof __DEV__ !== 'undefined' && __DEV__)
+  );
+}
+
 function readWebPosition(
   options: PositionOptions,
 ): Promise<WebGeoOutcome> {
@@ -38,23 +50,43 @@ function readWebPosition(
     return Promise.resolve({ kind: 'unavailable' });
   }
 
+  const hardMs = Math.max(1_500, Number(options.timeout) || 5_000) + 500;
+
   return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          kind: 'ok',
-          coordinate: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          },
-        });
-      },
-      (error) => {
-        // 1 = PERMISSION_DENIED — only hard deny we can trust on Safari.
-        resolve({ kind: classifyGeolocationErrorCode(error?.code) });
-      },
-      options,
-    );
+    let settled = false;
+    const finish = (outcome: WebGeoOutcome) => {
+      if (settled) return;
+      settled = true;
+      resolve(outcome);
+    };
+
+    const timer = setTimeout(() => {
+      // Some embedded browsers never call success/error — never hang the UI.
+      finish({ kind: 'unavailable' });
+    }, hardMs);
+
+    try {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          clearTimeout(timer);
+          finish({
+            kind: 'ok',
+            coordinate: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            },
+          });
+        },
+        (error) => {
+          clearTimeout(timer);
+          finish({ kind: classifyGeolocationErrorCode(error?.code) });
+        },
+        options,
+      );
+    } catch {
+      clearTimeout(timer);
+      finish({ kind: 'unavailable' });
+    }
   });
 }
 
@@ -63,9 +95,26 @@ function readWebPosition(
  * Retry with a cached / low-accuracy read before treating access as failed.
  */
 async function requestWebGeolocation(): Promise<LocationRequestResult> {
+  // Cursor / local preview: don't wait on a broken geolocation bridge.
+  if (isLocalWebPreview()) {
+    const quick = await readWebPosition({
+      enableHighAccuracy: false,
+      timeout: 1_800,
+      maximumAge: 60_000,
+    });
+    if (quick.kind === 'ok') {
+      return { granted: true, denied: false, coordinate: quick.coordinate };
+    }
+    if (quick.kind === 'denied') {
+      return { granted: false, denied: true, coordinate: null };
+    }
+    // Soft-pass so onboarding isn't stuck in the IDE browser.
+    return { granted: true, denied: false, coordinate: null };
+  }
+
   const attempts: PositionOptions[] = [
-    { enableHighAccuracy: false, timeout: 8_000, maximumAge: 60_000 },
-    { enableHighAccuracy: true, timeout: 12_000, maximumAge: 5_000 },
+    { enableHighAccuracy: false, timeout: 5_000, maximumAge: 60_000 },
+    { enableHighAccuracy: true, timeout: 6_000, maximumAge: 5_000 },
   ];
 
   let sawUnavailable = false;
