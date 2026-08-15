@@ -4,10 +4,8 @@ import { View } from 'react-native'
 import {
   IconBell,
   IconPalette,
-  IconPhotos,
   IconSettings,
   IconShield,
-  IconTrophy,
   IconUser,
   SettingsRow,
 } from '@/components/Settings'
@@ -17,8 +15,6 @@ import { useTheme } from '@/theme/ThemeProvider'
 type Props = {
   onEditProfile: () => void
   onNotifications: () => void
-  onCatDex: () => void
-  onMissions: () => void
   onPrivacy: () => void
   onAppearance: () => void
   onSettings: () => void
@@ -28,8 +24,6 @@ type Props = {
 export function ProfileMenuCard({
   onEditProfile,
   onNotifications,
-  onCatDex,
-  onMissions,
   onPrivacy,
   onAppearance,
   onSettings,
@@ -65,8 +59,6 @@ export function ProfileMenuCard({
         title="Notifications"
         onPress={onNotifications}
       />
-      <SettingsRow icon={<IconPhotos />} title="CatDex" onPress={onCatDex} />
-      <SettingsRow icon={<IconTrophy />} title="Missions" onPress={onMissions} />
       <SettingsRow
         icon={<IconShield />}
         title="Confidentialité"

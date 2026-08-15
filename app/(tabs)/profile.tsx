@@ -177,16 +177,6 @@ export default function ProfileScreen() {
             gap: spacing[32],
           }}
         >
-          <ProfileMenuCard
-            onEditProfile={goEdit}
-            onNotifications={() => router.push('/settings/notifications')}
-            onCatDex={() => router.push('/(tabs)/catdex')}
-            onMissions={() => router.push('/(tabs)/missions')}
-            onPrivacy={() => router.push('/settings/privacy')}
-            onAppearance={() => router.push('/settings/appearance')}
-            onSettings={() => router.push('/settings')}
-          />
-
           <ProfileStatGrid
             stats={[
               { label: 'Chats', value: String(cats.length) },
@@ -195,15 +185,6 @@ export default function ProfileScreen() {
               { label: 'Jour', value: String(streak) },
             ]}
           />
-
-          {fav ? (
-            <FavoriteCompact
-              cat={fav}
-              onPress={() => router.push({ pathname: '/cat/[id]', params: { id: fav.id } })}
-            />
-          ) : (
-            <ProfileFavoriteEmpty onExplore={goExplore} />
-          )}
 
           <ProfileBadgeRow
             badges={badges}
@@ -217,6 +198,23 @@ export default function ProfileScreen() {
           />
 
           <ProfileActivityTimeline items={activity} />
+
+          {fav ? (
+            <FavoriteCompact
+              cat={fav}
+              onPress={() => router.push({ pathname: '/cat/[id]', params: { id: fav.id } })}
+            />
+          ) : (
+            <ProfileFavoriteEmpty onExplore={goExplore} />
+          )}
+
+          <ProfileMenuCard
+            onEditProfile={goEdit}
+            onNotifications={() => router.push('/settings/notifications')}
+            onPrivacy={() => router.push('/settings/privacy')}
+            onAppearance={() => router.push('/settings/appearance')}
+            onSettings={() => router.push('/settings')}
+          />
         </Animated.View>
       </ScrollView>
 
