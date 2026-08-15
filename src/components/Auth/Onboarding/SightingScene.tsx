@@ -20,6 +20,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
 
 import { DEMO_ONBOARDING_CAT } from './demoCat';
+import { LifestyleExplain } from './LifestyleExplain';
 import { OnboardingCatCard } from './OnboardingCatCard';
 
 /**
@@ -124,7 +125,7 @@ export function SightingScene() {
           alignItems: 'center',
           justifyContent: 'center',
           paddingHorizontal: spacing[24],
-          gap: spacing[24] }}
+          gap: spacing[16] }}
       >
         <View style={{ alignItems: 'center', justifyContent: 'center' }}>
           <Animated.View
@@ -158,6 +159,9 @@ export function SightingScene() {
           >
             Un chat vient d’apparaître près de toi
           </Text>
+          <Text variant="bodySmall" color="textSecondary" align="center">
+            Les chats de rue vivent sur la carte. Les chats domestiques restent privés dans ton CatDex.
+          </Text>
 
           <View
             style={[
@@ -183,6 +187,8 @@ export function SightingScene() {
               {DEMO_ONBOARDING_CAT.distance}
             </Text>
           </View>
+
+          <LifestyleExplain />
         </Animated.View>
       </View>
     </View>

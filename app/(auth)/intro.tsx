@@ -50,7 +50,7 @@ export default function IntroScreen() {
         </View>
       }
     >
-      <View style={{ flexGrow: 1, minHeight: 520 }}>
+      <View style={{ flexGrow: 1, minHeight: 640 }}>
         <SightingScene />
       </View>
     </AuthShell>

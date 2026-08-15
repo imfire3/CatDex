@@ -7,13 +7,13 @@ export const CAT_LIFESTYLE_OPTIONS: Array<{
 }> = [
   {
     value: 'sauvage',
-    label: 'Sauvage',
-    hint: 'Chat de rue / libre — visible sur la carte',
+    label: 'Chat de rue',
+    hint: 'Croisé dehors (rue, bar, square…) — visible sur la carte pour les autres',
   },
   {
     value: 'domestique',
-    label: 'Domestique',
-    hint: 'Animal de compagnie — uniquement dans ton CatDex',
+    label: 'Chat domestique',
+    hint: 'Animal de compagnie — caché de la carte pour éviter vol ou harcèlement',
   },
 ];
 

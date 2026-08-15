@@ -498,11 +498,11 @@ export function CaptureReveal({
 
           <View style={{ gap: spacing[8] }}>
             <Text variant="bodySmall" weight="semibold" color="textBody">
-              Type
+              Type de chat
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Choisir domestique ou sauvage"
+              accessibilityLabel="Choisir chat de rue ou chat domestique"
               accessibilityState={{ expanded: lifestyleOpen }}
               onPress={() => {
                 setEditingField(null);
@@ -522,7 +522,7 @@ export function CaptureReveal({
             >
               <Text variant="body" color="text">
                 {CAT_LIFESTYLE_OPTIONS.find((option) => option.value === lifestyle)?.label ??
-                  'Sauvage'}
+                  'Chat de rue'}
               </Text>
               <Text variant="caption" color="textMuted" style={{ marginTop: spacing[4] }}>
                 {CAT_LIFESTYLE_OPTIONS.find((option) => option.value === lifestyle)?.hint}

@@ -10,6 +10,7 @@ export { ProgressDots } from './ProgressDots';
 export { SightingScene } from './SightingScene';
 export { ScanScene } from './ScanScene';
 export { RewardScene } from './RewardScene';
+export { LifestyleExplain } from './LifestyleExplain';
 export { OnboardingCatCard } from './OnboardingCatCard';
 export { DEMO_CAT_IMAGE, DEMO_ONBOARDING_CAT } from './demoCat';
 export { Glyph, type OnboardingGlyph } from './glyphs';
