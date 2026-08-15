@@ -30,7 +30,6 @@ import {
 import { coordinatesForDiscoveryOverview } from '@/lib/mapDiscoveryOverview';
 import {
   getCurrentLocationCoordinate,
-  isLocationActive,
   openSystemLocationSettings,
   requestLocationAccessResult,
   requestWebCompassPermission,
@@ -175,17 +174,19 @@ export default function MapScreen() {
     void refreshCommunityCats();
   }, [userCoordinate, refreshCommunityCats]);
 
-  /** Dev demo: anchor near Paris 20e so fake pins + nearby pulse are visible. */
+  /**
+   * Dev demo: keep Paris pins for exploration, but never pretend Paris is the
+   * player's GPS. Camera starts on real location once a fix arrives.
+   */
   useEffect(() => {
-    if (!mapDemo) return;
-    setUserCoordinate((prev) => prev ?? { ...PARIS_20E.center });
+    if (!mapDemo || hasGpsFix) return;
     setFocusCoordinate((prev) =>
       prev ?? {
         ...PARIS_20E.center,
         nonce: 1,
       },
     );
-  }, [mapDemo]);
+  }, [mapDemo, hasGpsFix]);
 
   /**
    * Own CatDex pins (photo) + other players' sightings (mystery until you capture them).
@@ -373,18 +374,28 @@ export default function MapScreen() {
     });
   }, []);
 
-  /** Prefer location already granted in onboarding; do not block the map with a GPS modal. */
+  /**
+   * Always request a live GPS fix on the explorer (triggers the browser prompt
+   * when needed). Do not wait for Permissions API "granted" — Cursor / Safari
+   * often report "prompt" even after the user can share location.
+   */
   useEffect(() => {
     let mounted = true;
     void (async () => {
-      // Always try live watch on the explorer — permission was collected in onboarding.
       if (mounted) setWatchEnabled(true);
 
-      const active = await isLocationActive();
+      const result = await requestLocationAccessResult();
       if (!mounted) return;
-      if (active) {
-        const next = await getCurrentLocationCoordinate();
-        if (next && mounted) await applyLocation(next);
+
+      if (result.denied) {
+        setLocationGateDone(true);
+        return;
+      }
+
+      const next =
+        result.coordinate ?? (await getCurrentLocationCoordinate());
+      if (next && mounted) {
+        await applyLocation(next);
       }
       if (mounted) setLocationGateDone(true);
     })().catch(() => {
@@ -647,20 +658,23 @@ export default function MapScreen() {
   const recenterOnPlayer = async () => {
     setFollowUser(true);
     setWatchEnabled(true);
-    // Instant camera feedback from last known GPS (works even if a fresh
-    // geolocation read is slow or blocked).
-    if (userCoordinate) {
+    unlockWebCompassFromGesture();
+
+    // Instant camera feedback from last known *real* GPS.
+    if (hasGpsFix && userCoordinate) {
       flyToCoordinate(userCoordinate);
     }
 
-    const active = await isLocationActive();
-    if (!active) {
-      if (!userCoordinate) openLocationAskModal();
-      return;
-    }
-
     try {
-      const next = await getCurrentLocationCoordinate();
+      const result = await requestLocationAccessResult();
+      if (result.denied) {
+        openLocationAskModal();
+        setLocationModalPhase('denied');
+        setLocationModalVisible(true);
+        return;
+      }
+      const next =
+        result.coordinate ?? (await getCurrentLocationCoordinate());
       if (next) {
         await applyLocation(next);
         return;
@@ -669,9 +683,12 @@ export default function MapScreen() {
       // fallback below
     }
 
-    if (!userCoordinate) {
-      flyToCoordinate({ ...PARIS_20E.center });
+    if (hasGpsFix && userCoordinate) {
+      flyToCoordinate(userCoordinate);
+      return;
     }
+
+    openLocationAskModal();
   };
 
   /** Double-tap recenter — default zoom + pitch on the player. */
@@ -699,12 +716,19 @@ export default function MapScreen() {
     setFollowUser(true);
     setWatchEnabled(true);
     setCompassEpoch((value) => value + 1);
-    if (userCoordinate) {
+    if (userCoordinate && hasGpsFix) {
       flyToCoordinate(userCoordinate);
       return;
     }
-    void isLocationActive().then((active) => {
-      if (!active) openLocationAskModal();
+    void requestLocationAccessResult().then(async (result) => {
+      if (result.denied) {
+        openLocationAskModal();
+        return;
+      }
+      const next =
+        result.coordinate ?? (await getCurrentLocationCoordinate());
+      if (next) await applyLocation(next);
+      else if (!hasGpsFix) openLocationAskModal();
     });
   };
 

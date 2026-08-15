@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { Badge } from '@/components/Badge';
 import { CatImage } from '@/components/CatImage';
 import { CatSprite } from '@/components/CatSprite';
 import { Text } from '@/components/Text';
@@ -291,13 +292,15 @@ export function CatDexCard({
               </Text>
             ) : null}
           </View>
-          <Text
-            variant="caption"
-            weight="semibold"
-            color={captured ? 'success' : 'textMuted'}
-          >
-            {captured ? 'Collecté' : 'À découvrir'}
-          </Text>
+          {captured ? (
+            <Badge label="Collecté" variant="success" />
+          ) : (
+            <Badge
+              label="À découvrir"
+              backgroundColor={colors.surfaceSecondary}
+              color={colors.textMuted}
+            />
+          )}
         </View>
       </View>
     </Pressable>

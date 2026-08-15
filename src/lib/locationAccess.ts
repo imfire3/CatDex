@@ -93,29 +93,20 @@ function readWebPosition(
 /**
  * Safari often grants the OS prompt then fails the first high-accuracy fix.
  * Retry with a cached / low-accuracy read before treating access as failed.
+ *
+ * Local preview (Cursor / localhost) still tries real GPS first so the map can
+ * center on the computer location — only soft-pass after attempts fail.
  */
 async function requestWebGeolocation(): Promise<LocationRequestResult> {
-  // Cursor / local preview: don't wait on a broken geolocation bridge.
-  if (isLocalWebPreview()) {
-    const quick = await readWebPosition({
-      enableHighAccuracy: false,
-      timeout: 1_800,
-      maximumAge: 60_000,
-    });
-    if (quick.kind === 'ok') {
-      return { granted: true, denied: false, coordinate: quick.coordinate };
-    }
-    if (quick.kind === 'denied') {
-      return { granted: false, denied: true, coordinate: null };
-    }
-    // Soft-pass so onboarding isn't stuck in the IDE browser.
-    return { granted: true, denied: false, coordinate: null };
-  }
-
-  const attempts: PositionOptions[] = [
-    { enableHighAccuracy: false, timeout: 5_000, maximumAge: 60_000 },
-    { enableHighAccuracy: true, timeout: 6_000, maximumAge: 5_000 },
-  ];
+  const attempts: PositionOptions[] = isLocalWebPreview()
+    ? [
+        { enableHighAccuracy: false, timeout: 3_500, maximumAge: 120_000 },
+        { enableHighAccuracy: true, timeout: 6_000, maximumAge: 0 },
+      ]
+    : [
+        { enableHighAccuracy: false, timeout: 5_000, maximumAge: 60_000 },
+        { enableHighAccuracy: true, timeout: 6_000, maximumAge: 5_000 },
+      ];
 
   let sawUnavailable = false;
   for (const options of attempts) {
@@ -127,6 +118,11 @@ async function requestWebGeolocation(): Promise<LocationRequestResult> {
       return { granted: false, denied: true, coordinate: null };
     }
     sawUnavailable = true;
+  }
+
+  // Soft-pass in IDE preview so onboarding isn't stuck without a geo bridge.
+  if (isLocalWebPreview()) {
+    return { granted: true, denied: false, coordinate: null };
   }
 
   // No coordinate yet, but the system prompt was accepted (or permission already on).
