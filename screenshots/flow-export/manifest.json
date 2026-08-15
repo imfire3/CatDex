@@ -1,0 +1,108 @@
+{
+  "base": "http://127.0.0.1:8081",
+  "generatedAt": "2026-08-15T08:50:49.278Z",
+  "screens": [
+    {
+      "id": "01-welcome",
+      "title": "Welcome · entrée",
+      "route": "/welcome",
+      "file": "01-welcome.png"
+    },
+    {
+      "id": "02-login",
+      "title": "Connexion",
+      "route": "/login",
+      "file": "02-login.png"
+    },
+    {
+      "id": "03-signup-empty",
+      "title": "Inscription · formulaire vide",
+      "route": "/signup",
+      "file": "03-signup-empty.png"
+    },
+    {
+      "id": "03b-signup-filled",
+      "title": "Inscription · formulaire rempli",
+      "route": "/signup",
+      "file": "03b-signup-filled.png"
+    },
+    {
+      "id": "04-intro",
+      "title": "Onboarding 1/3 · Apparition + types de chats",
+      "route": "/intro",
+      "file": "04-intro.png"
+    },
+    {
+      "id": "05-scan",
+      "title": "Onboarding 2/3 · Analyse IA",
+      "route": "/permissions",
+      "file": "05-scan.png"
+    },
+    {
+      "id": "06-reward",
+      "title": "Onboarding 3/3 · Premier chat",
+      "route": "/onboarding-reward",
+      "file": "06-reward.png"
+    },
+    {
+      "id": "06c-support",
+      "title": "Post-onboarding · Projet gratuit / Revolut",
+      "route": "/onboarding-reward",
+      "file": "06c-support.png"
+    },
+    {
+      "id": "07-map",
+      "title": "Explorer · carte",
+      "route": "/map",
+      "file": "07-map.png"
+    },
+    {
+      "id": "08-catdex",
+      "title": "CatDex · collection",
+      "route": "/catdex",
+      "file": "08-catdex.png"
+    },
+    {
+      "id": "09-missions",
+      "title": "Missions",
+      "route": "/missions",
+      "file": "09-missions.png"
+    },
+    {
+      "id": "10-profile",
+      "title": "Profil (+ Soutenir via Revolut)",
+      "route": "/profile",
+      "file": "10-profile.png"
+    },
+    {
+      "id": "11-scanner",
+      "title": "Scanner",
+      "route": "/scanner",
+      "file": "11-scanner.png"
+    },
+    {
+      "id": "12-discovery",
+      "title": "Discovery",
+      "route": "/discovery",
+      "file": "12-discovery.png"
+    },
+    {
+      "id": "13-settings",
+      "title": "Réglages",
+      "route": "/settings",
+      "file": "13-settings.png"
+    },
+    {
+      "id": "14-settings-profile",
+      "title": "Réglages · Éditer profil",
+      "route": "/settings/edit-profile",
+      "file": "14-settings-profile.png"
+    },
+    {
+      "id": "15-settings-help",
+      "title": "Réglages · Aide",
+      "route": "/settings/help",
+      "file": "15-settings-help.png"
+    }
+  ]
+}

@@ -24,9 +24,9 @@ try {
   ({ chromium } = require('/tmp/pw-catdex/node_modules/playwright'));
 }
 
-const OUT_DIR = path.join(__dirname, '..', 'screenshots', 'app');
-const GALLERY = path.join(__dirname, '..', 'screenshots', 'index.html');
-const BASE = (process.argv[2] || process.env.SCREENSHOT_BASE_URL || 'http://127.0.0.1:8099').replace(
+const OUT_DIR = path.join(__dirname, '..', 'screenshots', 'flow-export');
+const GALLERY = path.join(__dirname, '..', 'screenshots', 'flow-export', 'index.html');
+const BASE = (process.argv[2] || process.env.SCREENSHOT_BASE_URL || 'http://127.0.0.1:8081').replace(
   /\/$/,
   '',
 );
@@ -292,6 +292,25 @@ async function finishOnboardingTrilogy(page) {
     await clickByText(page, 'Commencer ma collection', { wait: 2500 }).catch(async () => {
       await clickByText(page, 'Continuer', { wait: 2500 });
     });
+
+    // Optional PWA sheet (web) — dismiss if present
+    const pwa = page.getByText(/Accès rapide CatDex|Ajouter à l’écran d’accueil|Sur l’écran d’accueil/i);
+    if (await pwa.count()) {
+      files.pwa = await shot(page, '06b-pwa-home');
+      await clickByText(page, 'Continuer vers la carte', { wait: 1200 }).catch(async () => {
+        await clickByText(page, 'Plus tard', { wait: 1200 }).catch(async () => {
+          await clickByText(page, 'Continuer', { wait: 1200 });
+        });
+      });
+    }
+
+    // Support / Revolut modal after onboarding
+    const support = page.getByText(/CatDex est gratuit|Soutenir via Revolut/i);
+    if (await support.count()) {
+      await page.waitForTimeout(400);
+      files.support = await shot(page, '06c-support');
+      await clickByText(page, 'Continuer', { wait: 2500 });
+    }
   }
 
   return files;
@@ -303,7 +322,7 @@ function writeGallery(results) {
     .map(
       (r) => `
     <figure>
-      <img src="app/${path.basename(r.file)}" alt="${r.title}" />
+      <img src="${path.basename(r.file)}" alt="${r.title}" />
       <figcaption><strong>${r.id}</strong> — ${r.title}<br/><code>${r.route || ''}</code></figcaption>
     </figure>`,
     )
@@ -410,6 +429,22 @@ async function main() {
         file: trilogy.reward,
       });
     }
+    if (trilogy.pwa) {
+      results.push({
+        id: '06b-pwa-home',
+        route: '/onboarding-reward',
+        title: 'Post-onboarding · Écran d’accueil',
+        file: trilogy.pwa,
+      });
+    }
+    if (trilogy.support) {
+      results.push({
+        id: '06c-support',
+        route: '/onboarding-reward',
+        title: 'Post-onboarding · CatDex gratuit / Revolut',
+        file: trilogy.support,
+      });
+    }
 
     for (const screen of APP_SCREENS) {
       if (screen.beforeOnboarding) continue;
@@ -435,11 +470,11 @@ async function main() {
   results.sort((a, b) => a.id.localeCompare(b.id));
   writeGallery(results);
   fs.writeFileSync(
-    path.join(__dirname, '..', 'screenshots', 'manifest.json'),
+    path.join(OUT_DIR, 'manifest.json'),
     JSON.stringify({ base: BASE, generatedAt: new Date().toISOString(), viewport: VIEWPORT, screens: results }, null, 2),
   );
-  console.log(`\n✅ ${results.filter((r) => r.file).length} screenshots → screenshots/app/`);
-  console.log(`🖼  Gallery: screenshots/index.html`);
+  console.log(`\n✅ ${results.filter((r) => r.file).length} screenshots → screenshots/flow-export/`);
+  console.log(`🖼  Gallery: screenshots/flow-export/index.html`);
 }
 
 main().catch((error) => {
