@@ -70,7 +70,15 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "name": "CatDex",
+      "shortName": "CatDex",
+      "description": "Ton quartier. Tes chats.",
+      "themeColor": "#6A69F8",
+      "backgroundColor": "#F9F9FB",
+      "display": "standalone",
+      "startUrl": "/?source=pwa",
+      "lang": "fr"
     },
     "experiments": {
       "typedRoutes": true

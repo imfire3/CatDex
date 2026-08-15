@@ -29,7 +29,12 @@ function getWebPosition(timeout = 10_000): Promise<LocationCoordinate | null> {
         });
       },
       () => resolve(null),
-      { enableHighAccuracy: true, timeout, maximumAge: 10_000 },
+      {
+        // Prefer a fast fix after signup; high accuracy often times out indoors.
+        enableHighAccuracy: timeout > 4_000,
+        timeout,
+        maximumAge: 30_000,
+      },
     );
   });
 }
@@ -103,6 +108,39 @@ export async function requestLocationAccess(): Promise<boolean> {
     return enabled;
   } catch {
     return true;
+  }
+}
+
+/**
+ * Fast GPS warm-up right after signup (short timeout to avoid long hangs / errors).
+ * Safe to call from a user-gesture handler (required on iOS Safari).
+ */
+export async function requestQuickLocationFix(
+  timeoutMs = 2_500,
+): Promise<LocationCoordinate | null> {
+  if (Platform.OS === 'web') {
+    return getWebPosition(timeoutMs);
+  }
+
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== Location.PermissionStatus.GRANTED) return null;
+
+  try {
+    const position = await Promise.race([
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      }),
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
+    if (!position) return null;
+    return {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+    };
+  } catch {
+    return null;
   }
 }
 

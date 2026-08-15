@@ -9,9 +9,16 @@
 import {
   CATDEX_VISION_SYSTEM_PROMPT,
   CATDEX_VISION_USER_PROMPT,
+  CATDEX_VISION_PROMPT_VERSION,
 } from '../../shared/catdexVisionPrompt.mjs';
 import { CATDEX_FORM_RESPONSE_FORMAT } from '../../shared/catdexFormSchema.mjs';
 import { normalizeCatGender } from '../../shared/normalizeCatGender.mjs';
+import {
+  getServiceRoleKey,
+  getSupabaseUrl,
+  insertRow,
+  userIdFromAuthHeader,
+} from '../lib/supabase.mjs';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -129,6 +136,22 @@ function mapFormToAnalysis(form) {
   };
 }
 
+async function logVisionRun(row) {
+  const supabaseUrl = getSupabaseUrl();
+  const serviceKey = getServiceRoleKey();
+  if (!supabaseUrl || !serviceKey) {
+    console.warn(
+      '[netlify analyze-cat] skip vision_runs — missing SUPABASE_URL / SERVICE_ROLE',
+    );
+    return;
+  }
+  try {
+    await insertRow(supabaseUrl, serviceKey, 'vision_runs', row);
+  } catch (error) {
+    console.error('[netlify analyze-cat] vision_runs insert failed', error);
+  }
+}
+
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: cors, body: '' };
@@ -166,6 +189,10 @@ export async function handler(event) {
   }
 
   const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
+  const userId = userIdFromAuthHeader(
+    event.headers?.authorization || event.headers?.Authorization,
+  );
+  const startedAt = Date.now();
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -204,6 +231,7 @@ export async function handler(event) {
       }),
     });
 
+    const latencyMs = Date.now() - startedAt;
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
       const errMsg =
@@ -211,6 +239,14 @@ export async function handler(event) {
         payload?.error?.code ||
         `openai_http_${response.status}`;
       console.error('[netlify analyze-cat] OpenAI error', errMsg);
+      await logVisionRun({
+        user_id: userId,
+        ok: false,
+        latency_ms: latencyMs,
+        model,
+        error: String(errMsg).slice(0, 500),
+        prompt_version: CATDEX_VISION_PROMPT_VERSION,
+      });
       return json(502, {
         error: 'Analyse Vision indisponible. Réessaie dans un instant.',
         detail: errMsg,
@@ -218,10 +254,48 @@ export async function handler(event) {
     }
 
     const raw = payload?.choices?.[0]?.message?.content ?? '{}';
-    const form = JSON.parse(raw);
-    return json(200, mapFormToAnalysis(form));
+    let form;
+    try {
+      form = JSON.parse(raw);
+    } catch (parseError) {
+      await logVisionRun({
+        user_id: userId,
+        ok: false,
+        latency_ms: latencyMs,
+        model,
+        error: 'invalid_json_from_model',
+        prompt_version: CATDEX_VISION_PROMPT_VERSION,
+        response_json: { raw: String(raw).slice(0, 2000) },
+      });
+      return json(502, {
+        error: 'Analyse Vision indisponible. Réessaie dans un instant.',
+      });
+    }
+
+    const mapped = mapFormToAnalysis(form);
+    await logVisionRun({
+      user_id: userId,
+      ok: true,
+      latency_ms: latencyMs,
+      model,
+      prompt_version: CATDEX_VISION_PROMPT_VERSION,
+      response_json: form,
+      normalized_json: mapped.analysis,
+      suggested_name: mapped.analysis?.suggestedName || form?.name || null,
+      breed: mapped.analysis?.breed || form?.breed || null,
+      coat_color: mapped.analysis?.color || form?.coatColor || null,
+    });
+    return json(200, mapped);
   } catch (error) {
     console.error('[netlify analyze-cat] failure', error);
+    await logVisionRun({
+      user_id: userId,
+      ok: false,
+      latency_ms: Date.now() - startedAt,
+      model,
+      error: error instanceof Error ? error.message.slice(0, 500) : 'unknown',
+      prompt_version: CATDEX_VISION_PROMPT_VERSION,
+    });
     return json(502, {
       error: 'Analyse Vision indisponible. Réessaie dans un instant.',
     });

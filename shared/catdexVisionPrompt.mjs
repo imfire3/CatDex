@@ -4,6 +4,9 @@
  * Edit this file only; do not duplicate these strings elsewhere.
  */
 
+/** Bump when the Vision prompt or form schema meaningfully changes. */
+export const CATDEX_VISION_PROMPT_VERSION = 'catdex_form_v1';
+
 export const CATDEX_VISION_SYSTEM_PROMPT = `RÔLE
 
 Tu analyses une photo pour CatDex — un jeu de collection de chats de quartier.

@@ -19,8 +19,8 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  # Bundle shared Vision prompt/schema into functions (single source of truth).
-  included_files = ["shared/**"]
+  # Bundle shared Vision prompt/schema + Netlify helpers into functions.
+  included_files = ["shared/**", "netlify/lib/**"]
 
 # Vision API on same origin (avoids broken Render JWT gate during beta)
 [[redirects]]
@@ -32,6 +32,13 @@
 [[redirects]]
   from = "/health"
   to = "/.netlify/functions/health"
+  status = 200
+  force = true
+
+# Secret-gated ops dashboard (ADMIN_STATS_SECRET via ?key=)
+[[redirects]]
+  from = "/admin"
+  to = "/.netlify/functions/admin"
   status = 200
   force = true
 
@@ -81,3 +88,7 @@
 # EXPO_PUBLIC_API_URL=https://votre-api.onrender.com
 # EXPO_PUBLIC_AUTH_GOOGLE=true (optionnel)
 # EXPO_PUBLIC_AUTH_APPLE=true (optionnel)
+# OPENAI_API_KEY=… (functions analyze-cat)
+# SUPABASE_URL=… (functions admin + vision_runs)
+# SUPABASE_SECRET_KEY=sb_secret_… (preferred) or SUPABASE_SERVICE_ROLE_KEY
+# ADMIN_STATS_SECRET=… (GET /admin?key=…)

@@ -1,3 +1,9 @@
+/** Support / tip jar — CatDex stays free; optional Revolut contribution. */
+export const SUPPORT_REVOLUT_URL =
+  'https://revolut.me/vincentgln/pocket/z6jnWY0st1';
+
+export const SUPPORT_CTA_LABEL = 'Soutenir via Revolut';
+
 export const SUPPORT_EMAIL = 'vincentgiacalonepro@gmail.com';
 
 export const IN_APP_TERMS_PATH = '/settings/legal-terms' as const;

@@ -1,5 +1,5 @@
 import { router } from 'expo-router'
-import { Pressable, ScrollView, View } from 'react-native'
+import { Linking, Pressable, ScrollView, View } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -29,6 +29,7 @@ import {
   progressionFromTotalXp,
   uniquePlaces,
 } from '@/lib/progression'
+import { SUPPORT_CTA_LABEL, SUPPORT_REVOLUT_URL } from '@/lib/supportLinks'
 import { useAuthStore } from '@/store/auth'
 import { useCatsStore } from '@/store/cats'
 import { useMissionsStore } from '@/store/missions'
@@ -227,8 +228,17 @@ export default function ProfileScreen() {
           backgroundColor: colors.background,
           borderTopWidth: 1,
           borderTopColor: colors.border,
+          gap: spacing[8],
         }}
       >
+        <Button
+          title={SUPPORT_CTA_LABEL}
+          variant="secondary"
+          onPress={() => {
+            void Linking.openURL(SUPPORT_REVOLUT_URL)
+          }}
+          accessibilityLabel="Soutenir CatDex via Revolut"
+        />
         <Button
           title="Déconnexion"
           variant="destructive"

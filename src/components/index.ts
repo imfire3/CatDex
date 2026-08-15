@@ -30,6 +30,14 @@ export {
   type EnablePermissionModalProps,
   type EnablePermissionKind,
 } from './EnablePermissionModal';
+export {
+  AddToHomeScreenSheet,
+  type AddToHomeScreenSheetProps,
+} from './AddToHomeScreenSheet';
+export {
+  SupportProjectModal,
+  type SupportProjectModalProps,
+} from './SupportProjectModal';
 export { Toast, ToastHost, type ToastProps } from './Toast';
 export { Modal, type AppModalProps } from './Modal';
 export { ScanFrame } from './ScanFrame';

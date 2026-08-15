@@ -12,6 +12,7 @@ import { ToastHost } from '@/components/Toast/ToastHost';
 import { useMissionSync } from '@/hooks/useMissionSync';
 import { shouldRedirectToWelcome } from '@/lib/authRoutes';
 import { installImageResolveAssetSourcePolyfill } from '@/lib/imageResolvePolyfill';
+import { armPwaInstallListener } from '@/lib/pwaInstall';
 import { MobileWebFrame } from '@/layout/MobileWebFrame';
 import { useAuthStore } from '@/store/auth';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -19,6 +20,7 @@ import { palette } from '@/theme/colors';
 import { kindSansFontMap } from '@/theme/typography';
 
 installImageResolveAssetSourcePolyfill();
+armPwaInstallListener();
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 void SystemUI.setBackgroundColorAsync(palette.light.background);
