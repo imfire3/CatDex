@@ -249,7 +249,7 @@ export function MapCatModal({
                       ? `À ${distanceLabel}`
                       : 'Vu dans cette zone'
                     : distanceLabel
-                      ? `Repéré près d’ici · ~${distanceLabel}`
+                      ? `Repéré près d’ici · ${distanceLabel}`
                       : 'Repéré près d’ici'}
                 </Text>
               </View>

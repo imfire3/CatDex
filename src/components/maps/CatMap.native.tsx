@@ -17,6 +17,7 @@ import {
   MAP_FOLLOW_THRESHOLD_M,
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
+  MAP_ZOOM,
 } from '@/components/maps/mapCamera';
 import { getCatDiscoveryState } from '@/lib/catDiscovery';
 import { distanceMeters } from '@/lib/constants';
@@ -30,6 +31,8 @@ type Props = {
   focusCoordinate?: { latitude: number; longitude: number } | null;
   /** Bumps on each recenter request so the camera re-animates. */
   focusNonce?: number;
+  /** When true, fly uses street-level MAP_ZOOM instead of keeping the current zoom. */
+  focusPinZoom?: boolean;
   /** Bumps to snap zoom/pitch back to the default explorer framing. */
   resetViewNonce?: number;
   /**
@@ -85,6 +88,7 @@ export function CatMap({
   onSelectCat,
   focusCoordinate,
   focusNonce,
+  focusPinZoom = false,
   resetViewNonce = 0,
   overviewCoordinates = null,
   overviewNonce = 0,
@@ -167,12 +171,18 @@ export function CatMap({
     void (async () => {
       const current = await mapRef.current?.getCamera();
       if (generation !== cameraGenerationRef.current) return;
+      const zoom = focusPinZoom
+        ? MAP_ZOOM
+        : userZoomRef.current;
+      if (focusPinZoom) {
+        userZoomRef.current = MAP_ZOOM;
+      }
       mapRef.current?.animateCamera(
         buildFollowCamera(
           target,
           current,
           userHeadingRef.current,
-          userZoomRef.current,
+          zoom,
         ),
         {
           duration: shouldFollow ? MAP_CAMERA_DURATION : MAP_FLY_TO_PIN_DURATION,
@@ -184,6 +194,7 @@ export function CatMap({
     focusCoordinate?.latitude,
     focusCoordinate?.longitude,
     focusNonce,
+    focusPinZoom,
   ]);
 
   // Double-tap recenter — restore default zoom + pitch framing (once per nonce).

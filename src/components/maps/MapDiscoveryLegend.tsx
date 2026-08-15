@@ -12,7 +12,7 @@ type Props = {
 
 /**
  * Discreet map legend — owned (solid) vs discoverable (open ring).
- * Tap « À découvrir » to overview nearby mystery pins.
+ * Tap « À découvrir » to open the nearby mystery-cat drawer.
  */
 export function MapDiscoveryLegend({
   onShowDiscoverable,
@@ -58,7 +58,7 @@ export function MapDiscoveryLegend({
         }
         accessibilityHint={
           canOverview
-            ? 'Dézoome la carte pour montrer les chats à découvrir autour de toi'
+            ? 'Ouvre la liste des chats à découvrir, du plus proche au plus loin'
             : undefined
         }
         disabled={!canOverview}

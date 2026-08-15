@@ -37,6 +37,7 @@ function NotificationRow({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={item.title}
+      accessibilityHint="Ouvre la carte et zoome sur ce chat"
       onPress={onPress}
       style={({ pressed }) => [
         {
@@ -100,7 +101,10 @@ export default function NotificationsScreen() {
 
   const openNotification = (item: AppNotification) => {
     markRead(item.id);
-    if (!item.catId) return;
+    if (!item.catId) {
+      router.push('/(tabs)/map');
+      return;
+    }
 
     const fromStore = cats.find(
       (cat) => cat.id === item.catId || cat.remoteId === item.catId,
@@ -108,20 +112,18 @@ export default function NotificationsScreen() {
     const latitude = item.latitude ?? fromStore?.latitude;
     const longitude = item.longitude ?? fromStore?.longitude;
     if (
-      typeof latitude !== 'number' ||
-      typeof longitude !== 'number' ||
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude)
+      typeof latitude === 'number' &&
+      typeof longitude === 'number' &&
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude)
     ) {
-      router.push('/(tabs)/map');
-      return;
+      requestFocusOnCat({
+        catId: item.catId,
+        latitude,
+        longitude,
+        pinZoom: true,
+      });
     }
-
-    requestFocusOnCat({
-      catId: item.catId,
-      latitude,
-      longitude,
-    });
     router.push('/(tabs)/map');
   };
 

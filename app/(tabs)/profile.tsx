@@ -2,6 +2,7 @@ import { router } from 'expo-router'
 import { Linking, Pressable, ScrollView, View } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Svg, { Path } from 'react-native-svg'
 
 import { Button } from '@/components/Button'
 import { CatImage } from '@/components/CatImage'
@@ -232,6 +233,14 @@ export default function ProfileScreen() {
         <Button
           title={SUPPORT_CTA_LABEL}
           variant="secondary"
+          icon={
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M12 20.4S3.6 14.7 3.6 9.2A4.5 4.5 0 0 1 12 6.6a4.5 4.5 0 0 1 8.4 2.6c0 5.5-8.4 11.2-8.4 11.2Z"
+                fill={colors.brand}
+              />
+            </Svg>
+          }
           onPress={() => {
             void Linking.openURL(SUPPORT_REVOLUT_URL)
           }}

@@ -6,6 +6,8 @@ export type MapFocusRequest = {
   longitude: number;
   /** Bumps so the same cat can be focused again. */
   nonce: number;
+  /** Force street-level zoom on the pin (notifications / deep links). */
+  pinZoom?: boolean;
 };
 
 type MapExploreState = {
@@ -17,6 +19,7 @@ type MapExploreState = {
     catId: string;
     latitude: number;
     longitude: number;
+    pinZoom?: boolean;
   }) => void;
   consumePendingFocus: () => MapFocusRequest | null;
 };
@@ -25,12 +28,13 @@ export const useMapExploreStore = create<MapExploreState>((set, get) => ({
   hasNearbyCat: false,
   setHasNearbyCat: (value) => set({ hasNearbyCat: value }),
   pendingFocus: null,
-  requestFocusOnCat: ({ catId, latitude, longitude }) =>
+  requestFocusOnCat: ({ catId, latitude, longitude, pinZoom = true }) =>
     set((state) => ({
       pendingFocus: {
         catId,
         latitude,
         longitude,
+        pinZoom,
         nonce: (state.pendingFocus?.nonce ?? 0) + 1,
       },
     })),

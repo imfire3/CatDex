@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
@@ -9,6 +10,7 @@ import { SupportProjectModal } from '@/components/SupportProjectModal';
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
+import { MapDiscoverableSheet } from '@/components/maps/MapDiscoverableSheet';
 import { MapDiscoveryLegend } from '@/components/maps/MapDiscoveryLegend';
 import { MapDiscoveryTip } from '@/components/maps/MapDiscoveryTip';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
@@ -62,6 +64,7 @@ import type { Cat } from '@/types/cat';
  * GPS & camera are gated by in-app modals (no silent OS prompts).
  */
 export default function MapScreen() {
+  const mapFocused = useIsFocused();
   const mapDemo = isMapDemoEnabled();
   const storedCats = useCatsStore((state) => state.cats);
   const userId = useAuthStore((state) => state.user?.id);
@@ -85,10 +88,13 @@ export default function MapScreen() {
   const [selected, setSelected] = useState<Cat | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [discoveryTipVisible, setDiscoveryTipVisible] = useState(false);
+  const [discoverableSheetVisible, setDiscoverableSheetVisible] =
+    useState(false);
   const [focusCoordinate, setFocusCoordinate] = useState<{
     latitude: number;
     longitude: number;
     nonce: number;
+    pinZoom?: boolean;
   } | null>(null);
   const [resetViewNonce, setResetViewNonce] = useState(0);
   const [overviewNonce, setOverviewNonce] = useState(0);
@@ -99,6 +105,8 @@ export default function MapScreen() {
     latitude: number;
     longitude: number;
   } | null>(null);
+  /** True only after a real geolocation fix (never the Paris demo anchor). */
+  const [hasGpsFix, setHasGpsFix] = useState(false);
   /** Compass heading in degrees (0 = north). Drives heading-up follow. */
   const [userHeading, setUserHeading] = useState<number | null>(null);
   /**
@@ -233,6 +241,7 @@ export default function MapScreen() {
     setCompassMode(false);
     setSheetVisible(false);
     setSelected(null);
+    setDiscoverableSheetVisible(true);
   }, [discoverableCats, userCoordinate]);
 
   useEffect(() => {
@@ -278,11 +287,16 @@ export default function MapScreen() {
     [mapCats, userCoordinate],
   );
 
+  /** Distance label — GPS only (never Paris demo fallback). */
   const selectedDistance = useMemo(() => {
-    if (!selected) return null;
-    const match = sortedCats.find((item) => item.cat.id === selected.id);
-    return match?.distanceM ?? null;
-  }, [selected, sortedCats]);
+    if (!selected || !hasGpsFix || !userCoordinate) return null;
+    return distanceMeters(
+      userCoordinate.latitude,
+      userCoordinate.longitude,
+      selected.latitude,
+      selected.longitude,
+    );
+  }, [selected, hasGpsFix, userCoordinate]);
 
   const nearestForProximity = sortedCats[0] ?? null;
   const nearbyCatIds = useMemo(
@@ -295,18 +309,47 @@ export default function MapScreen() {
 
   /** Fly camera to a coordinate (always re-triggers, even if already centered). */
   const flyToCoordinate = useCallback(
-    (coordinate: { latitude: number; longitude: number }) => {
+    (
+      coordinate: { latitude: number; longitude: number },
+      options?: { pinZoom?: boolean },
+    ) => {
       setFocusCoordinate((prev) => ({
         ...coordinate,
         nonce: (prev?.nonce ?? 0) + 1,
+        pinZoom: options?.pinZoom,
       }));
     },
     [],
   );
 
+  const sortedDiscoverableCats = useMemo(
+    () =>
+      sortCatsByDistance(
+        discoverableCats,
+        hasGpsFix ? userCoordinate : null,
+      ),
+    [discoverableCats, hasGpsFix, userCoordinate],
+  );
+
+  const handleSelectDiscoverable = useCallback(
+    (item: { cat: Cat; distanceM: number }) => {
+      setDiscoverableSheetVisible(false);
+      setSelected(item.cat);
+      setSheetVisible(true);
+      setFollowUser(false);
+      setCompassMode(false);
+      flyToCoordinate({
+        latitude: item.cat.latitude,
+        longitude: item.cat.longitude,
+      });
+    },
+    [flyToCoordinate],
+  );
+
   const applyLocation = useCallback(
     async (coordinate: { latitude: number; longitude: number }) => {
       setUserCoordinate(coordinate);
+      setHasGpsFix(true);
       setFollowUser(true);
       flyToCoordinate(coordinate);
       setWatchEnabled(true);
@@ -369,6 +412,7 @@ export default function MapScreen() {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
             });
+            setHasGpsFix(true);
             const course = position.coords.heading;
             if (
               typeof course === 'number' &&
@@ -399,6 +443,7 @@ export default function MapScreen() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           });
+          setHasGpsFix(true);
           const course = position.coords.heading;
           if (
             typeof course === 'number' &&
@@ -512,16 +557,19 @@ export default function MapScreen() {
 
   /** Open a cat from a notification — fly to its GPS pin and show the card. */
   useEffect(() => {
-    if (!pendingFocus) return;
+    if (!pendingFocus || !mapFocused) return;
     const focus = consumePendingFocus();
     if (!focus) return;
 
     setFollowUser(false);
     setCompassMode(false);
-    flyToCoordinate({
-      latitude: focus.latitude,
-      longitude: focus.longitude,
-    });
+    flyToCoordinate(
+      {
+        latitude: focus.latitude,
+        longitude: focus.longitude,
+      },
+      { pinZoom: focus.pinZoom !== false },
+    );
 
     const match =
       mapCats.find(
@@ -534,7 +582,7 @@ export default function MapScreen() {
       return;
     }
     pendingSelectCatIdRef.current = focus.catId;
-  }, [pendingFocus, consumePendingFocus, flyToCoordinate, mapCats]);
+  }, [pendingFocus, mapFocused, consumePendingFocus, flyToCoordinate, mapCats]);
 
   useEffect(() => {
     const pendingId = pendingSelectCatIdRef.current;
@@ -687,6 +735,7 @@ export default function MapScreen() {
           scheme="light"
           focusCoordinate={mapFocusCoordinate}
           focusNonce={focusCoordinate?.nonce}
+          focusPinZoom={Boolean(focusCoordinate?.pinZoom)}
           resetViewNonce={resetViewNonce}
           overviewCoordinates={overviewCoordinates}
           overviewNonce={overviewNonce}
@@ -714,7 +763,7 @@ export default function MapScreen() {
       </View>
 
       <LocationInactiveBanner
-        hasLiveLocation={Boolean(userCoordinate)}
+        hasLiveLocation={hasGpsFix}
         onRequestEnable={openLocationAskModal}
       />
 
@@ -763,6 +812,14 @@ export default function MapScreen() {
           setSelected(null);
           void captureGate.requestCapture({ worldId: sightingId });
         }}
+      />
+
+      <MapDiscoverableSheet
+        visible={discoverableSheetVisible}
+        items={sortedDiscoverableCats}
+        showDistance={hasGpsFix}
+        onClose={() => setDiscoverableSheetVisible(false)}
+        onSelect={handleSelectDiscoverable}
       />
 
       <MapDiscoveryTip

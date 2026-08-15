@@ -33,6 +33,8 @@ type Props = {
   onSelectCat: (cat: Cat) => void;
   focusCoordinate?: { latitude: number; longitude: number } | null;
   focusNonce?: number;
+  /** When true, fly uses street-level MAP_ZOOM instead of keeping the current zoom. */
+  focusPinZoom?: boolean;
   /** Bumps to snap zoom/pitch back to the default explorer framing. */
   resetViewNonce?: number;
   /**
@@ -532,6 +534,7 @@ export function CatMap({
   onSelectCat,
   focusCoordinate,
   focusNonce,
+  focusPinZoom = false,
   resetViewNonce = 0,
   overviewCoordinates = null,
   overviewNonce = 0,
@@ -737,16 +740,17 @@ export function CatMap({
     didCenterOnUserRef.current = true;
     const maybeStop = map as MapLibreMap & { stop?: () => void };
     maybeStop.stop?.();
-    const zoom = Math.min(
-      MAP_MAX_ZOOM,
-      Math.max(MAP_MIN_ZOOM, userZoomRef.current || map.getZoom() || MAP_ZOOM),
-    );
+    const zoom = focusPinZoom
+      ? MAP_ZOOM
+      : Math.min(
+          MAP_MAX_ZOOM,
+          Math.max(MAP_MIN_ZOOM, userZoomRef.current || map.getZoom() || MAP_ZOOM),
+        );
     userZoomRef.current = zoom;
     const { latitude, longitude } = focusCoordinate;
     runProgrammaticCamera(() => {
       map.easeTo({
         center: [longitude, latitude],
-        // Soft recenter keeps the player's current zoom.
         zoom,
         pitch: MAP_PITCH,
         bearing: mapBearingFromHeading(userHeadingRef.current),
@@ -759,6 +763,7 @@ export function CatMap({
     focusCoordinate?.latitude,
     focusCoordinate?.longitude,
     focusNonce,
+    focusPinZoom,
     mapReady,
   ]);
 
