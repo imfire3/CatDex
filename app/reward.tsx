@@ -38,6 +38,7 @@ import {
   progressionFromTotalXp,
 } from '@/lib/progression';
 import { useCatsStore } from '@/store/cats';
+import { useClaimTargetStore } from '@/store/claimTarget';
 import { usePendingCaptureStore } from '@/store/pendingCapture';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -154,6 +155,7 @@ export default function RewardScreen() {
   const cats = useCatsStore((state) => state.cats);
   const pending = usePendingCaptureStore((state) => state.pending);
   const clearPending = usePendingCaptureStore((state) => state.clearPending);
+  const clearClaimTarget = useClaimTargetStore((state) => state.clearTarget);
 
   const addingRef = useRef(false);
   const [phase, setPhase] = useState<Phase>(pending ? 'verify' : 'share');
@@ -185,11 +187,21 @@ export default function RewardScreen() {
 
   const finishToMap = () => {
     clearPending();
+    clearClaimTarget();
     router.replace('/(tabs)/map');
   };
 
   const handleRetake = () => {
+    const worldId = pending?.sourceWorldId;
     clearPending();
+    if (worldId) {
+      router.replace({
+        pathname: '/scanner',
+        params: { worldId },
+      });
+      return;
+    }
+    clearClaimTarget();
     router.replace('/scanner');
   };
 

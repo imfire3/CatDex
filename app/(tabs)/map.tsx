@@ -45,6 +45,7 @@ import {
 import { PROXIMITY_ALERT_M, sortCatsByDistance } from '@/lib/mapExplore';
 import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
+import { claimTargetFromCat, useClaimTargetStore } from '@/store/claimTarget';
 import { useMapExploreStore } from '@/store/mapExplore';
 import { useMissionsStore } from '@/store/missions';
 import { useNotificationsStore } from '@/store/notifications';
@@ -67,6 +68,8 @@ export default function MapScreen() {
   const missions = useMissionsStore((state) => state.missions);
   const openMissionCount = missions.filter((m) => !m.completed).length;
   const captureGate = useCaptureGate();
+  const setClaimTarget = useClaimTargetStore((state) => state.setTarget);
+  const clearClaimTarget = useClaimTargetStore((state) => state.clearTarget);
 
   /** Real CatDex only — never count demo / community pins as captures. */
   const ownedCats = storedCats;
@@ -672,6 +675,7 @@ export default function MapScreen() {
         onRecenterReset={resetMainView}
         onCompass={handleCompassPress}
         onCapturePress={() => {
+          clearClaimTarget();
           void captureGate.requestCapture();
         }}
       />
@@ -692,7 +696,8 @@ export default function MapScreen() {
         }}
         onCapture={() => {
           if (!selected) return;
-          const sightingId = selected.id;
+          setClaimTarget(claimTargetFromCat(selected));
+          const sightingId = selected.remoteId || selected.id;
           setSheetVisible(false);
           setSelected(null);
           void captureGate.requestCapture({ worldId: sightingId });

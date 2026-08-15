@@ -27,6 +27,10 @@ import { Text } from '@/components/Text';
 import { agentDebugLog } from '@/lib/agentDebugLog';
 import { analyzeCatPhoto } from '@/lib/api';
 import {
+  analysisForClaimedCat,
+  displayNameForClaim,
+} from '@/lib/claimDiscoverableCat';
+import {
   isInParis20e,
   PARIS_20E,
 } from '@/lib/constants';
@@ -43,6 +47,7 @@ import { sendAnalysisErrorReport } from '@/lib/sendErrorReport';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { getPostAuthHref, useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
+import { useClaimTargetStore } from '@/store/claimTarget';
 import { usePendingCaptureStore } from '@/store/pendingCapture';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -61,6 +66,8 @@ type Step =
 
 /** Brief pause so the loading UI can paint — never pad a slow API. */
 const MIN_ANALYSIS_MS = 2_000;
+/** Claim path skips Vision — keep the beat short. */
+const MIN_CLAIM_MS = 900;
 
 const FLASH_CYCLE: FlashMode[] = ['auto', 'on', 'off'];
 const FLASH_LABELS: Record<FlashMode, string> = {
@@ -139,6 +146,12 @@ export default function ScannerScreen() {
   const nextNumber = useCatsStore((state) => state.nextNumber);
   const cats = useCatsStore((state) => state.cats);
   const setPendingCapture = usePendingCaptureStore((state) => state.setPending);
+  const claimTarget = useClaimTargetStore((state) => state.target);
+  const isClaimCapture = Boolean(
+    sourceWorldId &&
+      claimTarget &&
+      claimTarget.sourceWorldId === sourceWorldId,
+  );
   const cameraRef = useRef<CameraView>(null);
   const analysisGenRef = useRef(0);
   const runAnalysisRef = useRef<
@@ -311,10 +324,16 @@ export default function ScannerScreen() {
     setAnalysisErrorMessage(null);
     setStep('analyzing');
     const startedAt = Date.now();
+    const claim =
+      sourceWorldId &&
+      claimTarget &&
+      claimTarget.sourceWorldId === sourceWorldId
+        ? claimTarget
+        : null;
 
-    const waitMinDuration = async () => {
+    const waitMinDuration = async (minimumMs: number) => {
       const elapsed = Date.now() - startedAt;
-      const remaining = MIN_ANALYSIS_MS - elapsed;
+      const remaining = minimumMs - elapsed;
       if (remaining > 0) {
         await new Promise((resolve) => setTimeout(resolve, remaining));
       }
@@ -323,6 +342,27 @@ export default function ScannerScreen() {
     const isStale = () => gen !== analysisGenRef.current;
 
     try {
+      // MVP claim: pin already identified the cat — skip OpenAI Vision.
+      if (claim) {
+        const nextAnalysis = analysisForClaimedCat(claim);
+        await waitMinDuration(MIN_CLAIM_MS);
+        if (isStale()) return;
+        setPhotoUri(imageUri);
+        setPhotoBase64(base64);
+        setPhotoMimeType(mimeType);
+        setAnalysis(nextAnalysis);
+        showToast({
+          title: `${displayNameForClaim(claim)} trouvé`,
+          description: 'Ta photo complète la fiche — mêmes caractéristiques.',
+          tone: 'success',
+        });
+        await enterReveal(nextAnalysis, imageUri, {
+          photoBase64: base64,
+          photoMimeType: mimeType,
+        });
+        return;
+      }
+
       let payloadBase64 = base64;
       let payloadMime = mimeType;
       // Web: shrink before Vision (native already uses low capture quality).
@@ -352,7 +392,7 @@ export default function ScannerScreen() {
         payloadBase64,
         payloadMime,
       );
-      await waitMinDuration();
+      await waitMinDuration(MIN_ANALYSIS_MS);
       if (isStale()) return;
       agentDebugLog({
         hypothesisId: 'D',
@@ -380,7 +420,7 @@ export default function ScannerScreen() {
         },
       );
     } catch (error) {
-      await waitMinDuration();
+      await waitMinDuration(MIN_ANALYSIS_MS);
       if (isStale()) return;
       agentDebugLog({
         hypothesisId: 'C',
@@ -812,6 +852,7 @@ export default function ScannerScreen() {
     return (
       <AnalysisLoadingView
         photoUri={photoUri}
+        claimMode={isClaimCapture}
         onBack={() => {
           analysisGenRef.current += 1;
           setAnalyzing(false);

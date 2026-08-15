@@ -29,6 +29,14 @@ const ANALYSIS_STEPS = [
   'Nom CatDex',
 ] as const;
 
+const CLAIM_STEPS = [
+  'Chat repéré',
+  'Ta photo',
+  'Fiche CatDex',
+  'Mêmes caractéristiques',
+  'Prêt à confirmer',
+] as const;
+
 const TIPS = [
   'Les chats roux sont majoritairement des mâles.',
   'Les yeux des chatons changent de couleur en grandissant.',
@@ -48,6 +56,8 @@ const WAITING_MESSAGES = [
 type Props = {
   photoUri?: string;
   onBack?: () => void;
+  /** Claim a community pin — no Vision, keep traits. */
+  claimMode?: boolean;
 };
 
 function progressForElapsedMs(elapsedMs: number): number {
@@ -345,10 +355,11 @@ function ScanStatusLine() {
   );
 }
 
-function ScanProgressCard() {
+function ScanProgressCard({ claimMode = false }: { claimMode?: boolean }) {
   const { colors, spacing, radius, shadow } = useTheme();
   const [progress, setProgress] = useState(0.12);
   const prevDoneCount = useRef(0);
+  const steps = claimMode ? CLAIM_STEPS : ANALYSIS_STEPS;
 
   useEffect(() => {
     const startedAt = Date.now();
@@ -360,8 +371,8 @@ function ScanProgressCard() {
 
   const completedSteps = useMemo(() => {
     const thresholds = [0.18, 0.38, 0.58, 0.78, 0.92];
-    return ANALYSIS_STEPS.map((_, index) => progress >= (thresholds[index] ?? 1));
-  }, [progress]);
+    return steps.map((_, index) => progress >= (thresholds[index] ?? 1));
+  }, [progress, steps]);
 
   useEffect(() => {
     const doneCount = completedSteps.filter(Boolean).length;
@@ -372,10 +383,10 @@ function ScanProgressCard() {
   }, [completedSteps]);
 
   const activeIndex = Math.min(
-    ANALYSIS_STEPS.length - 1,
+    steps.length - 1,
     Math.max(0, completedSteps.lastIndexOf(true) + 1),
   );
-  const waitingOnApi = progress >= 0.85;
+  const waitingOnApi = !claimMode && progress >= 0.85;
   const percentLabel = `${Math.round(progress * 100)}%`;
 
   return (
@@ -413,7 +424,7 @@ function ScanProgressCard() {
       </View>
 
       <View style={{ gap: spacing[16] }}>
-        {ANALYSIS_STEPS.map((label, index) => {
+        {steps.map((label, index) => {
           const done = completedSteps[index]!;
           const active = !done && index === activeIndex;
           return (
@@ -544,7 +555,7 @@ function AnalysisTab({
   );
 }
 
-export function AnalysisLoadingView({ photoUri, onBack }: Props) {
+export function AnalysisLoadingView({ photoUri, onBack, claimMode = false }: Props) {
   const { colors, spacing, radius, shadow, iconStroke, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -603,7 +614,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
               color="textBrand"
               align="center"
             >
-              Découverte en cours
+              {claimMode ? 'Tu l’as trouvé' : 'Découverte en cours'}
             </Text>
             <ScanStatusLine />
           </View>
@@ -625,7 +636,7 @@ export function AnalysisLoadingView({ photoUri, onBack }: Props) {
         </View>
 
         <View style={{ flex: 1, paddingHorizontal: spacing[24], gap: spacing[16] }}>
-          <ScanProgressCard />
+          <ScanProgressCard claimMode={claimMode} />
           <ScanTipCard />
         </View>
 

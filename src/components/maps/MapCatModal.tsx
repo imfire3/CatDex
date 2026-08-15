@@ -35,7 +35,7 @@ type Props = {
 };
 
 /**
- * Explorer pin popup — owned → Voir la fiche ; discoverable → Photographier.
+ * Explorer pin popup — owned → Voir la fiche ; discoverable → claim + photo.
  */
 export function MapCatModal({
   visible,
@@ -79,7 +79,7 @@ export function MapCatModal({
       cat.photoUri.startsWith('http') ||
       cat.photoUri.startsWith('file:'));
 
-  const primaryTitle = owned ? 'Voir la fiche' : 'Photographier';
+  const primaryTitle = owned ? 'Voir la fiche' : 'Je l’ai trouvé';
   const onPrimary = owned ? onViewCard : onCapture;
 
   const photoSize = spacing[80];
@@ -188,7 +188,7 @@ export function MapCatModal({
 
               {!owned ? (
                 <Text variant="bodySmall" color="textSecondary">
-                  Tu ne l’as pas encore rencontré.
+                  Approche-toi, marque-le trouvé, puis prends ta propre photo.
                 </Text>
               ) : null}
 
