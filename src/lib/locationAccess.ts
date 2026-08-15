@@ -1,6 +1,8 @@
 import * as Location from 'expo-location';
 import { Linking, Platform } from 'react-native';
 
+import { classifyGeolocationErrorCode } from './locationAccessResult';
+
 export type LocationAccessState = {
   /** OS permission for foreground location. */
   permission: Location.PermissionStatus;
@@ -15,28 +17,84 @@ export type LocationCoordinate = {
   longitude: number;
 };
 
-function getWebPosition(timeout = 10_000): Promise<LocationCoordinate | null> {
+/** Result of asking the browser / OS for location (Safari-safe). */
+export type LocationRequestResult = {
+  /** User allowed location (or we already had access). */
+  granted: boolean;
+  /** User explicitly blocked location in the system prompt. */
+  denied: boolean;
+  coordinate: LocationCoordinate | null;
+};
+
+type WebGeoOutcome =
+  | { kind: 'ok'; coordinate: LocationCoordinate }
+  | { kind: 'denied' }
+  | { kind: 'unavailable' };
+
+function readWebPosition(
+  options: PositionOptions,
+): Promise<WebGeoOutcome> {
   if (typeof navigator === 'undefined' || !navigator.geolocation) {
-    return Promise.resolve(null);
+    return Promise.resolve({ kind: 'unavailable' });
   }
 
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          kind: 'ok',
+          coordinate: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          },
         });
       },
-      () => resolve(null),
-      {
-        // Prefer a fast fix after signup; high accuracy often times out indoors.
-        enableHighAccuracy: timeout > 4_000,
-        timeout,
-        maximumAge: 30_000,
+      (error) => {
+        // 1 = PERMISSION_DENIED — only hard deny we can trust on Safari.
+        resolve({ kind: classifyGeolocationErrorCode(error?.code) });
       },
+      options,
     );
   });
+}
+
+/**
+ * Safari often grants the OS prompt then fails the first high-accuracy fix.
+ * Retry with a cached / low-accuracy read before treating access as failed.
+ */
+async function requestWebGeolocation(): Promise<LocationRequestResult> {
+  const attempts: PositionOptions[] = [
+    { enableHighAccuracy: false, timeout: 8_000, maximumAge: 60_000 },
+    { enableHighAccuracy: true, timeout: 12_000, maximumAge: 5_000 },
+  ];
+
+  let sawUnavailable = false;
+  for (const options of attempts) {
+    const outcome = await readWebPosition(options);
+    if (outcome.kind === 'ok') {
+      return { granted: true, denied: false, coordinate: outcome.coordinate };
+    }
+    if (outcome.kind === 'denied') {
+      return { granted: false, denied: true, coordinate: null };
+    }
+    sawUnavailable = true;
+  }
+
+  // No coordinate yet, but the system prompt was accepted (or permission already on).
+  // Start watching anyway — do not keep the in-app modal stuck.
+  if (sawUnavailable) {
+    return { granted: true, denied: false, coordinate: null };
+  }
+
+  return { granted: false, denied: false, coordinate: null };
+}
+
+function getWebPosition(timeout = 10_000): Promise<LocationCoordinate | null> {
+  return readWebPosition({
+    enableHighAccuracy: timeout > 4_000,
+    timeout,
+    maximumAge: 30_000,
+  }).then((outcome) => (outcome.kind === 'ok' ? outcome.coordinate : null));
 }
 
 /**
@@ -96,18 +154,51 @@ export async function isLocationActive(): Promise<boolean> {
   return state.active;
 }
 
+/**
+ * Ask for location. Prefer `requestLocationAccessResult` when you need deny vs grant.
+ * Boolean form stays true only when access is usable (granted).
+ */
 export async function requestLocationAccess(): Promise<boolean> {
+  const result = await requestLocationAccessResult();
+  return result.granted;
+}
+
+export async function requestLocationAccessResult(): Promise<LocationRequestResult> {
   if (Platform.OS === 'web') {
-    return Boolean(await getWebPosition());
+    return requestWebGeolocation();
   }
 
   const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== Location.PermissionStatus.GRANTED) return false;
+  if (status === Location.PermissionStatus.DENIED) {
+    return { granted: false, denied: true, coordinate: null };
+  }
+  if (status !== Location.PermissionStatus.GRANTED) {
+    return { granted: false, denied: false, coordinate: null };
+  }
+
   try {
     const enabled = await Location.hasServicesEnabledAsync();
-    return enabled;
+    if (!enabled) {
+      return { granted: false, denied: false, coordinate: null };
+    }
   } catch {
-    return true;
+    // treat as enabled
+  }
+
+  try {
+    const position = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+    return {
+      granted: true,
+      denied: false,
+      coordinate: {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      },
+    };
+  } catch {
+    return { granted: true, denied: false, coordinate: null };
   }
 }
 

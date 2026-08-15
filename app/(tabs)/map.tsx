@@ -29,7 +29,7 @@ import {
   getCurrentLocationCoordinate,
   isLocationActive,
   openSystemLocationSettings,
-  requestLocationAccess,
+  requestLocationAccessResult,
   requestWebCompassPermission,
 } from '@/lib/locationAccess';
 import {
@@ -49,6 +49,7 @@ import { claimTargetFromCat, useClaimTargetStore } from '@/store/claimTarget';
 import { useMapExploreStore } from '@/store/mapExplore';
 import { useMissionsStore } from '@/store/missions';
 import { useNotificationsStore } from '@/store/notifications';
+import { useToastStore } from '@/store/toast';
 import type { Cat } from '@/types/cat';
 
 /**
@@ -101,6 +102,10 @@ export default function MapScreen() {
    */
   const [compassEpoch, setCompassEpoch] = useState(0);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+  /** ask = first prompt · denied = user blocked OS permission */
+  const [locationModalPhase, setLocationModalPhase] = useState<'ask' | 'denied'>(
+    'ask',
+  );
   const [locationBusy, setLocationBusy] = useState(false);
   /** Start GPS watch only after the user accepted (or already granted). */
   const [watchEnabled, setWatchEnabled] = useState(false);
@@ -309,9 +314,13 @@ export default function MapScreen() {
         if (next && mounted) await applyLocation(next);
         return;
       }
+      setLocationModalPhase('ask');
       setLocationModalVisible(true);
     })().catch(() => {
-      if (mounted) setLocationModalVisible(true);
+      if (mounted) {
+        setLocationModalPhase('ask');
+        setLocationModalVisible(true);
+      }
     });
     return () => {
       mounted = false;
@@ -513,25 +522,50 @@ export default function MapScreen() {
     setSheetVisible(true);
   }, [mapCats]);
 
+  const showToast = useToastStore((state) => state.show);
+
+  const openLocationAskModal = useCallback(() => {
+    setLocationModalPhase('ask');
+    setLocationModalVisible(true);
+  }, []);
+
   const handleLocationAuthorize = useCallback(async () => {
     // May also unlock motion on iOS when the user accepts GPS from the modal.
     unlockWebCompassFromGesture();
     setLocationBusy(true);
     try {
-      const ok = await requestLocationAccess();
-      if (ok) {
-        const next = await getCurrentLocationCoordinate();
+      const result = await requestLocationAccessResult();
+
+      if (result.denied) {
+        setLocationModalPhase('denied');
+        setLocationModalVisible(true);
+        return;
+      }
+
+      if (result.granted) {
         setLocationModalVisible(false);
+        setLocationModalPhase('ask');
+        setWatchEnabled(true);
+        showToast({
+          title: 'Position enregistrée',
+          description: 'Le GPS est activé — tu peux explorer ton quartier.',
+          tone: 'success',
+          durationMs: 2800,
+        });
+        const next =
+          result.coordinate ?? (await getCurrentLocationCoordinate());
         if (next) await applyLocation(next);
         return;
       }
+
+      // Undetermined / no response — keep modal, invite retry.
       if (Platform.OS !== 'web') {
         await openSystemLocationSettings();
       }
     } finally {
       setLocationBusy(false);
     }
-  }, [applyLocation, unlockWebCompassFromGesture]);
+  }, [applyLocation, showToast, unlockWebCompassFromGesture]);
 
   const recenterOnPlayer = async () => {
     setFollowUser(true);
@@ -544,7 +578,7 @@ export default function MapScreen() {
 
     const active = await isLocationActive();
     if (!active) {
-      if (!userCoordinate) setLocationModalVisible(true);
+      if (!userCoordinate) openLocationAskModal();
       return;
     }
 
@@ -593,7 +627,7 @@ export default function MapScreen() {
       return;
     }
     void isLocationActive().then((active) => {
-      if (!active) setLocationModalVisible(true);
+      if (!active) openLocationAskModal();
     });
   };
 
@@ -654,7 +688,7 @@ export default function MapScreen() {
 
       <LocationInactiveBanner
         hasLiveLocation={Boolean(userCoordinate)}
-        onRequestEnable={() => setLocationModalVisible(true)}
+        onRequestEnable={openLocationAskModal}
       />
 
       {hasDiscoverableOnMap || storedCats.length > 0 ? (
@@ -712,10 +746,27 @@ export default function MapScreen() {
       <EnablePermissionModal
         visible={locationModalVisible}
         kind="location"
-        title="Autorise le suivi GPS"
-        description="CatDex utilise ta position pour placer les chats près de toi et l’orientation du téléphone pour tourner la carte. Tu peux refuser et l’activer plus tard."
-        primaryLabel={locationBusy ? 'Ouverture…' : 'Autoriser le GPS'}
-        onClose={() => setLocationModalVisible(false)}
+        title={
+          locationModalPhase === 'denied'
+            ? 'GPS refusé — CatDex est bloqué'
+            : 'Autorise le suivi GPS'
+        }
+        description={
+          locationModalPhase === 'denied'
+            ? 'Sans localisation, CatDex ne peut pas placer les chats près de toi ni faire fonctionner la carte. Active la position pour ce site dans Réglages → Safari → Localisation, puis réessaie.'
+            : 'CatDex utilise ta position pour placer les chats près de toi et l’orientation du téléphone pour tourner la carte. Sans GPS, l’app ne peut pas fonctionner.'
+        }
+        primaryLabel={
+          locationBusy
+            ? 'Ouverture…'
+            : locationModalPhase === 'denied'
+              ? 'Réessayer'
+              : 'Autoriser le GPS'
+        }
+        onClose={() => {
+          // Keep the gate up until GPS is granted (or user retries after a deny).
+          if (locationModalPhase === 'denied') return;
+        }}
         onRetry={() => {
           void handleLocationAuthorize();
         }}
@@ -726,8 +777,6 @@ export default function MapScreen() {
                 void openSystemLocationSettings();
               }
         }
-        onDismissLabel="Plus tard"
-        onDismiss={() => setLocationModalVisible(false)}
       />
 
       <EnablePermissionModal
