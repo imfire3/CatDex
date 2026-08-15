@@ -25,6 +25,7 @@ import { ProgressBar } from '@/components/Progress';
 import { ScanFrame } from '@/components/ScanFrame';
 import { Text } from '@/components/Text';
 import { agentDebugLog } from '@/lib/agentDebugLog';
+import { isAdminEmail } from '@/lib/adminAccess';
 import { analyzeCatPhoto } from '@/lib/api';
 import {
   analysisForClaimedCat,
@@ -137,6 +138,7 @@ export default function ScannerScreen() {
   const session = useAuthStore((state) => state.session);
   const hydrated = useAuthStore((state) => state.hydrated);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
+  const canImportFromGallery = isAdminEmail(user?.email);
   // Any sighting id (world spawn or community UUID) so the pin can clear after capture.
   const sourceWorldId =
     typeof params.worldId === 'string' && params.worldId.trim().length > 0
@@ -515,6 +517,7 @@ export default function ScannerScreen() {
   };
 
   const handlePickFromLibrary = async () => {
+    if (!isAdminEmail(user?.email)) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.28,
@@ -1127,29 +1130,33 @@ export default function ScannerScreen() {
               alignItems: 'center',
               justifyContent: 'space-between' }}
           >
-            <CameraCircleButton
-              accessibilityLabel="Galerie"
-              onPress={handlePickFromLibrary}
-              size={cameraControlSize}
-              colors={colors}
-              radius={radius}
-            >
-              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z"
-                  stroke={colors.onAccent}
-                  strokeWidth={1.6}
-                />
-                <Path
-                  d="M8 14l2.5-2.5L13 14l2-2 3 3"
-                  stroke={colors.onAccent}
-                  strokeWidth={1.6}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <Circle cx="9" cy="9" r="1.2" fill={colors.onAccent} />
-              </Svg>
-            </CameraCircleButton>
+            {canImportFromGallery ? (
+              <CameraCircleButton
+                accessibilityLabel="Galerie"
+                onPress={handlePickFromLibrary}
+                size={cameraControlSize}
+                colors={colors}
+                radius={radius}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z"
+                    stroke={colors.onAccent}
+                    strokeWidth={1.6}
+                  />
+                  <Path
+                    d="M8 14l2.5-2.5L13 14l2-2 3 3"
+                    stroke={colors.onAccent}
+                    strokeWidth={1.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Circle cx="9" cy="9" r="1.2" fill={colors.onAccent} />
+                </Svg>
+              </CameraCircleButton>
+            ) : (
+              <View style={{ width: cameraControlSize, height: cameraControlSize }} />
+            )}
 
             <Pressable
               accessibilityRole="button"
