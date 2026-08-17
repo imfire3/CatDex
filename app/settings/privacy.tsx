@@ -1,9 +1,7 @@
 import { Camera } from 'expo-camera';
-import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
 
-import { Button } from '@/components/Button';
 import {
   IconCamera,
   IconPin,
@@ -12,10 +10,7 @@ import {
   SettingsSection,
 } from '@/components/Settings';
 import { Text } from '@/components/Text';
-import {
-  getLocationAccessState,
-  openSystemLocationSettings,
-} from '@/lib/locationAccess';
+import { getLocationAccessState } from '@/lib/locationAccess';
 import { useTheme } from '@/theme/ThemeProvider';
 import * as Location from 'expo-location';
 
@@ -75,22 +70,10 @@ export default function PrivacySettingsScreen() {
     return () => sub.remove();
   }, [refresh]);
 
-  const openSettings = () => {
-    void (async () => {
-      if (Platform.OS === 'web') {
-        await Linking.openSettings().catch(() => undefined);
-        return;
-      }
-      await openSystemLocationSettings();
-      await Linking.openSettings().catch(() => undefined);
-    })();
-  };
-
   return (
     <SettingsScreen
       title="Confidentialité"
       subtitle="CatDex utilise la caméra pour scanner et la localisation pour la carte."
-      footer={<Button title="Ouvrir les réglages" variant="secondary" onPress={openSettings} />}
     >
       <SettingsSection title="Autorisations">
         <SettingsRow
@@ -113,8 +96,8 @@ export default function PrivacySettingsScreen() {
           Astuce
         </Text>
         <Text variant="caption" color="textSecondary">
-          Pour changer une autorisation, utilise le bouton ci-dessous. CatDex n’essaie pas de
-          recopier les réglages de ton téléphone.
+          Pour changer une autorisation, ouvre les réglages de ton téléphone ou de ton
+          navigateur. CatDex n’essaie pas de recopier ces réglages.
         </Text>
       </View>
     </SettingsScreen>

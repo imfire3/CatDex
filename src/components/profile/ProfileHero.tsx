@@ -14,7 +14,7 @@ type Props = {
   onEdit: () => void
 }
 
-/** Centered identity — avatar with edit badge, name, level chip. */
+/** Centered identity — avatar, name + level chip on one row, email below. */
 export function ProfileHero({
   displayName,
   subtitle,
@@ -52,39 +52,59 @@ export function ProfileHero({
         </View>
       </Pressable>
 
-      <View style={{ alignItems: 'center', gap: spacing[8] }}>
-        <Text variant="title" weight="bold" color="text" align="center">
-          {displayName}
-        </Text>
+      <View style={{ alignItems: 'center', gap: spacing[8], width: '100%' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            gap: spacing[8],
+            maxWidth: '100%',
+            paddingHorizontal: spacing[8],
+          }}
+        >
+          <Text
+            variant="title"
+            weight="bold"
+            color="text"
+            align="center"
+            numberOfLines={1}
+            style={{ flexShrink: 1 }}
+          >
+            {displayName}
+          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing[8],
+              paddingHorizontal: spacing[16],
+              paddingVertical: spacing[8],
+              borderRadius: radius.full,
+              backgroundColor: colors.brandSoft,
+              flexShrink: 0,
+            }}
+          >
+            <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M20 7 10 17l-5-5"
+                stroke={colors.brand}
+                strokeWidth={iconStroke.bold}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <Text variant="caption" weight="semibold" color="textBrand">
+              Niveau {level}
+            </Text>
+          </View>
+        </View>
         {subtitle ? (
           <Text variant="bodySmall" color="textSecondary" align="center">
             {subtitle}
           </Text>
         ) : null}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing[8],
-            paddingHorizontal: spacing[16],
-            paddingVertical: spacing[8],
-            borderRadius: radius.full,
-            backgroundColor: colors.brandSoft,
-          }}
-        >
-          <Svg width={iconSize.sm} height={iconSize.sm} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M20 7 10 17l-5-5"
-              stroke={colors.brand}
-              strokeWidth={iconStroke.bold}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-          <Text variant="caption" weight="semibold" color="textBrand">
-            Niveau {level}
-          </Text>
-        </View>
       </View>
     </View>
   )

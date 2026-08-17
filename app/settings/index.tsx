@@ -13,7 +13,6 @@ import {
   IconInfo,
   IconMail,
   IconMap,
-  IconPalette,
   IconShield,
   IconSpark,
   IconSpeaker,
@@ -124,12 +123,6 @@ export default function SettingsHubScreen() {
         </SettingsSection>
 
         <SettingsSection title="Préférences">
-          <SettingsRow
-            icon={<IconPalette />}
-            title="Apparence"
-            subtitle="Couleur, forme des coins et thème de l’app."
-            onPress={() => router.push('/settings/appearance')}
-          />
           <SettingsRow
             icon={<IconSpark />}
             title="Expérience"

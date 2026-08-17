@@ -1,22 +1,18 @@
-import { useEffect } from 'react'
 import { View } from 'react-native'
 
 import {
   IconBell,
-  IconPalette,
   IconSettings,
   IconShield,
   IconUser,
   SettingsRow,
 } from '@/components/Settings'
-import { formatTheme, useSettingsPrefsStore } from '@/store/settingsPrefs'
 import { useTheme } from '@/theme/ThemeProvider'
 
 type Props = {
   onEditProfile: () => void
   onNotifications: () => void
   onPrivacy: () => void
-  onAppearance: () => void
   onSettings: () => void
 }
 
@@ -25,16 +21,9 @@ export function ProfileMenuCard({
   onEditProfile,
   onNotifications,
   onPrivacy,
-  onAppearance,
   onSettings,
 }: Props) {
   const { colors, radius, shadow } = useTheme()
-  const themePref = useSettingsPrefsStore((state) => state.prefs.theme)
-  const hydrate = useSettingsPrefsStore((state) => state.hydrate)
-
-  useEffect(() => {
-    void hydrate()
-  }, [hydrate])
 
   return (
     <View
@@ -63,13 +52,6 @@ export function ProfileMenuCard({
         icon={<IconShield />}
         title="Confidentialité"
         onPress={onPrivacy}
-      />
-      <SettingsRow
-        icon={<IconPalette />}
-        title="Apparence"
-        kind="value"
-        value={formatTheme(themePref)}
-        onPress={onAppearance}
       />
       <SettingsRow
         icon={<IconSettings />}

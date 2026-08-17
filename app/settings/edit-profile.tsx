@@ -37,6 +37,10 @@ export default function EditProfileScreen() {
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [bio, setBio] = useState('');
   const [city, setCity] = useState('');
+  const [initialDisplayName, setInitialDisplayName] = useState(user?.displayName ?? '');
+  const [initialBio, setInitialBio] = useState('');
+  const [initialCity, setInitialCity] = useState('');
+  const [editing, setEditing] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | undefined>(user?.avatarUrl);
   const [error, setError] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -52,28 +56,43 @@ export default function EditProfileScreen() {
     void (async () => {
       try {
         const raw = await AsyncStorage.getItem(extrasKey(user.id));
-        if (!raw || cancelled) return;
+        if (cancelled) return;
+        if (!raw) {
+          setInitialDisplayName(user.displayName ?? '');
+          return;
+        }
         const parsed = JSON.parse(raw) as Partial<LocalProfileExtras>;
-        if (typeof parsed.bio === 'string') setBio(parsed.bio);
-        if (typeof parsed.city === 'string') setCity(parsed.city);
+        const nextBio = typeof parsed.bio === 'string' ? parsed.bio : '';
+        const nextCity = typeof parsed.city === 'string' ? parsed.city : '';
+        setBio(nextBio);
+        setCity(nextCity);
+        setInitialBio(nextBio);
+        setInitialCity(nextCity);
+        setInitialDisplayName(user.displayName ?? '');
       } catch {
-        // keep empty
+        setInitialDisplayName(user.displayName ?? '');
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, user?.displayName]);
 
   useEffect(() => {
     setAvatarUri(user?.avatarUrl);
   }, [user?.avatarUrl]);
+
+  const dirty =
+    displayName.trim() !== initialDisplayName.trim() ||
+    bio.trim() !== initialBio.trim() ||
+    city.trim() !== initialCity.trim();
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
   }
 
   const initials = (displayName || user.displayName || 'EX').slice(0, 2).toUpperCase();
+  const fieldsReadOnly = !editing;
 
   const handlePickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -120,19 +139,34 @@ export default function EditProfileScreen() {
   };
 
   const handleSave = async () => {
+    if (!dirty) return;
     setError(null);
     try {
       await updateProfile({ displayName });
+      const nextBio = bio.trim();
+      const nextCity = city.trim();
       await AsyncStorage.setItem(
         extrasKey(user.id),
-        JSON.stringify({ bio: bio.trim(), city: city.trim() } satisfies LocalProfileExtras),
+        JSON.stringify({ bio: nextBio, city: nextCity } satisfies LocalProfileExtras),
       );
+      setInitialDisplayName(displayName.trim());
+      setInitialBio(nextBio);
+      setInitialCity(nextCity);
+      setEditing(false);
       setSaved(true);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Impossible d’enregistrer le profil.';
       setError(message);
     }
+  };
+
+  const handleFooterPress = () => {
+    if (!editing) {
+      setEditing(true);
+      return;
+    }
+    void handleSave();
   };
 
   const handleChangePassword = async () => {
@@ -206,9 +240,10 @@ export default function EditProfileScreen() {
         title="Modifier le profil"
         footer={
           <Button
-            title="Enregistrer les modifications"
+            title={editing ? 'Enregistrer' : 'Modifier'}
             loading={loading}
-            onPress={() => void handleSave()}
+            disabled={editing && !dirty}
+            onPress={handleFooterPress}
           />
         }
       >
@@ -216,12 +251,16 @@ export default function EditProfileScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Changer la photo de profil"
+            disabled={fieldsReadOnly}
             onPress={() => {
+              if (fieldsReadOnly) return;
               void handlePickAvatar();
             }}
             style={({ pressed }) => ({
-              opacity: pressed ? 0.9 : 1,
-              transform: [{ scale: pressed ? motion.pressScale : 1 }],
+              opacity: pressed && !fieldsReadOnly ? 0.9 : fieldsReadOnly ? 0.92 : 1,
+              transform: [
+                { scale: pressed && !fieldsReadOnly ? motion.pressScale : 1 },
+              ],
             })}
           >
             <View>
@@ -235,24 +274,26 @@ export default function EditProfileScreen() {
               <AvatarEditBadge />
             </View>
           </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Modifier la photo"
-            onPress={() => {
-              void handlePickAvatar();
-            }}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing[8],
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <IconPencil color={colors.brand} size={iconSize.sm} />
-            <Text variant="bodySmall" weight="semibold" color="textBrand">
-              {uploadingAvatar ? 'Envoi…' : 'Modifier la photo'}
-            </Text>
-          </Pressable>
+          {!fieldsReadOnly ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Modifier la photo"
+              onPress={() => {
+                void handlePickAvatar();
+              }}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing[8],
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <IconPencil color={colors.brand} size={iconSize.sm} />
+              <Text variant="bodySmall" weight="semibold" color="textBrand">
+                {uploadingAvatar ? 'Envoi…' : 'Modifier la photo'}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={{ gap: spacing[16] }}>
@@ -264,6 +305,7 @@ export default function EditProfileScreen() {
             autoCorrect={false}
             maxLength={32}
             placeholder="Ton pseudo"
+            disabled={fieldsReadOnly}
             error={error ?? undefined}
           />
           <TextInput
@@ -273,6 +315,7 @@ export default function EditProfileScreen() {
             placeholder="Une ligne sur toi…"
             maxLength={120}
             multiline
+            disabled={fieldsReadOnly}
           />
           <TextInput
             label="Ville (optionnelle)"
@@ -281,10 +324,14 @@ export default function EditProfileScreen() {
             placeholder="Ex. Lyon"
             autoCapitalize="words"
             maxLength={48}
+            disabled={fieldsReadOnly}
           />
-          <Text variant="caption" color="textMuted">
-            E-mail : {user.email || '—'}
-          </Text>
+          <TextInput
+            label="E-mail"
+            value={user.email || '—'}
+            disabled
+            helperText="L’e-mail ne peut pas être modifié ici."
+          />
         </View>
 
         <View style={{ gap: spacing[16] }}>

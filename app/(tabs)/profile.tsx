@@ -213,7 +213,6 @@ export default function ProfileScreen() {
             onEditProfile={goEdit}
             onNotifications={() => router.push('/settings/notifications')}
             onPrivacy={() => router.push('/settings/privacy')}
-            onAppearance={() => router.push('/settings/appearance')}
             onSettings={() => router.push('/settings')}
           />
         </Animated.View>

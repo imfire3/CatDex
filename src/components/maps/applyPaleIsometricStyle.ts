@@ -199,6 +199,9 @@ export function buildPaleIsometricStyle(base: MapStyle): MapStyle {
 /** Liberty style URL used as the pale-isometric base. */
 export const LIBERTY_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
+/** OpenFreeMap planet TileJSON — required to resolve the dated PBF path + maxzoom. */
+export const OPENFREEMAP_PLANET_TILEJSON = 'https://tiles.openfreemap.org/planet';
+
 type VectorTileJson = {
   tiles?: string[];
   minzoom?: number;
@@ -218,6 +221,9 @@ type StyleSource = {
  * OpenFreeMap planet tops out at z14 and returns HTTP 200 + empty PBF above that.
  * MapLibre will not overzoom empty 200s — so we must pin maxzoom from TileJSON
  * (or MapLibre keeps requesting blank z15–19 tiles at MAP_ZOOM 16.6).
+ *
+ * Also: `/planet/{z}/{x}/{y}.pbf` (without the dated folder) returns empty tiles.
+ * Always inline the TileJSON `tiles` URLs before `new Map()`.
  */
 async function resolveVectorSources(style: MapStyle): Promise<MapStyle> {
   const sources = (style.sources ?? {}) as Record<string, StyleSource>;
@@ -225,9 +231,18 @@ async function resolveVectorSources(style: MapStyle): Promise<MapStyle> {
 
   await Promise.all(
     Object.entries(sources).map(async ([id, source]) => {
-      if (source.type !== 'vector' || !source.url || source.tiles?.length) return;
+      if (source.type !== 'vector') return;
+      if (source.tiles?.length && typeof source.maxzoom === 'number') return;
+
+      const tileJsonUrl = source.url ?? (id === 'openmaptiles' ? OPENFREEMAP_PLANET_TILEJSON : null);
+      if (!tileJsonUrl && source.tiles?.length) {
+        next[id] = { ...source, maxzoom: source.maxzoom ?? 14, minzoom: source.minzoom ?? 0 };
+        return;
+      }
+      if (!tileJsonUrl) return;
+
       try {
-        const res = await fetch(source.url);
+        const res = await fetch(tileJsonUrl);
         if (!res.ok) return;
         const tileJson = (await res.json()) as VectorTileJson;
         if (!tileJson.tiles?.length) return;
@@ -239,7 +254,7 @@ async function resolveVectorSources(style: MapStyle): Promise<MapStyle> {
           maxzoom: tileJson.maxzoom ?? 14,
         };
       } catch {
-        // Keep original url source — Map init may still recover.
+        // Keep original — caller may fall back to raster for local testing.
       }
     }),
   );
@@ -247,12 +262,55 @@ async function resolveVectorSources(style: MapStyle): Promise<MapStyle> {
   return { ...style, sources: next };
 }
 
+/** Light raster basemap — local/Cursor fallback when vector tiles cannot be resolved. */
+export function buildLocalTestRasterStyle(): MapStyle {
+  return {
+    version: 8,
+    name: 'catdex-local-raster',
+    sources: {
+      carto: {
+        type: 'raster',
+        tiles: ['https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'],
+        tileSize: 256,
+        attribution: '© OpenStreetMap © CARTO',
+        maxzoom: 20,
+      },
+    },
+    layers: [
+      {
+        id: 'background',
+        type: 'background',
+        paint: { 'background-color': '#F9F9FB' },
+      },
+      { id: 'carto', type: 'raster', source: 'carto' },
+    ],
+  };
+}
+
+function hasInlineVectorTiles(style: MapStyle): boolean {
+  const sources = (style.sources ?? {}) as Record<string, StyleSource>;
+  return Object.values(sources).some(
+    (source) => source.type === 'vector' && Array.isArray(source.tiles) && source.tiles.length > 0,
+  );
+}
+
 export async function loadPaleIsometricStyle(): Promise<MapStyle> {
-  const res = await fetch(LIBERTY_STYLE_URL);
-  if (!res.ok) {
-    throw new Error(`Failed to load map style (${res.status})`);
+  try {
+    const res = await fetch(LIBERTY_STYLE_URL);
+    if (!res.ok) {
+      throw new Error(`Failed to load map style (${res.status})`);
+    }
+    const base = (await res.json()) as MapStyle;
+    const withTiles = await resolveVectorSources(base);
+    if (!hasInlineVectorTiles(withTiles)) {
+      console.warn(
+        '[map] OpenFreeMap vector tiles unresolved — using raster basemap for local testing',
+      );
+      return buildLocalTestRasterStyle();
+    }
+    return buildPaleIsometricStyle(withTiles);
+  } catch (error) {
+    console.warn('[map] Liberty style failed — using raster basemap for local testing', error);
+    return buildLocalTestRasterStyle();
   }
-  const base = (await res.json()) as MapStyle;
-  const withTiles = await resolveVectorSources(base);
-  return buildPaleIsometricStyle(withTiles);
 }

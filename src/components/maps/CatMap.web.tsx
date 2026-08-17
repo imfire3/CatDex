@@ -620,6 +620,8 @@ export function CatMap({
           dragRotate: false,
           touchPitch: false,
           attributionControl: { compact: true },
+          // Cursor / embedded previews often report a weak GPU — still draw tiles.
+          failIfMajorPerformanceCaveat: false,
         });
 
         map.on('load', () => {
