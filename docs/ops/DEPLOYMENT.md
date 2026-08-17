@@ -78,6 +78,10 @@ eas submit --platform all
    # Supabase (pour vérifier les JWT)
    SUPABASE_URL=https://your-project.supabase.co
    SUPABASE_JWT_SECRET=your-jwt-secret-from-supabase-dashboard
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   
+   # Dashboard usage (users + photos) — GET /admin?key=…
+   ADMIN_STATS_SECRET=change-me-to-a-long-random-secret
    
    # API_SECRET est auto-généré par Render
    ```
@@ -85,6 +89,7 @@ eas submit --platform all
    **⚠️ Important** :
    - `OPENAI_API_KEY` : Obligatoire ! Va sur https://platform.openai.com/api-keys
    - `SUPABASE_JWT_SECRET` : Dashboard Supabase → Settings → API → JWT Secret
+   - `ADMIN_STATS_SECRET` : secret pour ouvrir `https://ton-api.onrender.com/admin?key=…` (voir [ADMIN_STATS.md](./ADMIN_STATS.md))
    - Ne jamais commit ces secrets dans Git !
 
 4. **Déployer**

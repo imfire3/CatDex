@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "test": "tsx --test src/breedPolicy.test.ts src/normalizeVisionAnalysis.test.ts src/normalizeFormAnalysis.test.ts src/statsStore.test.ts src/catdexVisionConfig.shared.test.ts"
+    "test": "tsx --test src/breedPolicy.test.ts src/normalizeVisionAnalysis.test.ts src/normalizeFormAnalysis.test.ts src/statsStore.test.ts src/catdexVisionConfig.shared.test.ts src/adminDashboard.test.ts src/supabaseProductStats.test.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.12",
