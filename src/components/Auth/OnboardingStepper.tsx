@@ -1,10 +1,9 @@
-/** Post-auth onboarding: 3 game intro screens — permissions asked in-game. */
-export const ONBOARDING_STEP_COUNT = 3;
+/** Post-auth onboarding: two value screens, then the contextual GPS gate. */
+export const ONBOARDING_STEP_COUNT = 2;
 
 export const ONBOARDING_STEP_LABELS = [
   'Découverte',
   'Analyse',
-  'Récompense',
 ] as const;
 
 /** @deprecated Prefer `ProgressDots` from `@/components/Auth/Onboarding`. */

@@ -38,9 +38,9 @@ export default function PermissionsScreen() {
             labels={[...ONBOARDING_STEP_LABELS]}
           />
           <PrimaryCTA
-            title="Trouver mon premier chat"
-            subtitle="L’IA s’occupe du reste"
-            onPress={() => router.push('/(auth)/onboarding-reward')}
+            title="Ouvrir la carte"
+            subtitle="Active ta position pour voir les chats près de toi"
+            onPress={() => router.push('/(auth)/permission-location')}
           />
         </View>
       }

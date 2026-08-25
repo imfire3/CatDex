@@ -1,7 +1,6 @@
 import { router } from 'expo-router'
 import { Linking, Pressable, ScrollView, View } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 
 import { Button } from '@/components/Button'
@@ -106,7 +105,6 @@ function FavoriteCompact({ cat, onPress }: { cat: Cat; onPress: () => void }) {
 
 export default function ProfileScreen() {
   const { colors, spacing, motion } = useTheme()
-  const insets = useSafeAreaInsets()
   const reduceMotion = useReducedMotion()
   const user = useAuthStore((state) => state.user)
   const signOut = useAuthStore((state) => state.signOut)
@@ -153,7 +151,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <TabStackHeader title="Profil" />
+      <TabStackHeader title="Profil" showBack={false} />
 
       <ScrollView
         bounces={false}
@@ -178,36 +176,42 @@ export default function ProfileScreen() {
             gap: spacing[32],
           }}
         >
-          <ProfileStatGrid
-            stats={[
-              { label: 'Chats', value: String(cats.length) },
-              { label: 'Badges', value: String(badgesCount) },
-              { label: 'Lieux', value: String(places) },
-              { label: 'Jour', value: String(streak) },
-            ]}
-          />
+          {cats.length === 0 ? (
+            <ProfileFavoriteEmpty onExplore={goExplore} />
+          ) : (
+            <>
+              <ProfileStatGrid
+                stats={[
+                  { label: 'Chats', value: String(cats.length) },
+                  { label: 'Badges', value: String(badgesCount) },
+                  { label: 'Lieux', value: String(places) },
+                  { label: 'Jour', value: String(streak) },
+                ]}
+              />
 
-          <ProfileBadgeRow
-            badges={badges}
-            onSeeAll={() =>
-              showToast({
-                title: 'Tes badges',
-                description: 'Chaque badge marque une étape de ton aventure.',
-                tone: 'default',
-              })
-            }
-          />
+              <ProfileBadgeRow
+                badges={badges}
+                onSeeAll={() =>
+                  showToast({
+                    title: 'Tes badges',
+                    description: 'Chaque badge marque une étape de ton aventure.',
+                    tone: 'default',
+                  })
+                }
+              />
 
-          <ProfileActivityTimeline items={activity} />
+              <ProfileActivityTimeline items={activity} />
+            </>
+          )}
 
           {fav ? (
             <FavoriteCompact
               cat={fav}
               onPress={() => router.push({ pathname: '/cat/[id]', params: { id: fav.id } })}
             />
-          ) : (
+          ) : cats.length > 0 ? (
             <ProfileFavoriteEmpty onExplore={goExplore} />
-          )}
+          ) : null}
 
           <ProfileMenuCard
             onEditProfile={goEdit}
@@ -215,43 +219,33 @@ export default function ProfileScreen() {
             onPrivacy={() => router.push('/settings/privacy')}
             onSettings={() => router.push('/settings')}
           />
+
+          <View style={{ gap: spacing[8] }}>
+            <Button
+              title={SUPPORT_CTA_LABEL}
+              variant="secondary"
+              icon={
+                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M12 20.4S3.6 14.7 3.6 9.2A4.5 4.5 0 0 1 12 6.6a4.5 4.5 0 0 1 8.4 2.6c0 5.5-8.4 11.2-8.4 11.2Z"
+                    fill={colors.brand}
+                  />
+                </Svg>
+              }
+              onPress={() => {
+                void Linking.openURL(SUPPORT_REVOLUT_URL)
+              }}
+              accessibilityLabel="Soutenir CatDex via Revolut"
+            />
+            <Button
+              title="Déconnexion"
+              variant="secondary"
+              onPress={handleSignOut}
+              accessibilityLabel="Se déconnecter"
+            />
+          </View>
         </Animated.View>
       </ScrollView>
-
-      <View
-        style={{
-          paddingHorizontal: spacing[24],
-          paddingTop: spacing[16],
-          paddingBottom: Math.max(insets.bottom, spacing[16]),
-          backgroundColor: colors.background,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          gap: spacing[8],
-        }}
-      >
-        <Button
-          title={SUPPORT_CTA_LABEL}
-          variant="secondary"
-          icon={
-            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 20.4S3.6 14.7 3.6 9.2A4.5 4.5 0 0 1 12 6.6a4.5 4.5 0 0 1 8.4 2.6c0 5.5-8.4 11.2-8.4 11.2Z"
-                fill={colors.brand}
-              />
-            </Svg>
-          }
-          onPress={() => {
-            void Linking.openURL(SUPPORT_REVOLUT_URL)
-          }}
-          accessibilityLabel="Soutenir CatDex via Revolut"
-        />
-        <Button
-          title="Déconnexion"
-          variant="destructive"
-          onPress={handleSignOut}
-          accessibilityLabel="Se déconnecter"
-        />
-      </View>
     </View>
   )
 }

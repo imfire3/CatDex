@@ -15,6 +15,8 @@ type Props = {
   onBack?: () => void;
   /** Extra content under the title row (e.g. filters) that stays sticky. */
   below?: ReactNode;
+  /** Top-level tabs do not need a back affordance. */
+  showBack?: boolean;
 };
 
 function goBackToMap() {
@@ -26,7 +28,13 @@ function goBackToMap() {
  * Sticky top chrome for CatDex / Missions / Profil — back + centered title.
  * Matches Figma header: px 24, py 16, equal side balance, title scales on narrow screens.
  */
-export function TabStackHeader({ title, right, onBack = goBackToMap, below }: Props) {
+export function TabStackHeader({
+  title,
+  right,
+  onBack = goBackToMap,
+  below,
+  showBack = true,
+}: Props) {
   const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const side = spacing[40];
@@ -52,7 +60,7 @@ export function TabStackHeader({ title, right, onBack = goBackToMap, below }: Pr
         }}
       >
         <View style={{ flex: 1, alignItems: 'flex-start', zIndex: 1, minWidth: side }}>
-          <AuthBackButton onPress={onBack} />
+          {showBack ? <AuthBackButton onPress={onBack} /> : <View style={{ width: side, height: side }} />}
         </View>
 
         <View

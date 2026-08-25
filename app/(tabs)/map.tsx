@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { EnablePermissionModal } from '@/components/EnablePermissionModal';
-import { SupportProjectModal } from '@/components/SupportProjectModal';
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
@@ -38,10 +37,6 @@ import {
   dismissMapDiscoveryTip,
   hasDismissedMapDiscoveryTip,
 } from '@/lib/mapDiscoveryTip';
-import {
-  dismissSupportModal,
-  hasDismissedSupportModal,
-} from '@/lib/supportModal';
 import {
   headingFromDeviceOrientation,
   resolveDeviceHeading,
@@ -121,9 +116,6 @@ export default function MapScreen() {
     'ask',
   );
   const [locationBusy, setLocationBusy] = useState(false);
-  /** GPS gate finished (granted or already active) — then we may show support. */
-  const [locationGateDone, setLocationGateDone] = useState(false);
-  const [supportModalVisible, setSupportModalVisible] = useState(false);
   /** Start GPS watch only after the user accepted (or already granted). */
   const [watchEnabled, setWatchEnabled] = useState(false);
   /** GPS follow — paused while looking at a cat in another region. */
@@ -268,23 +260,6 @@ export default function MapScreen() {
     };
   }, [mapDemo, storedCats.length, hasDiscoverableOnMap, userId]);
 
-  /** After GPS is ready on the map: optional free/Revolut note (once per user). */
-  useEffect(() => {
-    if (!locationGateDone || locationModalVisible || !userId) return;
-    let mounted = true;
-    void (async () => {
-      const dismissed = await hasDismissedSupportModal(userId);
-      if (mounted && !dismissed) {
-        // Let the GPS success toast settle briefly before stacking another surface.
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        if (mounted) setSupportModalVisible(true);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [locationGateDone, locationModalVisible, userId]);
-
   const sortedCats = useMemo(
     () => sortCatsByDistance(mapCats, userCoordinate),
     [mapCats, userCoordinate],
@@ -388,7 +363,6 @@ export default function MapScreen() {
       if (!mounted) return;
 
       if (result.denied) {
-        setLocationGateDone(true);
         return;
       }
 
@@ -397,11 +371,9 @@ export default function MapScreen() {
       if (next && mounted) {
         await applyLocation(next);
       }
-      if (mounted) setLocationGateDone(true);
     })().catch(() => {
       if (mounted) {
         setWatchEnabled(true);
-        setLocationGateDone(true);
       }
     });
     return () => {
@@ -633,7 +605,6 @@ export default function MapScreen() {
         setLocationModalVisible(false);
         setLocationModalPhase('ask');
         setWatchEnabled(true);
-        setLocationGateDone(true);
         showToast({
           title: 'Position enregistrée',
           description: 'Le GPS est activé — tu peux explorer ton quartier.',
@@ -849,16 +820,8 @@ export default function MapScreen() {
       />
 
       <MapDiscoveryTip
-        visible={discoveryTipVisible && !supportModalVisible}
+        visible={discoveryTipVisible}
         onDismiss={handleDismissDiscoveryTip}
-      />
-
-      <SupportProjectModal
-        visible={supportModalVisible}
-        onContinue={() => {
-          setSupportModalVisible(false);
-          void dismissSupportModal(userId);
-        }}
       />
 
       <EnablePermissionModal
@@ -866,20 +829,20 @@ export default function MapScreen() {
         kind="location"
         title={
           locationModalPhase === 'denied'
-            ? 'GPS refusé — CatDex est bloqué'
-            : 'Autorise le suivi GPS'
+            ? 'Position désactivée'
+            : 'Trouve les chats près de toi'
         }
         description={
           locationModalPhase === 'denied'
-            ? 'Sans localisation, CatDex ne peut pas placer les chats près de toi ni faire fonctionner la carte. Active la position pour ce site dans Réglages → Safari → Localisation, puis réessaie.'
-            : 'CatDex utilise ta position pour placer les chats près de toi et l’orientation du téléphone pour tourner la carte. Sans GPS, l’app ne peut pas fonctionner.'
+            ? 'Tu peux continuer à consulter la carte. Réactive la position dans les réglages pour voir les chats réellement accessibles autour de toi.'
+            : 'Ta position sert à afficher les chats accessibles autour de toi et à orienter la carte. Elle n’est jamais montrée aux autres utilisateurs.'
         }
         primaryLabel={
           locationBusy
             ? 'Ouverture…'
             : locationModalPhase === 'denied'
               ? 'Réessayer'
-              : 'Autoriser le GPS'
+              : 'Activer ma position'
         }
         onClose={() => {
           // Keep the gate up until GPS is granted (or user retries after a deny).
@@ -895,6 +858,8 @@ export default function MapScreen() {
                 void openSystemLocationSettings();
               }
         }
+        onDismissLabel="Plus tard"
+        onDismiss={() => setLocationModalVisible(false)}
       />
 
       <EnablePermissionModal

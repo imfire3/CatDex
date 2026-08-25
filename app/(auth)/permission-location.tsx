@@ -41,13 +41,6 @@ export default function PermissionLocationScreen() {
     null,
   );
 
-  if (!user) {
-    return <Redirect href="/(auth)/welcome" />;
-  }
-  if (onboardingCompleted && !entering && !installKind) {
-    return <Redirect href="/(tabs)/map" />;
-  }
-
   const enterMap = useCallback(async () => {
     setInstallKind(null);
     setEntering(true);
@@ -111,6 +104,13 @@ export default function PermissionLocationScreen() {
     }
   }, [continueAfterGps, showToast]);
 
+  if (!user) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+  if (onboardingCompleted && !entering && !installKind) {
+    return <Redirect href="/(tabs)/map" />;
+  }
+
   if (entering) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -121,14 +121,14 @@ export default function PermissionLocationScreen() {
 
   const title =
     phase === 'denied'
-      ? 'GPS refusé — CatDex est bloqué'
-      : 'Autorise le suivi GPS';
+      ? 'Position désactivée'
+      : 'Trouve les chats près de toi';
   const description =
     phase === 'denied'
-      ? 'Sans localisation, CatDex ne peut pas placer les chats près de toi ni faire fonctionner la carte. Active la position pour ce site dans Réglages → Safari → Localisation, puis réessaie.'
-      : 'CatDex utilise ta position pour placer les chats près de toi et l’orientation du téléphone pour tourner la carte. Sans GPS, l’app ne peut pas fonctionner.';
+      ? 'Tu peux continuer en mode aperçu. Pour voir les chats réellement accessibles autour de toi, réactive la position de CatDex dans les réglages de ton appareil.'
+      : 'Ta position sert uniquement à afficher les chats accessibles autour de toi et à orienter la carte. Elle n’est jamais montrée aux autres utilisateurs.';
   const primaryLabel =
-    busy ? 'Ouverture…' : phase === 'denied' ? 'Réessayer' : 'Autoriser le GPS';
+    busy ? 'Ouverture…' : phase === 'denied' ? 'Réessayer' : 'Activer ma position';
 
   return (
     <>
@@ -179,6 +179,15 @@ export default function PermissionLocationScreen() {
               }
               secondaryVariant="ghost"
             />
+            {phase === 'denied' ? (
+              <Button
+                title="Continuer en mode aperçu"
+                variant="secondary"
+                onPress={() => {
+                  void enterMap();
+                }}
+              />
+            ) : null}
             {Platform.OS !== 'web' && phase === 'denied' ? (
               <Button
                 title="Ouvrir les réglages"

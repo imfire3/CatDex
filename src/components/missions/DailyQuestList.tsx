@@ -1,4 +1,4 @@
-import { View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { Text } from '@/components/Text'
 import type { QuestItem } from '@/lib/progression'
@@ -12,17 +12,21 @@ const QUEST_MARK: Record<string, string> = {
 
 type Props = {
   quests: QuestItem[]
+  onPress?: (quest: QuestItem) => void
 }
 
 /** Max 3 — desire + XP, not a checklist. */
-export function DailyQuestList({ quests }: Props) {
+export function DailyQuestList({ quests, onPress }: Props) {
   const { colors, spacing, radius } = useTheme()
 
   return (
     <View style={{ gap: spacing.sm }}>
       {quests.map((q) => (
-        <View
+        <Pressable
           key={q.id}
+          accessibilityRole="button"
+          accessibilityLabel={`${q.title}, ${q.completed ? 'terminée' : q.rewardLabel}`}
+          onPress={() => onPress?.(q)}
           style={{
             backgroundColor: colors.surface,
             borderRadius: radius.lg,
@@ -57,7 +61,10 @@ export function DailyQuestList({ quests }: Props) {
               À gagner · {q.rewardLabel}
             </Text>
           </View>
-        </View>
+          <Text variant="caption" weight="semibold" color="textBrand">
+            {q.completed ? 'Terminée' : 'Commencer →'}
+          </Text>
+        </Pressable>
       ))}
     </View>
   )

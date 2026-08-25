@@ -1,3 +1,4 @@
+import { router } from 'expo-router'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -78,7 +79,7 @@ export default function MissionsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <TabStackHeader title="Missions" />
+      <TabStackHeader title="Missions" showBack={false} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -88,7 +89,7 @@ export default function MissionsScreen() {
           gap: spacing[32] }}
       >
         <Text variant="body" color="textBody">
-          Progression calculée à partir de tes captures. Pas encore de notifications push.
+          Chaque découverte te rapproche du niveau suivant.
         </Text>
 
         <MissionLevelCard
@@ -105,15 +106,22 @@ export default function MissionsScreen() {
         <View style={{ gap: spacing[16] }}>
           <SectionLabel
             title="Aujourd’hui"
-            hint="Objectifs locaux basés sur ta collection — pas de serveur de quêtes."
+            hint="Trois objectifs simples pour faire avancer ta collection."
           />
-          <DailyQuestList quests={daily} />
+          <DailyQuestList
+            quests={daily}
+            onPress={(quest) => {
+              if (quest.completed) return
+              if (quest.id === 'daily-scan') router.push('/scanner')
+              else router.push('/(tabs)/map')
+            }}
+          />
         </View>
 
         <View style={{ gap: spacing[16] }}>
           <SectionLabel
             title="En ce moment"
-            hint="Défi hebdo estimé depuis tes chats déjà capturés."
+            hint="Un défi plus long pour gagner une récompense spéciale."
           />
           <WeeklyChallengeCard quest={weekly} />
         </View>
@@ -121,7 +129,7 @@ export default function MissionsScreen() {
         <View style={{ gap: spacing[16] }}>
           <SectionLabel
             title="Collections"
-            hint="Aperçus débloqués selon ton niveau local."
+            hint="De nouvelles séries se débloquent au fil de ton aventure."
           />
           <CollectionPreview collections={collections} onSeeAll={handleSeeCollections} />
         </View>

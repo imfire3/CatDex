@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CatDexCard } from '@/components/CatDexCard'
 import { CatDexEmpty } from '@/components/CatDexEmpty'
+import { Button } from '@/components/Button'
 import { EmptyState } from '@/components/EmptyState'
 import { PageLoading } from '@/components/Loader'
 import { Text } from '@/components/Text'
@@ -257,6 +258,7 @@ export default function CatDexScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <TabStackHeader
         title="CatDex"
+        showBack={false}
         right={
           <Text variant="bodySmall" weight="semibold" color="brand">
             {ownedCats.length} / {CATDEX_TARGET}
@@ -312,6 +314,34 @@ export default function CatDexScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
+        {ownedCats.length === 0 && catalog.length > 0 ? (
+          <View
+            accessibilityRole="summary"
+            style={{
+              backgroundColor: colors.surfaceElevated,
+              borderRadius: radius.xl,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing[16],
+              marginBottom: spacing[16],
+              gap: spacing[8],
+            }}
+          >
+            <Text variant="title" color="textBrand">
+              Ton CatDex est vide
+            </Text>
+            <Text variant="bodySmall" color="textSecondary">
+              Les silhouettes ci-dessous sont des chats à découvrir. Trouve le plus proche pour commencer ta collection.
+            </Text>
+            <View style={{ marginTop: spacing[8] }}>
+              <Button
+                title="Trouver un chat près de moi"
+                onPress={() => router.push('/(tabs)/map')}
+              />
+            </View>
+          </View>
+        ) : null}
+
         {filtered.length === 0 ? (
           empty
         ) : (
