@@ -79,7 +79,10 @@ export default function MissionsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <TabStackHeader title="Missions" showBack={false} />
+      <TabStackHeader
+        title="Missions"
+        onBack={() => router.replace('/(tabs)/map')}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
