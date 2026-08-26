@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { EnablePermissionModal } from '@/components/EnablePermissionModal';
+import { SupportProjectModal } from '@/components/SupportProjectModal';
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
@@ -29,6 +30,7 @@ import {
 import { coordinatesForDiscoveryOverview } from '@/lib/mapDiscoveryOverview';
 import {
   getCurrentLocationCoordinate,
+  getLocationAccessState,
   openSystemLocationSettings,
   requestLocationAccessResult,
   requestWebCompassPermission,
@@ -37,6 +39,11 @@ import {
   dismissMapDiscoveryTip,
   hasDismissedMapDiscoveryTip,
 } from '@/lib/mapDiscoveryTip';
+import {
+  dismissSupportModal,
+  hasDismissedSupportModal,
+  shouldOfferSupportModal,
+} from '@/lib/supportModal';
 import {
   headingFromDeviceOrientation,
   resolveDeviceHeading,
@@ -116,6 +123,9 @@ export default function MapScreen() {
     'ask',
   );
   const [locationBusy, setLocationBusy] = useState(false);
+  /** GPS probe finished (granted, denied, or skipped until a gesture). */
+  const [locationGateDone, setLocationGateDone] = useState(false);
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
   /** Start GPS watch only after the user accepted (or already granted). */
   const [watchEnabled, setWatchEnabled] = useState(false);
   /** GPS follow — paused while looking at a cat in another region. */
@@ -260,6 +270,36 @@ export default function MapScreen() {
     };
   }, [mapDemo, storedCats.length, hasDiscoverableOnMap, userId]);
 
+  /** Optional support note — only after a real capture, never on first map land. */
+  useEffect(() => {
+    if (!locationGateDone || !userId) return;
+    let mounted = true;
+    void (async () => {
+      const dismissed = await hasDismissedSupportModal(userId);
+      if (
+        !mounted ||
+        !shouldOfferSupportModal({
+          ownedCatCount: storedCats.length,
+          dismissed,
+          blockingModalVisible: locationModalVisible || discoveryTipVisible,
+        })
+      ) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      if (mounted) setSupportModalVisible(true);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [
+    locationGateDone,
+    locationModalVisible,
+    discoveryTipVisible,
+    storedCats.length,
+    userId,
+  ]);
+
   const sortedCats = useMemo(
     () => sortCatsByDistance(mapCats, userCoordinate),
     [mapCats, userCoordinate],
@@ -350,31 +390,28 @@ export default function MapScreen() {
   }, []);
 
   /**
-   * Always request a live GPS fix on the explorer (triggers the browser prompt
-   * when needed). Do not wait for Permissions API "granted" — Cursor / Safari
-   * often report "prompt" even after the user can share location.
+   * If location is already granted, warm the map. Otherwise wait for recenter /
+   * banner / capture — do not fire the OS prompt on first land.
    */
   useEffect(() => {
     let mounted = true;
     void (async () => {
-      if (mounted) setWatchEnabled(true);
-
-      const result = await requestLocationAccessResult();
+      const state = await getLocationAccessState();
       if (!mounted) return;
 
-      if (result.denied) {
+      if (!state.active) {
+        setLocationGateDone(true);
         return;
       }
 
-      const next =
-        result.coordinate ?? (await getCurrentLocationCoordinate());
+      setWatchEnabled(true);
+      const next = await getCurrentLocationCoordinate();
       if (next && mounted) {
         await applyLocation(next);
       }
+      if (mounted) setLocationGateDone(true);
     })().catch(() => {
-      if (mounted) {
-        setWatchEnabled(true);
-      }
+      if (mounted) setLocationGateDone(true);
     });
     return () => {
       mounted = false;
@@ -605,6 +642,7 @@ export default function MapScreen() {
         setLocationModalVisible(false);
         setLocationModalPhase('ask');
         setWatchEnabled(true);
+        setLocationGateDone(true);
         showToast({
           title: 'Position enregistrée',
           description: 'Le GPS est activé — tu peux explorer ton quartier.',
@@ -820,8 +858,16 @@ export default function MapScreen() {
       />
 
       <MapDiscoveryTip
-        visible={discoveryTipVisible}
+        visible={discoveryTipVisible && !supportModalVisible}
         onDismiss={handleDismissDiscoveryTip}
+      />
+
+      <SupportProjectModal
+        visible={supportModalVisible}
+        onContinue={() => {
+          setSupportModalVisible(false);
+          void dismissSupportModal(userId);
+        }}
       />
 
       <EnablePermissionModal
@@ -845,8 +891,7 @@ export default function MapScreen() {
               : 'Activer ma position'
         }
         onClose={() => {
-          // Keep the gate up until GPS is granted (or user retries after a deny).
-          if (locationModalPhase === 'denied') return;
+          setLocationModalVisible(false);
         }}
         onRetry={() => {
           void handleLocationAuthorize();

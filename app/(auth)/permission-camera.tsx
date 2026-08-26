@@ -14,7 +14,7 @@ export default function PermissionCameraScreen() {
     return <Redirect href="/(auth)/welcome" />;
   }
   if (!onboardingCompleted) {
-    return <Redirect href="/(auth)/onboarding-reward" />;
+    return <Redirect href="/(auth)/intro" />;
   }
   return <Redirect href="/(tabs)/map" />;
 }

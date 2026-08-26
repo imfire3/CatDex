@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -21,18 +21,30 @@ export function MapDiscoveryTip({ visible, onDismiss }: Props) {
   if (!visible) return null;
 
   return (
+    <Modal
+      animationType="fade"
+      transparent
+      visible={visible}
+      onRequestClose={onDismiss}
+    >
       <View style={styles.root} pointerEvents="box-none">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Fermer"
+          onPress={onDismiss}
+          style={StyleSheet.absoluteFill}
+        />
+
         <View
-          accessibilityRole="summary"
-          accessibilityLabel="Conseil pour découvrir des chats"
+          accessibilityViewIsModal
           style={[
             styles.card,
             {
-              marginTop: insets.top + spacing[64],
-              marginHorizontal: spacing[16],
+              marginTop: insets.top + spacing[80],
+              marginHorizontal: spacing[24],
               backgroundColor: colors.surface,
               borderRadius: radius[16],
-              padding: spacing[16],
+              padding: spacing[24],
               borderWidth: 1,
               borderColor: colors.border,
               gap: spacing[16],
@@ -40,26 +52,54 @@ export function MapDiscoveryTip({ visible, onDismiss }: Props) {
             shadow.floating,
           ]}
         >
-          <Text variant="body" weight="semibold" color="textBrand">
-            Repère les chats à découvrir
+          <Text
+            variant="title"
+            color="textBrand"
+          >
+            Photographie un chat
           </Text>
-          <View style={styles.legendRow}>
-            <View style={[styles.ring, { borderColor: colors.brand }]} />
-            <Text variant="bodySmall" color="textSecondary" style={{ flex: 1 }}>
-              Les cercles pointillés sont des chats proches à photographier.
-            </Text>
+
+          <View style={{ gap: spacing[8] }}>
+            <View style={styles.legendRow}>
+              <View
+                style={[
+                  styles.dot,
+                  { backgroundColor: colors.brand },
+                ]}
+              />
+              <Text variant="bodySmall" color="text">
+                Bouton violet en bas — ouvre l’appareil
+              </Text>
+            </View>
+            <View style={styles.legendRow}>
+              <View
+                style={[
+                  styles.ring,
+                  { borderColor: colors.brand },
+                ]}
+              />
+              <Text variant="bodySmall" color="text">
+                Pins en cercle — chats à découvrir
+              </Text>
+            </View>
           </View>
-          <Button title="Compris" variant="secondary" onPress={onDismiss} />
+
+          <Text variant="bodySmall" color="textSecondary">
+            Les chats au cercle pointillé ont été repérés par d’autres joueurs.
+            Photographie-les pour les ajouter à ton CatDex.
+          </Text>
+
+          <Button title="Compris" onPress={onDismiss} />
         </View>
       </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     justifyContent: 'flex-start',
-    zIndex: 30,
   },
   card: {
     alignSelf: 'stretch',
@@ -68,6 +108,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   ring: {
     width: 10,

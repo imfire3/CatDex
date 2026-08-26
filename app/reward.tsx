@@ -10,14 +10,10 @@ import {
   View,
 } from 'react-native';
 import Animated, {
-  FadeIn,
   FadeInDown,
   FadeInUp,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
-  withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,21 +26,18 @@ import { Button } from '@/components/Button';
 import { CatImage } from '@/components/CatImage';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { pickCatRelatedBadgeCopy } from '@/lib/catBadgeTitle';
 import { CATDEX_TARGET, formatCatDefaultName, formatDexNumber } from '@/lib/constants';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
-import {
-  estimateTotalXp,
-  progressionFromTotalXp,
-} from '@/lib/progression';
+import { estimateTotalXp } from '@/lib/progression';
 import { useCatsStore } from '@/store/cats';
 import { useClaimTargetStore } from '@/store/claimTarget';
+import { useMapExploreStore } from '@/store/mapExplore';
 import { usePendingCaptureStore } from '@/store/pendingCapture';
 import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat } from '@/types/cat';
 
-type Phase = 'verify' | 'badge' | 'share';
+type Phase = 'verify' | 'share';
 
 function ConfettiBurst() {
   const { colors } = useTheme();
@@ -121,41 +114,19 @@ function ConfettiPiece({
   );
 }
 
-function PulsingBadge({ children }: { children: React.ReactNode }) {
-  const reduceMotion = useReducedMotion();
-  const scale = useSharedValue(0.7);
-  const glow = useSharedValue(0.6);
-
-  useEffect(() => {
-    scale.value = withSpring(1, { damping: 10, stiffness: 120 });
-    if (reduceMotion) return;
-    glow.value = withRepeat(
-      withSequence(withTiming(1, { duration: 700 }), withTiming(0.65, { duration: 700 })),
-      -1,
-      false,
-    );
-  }, [glow, reduceMotion, scale]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value * (0.96 + glow.value * 0.06) }],
-  }));
-
-  return <Animated.View style={style}>{children}</Animated.View>;
-}
-
 /**
- * Post-capture: verify infos → optional first badge → share.
+ * Post-capture: confirm the fiche, then one celebration with map as primary CTA.
  */
 export default function RewardScreen() {
-  const { colors, spacing, radius, shadow, gradients } = useTheme();
+  const { colors, spacing, radius, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const showToast = useToastStore((state) => state.show);
   const addCat = useCatsStore((state) => state.addCat);
-  const cats = useCatsStore((state) => state.cats);
   const pending = usePendingCaptureStore((state) => state.pending);
   const clearPending = usePendingCaptureStore((state) => state.clearPending);
   const clearClaimTarget = useClaimTargetStore((state) => state.clearTarget);
+  const requestFocusOnCat = useMapExploreStore((state) => state.requestFocusOnCat);
 
   const addingRef = useRef(false);
   const [phase, setPhase] = useState<Phase>(pending ? 'verify' : 'share');
@@ -164,10 +135,6 @@ export default function RewardScreen() {
   const [firstCapture, setFirstCapture] = useState(false);
 
   const savedCat = cat;
-  const totalXp = estimateTotalXp(cats);
-  const progression = progressionFromTotalXp(totalXp);
-  const xpToNext = Math.max(0, progression.xpMax - progression.xpIntoLevel);
-
   const displayName = useMemo(() => {
     if (!pending) return '';
     return (
@@ -176,16 +143,19 @@ export default function RewardScreen() {
     );
   }, [pending]);
 
-  const badgeCopy = useMemo(
-    () => (cat ? pickCatRelatedBadgeCopy(cat) : null),
-    [cat],
-  );
-  const badgePhotoSize = spacing[96] + spacing[64];
-  const enter = reduceMotion ? undefined : FadeIn.duration(280);
+  const photoSize = spacing[96] + spacing[64];
   const enterUp = reduceMotion ? undefined : FadeInUp.delay(80).duration(320);
   const enterDown = reduceMotion ? undefined : FadeInDown.delay(120).duration(320);
 
   const finishToMap = () => {
+    if (savedCat) {
+      requestFocusOnCat({
+        catId: savedCat.id,
+        latitude: savedCat.latitude,
+        longitude: savedCat.longitude,
+        pinZoom: true,
+      });
+    }
     clearPending();
     clearClaimTarget();
     router.replace('/(tabs)/map');
@@ -267,7 +237,6 @@ export default function RewardScreen() {
       });
       setXpGained(gained);
       setFirstCapture(isFirst);
-      // Badge celebration screen paused for now — go straight to share.
       setPhase('share');
     } catch (error) {
       addingRef.current = false;
@@ -337,7 +306,7 @@ export default function RewardScreen() {
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFillObject}
       />
-      {phase === 'share' ? <ConfettiBurst /> : null}
+      <ConfettiBurst />
 
       <View
         style={{
@@ -345,194 +314,90 @@ export default function RewardScreen() {
           paddingTop: insets.top + spacing[32],
           paddingHorizontal: spacing[24],
           paddingBottom: Math.max(insets.bottom, spacing[24]),
-          justifyContent: 'space-between' }}
+          justifyContent: 'space-between',
+        }}
       >
-        {phase === 'badge' && badgeCopy && savedCat ? (
-          <>
-            <Animated.View
-              entering={enter}
-              style={{ alignItems: 'center', gap: spacing[24], paddingTop: spacing[32] }}
-            >
-              <Text
-                variant="headline"
-                color="textBrand"
-                align="center"
-              >
-                Nouveau badge obtenu !
-              </Text>
+        <View
+          style={{
+            alignItems: 'center',
+            gap: spacing[16],
+            flex: 1,
+            justifyContent: 'center',
+          }}
+        >
+          <Animated.View entering={enterUp}>
+            <Text variant="headline" color="textBrand" align="center">
+              {savedCat.name} rejoint ton CatDex !
+            </Text>
+          </Animated.View>
 
-              <PulsingBadge>
-                <View
-                  style={[
-                    {
-                      width: badgePhotoSize,
-                      height: badgePhotoSize,
-                      borderRadius: radius.xl,
-                      backgroundColor: colors.surfaceSecondary,
-                      borderWidth: 3,
-                      borderColor: colors.brand,
-                      overflow: 'hidden',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    },
-                    shadow.glow,
-                  ]}
-                >
-                  <CatImage
-                    uri={savedCat.photoUri}
-                    style={{ width: badgePhotoSize, height: badgePhotoSize }}
-                    resizeMode="cover"
-                    accessibilityLabel={`Photo de ${savedCat.name}`}
-                  />
-                </View>
-              </PulsingBadge>
-
-              <View style={{ alignItems: 'center', gap: spacing[8] }}>
-                <Text variant="title" color="textBrand" align="center">
-                  {badgeCopy.title}
-                </Text>
-                <Text variant="bodySmall" color="textBody" align="center">
-                  {badgeCopy.subtitle}
-                </Text>
-                <Text
-                  variant="title"
-                  color="textBrand"
-                  align="center"
-                  style={{ marginTop: spacing[8] }}
-                >
-                  +{xpGained} XP
-                </Text>
-                <Text variant="body" color="textBody" align="center">
-                  Niveau {progression.level} atteint
-                </Text>
-                <Text variant="caption" color="textMuted" align="center">
-                  Encore {xpToNext} XP avant le niveau suivant
-                </Text>
-              </View>
-            </Animated.View>
-
-            <View style={{ gap: spacing[8] }}>
-              <Button title="Continuer" onPress={() => setPhase('share')} />
-              <Button
-                variant="tertiary"
-                title="Voir tous mes badges"
-                onPress={() => setPhase('share')}
-              />
-            </View>
-          </>
-        ) : null}
-
-        {phase === 'share' ? (
-          <>
+          <Animated.View entering={enterDown}>
             <View
               style={{
+                width: photoSize,
+                height: photoSize,
+                borderRadius: radius.cta,
+                borderWidth: 3,
+                borderColor: colors.brand,
+                backgroundColor: colors.surfaceSecondary,
+                overflow: 'hidden',
                 alignItems: 'center',
-                gap: spacing[16],
-                flex: 1,
-                justifyContent: 'center' }}
+                justifyContent: 'center',
+              }}
             >
-              <Animated.View entering={enterUp}>
-                <Text
-                  variant="headline"
-                  color="textBrand"
-                  align="center"
-                >
-                  {savedCat.name} rejoint ton CatDex !
-                </Text>
-              </Animated.View>
-
-              <Animated.View entering={enterDown}>
-                <View
-                  style={{
-                    width: badgePhotoSize,
-                    height: badgePhotoSize,
-                    borderRadius: radius.cta,
-                    borderWidth: 3,
-                    borderColor: colors.brand,
-                    backgroundColor: colors.surfaceSecondary,
-                    overflow: 'hidden',
-                    alignItems: 'center',
-                    justifyContent: 'center' }}
-                >
-                  <CatImage
-                    uri={savedCat.photoUri}
-                    style={{
-                      width: badgePhotoSize,
-                      height: badgePhotoSize }}
-                    resizeMode="cover"
-                    accessibilityLabel={`Photo de ${savedCat.name}`}
-                  />
-                </View>
-              </Animated.View>
-
-              <View style={{ alignItems: 'center', gap: spacing[8] }}>
-                <Text
-                  variant="title"
-                  color="textBrand"
-                  align="center"
-                >
-                  +{xpGained} XP
-                </Text>
-                {firstCapture ? (
-                  <Text variant="bodySmall" color="textBody" align="center">
-                    Premier chat · Nouvelle série
-                  </Text>
-                ) : (
-                  <Text variant="bodySmall" color="textBody" align="center">
-                    {formatDexNumber(savedCat.number)} · CatDex enrichi
-                  </Text>
-                )}
-              </View>
-
-              <View
-                style={[
-                  {
-                    alignSelf: 'stretch',
-                    backgroundColor: colors.surfaceElevated,
-                    borderRadius: radius.cta,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    padding: spacing[16],
-                    gap: spacing[8],
-                    alignItems: 'center',
-                  },
-                  shadow.low,
-                ]}
-              >
-                <Text variant="bodySmall" color="textBody" align="center">
-                  Partage ta découverte
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Partager"
-                  onPress={() => void handleShare()}
-                  style={({ pressed }) => ({
-                    paddingVertical: spacing[8],
-                    paddingHorizontal: spacing[24],
-                    borderRadius: radius.full,
-                    backgroundColor: colors.brandSoft,
-                    opacity: pressed ? 0.88 : 1,
-                  })}
-                >
-                  <Text
-                    variant="bodySmall" weight="semibold"
-                    color="textBrand"
-                  >
-                    Partager
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            <View style={{ gap: spacing[8] }}>
-              <Button
-                title="Voir dans mon CatDex"
-                onPress={() => router.replace('/(tabs)/catdex')}
+              <CatImage
+                uri={savedCat.photoUri}
+                style={{
+                  width: photoSize,
+                  height: photoSize,
+                }}
+                resizeMode="cover"
+                accessibilityLabel={`Photo de ${savedCat.name}`}
               />
-              <Button title="Retour à la carte" variant="secondary" onPress={finishToMap} />
             </View>
-          </>
-        ) : null}
+          </Animated.View>
+
+          <View style={{ alignItems: 'center', gap: spacing[8] }}>
+            <Text variant="title" color="textBrand" align="center">
+              +{xpGained} XP
+            </Text>
+            {firstCapture ? (
+              <Text variant="bodySmall" color="textBody" align="center">
+                Premier chat · Nouvelle série
+              </Text>
+            ) : (
+              <Text variant="bodySmall" color="textBody" align="center">
+                {formatDexNumber(savedCat.number)} · CatDex enrichi
+              </Text>
+            )}
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Partager"
+            onPress={() => void handleShare()}
+            style={({ pressed }) => ({
+              paddingVertical: spacing[8],
+              paddingHorizontal: spacing[24],
+              borderRadius: radius.full,
+              backgroundColor: colors.brandSoft,
+              opacity: pressed ? 0.88 : 1,
+            })}
+          >
+            <Text variant="bodySmall" weight="semibold" color="textBrand">
+              Partager
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={{ gap: spacing[8] }}>
+          <Button title="Retourner à la carte" onPress={finishToMap} />
+          <Button
+            title="Voir dans mon CatDex"
+            variant="secondary"
+            onPress={() => router.replace('/(tabs)/catdex')}
+          />
+        </View>
       </View>
     </View>
   );

@@ -53,7 +53,7 @@ type AuthState = {
   user: User | null;
   session: Session | null;
   onboardingCompleted: boolean;
-  /** User ids that already finished intro + permissions on this device. */
+  /** User ids that already finished the post-auth beat on this device. */
   onboardingCompletedUserIds: string[];
   hydrated: boolean;
   loading: boolean;
@@ -474,7 +474,7 @@ export const useAuthStore = create<AuthState>()(
 
       signUp: async ({ email, password, displayName }) => {
         if (!supabase) {
-          // New account → always show intro + permissions.
+          // New account → always show the single intro beat.
           const normalizedEmail = email.trim().toLowerCase();
           set({
             user: {
@@ -573,7 +573,7 @@ export const useAuthStore = create<AuthState>()(
             { onConflict: 'id' },
           );
 
-          // New account → always show intro + permissions (not per-device skip).
+          // New account → always show the single intro beat (not per-device skip).
           set({
             session,
             user: {
@@ -911,7 +911,7 @@ export const useAuthStore = create<AuthState>()(
 );
 
 export function getPostAuthHref(onboardingCompleted: boolean) {
-  // New users → intro then permissions (GPS + camera).
+  // New users → one intro beat, then the map (GPS/camera in-game).
   return onboardingCompleted ? '/(tabs)/map' : '/(auth)/intro';
 }
 

@@ -1,26 +1,42 @@
 import { Redirect, router } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import { PrimaryCTA, ProgressDots, SightingScene } from '@/components/Auth/Onboarding';
-import {
-  ONBOARDING_STEP_COUNT,
-  ONBOARDING_STEP_LABELS,
-} from '@/components/Auth/OnboardingStepper';
+import { BrandLoader, PrimaryCTA, SightingScene } from '@/components/Auth/Onboarding';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** Onboarding 1/3 — un chat apparaît près de toi. */
+const ENTER_MAP_MS = 900;
+
+/** Single post-auth beat — then the map. GPS and camera wait for in-map gestures. */
 export default function IntroScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
+  const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
+  const [entering, setEntering] = useState(false);
+
+  const handleExplore = useCallback(async () => {
+    setEntering(true);
+    await new Promise((resolve) => setTimeout(resolve, ENTER_MAP_MS));
+    completeOnboarding();
+    router.replace('/(tabs)/map');
+  }, [completeOnboarding]);
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
   }
-  if (onboardingCompleted) {
+  if (onboardingCompleted && !entering) {
     return <Redirect href="/(tabs)/map" />;
+  }
+
+  if (entering) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <BrandLoader label="Bienvenue dans ton quartier…" />
+      </View>
+    );
   }
 
   return (
@@ -37,15 +53,12 @@ export default function IntroScreen() {
             paddingHorizontal: spacing[24],
           }}
         >
-          <ProgressDots
-            step={0}
-            total={ONBOARDING_STEP_COUNT}
-            labels={[...ONBOARDING_STEP_LABELS]}
-          />
           <PrimaryCTA
-            title="Partir explorer"
-            subtitle="Tu n’es qu’à une photo de commencer ta collection"
-            onPress={() => router.push('/(auth)/permissions')}
+            title="Voir la carte"
+            subtitle="Photographie le premier chat que tu croises — GPS et caméra au moment du geste"
+            onPress={() => {
+              void handleExplore();
+            }}
           />
         </View>
       }
