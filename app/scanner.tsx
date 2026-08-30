@@ -25,7 +25,7 @@ import { ProgressBar } from '@/components/Progress';
 import { ScanFrame } from '@/components/ScanFrame';
 import { Text } from '@/components/Text';
 import { agentDebugLog } from '@/lib/agentDebugLog';
-import { isAdminEmail } from '@/lib/adminAccess';
+import { canImportGalleryPhotos } from '@/lib/adminAccess';
 import { analyzeCatPhoto } from '@/lib/api';
 import {
   analysisForClaimedCat,
@@ -138,7 +138,7 @@ export default function ScannerScreen() {
   const session = useAuthStore((state) => state.session);
   const hydrated = useAuthStore((state) => state.hydrated);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
-  const canImportFromGallery = isAdminEmail(user?.email);
+  const canImportFromGallery = canImportGalleryPhotos(user?.email);
   // Any sighting id (world spawn or community UUID) so the pin can clear after capture.
   const sourceWorldId =
     typeof params.worldId === 'string' && params.worldId.trim().length > 0
@@ -531,7 +531,7 @@ export default function ScannerScreen() {
   };
 
   const handlePickFromLibrary = async () => {
-    if (!isAdminEmail(user?.email)) return;
+    if (!canImportGalleryPhotos(user?.email)) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.28,
