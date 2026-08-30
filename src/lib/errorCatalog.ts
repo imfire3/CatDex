@@ -132,10 +132,10 @@ export const ERROR_CATALOG: Record<CaptureErrorKind, CaptureErrorCopy> = {
   alreadyCaptured: {
     kind: 'alreadyCaptured',
     icon: 'analysis',
-    title: 'Chat déjà découvert',
-    description: 'Tu as déjà découvert ce chat. Tu peux revoir sa fiche ou améliorer ta photo.',
-    primaryLabel: 'Voir la fiche',
-    secondaryLabel: 'Réessayer avec une autre photo',
+    title: 'Déjà dans ton CatDex',
+    description: 'Tu l’as revu ici. +15 XP pour le souvenir.',
+    primaryLabel: 'Retourner à la carte',
+    secondaryLabel: 'Autre photo',
     preservePhoto: false,
   },
   unknown: {
@@ -253,5 +253,5 @@ export function formatAlreadyCapturedDescription(input: {
     parts.push(seen === 1 ? 'Observé une fois' : `Observé ${seen} fois`);
   }
   if (parts.length === 0) return ERROR_CATALOG.alreadyCaptured.description;
-  return parts.join(' · ');
+  return `${parts.join(' · ')} · +15 XP`;
 }

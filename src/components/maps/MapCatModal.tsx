@@ -28,6 +28,8 @@ type Props = {
   captured?: boolean;
   discoveryState?: CatDiscoveryState;
   distanceM?: number | null;
+  /** Combined distance + cardinal, e.g. "150 m · vers le nord-est". */
+  directionLabel?: string | null;
   onClose: () => void;
   onViewCard: () => void;
   /** Primary action for discoverable cats — open the scanner. */
@@ -43,6 +45,7 @@ export function MapCatModal({
   captured = false,
   discoveryState,
   distanceM,
+  directionLabel,
   onClose,
   onViewCard,
   onCapture,
@@ -62,7 +65,8 @@ export function MapCatModal({
   if (!visible || !cat) return null;
 
   const distanceLabel =
-    typeof distanceM === 'number' ? formatDistanceMeters(distanceM) : null;
+    directionLabel ??
+    (typeof distanceM === 'number' ? formatDistanceMeters(distanceM) : null);
   const rarityId = resolveRevealRarity(cat.analysis, cat.number);
   const rarity = rarityTokens[rarityId];
   const rarityLabel = catDexRarityLabel(rarityId);
@@ -249,7 +253,7 @@ export function MapCatModal({
                       ? `À ${distanceLabel}`
                       : 'Vu dans cette zone'
                     : distanceLabel
-                      ? `Repéré près d’ici · ${distanceLabel}`
+                      ? distanceLabel
                       : 'Repéré près d’ici'}
                 </Text>
               </View>

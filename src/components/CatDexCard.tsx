@@ -17,6 +17,7 @@ import {
   themeFromColorLabel,
 } from '@/lib/catTheme';
 import { enrichAnalysis } from '@/lib/catTraits';
+import { lastSeenLabel, neighborhoodLabel } from '@/lib/geoLabels';
 import { isCatPhotoRef } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat, CatAnalysis } from '@/types/cat';
@@ -257,6 +258,19 @@ export function CatDexCard({
             style={{ opacity: captured ? 1 : 0.7 }}
           >
             {breed}
+          </Text>
+        ) : null}
+
+        {captured ? (
+          <Text variant="caption" color="textMuted" numberOfLines={1}>
+            {[
+              lastSeenLabel(cat.lastSeenAt ?? cat.discoveredAt)
+                ? `Vu ${lastSeenLabel(cat.lastSeenAt ?? cat.discoveredAt)}`
+                : null,
+              neighborhoodLabel(cat.latitude, cat.longitude),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         ) : null}
 

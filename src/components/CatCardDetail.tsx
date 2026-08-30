@@ -23,6 +23,7 @@ export type CatCardDetailProps = {
   analysis: CatAnalysis;
   discoveredAt: string;
   views?: number;
+  lastSeenAt?: string;
   locationLabel?: string;
   onBack: () => void;
   onPrimaryAction?: () => void;
@@ -231,7 +232,8 @@ export function CatCardDetail({
   analysis: rawAnalysis,
   discoveredAt,
   views = 0,
-  locationLabel = 'Rue de Belleville, Paris 20e',
+  lastSeenAt,
+  locationLabel,
   onBack,
   onPrimaryAction,
   primaryLabel,
@@ -339,7 +341,8 @@ export function CatCardDetail({
 
           <Text variant="bodySmall" weight="semibold" color="textBrand">
             {traitTags[0] ? `${traitTags[0]} · ` : ''}
-            Découvert {formatPlaceDate(discoveredAt)}
+            Vu {formatPlaceDate(lastSeenAt ?? discoveredAt)}
+            {views > 1 ? ` · ${views} fois` : ''}
             {locationLabel ? ` · ${locationLabel.split(',')[0]}` : ''}
           </Text>
 

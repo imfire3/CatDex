@@ -7,6 +7,7 @@ import {
   resolveRevealRarity,
   themeFromColorLabel,
 } from '@/lib/catTheme';
+import { isNearMetro, locationLabelFromCoords } from '@/lib/geoLabels';
 import type { Cat } from '@/types/cat';
 
 export const MAX_LEVEL = 50;
@@ -481,18 +482,20 @@ export function nextLevelReward(level: number): {
   };
 }
 
-export function buildDailyQuests(cats: Cat[]): QuestItem[] {
+export function buildDailyQuests(
+  cats: Cat[],
+  options?: { streakDays?: number },
+): QuestItem[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayCats = cats.filter((cat) => new Date(cat.discoveredAt) >= today);
-  const placesToday = uniquePlaces(todayCats);
-  const likesToday = todayCats.reduce((sum, cat) => sum + (cat.views ?? 0), 0);
+  const streakDays = options?.streakDays ?? 0;
+  const metroCats = cats.filter(isNearMetro);
 
-  // Max 3 daily quests — dopamine, not a checklist.
   return [
     {
       id: 'daily-scan',
-      title: 'Capture un chat',
+      title: cats.length === 0 ? 'Capture ton premier chat' : 'Capture un chat',
       current: Math.min(1, todayCats.length),
       target: 1,
       rewardLabel: '+20 XP',
@@ -500,21 +503,21 @@ export function buildDailyQuests(cats: Cat[]): QuestItem[] {
       tone: 'accent',
     },
     {
-      id: 'daily-place',
-      title: 'Découvre un nouvel endroit',
-      current: Math.min(1, placesToday),
-      target: 1,
-      rewardLabel: '+30 XP',
-      completed: placesToday >= 1,
+      id: 'daily-streak',
+      title: 'Série de 3 jours',
+      current: Math.min(3, streakDays),
+      target: 3,
+      rewardLabel: '+40 XP',
+      completed: streakDays >= 3,
       tone: 'info',
     },
     {
-      id: 'daily-likes',
-      title: 'Aime un chat',
-      current: Math.min(1, likesToday > 0 ? 1 : 0),
+      id: 'daily-metro',
+      title: 'Un chat près du métro',
+      current: Math.min(1, metroCats.length),
       target: 1,
-      rewardLabel: '+15 XP',
-      completed: likesToday > 0,
+      rewardLabel: '+30 XP',
+      completed: metroCats.length >= 1,
       tone: 'danger',
     },
   ];
@@ -661,8 +664,7 @@ export function formatShortDate(iso: string): string {
 }
 
 export function locationLabel(cat: Cat): string {
-  // MVP — no reverse geocode yet
-  return 'Marseille';
+  return locationLabelFromCoords(cat.latitude, cat.longitude);
 }
 
 export function favoriteCat(cats: Cat[]): Cat | null {

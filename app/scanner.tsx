@@ -147,6 +147,7 @@ export default function ScannerScreen() {
   const showToast = useToastStore((state) => state.show);
   const nextNumber = useCatsStore((state) => state.nextNumber);
   const cats = useCatsStore((state) => state.cats);
+  const incrementViews = useCatsStore((state) => state.incrementViews);
   const setPendingCapture = usePendingCaptureStore((state) => state.setPending);
   const claimTarget = useClaimTargetStore((state) => state.target);
   const isClaimCapture = Boolean(
@@ -156,6 +157,7 @@ export default function ScannerScreen() {
   );
   const cameraRef = useRef<CameraView>(null);
   const analysisGenRef = useRef(0);
+  const recaptureXpRef = useRef<string | null>(null);
   const runAnalysisRef = useRef<
     ((base64: string, imageUri: string, mimeType?: string) => Promise<void>) | null
   >(null);
@@ -187,6 +189,18 @@ export default function ScannerScreen() {
       setStep('alreadyCaptured');
     }
   }, [alreadyCaptured, allowRecapture]);
+
+  useEffect(() => {
+    if (step !== 'alreadyCaptured' || !existingCat) return;
+    if (recaptureXpRef.current === existingCat.id) return;
+    recaptureXpRef.current = existingCat.id;
+    incrementViews(existingCat.id);
+    showToast({
+      title: `${existingCat.name}, revu ici`,
+      description: '+15 XP',
+      tone: 'success',
+    });
+  }, [step, existingCat, incrementViews, showToast]);
 
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain !== false) {
@@ -631,18 +645,13 @@ export default function ScannerScreen() {
       >
         <ErrorState
           icon={copy.icon}
-          title={copy.title}
+          title={`${existingCat.name}, revu ici`}
           description={formatAlreadyCapturedDescription({
             discoveredAt: existingCat.discoveredAt,
             views: existingCat.views,
           })}
           primaryLabel={copy.primaryLabel}
-          onPrimary={() =>
-            router.replace({
-              pathname: '/cat/[id]',
-              params: { id: existingCat.id },
-            })
-          }
+          onPrimary={() => router.replace('/(tabs)/map')}
           secondaryLabel={copy.secondaryLabel}
           onSecondary={() => {
             setAllowRecapture(true);
@@ -899,10 +908,10 @@ export default function ScannerScreen() {
             <ProgressBar progress={1} height={8} />
             <View style={{ gap: spacing[8] }}>
               <Text variant="title" color="textBrand">
-                Presque !
+                Deuxième essai
               </Text>
               <Text variant="bodySmall" color="textSecondary">
-                Relance l’analyse ou reprends une photo.
+                Recadre sans tout recommencer, ou relance l’analyse sur cette photo.
               </Text>
             </View>
           </View>
@@ -931,7 +940,7 @@ export default function ScannerScreen() {
               title="Relancer l’analyse"
               onPress={() => photoBase64 && photoUri && runAnalysis(photoBase64, photoUri)}
             />
-            <Button title="Réessayer avec une autre photo" variant="secondary" onPress={resetToCamera} />
+            <Button title="Autre photo" variant="secondary" onPress={resetToCamera} />
           </View>
         </View>
       </View>
@@ -1103,7 +1112,9 @@ export default function ScannerScreen() {
                     paddingVertical: spacing[8] }}
                 >
                   <Text variant="bodySmall" color="onAccent" align="center">
-                    {cameraReady ? 'Place le chat au centre' : 'Préparation…'}
+                    {cameraReady
+                      ? 'Lumière de face · Un seul chat · Yeux visibles'
+                      : 'Préparation…'}
                   </Text>
                 </View>
               ) : (
@@ -1117,7 +1128,9 @@ export default function ScannerScreen() {
                     color="onAccent"
                     align="center"
                   >
-                    {cameraReady ? 'Place le chat au centre' : 'Préparation…'}
+                    {cameraReady
+                      ? 'Lumière de face · Un seul chat · Yeux visibles'
+                      : 'Préparation…'}
                   </Text>
                 </BlurView>
               )}

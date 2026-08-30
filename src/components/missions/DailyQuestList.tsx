@@ -6,6 +6,8 @@ import { useTheme } from '@/theme'
 
 const QUEST_MARK: Record<string, string> = {
   'daily-scan': '◎',
+  'daily-streak': '◇',
+  'daily-metro': '◎',
   'daily-place': '◇',
   'daily-likes': '♡',
 }

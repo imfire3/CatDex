@@ -27,6 +27,7 @@ import { CatImage } from '@/components/CatImage';
 import { Text } from '@/components/Text';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { CATDEX_TARGET, formatCatDefaultName, formatDexNumber } from '@/lib/constants';
+import { locationLabelFromCoords } from '@/lib/geoLabels';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import { estimateTotalXp } from '@/lib/progression';
 import { useCatsStore } from '@/store/cats';
@@ -126,7 +127,9 @@ export default function RewardScreen() {
   const pending = usePendingCaptureStore((state) => state.pending);
   const clearPending = usePendingCaptureStore((state) => state.clearPending);
   const clearClaimTarget = useClaimTargetStore((state) => state.clearTarget);
-  const requestFocusOnCat = useMapExploreStore((state) => state.requestFocusOnCat);
+  const requestRecenterOnPlayer = useMapExploreStore(
+    (state) => state.requestRecenterOnPlayer,
+  );
 
   const addingRef = useRef(false);
   const [phase, setPhase] = useState<Phase>(pending ? 'verify' : 'share');
@@ -148,14 +151,7 @@ export default function RewardScreen() {
   const enterDown = reduceMotion ? undefined : FadeInDown.delay(120).duration(320);
 
   const finishToMap = () => {
-    if (savedCat) {
-      requestFocusOnCat({
-        catId: savedCat.id,
-        latitude: savedCat.latitude,
-        longitude: savedCat.longitude,
-        pinZoom: true,
-      });
-    }
+    requestRecenterOnPlayer();
     clearPending();
     clearClaimTarget();
     router.replace('/(tabs)/map');
@@ -363,7 +359,7 @@ export default function RewardScreen() {
             </Text>
             {firstCapture ? (
               <Text variant="bodySmall" color="textBody" align="center">
-                Premier chat · Nouvelle série
+                Premier chat · {locationLabelFromCoords(savedCat.latitude, savedCat.longitude)}
               </Text>
             ) : (
               <Text variant="bodySmall" color="textBody" align="center">
@@ -392,11 +388,6 @@ export default function RewardScreen() {
 
         <View style={{ gap: spacing[8] }}>
           <Button title="Retourner à la carte" onPress={finishToMap} />
-          <Button
-            title="Voir dans mon CatDex"
-            variant="secondary"
-            onPress={() => router.replace('/(tabs)/catdex')}
-          />
         </View>
       </View>
     </View>

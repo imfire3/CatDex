@@ -22,12 +22,17 @@ type MapExploreState = {
     pinZoom?: boolean;
   }) => void;
   consumePendingFocus: () => MapFocusRequest | null;
+  /** After a capture, keep the camera on the player, not the pin. */
+  pendingRecenterOnPlayer: boolean;
+  requestRecenterOnPlayer: () => void;
+  consumePendingRecenterOnPlayer: () => boolean;
 };
 
 export const useMapExploreStore = create<MapExploreState>((set, get) => ({
   hasNearbyCat: false,
   setHasNearbyCat: (value) => set({ hasNearbyCat: value }),
   pendingFocus: null,
+  pendingRecenterOnPlayer: false,
   requestFocusOnCat: ({ catId, latitude, longitude, pinZoom = true }) =>
     set((state) => ({
       pendingFocus: {
@@ -43,5 +48,12 @@ export const useMapExploreStore = create<MapExploreState>((set, get) => ({
     if (!pending) return null;
     set({ pendingFocus: null });
     return pending;
+  },
+  requestRecenterOnPlayer: () => set({ pendingRecenterOnPlayer: true }),
+  consumePendingRecenterOnPlayer: () => {
+    const pending = get().pendingRecenterOnPlayer;
+    if (!pending) return false;
+    set({ pendingRecenterOnPlayer: false });
+    return true;
   },
 }));

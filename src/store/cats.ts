@@ -17,6 +17,7 @@ import {
 } from '@/lib/photoStorage';
 import { isDurablePhotoUri } from '@/lib/photoUri';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { useToastStore } from '@/store/toast';
 import type { Cat, CatAnalysis, CatLifestyle } from '@/types/cat';
 
 type AddCatInput = {
@@ -191,6 +192,12 @@ export const useCatsStore = create<CatsState>()(
               remoteId,
               photoUri: cat.photoUri || photoUri,
             };
+          } else {
+            useToastStore.getState().show({
+              title: 'Sync en attente',
+              description: 'Ta capture est sauvée ici. Le cloud suivra plus tard.',
+              tone: 'warning',
+            });
           }
         }
 
@@ -206,7 +213,11 @@ export const useCatsStore = create<CatsState>()(
         set((state) => ({
           cats: state.cats.map((cat) =>
             cat.id === id || cat.remoteId === id
-              ? { ...cat, views: cat.views + 1 }
+              ? {
+                  ...cat,
+                  views: cat.views + 1,
+                  lastSeenAt: new Date().toISOString(),
+                }
               : cat,
           ),
         })),
@@ -237,16 +248,25 @@ export const useCatsStore = create<CatsState>()(
 
       syncFromRemote: async () => {
         if (!isSupabaseConfigured) return;
-        const remote = await pullMyCatsFromSupabase();
-        if (remote.length === 0) return;
+        try {
+          const remote = await pullMyCatsFromSupabase();
+          if (remote.length === 0) return;
 
-        set((state) => {
-          const merged = mergeRemoteCats(state.cats, remote);
-          return {
-            cats: merged,
-            nextNumber: maxNextNumber(merged, state.nextNumber),
-          };
-        });
+          set((state) => {
+            const merged = mergeRemoteCats(state.cats, remote);
+            return {
+              cats: merged,
+              nextNumber: maxNextNumber(merged, state.nextNumber),
+            };
+          });
+        } catch (error) {
+          console.warn('[cats] syncFromRemote failed', error);
+          useToastStore.getState().show({
+            title: 'Sync impossible',
+            description: 'Tes chats restent sur cet appareil.',
+            tone: 'warning',
+          });
+        }
       },
 
       clearLocal: () => set({ cats: [], nextNumber: 1 }),

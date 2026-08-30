@@ -22,6 +22,7 @@ import {
   progressionFromTotalXp,
 } from '@/lib/progression'
 import { useCatsStore } from '@/store/cats'
+import { useMissionsStore } from '@/store/missions'
 import { useToastStore } from '@/store/toast'
 import { useTheme } from '@/theme'
 
@@ -45,13 +46,14 @@ export default function MissionsScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const cats = useCatsStore((state) => state.cats)
+  const streakDays = useMissionsStore((state) => state.streakDays)
   const showToast = useToastStore((state) => state.show)
 
   const totalXp = estimateTotalXp(cats)
   const progress = progressionFromTotalXp(totalXp)
   const levelDef = LEVEL_DEFS.find((d) => d.level === progress.level)
   const nextReward = nextLevelReward(progress.level)
-  const daily = buildDailyQuests(cats)
+  const daily = buildDailyQuests(cats, { streakDays })
   const weekly = buildWeeklyQuest(cats)
   const collections = buildVisibleCollections(cats, progress.level)
   const teasers = buildLockedTeasers(progress.level, cats.length)
@@ -109,7 +111,7 @@ export default function MissionsScreen() {
         <View style={{ gap: spacing[16] }}>
           <SectionLabel
             title="Aujourd’hui"
-            hint="Trois objectifs simples pour faire avancer ta collection."
+            hint="Trois objectifs liés à tes captures — pas une liste à cocher."
           />
           <DailyQuestList
             quests={daily}

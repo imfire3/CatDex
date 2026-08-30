@@ -9,6 +9,7 @@ import {
 } from '@/components/Settings';
 import { Text } from '@/components/Text';
 import { useSettingsPrefsStore } from '@/store/settingsPrefs';
+import { useToastStore } from '@/store/toast';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SyncSettingsScreen() {
@@ -17,6 +18,7 @@ export default function SyncSettingsScreen() {
   const hydrated = useSettingsPrefsStore((s) => s.hydrated);
   const hydrate = useSettingsPrefsStore((s) => s.hydrate);
   const setPref = useSettingsPrefsStore((s) => s.setPref);
+  const showToast = useToastStore((s) => s.show);
 
   useEffect(() => {
     void hydrate();
@@ -63,7 +65,16 @@ export default function SyncSettingsScreen() {
           value={prefs.syncEnabled}
           disabled={!hydrated}
           showDivider={false}
-          onValueChange={(v) => setPref('syncEnabled', v)}
+          onValueChange={(v) => {
+            setPref('syncEnabled', v);
+            showToast({
+              title: v ? 'Sync activée' : 'Sync en pause',
+              description: v
+                ? 'Tes captures suivent ton compte.'
+                : 'Tes chats restent sur cet appareil.',
+              tone: v ? 'success' : 'warning',
+            });
+          }}
         />
       </SettingsSection>
     </SettingsScreen>

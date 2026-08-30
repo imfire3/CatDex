@@ -78,6 +78,8 @@ export type Cat = {
   latitude: number;
   longitude: number;
   discoveredAt: string;
+  /** Last time the player opened the fiche or recaptured this cat. */
+  lastSeenAt?: string;
   views: number;
   notes?: string;
   /**

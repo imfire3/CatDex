@@ -11,6 +11,7 @@ import Svg, { Path } from 'react-native-svg'
 import { Text } from '@/components/Text'
 import { MOBILE_WEB_WIDTH } from '@/layout/MobileWebFrame'
 import { formatDistanceMeters } from '@/lib/constants'
+import { formatDistanceAndDirection } from '@/lib/geoLabels'
 import type { CatWithDistance } from '@/lib/mapExplore'
 import { useTheme } from '@/theme/ThemeProvider'
 
@@ -19,6 +20,7 @@ type Props = {
   items: CatWithDistance[]
   /** Hide meter labels until a real GPS fix is available. */
   showDistance?: boolean
+  origin?: { latitude: number; longitude: number } | null
   onClose: () => void
   onSelect: (item: CatWithDistance) => void
 }
@@ -31,6 +33,7 @@ export function MapDiscoverableSheet({
   visible,
   items,
   showDistance = true,
+  origin = null,
   onClose,
   onSelect,
 }: Props) {
@@ -200,7 +203,15 @@ export function MapDiscoverableSheet({
                         weight="semibold"
                         color="textBrand"
                       >
-                        {formatDistanceMeters(distanceM)}
+                        {origin
+                          ? formatDistanceAndDirection({
+                              distanceM,
+                              fromLat: origin.latitude,
+                              fromLng: origin.longitude,
+                              toLat: cat.latitude,
+                              toLng: cat.longitude,
+                            }) ?? formatDistanceMeters(distanceM)
+                          : formatDistanceMeters(distanceM)}
                       </Text>
                     ) : null}
                   </Pressable>

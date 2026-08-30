@@ -3,26 +3,56 @@ import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import { BrandLoader, PrimaryCTA, SightingScene } from '@/components/Auth/Onboarding';
+import {
+  BrandLoader,
+  PrimaryCTA,
+  ProgressDots,
+  RewardScene,
+  ScanScene,
+  SightingScene,
+} from '@/components/Auth/Onboarding';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const ENTER_MAP_MS = 900;
 
-/** Single post-auth beat — then the map. GPS and camera wait for in-map gestures. */
+const STEPS = [
+  {
+    title: 'Voir la carte',
+    subtitle: 'Belleville · 150 m — un chat t’attend au coin de la rue',
+    Scene: SightingScene,
+  },
+  {
+    title: 'Photographier',
+    subtitle: 'Lumière de face · un seul chat · yeux visibles',
+    Scene: ScanScene,
+  },
+  {
+    title: 'Retourner à la carte',
+    subtitle: 'Miel est dans ton CatDex — la collection commence',
+    Scene: RewardScene,
+  },
+] as const;
+
+/** Three post-auth beats — map, photo, CatDex — then the real map. */
 export default function IntroScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
   const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
+  const [step, setStep] = useState(0);
   const [entering, setEntering] = useState(false);
 
-  const handleExplore = useCallback(async () => {
+  const handleNext = useCallback(async () => {
+    if (step < STEPS.length - 1) {
+      setStep((current) => current + 1);
+      return;
+    }
     setEntering(true);
     await new Promise((resolve) => setTimeout(resolve, ENTER_MAP_MS));
     completeOnboarding();
     router.replace('/(tabs)/map');
-  }, [completeOnboarding]);
+  }, [completeOnboarding, step]);
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
@@ -39,6 +69,9 @@ export default function IntroScreen() {
     );
   }
 
+  const current = STEPS[step];
+  const Scene = current.Scene;
+
   return (
     <AuthShell
       plain
@@ -53,18 +86,23 @@ export default function IntroScreen() {
             paddingHorizontal: spacing[24],
           }}
         >
+          <ProgressDots
+            step={step}
+            total={STEPS.length}
+            labels={['Carte', 'Photo', 'CatDex']}
+          />
           <PrimaryCTA
-            title="Voir la carte"
-            subtitle="Photographie le premier chat que tu croises — GPS et caméra au moment du geste"
+            title={current.title}
+            subtitle={current.subtitle}
             onPress={() => {
-              void handleExplore();
+              void handleNext();
             }}
           />
         </View>
       }
     >
       <View style={{ flexGrow: 1, minHeight: 640 }}>
-        <SightingScene />
+        <Scene />
       </View>
     </AuthShell>
   );

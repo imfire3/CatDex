@@ -32,6 +32,7 @@ import {
 import { SUPPORT_CTA_LABEL, SUPPORT_REVOLUT_URL } from '@/lib/supportLinks'
 import { useAuthStore } from '@/store/auth'
 import { useCatsStore } from '@/store/cats'
+import { useFavoritesStore } from '@/store/favorites'
 import { useMissionsStore } from '@/store/missions'
 import { useToastStore } from '@/store/toast'
 import { useTheme } from '@/theme/ThemeProvider'
@@ -109,11 +110,15 @@ export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user)
   const signOut = useAuthStore((state) => state.signOut)
   const cats = useCatsStore((state) => state.cats)
+  const companionId = useFavoritesStore((state) => state.companionId)
   const streakDays = useMissionsStore((state) => state.streakDays)
   const showToast = useToastStore((state) => state.show)
 
   const displayName = user?.displayName ?? 'Explorateur'
-  const fav = favoriteCat(cats)
+  const companion =
+    (companionId ? cats.find((cat) => cat.id === companionId) : undefined) ??
+    favoriteCat(cats)
+  const fav = companion
   const avatarUri =
     user?.avatarUrl ||
     (fav?.photoUri &&

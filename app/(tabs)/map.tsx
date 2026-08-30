@@ -9,9 +9,9 @@ import { EnablePermissionModal } from '@/components/EnablePermissionModal';
 import { SupportProjectModal } from '@/components/SupportProjectModal';
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
+import { ChatDuJourBanner } from '@/components/maps/ChatDuJourBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
 import { MapDiscoverableSheet } from '@/components/maps/MapDiscoverableSheet';
-import { MapDiscoveryLegend } from '@/components/maps/MapDiscoveryLegend';
 import { MapDiscoveryTip } from '@/components/maps/MapDiscoveryTip';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
 import { useCaptureGate } from '@/hooks/useCaptureGate';
@@ -21,6 +21,11 @@ import {
 } from '@/lib/catDiscovery';
 import { isCatVisibleOnMap } from '@/lib/catLifestyle';
 import { PARIS_20E, distanceMeters } from '@/lib/constants';
+import {
+  formatDistanceAndDirection,
+  pickCatOfTheDay,
+} from '@/lib/geoLabels';
+import { emitUsefulNotifications } from '@/lib/usefulNotifications';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
 import {
   DEMO_COMMUNITY_CATS,
@@ -55,9 +60,11 @@ import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { claimTargetFromCat, useClaimTargetStore } from '@/store/claimTarget';
 import { useCommunityCatsStore } from '@/store/communityCats';
+import { useFavoritesStore } from '@/store/favorites';
 import { useMapExploreStore } from '@/store/mapExplore';
 import { useMissionsStore } from '@/store/missions';
 import { useNotificationsStore } from '@/store/notifications';
+import { useSettingsPrefsStore } from '@/store/settingsPrefs';
 import { useToastStore } from '@/store/toast';
 import type { Cat } from '@/types/cat';
 
@@ -75,8 +82,17 @@ export default function MapScreen() {
   const consumePendingFocus = useMapExploreStore(
     (state) => state.consumePendingFocus,
   );
+  const consumePendingRecenterOnPlayer = useMapExploreStore(
+    (state) => state.consumePendingRecenterOnPlayer,
+  );
+  const pendingRecenterOnPlayer = useMapExploreStore(
+    (state) => state.pendingRecenterOnPlayer,
+  );
   const pushNearby = useNotificationsStore((state) => state.pushNearby);
   const missions = useMissionsStore((state) => state.missions);
+  const companionId = useFavoritesStore((state) => state.companionId);
+  const settingsPrefs = useSettingsPrefsStore((state) => state.prefs);
+  const hydrateSettings = useSettingsPrefsStore((state) => state.hydrate);
   const openMissionCount = missions.filter((m) => !m.completed).length;
   const captureGate = useCaptureGate();
   const setClaimTarget = useClaimTargetStore((state) => state.setTarget);
@@ -231,6 +247,35 @@ export default function MapScreen() {
     [mapCats, ownedIds],
   );
 
+  const catOfTheDay = useMemo(
+    () => pickCatOfTheDay(discoverableCats),
+    [discoverableCats],
+  );
+
+  const companionName = useMemo(() => {
+    if (!companionId) return null;
+    return storedCats.find((cat) => cat.id === companionId)?.name ?? null;
+  }, [companionId, storedCats]);
+
+  useEffect(() => {
+    void hydrateSettings();
+  }, [hydrateSettings]);
+
+  useEffect(() => {
+    emitUsefulNotifications({
+      owned: storedCats,
+      discoverable: discoverableCats,
+      user: hasGpsFix ? userCoordinate : null,
+      prefs: settingsPrefs,
+    });
+  }, [
+    storedCats,
+    discoverableCats,
+    hasGpsFix,
+    userCoordinate,
+    settingsPrefs,
+  ]);
+
   const handleShowDiscoverable = useCallback(() => {
     if (discoverableCats.length === 0) return;
     const points = coordinatesForDiscoveryOverview(
@@ -315,6 +360,17 @@ export default function MapScreen() {
       selected.longitude,
     );
   }, [selected, hasGpsFix, userCoordinate]);
+
+  const selectedDirection = useMemo(() => {
+    if (!selected || !hasGpsFix || !userCoordinate) return null;
+    return formatDistanceAndDirection({
+      distanceM: selectedDistance,
+      fromLat: userCoordinate.latitude,
+      fromLng: userCoordinate.longitude,
+      toLat: selected.latitude,
+      toLng: selected.longitude,
+    });
+  }, [selected, hasGpsFix, userCoordinate, selectedDistance]);
 
   const nearestForProximity = sortedCats[0] ?? null;
   const nearbyCatIds = useMemo(
@@ -700,6 +756,16 @@ export default function MapScreen() {
     openLocationAskModal();
   };
 
+  useEffect(() => {
+    if (!mapFocused || !pendingRecenterOnPlayer) return;
+    if (!consumePendingRecenterOnPlayer()) return;
+    void recenterOnPlayer();
+  }, [
+    mapFocused,
+    pendingRecenterOnPlayer,
+    consumePendingRecenterOnPlayer,
+  ]);
+
   /** Double-tap recenter — default zoom + pitch on the player. */
   const resetMainView = () => {
     setFollowUser(true);
@@ -802,11 +868,45 @@ export default function MapScreen() {
         onRequestEnable={openLocationAskModal}
       />
 
-      {hasDiscoverableOnMap || storedCats.length > 0 ? (
-        <MapDiscoveryLegend
-          discoverableCount={discoverableCats.length}
-          onShowDiscoverable={
-            discoverableCats.length > 0 ? handleShowDiscoverable : undefined
+      {catOfTheDay ? (
+        <ChatDuJourBanner
+          name={
+            getCatDiscoveryState(catOfTheDay, ownedIds) === 'owned'
+              ? catOfTheDay.name
+              : 'Chat mystère'
+          }
+          meta={
+            hasGpsFix && userCoordinate
+              ? formatDistanceAndDirection({
+                  distanceM: distanceMeters(
+                    userCoordinate.latitude,
+                    userCoordinate.longitude,
+                    catOfTheDay.latitude,
+                    catOfTheDay.longitude,
+                  ),
+                  fromLat: userCoordinate.latitude,
+                  fromLng: userCoordinate.longitude,
+                  toLat: catOfTheDay.latitude,
+                  toLng: catOfTheDay.longitude,
+                }) ?? 'À découvrir aujourd’hui'
+              : 'À découvrir aujourd’hui'
+          }
+          extraCount={Math.max(0, discoverableCats.length - 1)}
+          onPress={() => {
+            setFollowUser(false);
+            setCompassMode(false);
+            flyToCoordinate(
+              {
+                latitude: catOfTheDay.latitude,
+                longitude: catOfTheDay.longitude,
+              },
+              { pinZoom: true },
+            );
+            setSelected(catOfTheDay);
+            setSheetVisible(true);
+          }}
+          onSeeAll={
+            discoverableCats.length > 1 ? handleShowDiscoverable : undefined
           }
         />
       ) : null}
@@ -815,6 +915,7 @@ export default function MapScreen() {
         missionCount={openMissionCount}
         collectionCount={storedCats.length}
         captureHighlighted={Boolean(nearbyCatIds.length)}
+        companionName={companionName}
         compassActive={compassMode}
         onRecenter={() => void recenterOnPlayer()}
         onRecenterReset={resetMainView}
@@ -830,6 +931,7 @@ export default function MapScreen() {
         cat={selected}
         discoveryState={selectedDiscoveryState ?? undefined}
         distanceM={selectedDistance}
+        directionLabel={selectedDirection}
         onClose={() => {
           setSheetVisible(false);
           setSelected(null);
@@ -853,6 +955,7 @@ export default function MapScreen() {
         visible={discoverableSheetVisible}
         items={sortedDiscoverableCats}
         showDistance={hasGpsFix}
+        origin={hasGpsFix ? userCoordinate : null}
         onClose={() => setDiscoverableSheetVisible(false)}
         onSelect={handleSelectDiscoverable}
       />
