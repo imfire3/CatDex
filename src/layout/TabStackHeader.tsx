@@ -2,8 +2,10 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 import { AuthBackButton } from '@/components/Auth/AuthChrome';
+import { Button } from '@/components/Button';
 import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -17,6 +19,8 @@ type Props = {
   below?: ReactNode;
   /** Top-level tabs do not need a back affordance. */
   showBack?: boolean;
+  /** Figma Missions header: 48px icon button, 16px title, no divider. */
+  density?: 'default' | 'compact';
 };
 
 function goBackToMap() {
@@ -34,10 +38,14 @@ export function TabStackHeader({
   onBack = goBackToMap,
   below,
   showBack = true,
+  density = 'default',
 }: Props) {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, iconSize } = useTheme();
   const insets = useSafeAreaInsets();
-  const side = spacing[40];
+  const compact = density === 'compact';
+  const side = compact ? spacing[48] : spacing[40];
+  const rowPad = compact ? spacing[8] : spacing[16];
+  const titleVariant = compact ? 'button' : 'title';
 
   return (
     <View
@@ -45,7 +53,7 @@ export function TabStackHeader({
         backgroundColor: colors.surface,
         paddingTop: insets.top,
         paddingHorizontal: spacing[24],
-        borderBottomWidth: 1,
+        borderBottomWidth: compact ? 0 : 1,
         borderBottomColor: colors.border,
         width: '100%',
       }}
@@ -56,11 +64,36 @@ export function TabStackHeader({
           alignItems: 'center',
           minHeight: side,
           width: '100%',
-          paddingVertical: spacing[16],
+          paddingVertical: rowPad,
+          gap: compact ? spacing[8] : 0,
         }}
       >
         <View style={{ flex: 1, alignItems: 'flex-start', zIndex: 1, minWidth: side }}>
-          {showBack ? <AuthBackButton onPress={onBack} /> : <View style={{ width: side, height: side }} />}
+          {showBack ? (
+            compact ? (
+              <Button
+                variant="icon"
+                accessibilityLabel="Retour"
+                onPress={onBack}
+                style={{ borderWidth: 1 }}
+                icon={
+                  <Svg width={iconSize.md} height={iconSize.md} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M15 18l-6-6 6-6"
+                      stroke={colors.brand}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                }
+              />
+            ) : (
+              <AuthBackButton onPress={onBack} />
+            )
+          ) : (
+            <View style={{ width: side, height: side }} />
+          )}
         </View>
 
         <View
@@ -73,11 +106,11 @@ export function TabStackHeader({
             bottom: 0,
             alignItems: 'center',
             justifyContent: 'center',
-            paddingVertical: spacing[16],
+            paddingVertical: rowPad,
           }}
         >
           <Text
-            variant="title"
+            variant={titleVariant}
             color="textBrand"
             align="center"
             numberOfLines={2}

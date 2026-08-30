@@ -1,46 +1,21 @@
 import { router } from 'expo-router'
+import { useMemo } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import {
-  CollectionPreview,
-  DailyQuestList,
-  LockedTeaserList,
-  MissionLevelCard,
-  WeeklyChallengeCard,
-} from '@/components/missions'
+import { CollectionPreview, DailyQuestList } from '@/components/missions'
 import { Text } from '@/components/Text'
 import { TabStackHeader } from '@/layout/TabStackHeader'
 import {
   buildDailyQuests,
-  buildLockedTeasers,
   buildVisibleCollections,
-  buildWeeklyQuest,
   estimateTotalXp,
-  LEVEL_DEFS,
-  nextLevelReward,
   progressionFromTotalXp,
 } from '@/lib/progression'
 import { useCatsStore } from '@/store/cats'
 import { useMissionsStore } from '@/store/missions'
 import { useToastStore } from '@/store/toast'
 import { useTheme } from '@/theme'
-
-function SectionLabel({ title, hint }: { title: string; hint?: string }) {
-  const { spacing } = useTheme()
-  return (
-    <View style={{ gap: spacing.xs }}>
-      <Text variant="title" color="textBrand">
-        {title}
-      </Text>
-      {hint ? (
-        <Text variant="bodySmall" color="textSecondary">
-          {hint}
-        </Text>
-      ) : null}
-    </View>
-  )
-}
 
 export default function MissionsScreen() {
   const { colors, spacing } = useTheme()
@@ -51,25 +26,22 @@ export default function MissionsScreen() {
 
   const totalXp = estimateTotalXp(cats)
   const progress = progressionFromTotalXp(totalXp)
-  const levelDef = LEVEL_DEFS.find((d) => d.level === progress.level)
-  const nextReward = nextLevelReward(progress.level)
-  const daily = buildDailyQuests(cats, { streakDays })
-  const weekly = buildWeeklyQuest(cats)
   const collections = buildVisibleCollections(cats, progress.level)
-  const teasers = buildLockedTeasers(progress.level, cats.length)
+  const daily = buildDailyQuests(cats, { streakDays })
+
+  const heroUri = useMemo(() => {
+    const featured = collections.find((item) => !item.locked) ?? collections[0]
+    if (!featured) return null
+    const match = cats.find(
+      (cat) =>
+        featured.match(cat) &&
+        cat.photoUri &&
+        !cat.photoUri.startsWith('blob:'),
+    )
+    return match?.photoUri ?? null
+  }, [cats, collections])
 
   const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24]
-
-  const handleSeeRewards = () => {
-    const preview = LEVEL_DEFS.slice(0, 8)
-      .map((d) => `Niv. ${d.level} · ${d.unlock ?? d.reward ?? d.goal}`)
-      .join('\n')
-    showToast({
-      title: 'Ce qui t’attend',
-      description: preview,
-      tone: 'default',
-    })
-  }
 
   const handleSeeCollections = () => {
     showToast({
@@ -83,6 +55,7 @@ export default function MissionsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <TabStackHeader
         title="Missions"
+        density="compact"
         onBack={() => router.replace('/(tabs)/map')}
       />
       <ScrollView
@@ -91,28 +64,25 @@ export default function MissionsScreen() {
           paddingHorizontal: spacing[24],
           paddingTop: spacing[16],
           paddingBottom: listBottom,
-          gap: spacing[32] }}
+          gap: spacing[24],
+        }}
       >
-        <Text variant="body" color="textBody">
-          Chaque découverte te rapproche du niveau suivant.
-        </Text>
-
-        <MissionLevelCard
-          level={progress.level}
-          title={progress.title}
-          goal={levelDef?.goal ?? progress.nextReward}
-          xpIntoLevel={progress.xpIntoLevel}
-          xpMax={progress.xpMax}
-          nextLevel={nextReward.nextLevel}
-          nextRewardLabel={nextReward.label}
-          onSeeRewards={handleSeeRewards}
+        <CollectionPreview
+          collections={collections}
+          heroUri={heroUri}
+          onSeeAll={handleSeeCollections}
+          onPressCollection={() => router.push('/(tabs)/catdex')}
         />
 
         <View style={{ gap: spacing[16] }}>
-          <SectionLabel
-            title="Aujourd’hui"
-            hint="Trois objectifs liés à tes captures — pas une liste à cocher."
-          />
+          <View style={{ gap: spacing[4] }}>
+            <Text variant="title" color="textBrand">
+              Aujourd’hui
+            </Text>
+            <Text variant="bodySmall" color="textSecondary">
+              Trois objectifs liés à tes captures.
+            </Text>
+          </View>
           <DailyQuestList
             quests={daily}
             onPress={(quest) => {
@@ -122,24 +92,6 @@ export default function MissionsScreen() {
             }}
           />
         </View>
-
-        <View style={{ gap: spacing[16] }}>
-          <SectionLabel
-            title="En ce moment"
-            hint="Un défi plus long pour gagner une récompense spéciale."
-          />
-          <WeeklyChallengeCard quest={weekly} />
-        </View>
-
-        <View style={{ gap: spacing[16] }}>
-          <SectionLabel
-            title="Collections"
-            hint="De nouvelles séries se débloquent au fil de ton aventure."
-          />
-          <CollectionPreview collections={collections} onSeeAll={handleSeeCollections} />
-        </View>
-
-        <LockedTeaserList teasers={teasers} />
       </ScrollView>
     </View>
   )
