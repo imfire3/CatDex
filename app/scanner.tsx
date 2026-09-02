@@ -453,6 +453,9 @@ export default function ScannerScreen() {
         await enterReveal(nextAnalysis, imageUri, {
           photoBase64: base64,
           photoMimeType: mimeType,
+          // Keep the map pin on the community sighting, not the live GPS.
+          latitude: claim.latitude,
+          longitude: claim.longitude,
         });
         return;
       }

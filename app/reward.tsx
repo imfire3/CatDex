@@ -130,6 +130,9 @@ export default function RewardScreen() {
   const requestRecenterOnPlayer = useMapExploreStore(
     (state) => state.requestRecenterOnPlayer,
   );
+  const requestFocusOnCat = useMapExploreStore(
+    (state) => state.requestFocusOnCat,
+  );
 
   const addingRef = useRef(false);
   const [phase, setPhase] = useState<Phase>(pending ? 'verify' : 'share');
@@ -151,7 +154,17 @@ export default function RewardScreen() {
   const enterDown = reduceMotion ? undefined : FadeInDown.delay(120).duration(320);
 
   const finishToMap = () => {
-    requestRecenterOnPlayer();
+    if (cat?.sourceWorldId) {
+      // Claimed community pin → land on the captured marker (✓), not player GPS.
+      requestFocusOnCat({
+        catId: cat.id,
+        latitude: cat.latitude,
+        longitude: cat.longitude,
+        pinZoom: true,
+      });
+    } else {
+      requestRecenterOnPlayer();
+    }
     clearPending();
     clearClaimTarget();
     router.replace('/(tabs)/map');

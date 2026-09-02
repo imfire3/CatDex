@@ -5,6 +5,7 @@ import {
   buildOwnedCatIdSet,
   getCatDiscoveryState,
   isOwnedByCurrentUser,
+  mergeMapCatsForExplorer,
 } from './catDiscovery';
 import type { Cat, CatAnalysis } from '../types/cat';
 
@@ -93,5 +94,44 @@ describe('getCatDiscoveryState', () => {
       getCatDiscoveryState({ id: 'unrelated', remoteId: 'remote-x' }, ownedIds),
       'owned',
     );
+  });
+});
+
+describe('mergeMapCatsForExplorer', () => {
+  it('replaces a claimed community pin with the owned fiche at the same spot', () => {
+    const community = cat({
+      id: 'sighting-a',
+      remoteId: 'sighting-a',
+      name: 'Mystère',
+      latitude: 48.87,
+      longitude: 2.4,
+    });
+    const claimed = cat({
+      id: 'local-claimed',
+      name: 'Noctix',
+      sourceWorldId: 'sighting-a',
+      latitude: 48.1,
+      longitude: 2.1,
+      photoUri: 'file://mine.jpg',
+    });
+    const ownedIds = buildOwnedCatIdSet([claimed]);
+    const pins = mergeMapCatsForExplorer([claimed], [community], ownedIds);
+    assert.equal(pins.length, 1);
+    assert.equal(pins[0].id, 'local-claimed');
+    assert.equal(pins[0].name, 'Noctix');
+    assert.equal(pins[0].latitude, 48.87);
+    assert.equal(pins[0].longitude, 2.4);
+    assert.equal(getCatDiscoveryState(pins[0], ownedIds), 'owned');
+  });
+
+  it('keeps unclaimed community pins discoverable', () => {
+    const community = cat({ id: 'sighting-b', latitude: 48.88, longitude: 2.41 });
+    const mine = cat({ id: 'mine', latitude: 48.86, longitude: 2.35 });
+    const ownedIds = buildOwnedCatIdSet([mine]);
+    const pins = mergeMapCatsForExplorer([mine], [community], ownedIds);
+    assert.equal(pins.length, 2);
+    const mystery = pins.find((p) => p.id === 'sighting-b');
+    assert.ok(mystery);
+    assert.equal(getCatDiscoveryState(mystery!, ownedIds), 'discoverable');
   });
 });

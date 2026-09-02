@@ -18,8 +18,8 @@ import { useCaptureGate } from '@/hooks/useCaptureGate';
 import {
   buildOwnedCatIdSet,
   getCatDiscoveryState,
+  mergeMapCatsForExplorer,
 } from '@/lib/catDiscovery';
-import { isCatVisibleOnMap } from '@/lib/catLifestyle';
 import { PARIS_20E, distanceMeters } from '@/lib/constants';
 import {
   formatDistanceAndDirection,
@@ -208,26 +208,12 @@ export default function MapScreen() {
 
   /**
    * Own CatDex pins (photo) + other players' sightings (mystery until you capture them).
-   * Community pins disappear once you capture that same sighting id.
+   * Claiming a community pin replaces it in-place with your captured fiche.
    */
-  const mapCats = useMemo(() => {
-    const byId = new Map<string, Cat>();
-
-    for (const cat of communityCats) {
-      if (!isCatVisibleOnMap(cat)) continue;
-      if (getCatDiscoveryState(cat, ownedIds) === 'owned') {
-        continue;
-      }
-      byId.set(cat.id, cat);
-    }
-
-    for (const cat of ownedCats) {
-      if (!isCatVisibleOnMap(cat)) continue;
-      byId.set(cat.remoteId || cat.id, cat);
-    }
-
-    return [...byId.values()];
-  }, [ownedCats, communityCats, ownedIds]);
+  const mapCats = useMemo(
+    () => mergeMapCatsForExplorer(ownedCats, communityCats, ownedIds),
+    [ownedCats, communityCats, ownedIds],
+  );
 
   const selectedDiscoveryState = selected
     ? getCatDiscoveryState(selected, ownedIds)
