@@ -32,6 +32,7 @@ import {
   displayNameForClaim,
 } from '@/lib/claimDiscoverableCat';
 import {
+  formatDistanceMeters,
   isInParis20e,
   PARIS_20E,
 } from '@/lib/constants';
@@ -44,6 +45,10 @@ import {
 } from '@/lib/errorCatalog';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import { compressPhotoDataUri } from '@/lib/photoStorage';
+import {
+  findRespotCandidates,
+  type RespotCandidate,
+} from '@/lib/respotCandidates';
 import { sendAnalysisErrorReport } from '@/lib/sendErrorReport';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { getPostAuthHref, useAuthStore } from '@/store/auth';
@@ -63,6 +68,7 @@ type Step =
   | 'server'
   | 'auth'
   | 'analysisError'
+  | 'respotConfirm'
   | 'alreadyCaptured';
 
 /** Brief pause so the loading UI can paint — never pad a slow API. */
@@ -148,6 +154,7 @@ export default function ScannerScreen() {
   const nextNumber = useCatsStore((state) => state.nextNumber);
   const cats = useCatsStore((state) => state.cats);
   const incrementViews = useCatsStore((state) => state.incrementViews);
+  const recordRespot = useCatsStore((state) => state.recordRespot);
   const setPendingCapture = usePendingCaptureStore((state) => state.setPending);
   const claimTarget = useClaimTargetStore((state) => state.target);
   const isClaimCapture = Boolean(
@@ -174,10 +181,20 @@ export default function ScannerScreen() {
   const [analysisErrorMessage, setAnalysisErrorMessage] = useState<string | null>(
     null,
   );
+  const [respotCandidates, setRespotCandidates] = useState<RespotCandidate[]>([]);
+  const [respotSighting, setRespotSighting] = useState<{
+    analysis: CatAnalysis;
+    imageUri: string;
+    photoBase64?: string;
+    photoMimeType?: string;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [existingCat, setExistingCat] = useState<Cat | null>(null);
   const [allowRecapture, setAllowRecapture] = useState(false);
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<FlashMode>('auto');
+  const respotBusyRef = useRef(false);
 
   const alreadyCaptured = sourceWorldId
     ? cats.find((cat) => cat.sourceWorldId === sourceWorldId) ?? null
@@ -293,10 +310,16 @@ export default function ScannerScreen() {
       mocked?: boolean;
       photoBase64?: string | null;
       photoMimeType?: string;
+      latitude?: number;
+      longitude?: number;
     },
   ) => {
-    const position = await ensureLocation();
-    const { latitude, longitude } = position.coords;
+    const location =
+      typeof options?.latitude === 'number' &&
+      typeof options?.longitude === 'number'
+        ? { coords: { latitude: options.latitude, longitude: options.longitude } }
+        : await ensureLocation();
+    const { latitude, longitude } = location.coords;
 
     if (!isInParis20e(latitude, longitude) && __DEV__) {
       showToast({
@@ -328,6 +351,42 @@ export default function ScannerScreen() {
     });
 
     router.replace('/reward');
+  };
+
+  const handleRespotConfirm = async (candidate: RespotCandidate) => {
+    if (!respotSighting || respotBusyRef.current) return;
+    respotBusyRef.current = true;
+    try {
+      const updated = await recordRespot(candidate.cat.id, {
+        latitude: respotSighting.latitude,
+        longitude: respotSighting.longitude,
+        photoUri: respotSighting.imageUri,
+      });
+      const name = updated?.name ?? candidate.cat.name;
+      showToast({
+        title: `${name}, revu ici`,
+        description: '+15 XP',
+        tone: 'success',
+      });
+      setRespotCandidates([]);
+      setRespotSighting(null);
+      router.replace('/(tabs)/map');
+    } finally {
+      respotBusyRef.current = false;
+    }
+  };
+
+  const handleRespotReject = async () => {
+    if (!respotSighting) return;
+    const sighting = respotSighting;
+    setRespotCandidates([]);
+    setRespotSighting(null);
+    await enterReveal(sighting.analysis, sighting.imageUri, {
+      photoBase64: sighting.photoBase64,
+      photoMimeType: sighting.photoMimeType,
+      latitude: sighting.latitude,
+      longitude: sighting.longitude,
+    });
   };
 
   const runAnalysis = async (
@@ -426,6 +485,32 @@ export default function ScannerScreen() {
         setStep('problem');
         return;
       }
+      const location = await ensureLocation();
+      const lat = location.coords.latitude;
+      const lng = location.coords.longitude;
+
+      if (!isClaimCapture) {
+        const candidates = findRespotCandidates(useCatsStore.getState().cats, {
+          latitude: lat,
+          longitude: lng,
+          analysis: nextAnalysis,
+        });
+        if (candidates.length > 0) {
+          setRespotCandidates(candidates);
+          setRespotSighting({
+            analysis: nextAnalysis,
+            imageUri: cutoutUri ?? imageUri,
+            photoBase64: base64,
+            photoMimeType: mimeType,
+            latitude: lat,
+            longitude: lng,
+          });
+          setPhotoUri(cutoutUri ?? imageUri);
+          setAnalysis(nextAnalysis);
+          setStep('respotConfirm');
+          return;
+        }
+      }
       await enterReveal(
         nextAnalysis,
         cutoutUri ?? imageUri,
@@ -433,6 +518,8 @@ export default function ScannerScreen() {
           mocked,
           photoBase64: base64,
           photoMimeType: mimeType,
+          latitude: lat,
+          longitude: lng,
         },
       );
     } catch (error) {
@@ -587,6 +674,8 @@ export default function ScannerScreen() {
     setPhotoBase64(null);
     setPhotoMimeType('image/jpeg');
     setAnalysis(null);
+    setRespotCandidates([]);
+    setRespotSighting(null);
   };
 
   const retryLastPhoto = () => {
@@ -624,6 +713,104 @@ export default function ScannerScreen() {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <PageLoading label="Vérification de la session…" />
+      </View>
+    );
+  }
+
+  if (step === 'respotConfirm' && respotSighting && respotCandidates.length > 0) {
+    const primary = respotCandidates[0];
+    return (
+      <View
+        style={[
+          styles.root,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            paddingHorizontal: spacing[24],
+            gap: spacing[16],
+          },
+        ]}
+      >
+        <View style={{ gap: spacing[8] }}>
+          <Text variant="title" color="textBrand">
+            {respotCandidates.length === 1
+              ? `C’est encore ${primary.cat.name} ?`
+              : 'Tu l’as déjà croisé ?'}
+          </Text>
+          <Text variant="bodySmall" color="textSecondary">
+            {`Vu près d’ici · ${primary.cat.analysis.color || 'Pelage inconnu'} · ${formatDistanceMeters(primary.distanceM)}`}
+          </Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: spacing[16] }}>
+          <View
+            style={[
+              {
+                flex: 1,
+                backgroundColor: colors.surfaceElevated,
+                borderRadius: radius.cta,
+                padding: spacing[8],
+                gap: spacing[8],
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: colors.border,
+              },
+              shadow.low,
+            ]}
+          >
+            <Image
+              source={{ uri: respotSighting.imageUri }}
+              style={{ width: '100%', aspectRatio: 1, borderRadius: radius.md }}
+              resizeMode="cover"
+            />
+            <Text variant="caption" color="textSecondary">
+              Nouvelle photo
+            </Text>
+          </View>
+          <View
+            style={[
+              {
+                flex: 1,
+                backgroundColor: colors.surfaceElevated,
+                borderRadius: radius.cta,
+                padding: spacing[8],
+                gap: spacing[8],
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: colors.border,
+              },
+              shadow.low,
+            ]}
+          >
+            <Image
+              source={{ uri: primary.cat.photoUri || respotSighting.imageUri }}
+              style={{ width: '100%', aspectRatio: 1, borderRadius: radius.md }}
+              resizeMode="cover"
+            />
+            <Text variant="caption" color="textSecondary">
+              Fiche existante
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ gap: spacing[8] }}>
+          {respotCandidates.map((candidate) => (
+            <Button
+              key={candidate.cat.id}
+              variant="primary"
+              title={`Oui, c’est ${candidate.cat.name}`}
+              onPress={() => {
+                void handleRespotConfirm(candidate);
+              }}
+            />
+          ))}
+          <Button
+            variant="secondary"
+            title="Non, un nouveau chat"
+            onPress={() => {
+              void handleRespotReject();
+            }}
+          />
+        </View>
       </View>
     );
   }
