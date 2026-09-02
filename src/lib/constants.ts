@@ -21,11 +21,6 @@ export const SLOGAN = 'Explore ton quartier, capture les chats et construis ton 
 /** Product-defined CatDex completion target (ghost slots + progress). */
 export const CATDEX_TARGET = 50;
 
-import { getPrimaryApiUrl } from '@/lib/apiUrl';
-
-/** @deprecated Use getPrimaryApiUrl() — kept for existing imports. */
-export const API_URL = getPrimaryApiUrl();
-
 /** Soft gate: warn outside 20e but still allow capture in development. */
 export function isInParis20e(latitude: number, longitude: number): boolean {
   const { bounds } = PARIS_20E;
