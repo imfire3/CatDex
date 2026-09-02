@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { AnalysisLoadingView } from '@/components/scanner/AnalysisLoadingView';
+import { CaptureMinigame } from '@/components/scanner/CaptureMinigame';
 import { AuthBackButton } from '@/components/Auth/AuthChrome';
 import { Button } from '@/components/Button';
 import { EnablePermissionModal } from '@/components/EnablePermissionModal';
@@ -61,6 +62,7 @@ import type { Cat, CatAnalysis } from '@/types/cat';
 
 type Step =
   | 'camera'
+  | 'captureMinigame'
   | 'analyzing'
   | 'review'
   | 'problem'
@@ -237,6 +239,12 @@ export default function ScannerScreen() {
       setCameraError(null);
     }
   }, [step]);
+
+  useEffect(() => {
+    if (step === 'captureMinigame' && (!photoUri || !photoBase64)) {
+      resetToCamera();
+    }
+  }, [photoBase64, photoUri, step, resetToCamera]);
 
   // Restore JWT into the auth store when the user is logged in but session is missing.
   useEffect(() => {
@@ -581,6 +589,16 @@ export default function ScannerScreen() {
 
   runAnalysisRef.current = runAnalysis;
 
+  const beginAnalysisAfterCapture = (
+    base64: string,
+    imageUri: string,
+    mimeType: string,
+  ) => {
+    setStep('analyzing');
+    setAnalyzing(true);
+    void runAnalysis(base64, imageUri, mimeType);
+  };
+
   const handleTakePicture = async () => {
     if (capturing) return;
     if (!cameraReady || !cameraRef.current) {
@@ -623,9 +641,11 @@ export default function ScannerScreen() {
       setPhotoUri(durableUri);
       setPhotoBase64(rawBase64);
       setPhotoMimeType('image/jpeg');
-      setStep('analyzing');
-      setAnalyzing(true);
-      void runAnalysis(rawBase64, durableUri, 'image/jpeg');
+      if (isClaimCapture) {
+        beginAnalysisAfterCapture(rawBase64, durableUri, 'image/jpeg');
+        return;
+      }
+      setStep('captureMinigame');
     } catch (error) {
       showToast({
         title: 'Capture impossible',
@@ -680,16 +700,18 @@ export default function ScannerScreen() {
     setPhotoUri(durableUri);
     setPhotoBase64(asset.base64);
     setPhotoMimeType(mimeType);
-    setStep('analyzing');
-    setAnalyzing(true);
-    void runAnalysis(asset.base64, durableUri, mimeType);
+    if (isClaimCapture) {
+      beginAnalysisAfterCapture(asset.base64, durableUri, mimeType);
+      return;
+    }
+    setStep('captureMinigame');
   };
 
   const handleOpenSettings = () => {
     void Linking.openSettings();
   };
 
-  const resetToCamera = () => {
+  function resetToCamera() {
     analysisGenRef.current += 1;
     setAnalyzing(false);
     setStep('camera');
@@ -699,7 +721,7 @@ export default function ScannerScreen() {
     setAnalysis(null);
     setRespotCandidates([]);
     setRespotSighting(null);
-  };
+  }
 
   const retryLastPhoto = () => {
     if (photoBase64 && photoUri) {
@@ -1069,6 +1091,20 @@ export default function ScannerScreen() {
         />
       </View>
     );
+  }
+
+  if (step === 'captureMinigame') {
+    if (photoUri && photoBase64) {
+      return (
+        <CaptureMinigame
+          photoUri={photoUri}
+          onBack={resetToCamera}
+          onCaptured={() => {
+            beginAnalysisAfterCapture(photoBase64, photoUri, photoMimeType);
+          }}
+        />
+      );
+    }
   }
 
   if ((step === 'analyzing' || analyzing) && photoUri) {
