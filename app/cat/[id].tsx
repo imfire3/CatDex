@@ -107,6 +107,7 @@ export default function CatDetailScreen() {
         discoveredAt={cat.discoveredAt}
         lastSeenAt={cat.lastSeenAt}
         views={cat.views}
+        captureCount={cat.captureCount}
         locationLabel={locationLabelFromCoords(cat.latitude, cat.longitude)}
         onBack={goBackFromCat}
       />

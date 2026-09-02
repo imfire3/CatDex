@@ -153,7 +153,6 @@ export default function ScannerScreen() {
   const showToast = useToastStore((state) => state.show);
   const nextNumber = useCatsStore((state) => state.nextNumber);
   const cats = useCatsStore((state) => state.cats);
-  const incrementViews = useCatsStore((state) => state.incrementViews);
   const recordRespot = useCatsStore((state) => state.recordRespot);
   const setPendingCapture = usePendingCaptureStore((state) => state.setPending);
   const claimTarget = useClaimTargetStore((state) => state.target);
@@ -212,13 +211,19 @@ export default function ScannerScreen() {
     if (step !== 'alreadyCaptured' || !existingCat) return;
     if (recaptureXpRef.current === existingCat.id) return;
     recaptureXpRef.current = existingCat.id;
-    incrementViews(existingCat.id);
-    showToast({
-      title: `${existingCat.name}, revu ici`,
-      description: '+15 XP',
-      tone: 'success',
-    });
-  }, [step, existingCat, incrementViews, showToast]);
+    void (async () => {
+      const updated = await recordRespot(existingCat.id, {
+        latitude: existingCat.latitude,
+        longitude: existingCat.longitude,
+      });
+      const count = updated?.captureCount ?? (existingCat.captureCount ?? 1) + 1;
+      showToast({
+        title: `${updated?.name ?? existingCat.name}, revu ici`,
+        description: `Capturé ${count} fois · +15 XP`,
+        tone: 'success',
+      });
+    })();
+  }, [step, existingCat, recordRespot, showToast]);
 
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain !== false) {
@@ -365,9 +370,10 @@ export default function ScannerScreen() {
           photoUri: respotSighting.imageUri,
         });
         const name = updated?.name ?? candidate.cat.name;
+        const count = updated?.captureCount ?? 2;
         showToast({
           title: `${name}, revu ici`,
-          description: '+15 XP',
+          description: `Capturé ${count} fois · +15 XP`,
           tone: 'success',
         });
         setRespotCandidates([]);
@@ -849,6 +855,7 @@ export default function ScannerScreen() {
           title={`${existingCat.name}, revu ici`}
           description={formatAlreadyCapturedDescription({
             discoveredAt: existingCat.discoveredAt,
+            captureCount: existingCat.captureCount,
             views: existingCat.views,
           })}
           primaryLabel={copy.primaryLabel}

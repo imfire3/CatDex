@@ -9,7 +9,7 @@ import {
   pullMyCatsFromSupabase,
   pushCatToSupabase,
 } from '@/lib/catSync';
-import { applyRespot } from '@/lib/applyRespot';
+import { applyRespot, withCaptureCount } from '@/lib/applyRespot';
 import {
   deleteCatPhoto,
   migrateInlineCatPhotos,
@@ -92,13 +92,14 @@ function mergeCatsById(primary: Cat[], secondary: Cat[]): Cat[] {
   const byKey = new Map<string, Cat>();
 
   const upsert = (cat: Cat) => {
-    const keys = [cat.id, cat.remoteId].filter(Boolean) as string[];
+    const normalized = withCaptureCount(cat);
+    const keys = [normalized.id, normalized.remoteId].filter(Boolean) as string[];
     let existing: Cat | undefined;
     for (const key of keys) {
       existing = byKey.get(key);
       if (existing) break;
     }
-    const next = existing ? pickRicherCat(existing, cat) : cat;
+    const next = existing ? withCaptureCount(pickRicherCat(existing, normalized)) : normalized;
     byKey.set(next.id, next);
     if (next.remoteId) byKey.set(next.remoteId, next);
   };
@@ -183,6 +184,7 @@ export const useCatsStore = create<CatsState>()(
           longitude: input.longitude,
           discoveredAt: new Date().toISOString(),
           views: 0,
+          captureCount: 1,
           notes: input.notes?.trim() || undefined,
           analysis: input.analysis,
           sourceWorldId: input.sourceWorldId,
@@ -219,7 +221,7 @@ export const useCatsStore = create<CatsState>()(
           cats: state.cats.map((cat) =>
             cat.id === id || cat.remoteId === id
               ? {
-                  ...cat,
+                  ...withCaptureCount(cat),
                   views: cat.views + 1,
                   lastSeenAt: new Date().toISOString(),
                 }
@@ -252,7 +254,7 @@ export const useCatsStore = create<CatsState>()(
           }
         }
 
-        const updated = applyRespot(existing, {
+        const updated = applyRespot(withCaptureCount(existing), {
           latitude: patch.latitude,
           longitude: patch.longitude,
           photoUri: nextPhoto,

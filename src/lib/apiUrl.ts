@@ -58,8 +58,16 @@ export function getApiCandidateUrls(): string[] {
   const rawApiUrl = process.env.EXPO_PUBLIC_API_URL;
   const fromEnv = typeof rawApiUrl === 'string' ? rawApiUrl.trim() : '';
 
-  // Production / store builds must only hit the configured HTTPS API.
+  // Production / store builds: prefer same-origin on web (Netlify functions)
+  // so a stale EXPO_PUBLIC_API_URL cannot brick staging/prod deploys.
   if (!__DEV__) {
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.location?.origin === 'string' &&
+      window.location.origin.startsWith('http')
+    ) {
+      push(window.location.origin);
+    }
     if (fromEnv) push(fromEnv);
     return candidates;
   }

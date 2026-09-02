@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { applyRespot } from './applyRespot';
+import { applyRespot, resolveCaptureCount, withCaptureCount } from './applyRespot';
 import type { Cat } from '@/types/cat';
 
 const base: Cat = {
@@ -14,6 +14,7 @@ const base: Cat = {
   discoveredAt: '2026-01-01T00:00:00.000Z',
   lastSeenAt: '2026-01-02T00:00:00.000Z',
   views: 2,
+  captureCount: 1,
   analysis: {
     color: 'Gris',
     breed: 'Européen',
@@ -23,14 +24,15 @@ const base: Cat = {
 };
 
 describe('applyRespot', () => {
-  it('bumps views and updates location without renaming', () => {
+  it('bumps captureCount and updates location without renaming or touching views', () => {
     const next = applyRespot(base, {
       latitude: 48.861,
       longitude: 2.401,
       photoUri: 'file://new.jpg',
       nowIso: '2026-09-02T12:00:00.000Z',
     });
-    assert.equal(next.views, 3);
+    assert.equal(next.captureCount, 2);
+    assert.equal(next.views, 2);
     assert.equal(next.lastSeenAt, '2026-09-02T12:00:00.000Z');
     assert.equal(next.latitude, 48.861);
     assert.equal(next.longitude, 2.401);
@@ -49,5 +51,29 @@ describe('applyRespot', () => {
       nowIso: '2026-09-02T12:00:00.000Z',
     });
     assert.equal(next.photoUri, 'file://old.jpg');
+    assert.equal(next.captureCount, 2);
+  });
+});
+
+describe('resolveCaptureCount', () => {
+  it('keeps an explicit captureCount', () => {
+    assert.equal(resolveCaptureCount({ captureCount: 4, views: 99 }), 4);
+  });
+
+  it('derives from views for legacy cats', () => {
+    assert.equal(
+      resolveCaptureCount({ captureCount: undefined as unknown as number, views: 3 }),
+      3,
+    );
+    assert.equal(resolveCaptureCount({ views: 0 } as Pick<Cat, 'captureCount' | 'views'>), 1);
+  });
+});
+
+describe('withCaptureCount', () => {
+  it('fills missing captureCount on hydrate', () => {
+    const legacy = { ...base, captureCount: undefined as unknown as number, views: 5 };
+    const next = withCaptureCount(legacy);
+    assert.equal(next.captureCount, 5);
+    assert.equal(withCaptureCount(base), base);
   });
 });

@@ -196,6 +196,28 @@ export function CatDexCard({
           </Text>
         </View>
 
+        {captured && (cat.captureCount ?? 0) > 1 ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: spacing[8],
+              right: onToggleFavorite ? spacing[48] : spacing[8],
+              zIndex: 2,
+              height: spacing[24],
+              paddingHorizontal: spacing[8],
+              borderRadius: radius.full,
+              backgroundColor: colors.brandSoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text variant="caption" weight="semibold" color="textBrand">
+              ×{cat.captureCount}
+            </Text>
+          </View>
+        ) : null}
+
         {captured && onToggleFavorite ? (
           <Pressable
             accessibilityRole="button"
@@ -264,6 +286,7 @@ export function CatDexCard({
         {captured ? (
           <Text variant="caption" color="textMuted" numberOfLines={1}>
             {[
+              (cat.captureCount ?? 0) > 1 ? `Capturé ${cat.captureCount} fois` : null,
               lastSeenLabel(cat.lastSeenAt ?? cat.discoveredAt)
                 ? `Vu ${lastSeenLabel(cat.lastSeenAt ?? cat.discoveredAt)}`
                 : null,

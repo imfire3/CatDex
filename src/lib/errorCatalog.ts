@@ -230,6 +230,7 @@ export function classifyThrownAnalysisError(
 export function formatAlreadyCapturedDescription(input: {
   discoveredAt?: string;
   views?: number;
+  captureCount?: number;
 }): string {
   const parts: string[] = [];
   if (input.discoveredAt) {
@@ -248,9 +249,14 @@ export function formatAlreadyCapturedDescription(input: {
       // ignore
     }
   }
-  if (typeof input.views === 'number' && input.views >= 0) {
-    const seen = Math.max(1, input.views);
-    parts.push(seen === 1 ? 'Observé une fois' : `Observé ${seen} fois`);
+  const captures =
+    typeof input.captureCount === 'number' && input.captureCount >= 1
+      ? input.captureCount
+      : typeof input.views === 'number' && input.views >= 0
+        ? Math.max(1, input.views)
+        : null;
+  if (captures != null) {
+    parts.push(captures === 1 ? 'Capturé une fois' : `Capturé ${captures} fois`);
   }
   if (parts.length === 0) return ERROR_CATALOG.alreadyCaptured.description;
   return `${parts.join(' · ')} · +15 XP`;

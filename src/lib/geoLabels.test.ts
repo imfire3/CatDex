@@ -28,6 +28,7 @@ function cat(partial: Partial<Cat> & Pick<Cat, 'id'>): Cat {
     longitude: 2.377,
     discoveredAt: '2026-01-01',
     views: 0,
+    captureCount: 1,
     analysis: analysis(),
     ...partial,
   };
