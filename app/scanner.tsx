@@ -189,6 +189,7 @@ export default function ScannerScreen() {
     photoMimeType?: string;
     latitude: number;
     longitude: number;
+    mocked?: boolean;
   } | null>(null);
   const [existingCat, setExistingCat] = useState<Cat | null>(null);
   const [allowRecapture, setAllowRecapture] = useState(false);
@@ -357,20 +358,31 @@ export default function ScannerScreen() {
     if (!respotSighting || respotBusyRef.current) return;
     respotBusyRef.current = true;
     try {
-      const updated = await recordRespot(candidate.cat.id, {
-        latitude: respotSighting.latitude,
-        longitude: respotSighting.longitude,
-        photoUri: respotSighting.imageUri,
-      });
-      const name = updated?.name ?? candidate.cat.name;
-      showToast({
-        title: `${name}, revu ici`,
-        description: '+15 XP',
-        tone: 'success',
-      });
-      setRespotCandidates([]);
-      setRespotSighting(null);
-      router.replace('/(tabs)/map');
+      try {
+        const updated = await recordRespot(candidate.cat.id, {
+          latitude: respotSighting.latitude,
+          longitude: respotSighting.longitude,
+          photoUri: respotSighting.imageUri,
+        });
+        const name = updated?.name ?? candidate.cat.name;
+        showToast({
+          title: `${name}, revu ici`,
+          description: '+15 XP',
+          tone: 'success',
+        });
+        setRespotCandidates([]);
+        setRespotSighting(null);
+        router.replace('/(tabs)/map');
+      } catch (error) {
+        showToast({
+          title: 'Re-spot impossible',
+          description:
+            error instanceof Error
+              ? error.message
+              : 'Réessaie dans un instant.',
+          tone: 'danger',
+        });
+      }
     } finally {
       respotBusyRef.current = false;
     }
@@ -382,6 +394,7 @@ export default function ScannerScreen() {
     setRespotCandidates([]);
     setRespotSighting(null);
     await enterReveal(sighting.analysis, sighting.imageUri, {
+      mocked: sighting.mocked,
       photoBase64: sighting.photoBase64,
       photoMimeType: sighting.photoMimeType,
       latitude: sighting.latitude,
@@ -495,7 +508,7 @@ export default function ScannerScreen() {
           longitude: lng,
           analysis: nextAnalysis,
         });
-        if (candidates.length > 0) {
+        if (candidates.length > 0 && !mocked) {
           setRespotCandidates(candidates);
           setRespotSighting({
             analysis: nextAnalysis,
@@ -504,6 +517,7 @@ export default function ScannerScreen() {
             photoMimeType: mimeType,
             latitude: lat,
             longitude: lng,
+            mocked,
           });
           setPhotoUri(cutoutUri ?? imageUri);
           setAnalysis(nextAnalysis);
