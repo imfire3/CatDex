@@ -38,6 +38,7 @@ const SUCCESS_CALLBACK_DELAY_MS = 300
 const SNAP_TO_CENTER_MS = 180
 const SHAKE_AMPLITUDE = 8
 const REDUCED_PULSE_AMPLITUDE = 4
+const RESOLVE_CENTER_EPSILON = 0.01
 
 export type CaptureMinigameProps = {
   photoUri: string
@@ -93,11 +94,20 @@ export function CaptureMinigame({
   }, [onCaptured])
 
   const scheduleCapturedCallback = useCallback(() => {
+    if (appStateRef.current !== 'active') return
+    if (didCallCapturedRef.current) return
+
     clearCaptureTimeout()
     captureTimeoutRef.current = setTimeout(() => {
       fireCapturedOnce()
     }, SUCCESS_CALLBACK_DELAY_MS)
   }, [clearCaptureTimeout, fireCapturedOnce])
+
+  const cancelMinigameAnimations = useCallback(() => {
+    cancelAnimation(normalizedX)
+    cancelAnimation(shakeOffset)
+    cancelAnimation(flashOpacity)
+  }, [flashOpacity, normalizedX, shakeOffset])
 
   const handleSwingStepFinished = useCallback(
     (target: 0 | 1) => {
@@ -141,10 +151,12 @@ export function CaptureMinigame({
   }, [handleSwingStepFinished, motion.duration.fast, normalizedX, reduceMotion])
 
   const handleSuccessAnimationComplete = useCallback(() => {
+    if (phaseRef.current !== 'resolving') return
+
     setPhase('success')
     phaseRef.current = 'success'
 
-    if (Platform.OS !== 'web') {
+    if (appStateRef.current === 'active' && Platform.OS !== 'web') {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     }
 
@@ -152,7 +164,12 @@ export function CaptureMinigame({
   }, [scheduleCapturedCallback])
 
   const runSuccessShake = useCallback(() => {
+    if (phaseRef.current !== 'resolving') return
+    if (appStateRef.current !== 'active') return
+
     const fullSegment = Math.round(CAPTURE_SHAKE_TOTAL_MS / 7)
+    cancelAnimation(shakeOffset)
+    shakeOffset.value = 0
 
     if (reduceMotion) {
       shakeOffset.value = withSequence(
@@ -186,6 +203,40 @@ export function CaptureMinigame({
     shakeOffset,
   ])
 
+  const resumeCaptureResolution = useCallback(() => {
+    if (appStateRef.current !== 'active') return
+
+    if (phaseRef.current === 'success') {
+      scheduleCapturedCallback()
+      return
+    }
+
+    if (phaseRef.current !== 'resolving') return
+
+    clearCaptureTimeout()
+    cancelMinigameAnimations()
+    flashOpacity.value = 0
+    shakeOffset.value = 0
+
+    const currentValue = clampNormalized(normalizedMirrorRef.current)
+    const snapDuration =
+      Math.abs(currentValue - 0.5) <= RESOLVE_CENTER_EPSILON ? 0 : SNAP_TO_CENTER_MS
+
+    normalizedX.value = withTiming(0.5, { duration: snapDuration }, (finished) => {
+      if (finished) {
+        runOnJS(runSuccessShake)()
+      }
+    })
+  }, [
+    cancelMinigameAnimations,
+    clearCaptureTimeout,
+    flashOpacity,
+    normalizedX,
+    runSuccessShake,
+    scheduleCapturedCallback,
+    shakeOffset,
+  ])
+
   const handleMiss = useCallback(() => {
     flashOpacity.value = 0
     flashOpacity.value = withSequence(
@@ -202,18 +253,17 @@ export function CaptureMinigame({
     setPhase('resolving')
     phaseRef.current = 'resolving'
     clearCaptureTimeout()
-    cancelAnimation(normalizedX)
-    cancelAnimation(shakeOffset)
-    cancelAnimation(flashOpacity)
+    cancelMinigameAnimations()
     shakeOffset.value = 0
     flashOpacity.value = 0
-
-    normalizedX.value = withTiming(0.5, { duration: SNAP_TO_CENTER_MS }, (finished) => {
-      if (finished) {
-        runOnJS(runSuccessShake)()
-      }
-    })
-  }, [clearCaptureTimeout, flashOpacity, normalizedX, runSuccessShake, shakeOffset])
+    resumeCaptureResolution()
+  }, [
+    cancelMinigameAnimations,
+    clearCaptureTimeout,
+    flashOpacity,
+    resumeCaptureResolution,
+    shakeOffset,
+  ])
 
   const handleTap = useCallback(() => {
     const result = resolveCaptureTap(
@@ -255,26 +305,39 @@ export function CaptureMinigame({
       appStateRef.current = nextState
 
       if (nextState === 'active') {
-        restartCurrentHalfCycle()
+        if (phaseRef.current === 'swinging') {
+          restartCurrentHalfCycle()
+          return
+        }
+
+        resumeCaptureResolution()
         return
       }
 
-      cancelAnimation(normalizedX)
+      clearCaptureTimeout()
+      cancelMinigameAnimations()
+      shakeOffset.value = 0
+      flashOpacity.value = 0
     })
 
     return () => {
       subscription.remove()
     }
-  }, [normalizedX, restartCurrentHalfCycle])
+  }, [
+    cancelMinigameAnimations,
+    clearCaptureTimeout,
+    flashOpacity,
+    restartCurrentHalfCycle,
+    resumeCaptureResolution,
+    shakeOffset,
+  ])
 
   useEffect(() => {
     return () => {
       clearCaptureTimeout()
-      cancelAnimation(normalizedX)
-      cancelAnimation(shakeOffset)
-      cancelAnimation(flashOpacity)
+      cancelMinigameAnimations()
     }
-  }, [clearCaptureTimeout, flashOpacity, normalizedX, shakeOffset])
+  }, [cancelMinigameAnimations, clearCaptureTimeout])
 
   const capsuleStyle = useAnimatedStyle(() => {
     const travel = Math.max(trackWidth - capsuleSize, 0)
@@ -294,6 +357,8 @@ export function CaptureMinigame({
   const bottomZoneStyle = useAnimatedStyle(() => ({
     opacity: phase === 'success' ? 0.96 : 1,
   }))
+
+  const isTapEnabled = phase === 'swinging'
 
   return (
     <View style={styles.root}>
@@ -372,8 +437,10 @@ export function CaptureMinigame({
 
       <AnimatedPressable
         accessibilityRole="button"
-        accessibilityLabel="Taper pour capturer"
-        accessibilityHint="Tape quand la capsule passe au centre"
+        accessibilityLabel={isTapEnabled ? 'Taper pour capturer' : 'Capture en cours'}
+        accessibilityHint={isTapEnabled ? 'Tape quand la capsule passe au centre' : undefined}
+        accessibilityState={{ disabled: !isTapEnabled }}
+        disabled={!isTapEnabled}
         onPress={handleTap}
         style={[
           styles.bottomZone,
