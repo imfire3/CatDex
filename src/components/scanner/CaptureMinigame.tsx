@@ -114,14 +114,15 @@ export function CaptureMinigame({
       if (phaseRef.current !== 'swinging') return
       if (appStateRef.current !== 'active') return
 
-      currentTargetRef.current = target === 1 ? 0 : 1
+      const nextTarget: 0 | 1 = target === 1 ? 0 : 1
+      currentTargetRef.current = nextTarget
       const duration = reduceMotion
         ? REDUCED_SWING_DURATION_MS
         : sampleSwingDurationMs()
 
-      normalizedX.value = withTiming(currentTargetRef.current, { duration }, (finished) => {
+      normalizedX.value = withTiming(nextTarget, { duration }, (finished) => {
         if (finished) {
-          runOnJS(handleSwingStepFinished)(currentTargetRef.current)
+          runOnJS(handleSwingStepFinished)(nextTarget)
         }
       })
     },
@@ -354,11 +355,8 @@ export function CaptureMinigame({
     opacity: flashOpacity.value,
   }))
 
-  const bottomZoneStyle = useAnimatedStyle(() => ({
-    opacity: phase === 'success' ? 0.96 : 1,
-  }))
-
   const isTapEnabled = phase === 'swinging'
+  const bottomZoneOpacity = phase === 'success' ? 0.96 : 1
 
   return (
     <View style={styles.root}>
@@ -446,8 +444,8 @@ export function CaptureMinigame({
           styles.bottomZone,
           {
             top: '55%',
+            opacity: bottomZoneOpacity,
           },
-          bottomZoneStyle,
         ]}
       >
         <View
@@ -492,6 +490,7 @@ export function CaptureMinigame({
                 {
                   width: spacing[8],
                   height: spacing[8],
+                marginLeft: -spacing[4],
                   borderRadius: radius.full,
                   backgroundColor: colors.brand,
                 },
@@ -582,7 +581,6 @@ const styles = StyleSheet.create({
   trackCenterMarker: {
     position: 'absolute',
     left: '50%',
-    marginLeft: -4,
     alignSelf: 'center',
   },
   capsuleWrap: {
