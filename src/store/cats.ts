@@ -9,6 +9,7 @@ import {
   pullMyCatsFromSupabase,
   pushCatToSupabase,
 } from '@/lib/catSync';
+import { applyRespot } from '@/lib/applyRespot';
 import {
   deleteCatPhoto,
   migrateInlineCatPhotos,
@@ -41,6 +42,10 @@ type CatsState = {
   addCat: (input: AddCatInput) => Promise<Cat>;
   incrementViews: (id: string) => void;
   updateCat: (id: string, patch: Partial<Pick<Cat, 'name' | 'notes' | 'remoteId' | 'photoUri'>>) => void;
+  recordRespot: (
+    id: string,
+    patch: { latitude: number; longitude: number; photoUri?: string },
+  ) => Promise<Cat | undefined>;
   removeCat: (id: string) => void;
   getCat: (id: string) => Cat | undefined;
   syncFromRemote: () => Promise<void>;
@@ -228,6 +233,41 @@ export const useCatsStore = create<CatsState>()(
             cat.id === id || cat.remoteId === id ? { ...cat, ...patch } : cat,
           ),
         })),
+
+      recordRespot: async (id, patch) => {
+        await waitForCatsHydration();
+
+        const existing = get().cats.find(
+          (cat) => cat.id === id || cat.remoteId === id,
+        );
+        if (!existing) return undefined;
+
+        let nextPhoto = existing.photoUri;
+        if (patch.photoUri) {
+          try {
+            nextPhoto = await persistCatPhoto(existing.id, patch.photoUri);
+          } catch (error) {
+            console.warn('[cats] respot photo persist failed', error);
+            nextPhoto = existing.photoUri;
+          }
+        }
+
+        const updated = applyRespot(existing, {
+          latitude: patch.latitude,
+          longitude: patch.longitude,
+          photoUri: nextPhoto,
+        });
+
+        set((state) => ({
+          cats: state.cats.map((cat) =>
+            cat.id === existing.id || cat.remoteId === existing.id
+              ? updated
+              : cat,
+          ),
+        }));
+
+        return updated;
+      },
 
       removeCat: (id) => {
         const existing = get().cats.find(
