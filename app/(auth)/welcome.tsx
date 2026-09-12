@@ -21,7 +21,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useAuthStore, getPostAuthHref } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-const WELCOME_MAP = require('../../assets/welcome-paris-bg-v3.png');
+const WELCOME_MAP = require('../../welcome-paris-bg-v3.png');
 const WELCOME_CAT = require('../../assets/welcome-cat.jpg');
 
 export default function WelcomeScreen() {

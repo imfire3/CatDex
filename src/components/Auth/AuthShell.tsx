@@ -14,11 +14,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '@/theme/ThemeProvider';
 
-const WELCOME_MAP = require('../../../assets/welcome-paris-bg-v3.png');
+const WELCOME_MAP = require('../../../welcome-paris-bg-v3.png');
 
 const mapWebStyle = {
   objectFit: 'cover' as const,
-  objectPosition: 'center 40%',
+  objectPosition: 'center center',
 };
 
 export const authPrimaryNoShadow = {
