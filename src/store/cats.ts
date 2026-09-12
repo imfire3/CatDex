@@ -9,6 +9,7 @@ import {
   pullMyCatsFromSupabase,
   pushCatToSupabase,
 } from '@/lib/catSync';
+import { applyRespot, withCaptureCount } from '@/lib/applyRespot';
 import {
   deleteCatPhoto,
   migrateInlineCatPhotos,
@@ -17,6 +18,7 @@ import {
 } from '@/lib/photoStorage';
 import { isDurablePhotoUri } from '@/lib/photoUri';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { useToastStore } from '@/store/toast';
 import type { Cat, CatAnalysis, CatLifestyle } from '@/types/cat';
 
 type AddCatInput = {
@@ -40,6 +42,10 @@ type CatsState = {
   addCat: (input: AddCatInput) => Promise<Cat>;
   incrementViews: (id: string) => void;
   updateCat: (id: string, patch: Partial<Pick<Cat, 'name' | 'notes' | 'remoteId' | 'photoUri'>>) => void;
+  recordRespot: (
+    id: string,
+    patch: { latitude: number; longitude: number; photoUri?: string },
+  ) => Promise<Cat | undefined>;
   removeCat: (id: string) => void;
   getCat: (id: string) => Cat | undefined;
   syncFromRemote: () => Promise<void>;
@@ -86,13 +92,14 @@ function mergeCatsById(primary: Cat[], secondary: Cat[]): Cat[] {
   const byKey = new Map<string, Cat>();
 
   const upsert = (cat: Cat) => {
-    const keys = [cat.id, cat.remoteId].filter(Boolean) as string[];
+    const normalized = withCaptureCount(cat);
+    const keys = [normalized.id, normalized.remoteId].filter(Boolean) as string[];
     let existing: Cat | undefined;
     for (const key of keys) {
       existing = byKey.get(key);
       if (existing) break;
     }
-    const next = existing ? pickRicherCat(existing, cat) : cat;
+    const next = existing ? withCaptureCount(pickRicherCat(existing, normalized)) : normalized;
     byKey.set(next.id, next);
     if (next.remoteId) byKey.set(next.remoteId, next);
   };
@@ -177,6 +184,7 @@ export const useCatsStore = create<CatsState>()(
           longitude: input.longitude,
           discoveredAt: new Date().toISOString(),
           views: 0,
+          captureCount: 1,
           notes: input.notes?.trim() || undefined,
           analysis: input.analysis,
           sourceWorldId: input.sourceWorldId,
@@ -191,6 +199,12 @@ export const useCatsStore = create<CatsState>()(
               remoteId,
               photoUri: cat.photoUri || photoUri,
             };
+          } else {
+            useToastStore.getState().show({
+              title: 'Sync en attente',
+              description: 'Ta capture est sauvée ici. Le cloud suivra plus tard.',
+              tone: 'warning',
+            });
           }
         }
 
@@ -206,7 +220,11 @@ export const useCatsStore = create<CatsState>()(
         set((state) => ({
           cats: state.cats.map((cat) =>
             cat.id === id || cat.remoteId === id
-              ? { ...cat, views: cat.views + 1 }
+              ? {
+                  ...withCaptureCount(cat),
+                  views: cat.views + 1,
+                  lastSeenAt: new Date().toISOString(),
+                }
               : cat,
           ),
         })),
@@ -217,6 +235,41 @@ export const useCatsStore = create<CatsState>()(
             cat.id === id || cat.remoteId === id ? { ...cat, ...patch } : cat,
           ),
         })),
+
+      recordRespot: async (id, patch) => {
+        await waitForCatsHydration();
+
+        const existing = get().cats.find(
+          (cat) => cat.id === id || cat.remoteId === id,
+        );
+        if (!existing) return undefined;
+
+        let nextPhoto = existing.photoUri;
+        if (patch.photoUri) {
+          try {
+            nextPhoto = await persistCatPhoto(existing.id, patch.photoUri);
+          } catch (error) {
+            console.warn('[cats] respot photo persist failed', error);
+            nextPhoto = existing.photoUri;
+          }
+        }
+
+        const updated = applyRespot(withCaptureCount(existing), {
+          latitude: patch.latitude,
+          longitude: patch.longitude,
+          photoUri: nextPhoto,
+        });
+
+        set((state) => ({
+          cats: state.cats.map((cat) =>
+            cat.id === existing.id || cat.remoteId === existing.id
+              ? updated
+              : cat,
+          ),
+        }));
+
+        return updated;
+      },
 
       removeCat: (id) => {
         const existing = get().cats.find(
@@ -237,16 +290,25 @@ export const useCatsStore = create<CatsState>()(
 
       syncFromRemote: async () => {
         if (!isSupabaseConfigured) return;
-        const remote = await pullMyCatsFromSupabase();
-        if (remote.length === 0) return;
+        try {
+          const remote = await pullMyCatsFromSupabase();
+          if (remote.length === 0) return;
 
-        set((state) => {
-          const merged = mergeRemoteCats(state.cats, remote);
-          return {
-            cats: merged,
-            nextNumber: maxNextNumber(merged, state.nextNumber),
-          };
-        });
+          set((state) => {
+            const merged = mergeRemoteCats(state.cats, remote);
+            return {
+              cats: merged,
+              nextNumber: maxNextNumber(merged, state.nextNumber),
+            };
+          });
+        } catch (error) {
+          console.warn('[cats] syncFromRemote failed', error);
+          useToastStore.getState().show({
+            title: 'Sync impossible',
+            description: 'Tes chats restent sur cet appareil.',
+            tone: 'warning',
+          });
+        }
       },
 
       clearLocal: () => set({ cats: [], nextNumber: 1 }),

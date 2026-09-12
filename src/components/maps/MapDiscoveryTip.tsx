@@ -56,7 +56,7 @@ export function MapDiscoveryTip({ visible, onDismiss }: Props) {
             variant="title"
             color="textBrand"
           >
-            Des chats ont été repérés près de toi ✨
+            Photographie un chat
           </Text>
 
           <View style={{ gap: spacing[8] }}>
@@ -68,7 +68,7 @@ export function MapDiscoveryTip({ visible, onDismiss }: Props) {
                 ]}
               />
               <Text variant="bodySmall" color="text">
-                Dans ton CatDex
+                Bouton violet en bas — ouvre l’appareil
               </Text>
             </View>
             <View style={styles.legendRow}>
@@ -79,15 +79,13 @@ export function MapDiscoveryTip({ visible, onDismiss }: Props) {
                 ]}
               />
               <Text variant="bodySmall" color="text">
-                À découvrir
+                Pins en cercle — chats à découvrir
               </Text>
             </View>
           </View>
 
           <Text variant="bodySmall" color="textSecondary">
             Les chats au cercle pointillé ont été repérés par d’autres joueurs.
-          </Text>
-          <Text variant="bodySmall" color="textSecondary">
             Photographie-les pour les ajouter à ton CatDex.
           </Text>
 

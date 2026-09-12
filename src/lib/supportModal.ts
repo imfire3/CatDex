@@ -14,6 +14,16 @@ async function readDismissedIds(): Promise<string[]> {
   }
 }
 
+/** Show the optional support note only after a real capture — never on first map land. */
+export function shouldOfferSupportModal(input: {
+  ownedCatCount: number;
+  dismissed: boolean;
+  blockingModalVisible: boolean;
+}): boolean {
+  if (input.dismissed || input.blockingModalVisible) return false;
+  return input.ownedCatCount >= 1;
+}
+
 /** Whether this user already dismissed the free/Revolut support modal on the map. */
 export async function hasDismissedSupportModal(
   userId: string | null | undefined,

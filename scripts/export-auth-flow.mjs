@@ -70,12 +70,25 @@ async function main() {
   await goto(page, '/login');
   await shot(page, '02-login', 'Connexion', '/login');
 
+  const loginInputs = page.locator('input');
+  await loginInputs.nth(0).fill('adresse-invalide');
+  await loginInputs.nth(1).fill('123');
+  await clickButton(page, '^Connexion$', 500);
+  await shot(page, '02b-login-errors', 'Connexion · erreurs de validation', '/login');
+
   await goto(page, '/signup');
   await shot(page, '03-signup-empty', 'Inscription · formulaire vide', '/signup');
 
   const email = `flow_${Date.now()}@catdex.app`;
   const password = 'CatDexDemo1!';
   const inputs = page.locator('input');
+  await inputs.nth(0).fill('A');
+  await inputs.nth(1).fill('adresse-invalide');
+  await inputs.nth(2).fill('faible');
+  await inputs.nth(3).fill('different');
+  await wait(page, 500);
+  await shot(page, '03a-signup-errors', 'Inscription · erreurs et mot de passe faible', '/signup');
+
   await inputs.nth(0).fill('FlowDemo');
   await inputs.nth(1).fill(email);
   await inputs.nth(2).fill(password);
@@ -85,29 +98,41 @@ async function main() {
 
   await clickButton(page, 'Créer mon compte', 3500);
 
-  // —— Onboarding trilogy ——
+  // —— Two-step onboarding ——
   // Land on intro (or navigate)
   if (!page.url().includes('intro')) {
     await goto(page, '/intro');
   }
   await wait(page, 1000);
-  await shot(page, '04-intro', 'Onboarding 1/3 · Apparition + types de chats', '/intro');
+  await shot(page, '04-intro', 'Onboarding 1/2 · Apparition + types de chats', '/intro');
 
   await clickButton(page, 'Partir explorer', 2200);
   if (!page.url().includes('permissions')) {
     await goto(page, '/permissions');
   }
   await wait(page, 2200);
-  await shot(page, '05-scan', 'Onboarding 2/3 · Analyse IA', '/permissions');
+  await shot(page, '05-scan', 'Onboarding 2/2 · Analyse IA', '/permissions');
 
-  await clickButton(page, 'Trouver mon premier chat', 2200);
-  if (!page.url().includes('onboarding-reward')) {
-    await goto(page, '/onboarding-reward');
+  await clickButton(page, 'Ouvrir la carte', 2200);
+
+  // Contextual GPS gate immediately before the map.
+  if (
+    page.url().includes('permission-location') ||
+    (await page.getByText(/Trouve les chats près de toi|Activer ma position/i).count())
+  ) {
+    await shot(page, '06-location-ask', 'Permissions · demande de position', '/permission-location');
+
+    // First attempt without a browser grant: captures the explicit denied state.
+    await clickButton(page, 'Activer ma position', 1600).catch(() => undefined);
+    if (await page.getByText(/Position désactivée/i).count()) {
+      await shot(page, '06a-location-denied', 'Permissions · position désactivée', '/permission-location');
+    }
+
+    // Grant location for the staging origin, retry, and continue the real flow.
+    await context.grantPermissions(['geolocation'], { origin: BASE });
+    await context.setGeolocation({ latitude: 48.8566, longitude: 2.3522 });
+    await clickButton(page, 'Réessayer|Activer ma position', 2800).catch(() => undefined);
   }
-  await wait(page, 1200);
-  await shot(page, '06-reward', 'Onboarding 3/3 · Premier chat', '/onboarding-reward');
-
-  await clickButton(page, 'Commencer ma collection', 2800);
 
   // PWA sheet (may be absent on desktop headless)
   if (await page.getByText(/Accès rapide CatDex/i).count()) {
@@ -115,15 +140,6 @@ async function main() {
     await clickButton(page, 'Plus tard|Continuer vers la carte|Continuer', 1500).catch(async () => {
       await clickButton(page, 'Continuer', 1500);
     });
-  }
-
-  // Support / Revolut modal
-  if (await page.getByText(/CatDex est gratuit|Soutenir via Revolut/i).count()) {
-    await wait(page, 400);
-    await shot(page, '06c-support', 'Post-onboarding · Projet gratuit / Revolut', '/onboarding-reward');
-    await clickButton(page, 'Continuer', 2800);
-  } else {
-    console.warn('! Support modal not visible — retrying CTA path');
   }
 
   // —— Core app (same session) ——

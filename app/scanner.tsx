@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { AnalysisLoadingView } from '@/components/scanner/AnalysisLoadingView';
+import { CaptureMinigame } from '@/components/scanner/CaptureMinigame';
 import { AuthBackButton } from '@/components/Auth/AuthChrome';
 import { Button } from '@/components/Button';
 import { EnablePermissionModal } from '@/components/EnablePermissionModal';
@@ -25,13 +26,14 @@ import { ProgressBar } from '@/components/Progress';
 import { ScanFrame } from '@/components/ScanFrame';
 import { Text } from '@/components/Text';
 import { agentDebugLog } from '@/lib/agentDebugLog';
-import { isAdminEmail } from '@/lib/adminAccess';
+import { canImportGalleryPhotos } from '@/lib/adminAccess';
 import { analyzeCatPhoto } from '@/lib/api';
 import {
   analysisForClaimedCat,
   displayNameForClaim,
 } from '@/lib/claimDiscoverableCat';
 import {
+  formatDistanceMeters,
   isInParis20e,
   PARIS_20E,
 } from '@/lib/constants';
@@ -44,6 +46,10 @@ import {
 } from '@/lib/errorCatalog';
 import { resolvePersistentPhotoUri } from '@/lib/photoUri';
 import { compressPhotoDataUri } from '@/lib/photoStorage';
+import {
+  findRespotCandidates,
+  type RespotCandidate,
+} from '@/lib/respotCandidates';
 import { sendAnalysisErrorReport } from '@/lib/sendErrorReport';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { getPostAuthHref, useAuthStore } from '@/store/auth';
@@ -56,6 +62,7 @@ import type { Cat, CatAnalysis } from '@/types/cat';
 
 type Step =
   | 'camera'
+  | 'captureMinigame'
   | 'analyzing'
   | 'review'
   | 'problem'
@@ -63,6 +70,7 @@ type Step =
   | 'server'
   | 'auth'
   | 'analysisError'
+  | 'respotConfirm'
   | 'alreadyCaptured';
 
 /** Brief pause so the loading UI can paint — never pad a slow API. */
@@ -138,7 +146,7 @@ export default function ScannerScreen() {
   const session = useAuthStore((state) => state.session);
   const hydrated = useAuthStore((state) => state.hydrated);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
-  const canImportFromGallery = isAdminEmail(user?.email);
+  const canImportFromGallery = canImportGalleryPhotos(user?.email);
   // Any sighting id (world spawn or community UUID) so the pin can clear after capture.
   const sourceWorldId =
     typeof params.worldId === 'string' && params.worldId.trim().length > 0
@@ -147,6 +155,7 @@ export default function ScannerScreen() {
   const showToast = useToastStore((state) => state.show);
   const nextNumber = useCatsStore((state) => state.nextNumber);
   const cats = useCatsStore((state) => state.cats);
+  const recordRespot = useCatsStore((state) => state.recordRespot);
   const setPendingCapture = usePendingCaptureStore((state) => state.setPending);
   const claimTarget = useClaimTargetStore((state) => state.target);
   const isClaimCapture = Boolean(
@@ -156,6 +165,7 @@ export default function ScannerScreen() {
   );
   const cameraRef = useRef<CameraView>(null);
   const analysisGenRef = useRef(0);
+  const recaptureXpRef = useRef<string | null>(null);
   const runAnalysisRef = useRef<
     ((base64: string, imageUri: string, mimeType?: string) => Promise<void>) | null
   >(null);
@@ -172,10 +182,21 @@ export default function ScannerScreen() {
   const [analysisErrorMessage, setAnalysisErrorMessage] = useState<string | null>(
     null,
   );
+  const [respotCandidates, setRespotCandidates] = useState<RespotCandidate[]>([]);
+  const [respotSighting, setRespotSighting] = useState<{
+    analysis: CatAnalysis;
+    imageUri: string;
+    photoBase64?: string;
+    photoMimeType?: string;
+    latitude: number;
+    longitude: number;
+    mocked?: boolean;
+  } | null>(null);
   const [existingCat, setExistingCat] = useState<Cat | null>(null);
   const [allowRecapture, setAllowRecapture] = useState(false);
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<FlashMode>('auto');
+  const respotBusyRef = useRef(false);
 
   const alreadyCaptured = sourceWorldId
     ? cats.find((cat) => cat.sourceWorldId === sourceWorldId) ?? null
@@ -189,6 +210,24 @@ export default function ScannerScreen() {
   }, [alreadyCaptured, allowRecapture]);
 
   useEffect(() => {
+    if (step !== 'alreadyCaptured' || !existingCat) return;
+    if (recaptureXpRef.current === existingCat.id) return;
+    recaptureXpRef.current = existingCat.id;
+    void (async () => {
+      const updated = await recordRespot(existingCat.id, {
+        latitude: existingCat.latitude,
+        longitude: existingCat.longitude,
+      });
+      const count = updated?.captureCount ?? (existingCat.captureCount ?? 1) + 1;
+      showToast({
+        title: `${updated?.name ?? existingCat.name}, revu ici`,
+        description: `Capturé ${count} fois · +15 XP`,
+        tone: 'success',
+      });
+    })();
+  }, [step, existingCat, recordRespot, showToast]);
+
+  useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain !== false) {
       void requestPermission();
     }
@@ -200,6 +239,12 @@ export default function ScannerScreen() {
       setCameraError(null);
     }
   }, [step]);
+
+  useEffect(() => {
+    if (step === 'captureMinigame' && (!photoUri || !photoBase64)) {
+      resetToCamera();
+    }
+  }, [photoBase64, photoUri, step, resetToCamera]);
 
   // Restore JWT into the auth store when the user is logged in but session is missing.
   useEffect(() => {
@@ -279,10 +324,16 @@ export default function ScannerScreen() {
       mocked?: boolean;
       photoBase64?: string | null;
       photoMimeType?: string;
+      latitude?: number;
+      longitude?: number;
     },
   ) => {
-    const position = await ensureLocation();
-    const { latitude, longitude } = position.coords;
+    const location =
+      typeof options?.latitude === 'number' &&
+      typeof options?.longitude === 'number'
+        ? { coords: { latitude: options.latitude, longitude: options.longitude } }
+        : await ensureLocation();
+    const { latitude, longitude } = location.coords;
 
     if (!isInParis20e(latitude, longitude) && __DEV__) {
       showToast({
@@ -314,6 +365,55 @@ export default function ScannerScreen() {
     });
 
     router.replace('/reward');
+  };
+
+  const handleRespotConfirm = async (candidate: RespotCandidate) => {
+    if (!respotSighting || respotBusyRef.current) return;
+    respotBusyRef.current = true;
+    try {
+      try {
+        const updated = await recordRespot(candidate.cat.id, {
+          latitude: respotSighting.latitude,
+          longitude: respotSighting.longitude,
+          photoUri: respotSighting.imageUri,
+        });
+        const name = updated?.name ?? candidate.cat.name;
+        const count = updated?.captureCount ?? 2;
+        showToast({
+          title: `${name}, revu ici`,
+          description: `Capturé ${count} fois · +15 XP`,
+          tone: 'success',
+        });
+        setRespotCandidates([]);
+        setRespotSighting(null);
+        router.replace('/(tabs)/map');
+      } catch (error) {
+        showToast({
+          title: 'Re-spot impossible',
+          description:
+            error instanceof Error
+              ? error.message
+              : 'Réessaie dans un instant.',
+          tone: 'danger',
+        });
+      }
+    } finally {
+      respotBusyRef.current = false;
+    }
+  };
+
+  const handleRespotReject = async () => {
+    if (!respotSighting) return;
+    const sighting = respotSighting;
+    setRespotCandidates([]);
+    setRespotSighting(null);
+    await enterReveal(sighting.analysis, sighting.imageUri, {
+      mocked: sighting.mocked,
+      photoBase64: sighting.photoBase64,
+      photoMimeType: sighting.photoMimeType,
+      latitude: sighting.latitude,
+      longitude: sighting.longitude,
+    });
   };
 
   const runAnalysis = async (
@@ -361,6 +461,9 @@ export default function ScannerScreen() {
         await enterReveal(nextAnalysis, imageUri, {
           photoBase64: base64,
           photoMimeType: mimeType,
+          // Keep the map pin on the community sighting, not the live GPS.
+          latitude: claim.latitude,
+          longitude: claim.longitude,
         });
         return;
       }
@@ -412,6 +515,33 @@ export default function ScannerScreen() {
         setStep('problem');
         return;
       }
+      const location = await ensureLocation();
+      const lat = location.coords.latitude;
+      const lng = location.coords.longitude;
+
+      if (!isClaimCapture) {
+        const candidates = findRespotCandidates(useCatsStore.getState().cats, {
+          latitude: lat,
+          longitude: lng,
+          analysis: nextAnalysis,
+        });
+        if (candidates.length > 0 && !mocked) {
+          setRespotCandidates(candidates);
+          setRespotSighting({
+            analysis: nextAnalysis,
+            imageUri: cutoutUri ?? imageUri,
+            photoBase64: base64,
+            photoMimeType: mimeType,
+            latitude: lat,
+            longitude: lng,
+            mocked,
+          });
+          setPhotoUri(cutoutUri ?? imageUri);
+          setAnalysis(nextAnalysis);
+          setStep('respotConfirm');
+          return;
+        }
+      }
       await enterReveal(
         nextAnalysis,
         cutoutUri ?? imageUri,
@@ -419,6 +549,8 @@ export default function ScannerScreen() {
           mocked,
           photoBase64: base64,
           photoMimeType: mimeType,
+          latitude: lat,
+          longitude: lng,
         },
       );
     } catch (error) {
@@ -456,6 +588,16 @@ export default function ScannerScreen() {
   };
 
   runAnalysisRef.current = runAnalysis;
+
+  const beginAnalysisAfterCapture = (
+    base64: string,
+    imageUri: string,
+    mimeType: string,
+  ) => {
+    setStep('analyzing');
+    setAnalyzing(true);
+    void runAnalysis(base64, imageUri, mimeType);
+  };
 
   const handleTakePicture = async () => {
     if (capturing) return;
@@ -499,9 +641,11 @@ export default function ScannerScreen() {
       setPhotoUri(durableUri);
       setPhotoBase64(rawBase64);
       setPhotoMimeType('image/jpeg');
-      setStep('analyzing');
-      setAnalyzing(true);
-      void runAnalysis(rawBase64, durableUri, 'image/jpeg');
+      if (isClaimCapture) {
+        beginAnalysisAfterCapture(rawBase64, durableUri, 'image/jpeg');
+        return;
+      }
+      setStep('captureMinigame');
     } catch (error) {
       showToast({
         title: 'Capture impossible',
@@ -517,7 +661,7 @@ export default function ScannerScreen() {
   };
 
   const handlePickFromLibrary = async () => {
-    if (!isAdminEmail(user?.email)) return;
+    if (!canImportGalleryPhotos(user?.email)) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.28,
@@ -556,16 +700,18 @@ export default function ScannerScreen() {
     setPhotoUri(durableUri);
     setPhotoBase64(asset.base64);
     setPhotoMimeType(mimeType);
-    setStep('analyzing');
-    setAnalyzing(true);
-    void runAnalysis(asset.base64, durableUri, mimeType);
+    if (isClaimCapture) {
+      beginAnalysisAfterCapture(asset.base64, durableUri, mimeType);
+      return;
+    }
+    setStep('captureMinigame');
   };
 
   const handleOpenSettings = () => {
     void Linking.openSettings();
   };
 
-  const resetToCamera = () => {
+  function resetToCamera() {
     analysisGenRef.current += 1;
     setAnalyzing(false);
     setStep('camera');
@@ -573,7 +719,9 @@ export default function ScannerScreen() {
     setPhotoBase64(null);
     setPhotoMimeType('image/jpeg');
     setAnalysis(null);
-  };
+    setRespotCandidates([]);
+    setRespotSighting(null);
+  }
 
   const retryLastPhoto = () => {
     if (photoBase64 && photoUri) {
@@ -614,6 +762,104 @@ export default function ScannerScreen() {
     );
   }
 
+  if (step === 'respotConfirm' && respotSighting && respotCandidates.length > 0) {
+    const primary = respotCandidates[0];
+    return (
+      <View
+        style={[
+          styles.root,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingBottom: Math.max(insets.bottom, spacing[24]),
+            paddingHorizontal: spacing[24],
+            gap: spacing[16],
+          },
+        ]}
+      >
+        <View style={{ gap: spacing[8] }}>
+          <Text variant="title" color="textBrand">
+            {respotCandidates.length === 1
+              ? `C’est encore ${primary.cat.name} ?`
+              : 'Tu l’as déjà croisé ?'}
+          </Text>
+          <Text variant="bodySmall" color="textSecondary">
+            {`Vu près d’ici · ${primary.cat.analysis.color || 'Pelage inconnu'} · ${formatDistanceMeters(primary.distanceM)}`}
+          </Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: spacing[16] }}>
+          <View
+            style={[
+              {
+                flex: 1,
+                backgroundColor: colors.surfaceElevated,
+                borderRadius: radius.cta,
+                padding: spacing[8],
+                gap: spacing[8],
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: colors.border,
+              },
+              shadow.low,
+            ]}
+          >
+            <Image
+              source={{ uri: respotSighting.imageUri }}
+              style={{ width: '100%', aspectRatio: 1, borderRadius: radius.md }}
+              resizeMode="cover"
+            />
+            <Text variant="caption" color="textSecondary">
+              Nouvelle photo
+            </Text>
+          </View>
+          <View
+            style={[
+              {
+                flex: 1,
+                backgroundColor: colors.surfaceElevated,
+                borderRadius: radius.cta,
+                padding: spacing[8],
+                gap: spacing[8],
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: colors.border,
+              },
+              shadow.low,
+            ]}
+          >
+            <Image
+              source={{ uri: primary.cat.photoUri || respotSighting.imageUri }}
+              style={{ width: '100%', aspectRatio: 1, borderRadius: radius.md }}
+              resizeMode="cover"
+            />
+            <Text variant="caption" color="textSecondary">
+              Fiche existante
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ gap: spacing[8] }}>
+          {respotCandidates.map((candidate) => (
+            <Button
+              key={candidate.cat.id}
+              variant="primary"
+              title={`Oui, c’est ${candidate.cat.name}`}
+              onPress={() => {
+                void handleRespotConfirm(candidate);
+              }}
+            />
+          ))}
+          <Button
+            variant="secondary"
+            title="Non, un nouveau chat"
+            onPress={() => {
+              void handleRespotReject();
+            }}
+          />
+        </View>
+      </View>
+    );
+  }
+
   if (step === 'alreadyCaptured' && existingCat) {
     const copy = ERROR_CATALOG.alreadyCaptured;
     return (
@@ -631,18 +877,14 @@ export default function ScannerScreen() {
       >
         <ErrorState
           icon={copy.icon}
-          title={copy.title}
+          title={`${existingCat.name}, revu ici`}
           description={formatAlreadyCapturedDescription({
             discoveredAt: existingCat.discoveredAt,
+            captureCount: existingCat.captureCount,
             views: existingCat.views,
           })}
           primaryLabel={copy.primaryLabel}
-          onPrimary={() =>
-            router.replace({
-              pathname: '/cat/[id]',
-              params: { id: existingCat.id },
-            })
-          }
+          onPrimary={() => router.replace('/(tabs)/map')}
           secondaryLabel={copy.secondaryLabel}
           onSecondary={() => {
             setAllowRecapture(true);
@@ -851,6 +1093,20 @@ export default function ScannerScreen() {
     );
   }
 
+  if (step === 'captureMinigame') {
+    if (photoUri && photoBase64) {
+      return (
+        <CaptureMinigame
+          photoUri={photoUri}
+          onBack={resetToCamera}
+          onCaptured={() => {
+            beginAnalysisAfterCapture(photoBase64, photoUri, photoMimeType);
+          }}
+        />
+      );
+    }
+  }
+
   if ((step === 'analyzing' || analyzing) && photoUri) {
     return (
       <AnalysisLoadingView
@@ -899,10 +1155,10 @@ export default function ScannerScreen() {
             <ProgressBar progress={1} height={8} />
             <View style={{ gap: spacing[8] }}>
               <Text variant="title" color="textBrand">
-                Presque !
+                Deuxième essai
               </Text>
               <Text variant="bodySmall" color="textSecondary">
-                Relance l’analyse ou reprends une photo.
+                Recadre sans tout recommencer, ou relance l’analyse sur cette photo.
               </Text>
             </View>
           </View>
@@ -931,7 +1187,7 @@ export default function ScannerScreen() {
               title="Relancer l’analyse"
               onPress={() => photoBase64 && photoUri && runAnalysis(photoBase64, photoUri)}
             />
-            <Button title="Réessayer avec une autre photo" variant="secondary" onPress={resetToCamera} />
+            <Button title="Autre photo" variant="secondary" onPress={resetToCamera} />
           </View>
         </View>
       </View>
@@ -1103,7 +1359,9 @@ export default function ScannerScreen() {
                     paddingVertical: spacing[8] }}
                 >
                   <Text variant="bodySmall" color="onAccent" align="center">
-                    {cameraReady ? 'Place le chat au centre' : 'Préparation…'}
+                    {cameraReady
+                      ? 'Lumière de face · Un seul chat · Yeux visibles'
+                      : 'Préparation…'}
                   </Text>
                 </View>
               ) : (
@@ -1117,7 +1375,9 @@ export default function ScannerScreen() {
                     color="onAccent"
                     align="center"
                   >
-                    {cameraReady ? 'Place le chat au centre' : 'Préparation…'}
+                    {cameraReady
+                      ? 'Lumière de face · Un seul chat · Yeux visibles'
+                      : 'Préparation…'}
                   </Text>
                 </BlurView>
               )}

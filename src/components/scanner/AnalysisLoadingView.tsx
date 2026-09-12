@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, memo, type ReactNode } from 'react';
-import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
+import { Image, Platform, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -503,60 +503,8 @@ function ScanTipCard() {
   );
 }
 
-function AnalysisTab({
-  label,
-  active,
-  onPress,
-  children,
-}: {
-  label: string;
-  active?: boolean;
-  onPress?: () => void;
-  children: ReactNode;
-}) {
-  const { colors, spacing, radius, motion } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: Boolean(active), disabled: !onPress }}
-      disabled={!onPress}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing[4],
-        opacity: pressed ? 0.85 : 1,
-        transform: [{ scale: pressed ? motion.pressScale : 1 }],
-      })}
-    >
-      <View
-        style={{
-          width: spacing[40],
-          height: spacing[40],
-          borderRadius: radius.full,
-          borderWidth: active ? 2 : 0,
-          borderColor: active ? colors.brand : 'transparent',
-          backgroundColor: active ? colors.brandSoft : 'transparent',
-          alignItems: 'center',
-          justifyContent: 'center' }}
-      >
-        {children}
-      </View>
-      <Text
-        variant="caption"
-        weight={active ? 'semibold' : 'regular'}
-        color={active ? 'textBrand' : 'textMuted'}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 export function AnalysisLoadingView({ photoUri, onBack, claimMode = false }: Props) {
-  const { colors, spacing, radius, shadow, iconStroke, gradients } = useTheme();
+  const { colors, spacing, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const [photoFailed, setPhotoFailed] = useState(false);
   const handlePhotoError = useCallback(() => setPhotoFailed(true), []);
@@ -638,76 +586,6 @@ export function AnalysisLoadingView({ photoUri, onBack, claimMode = false }: Pro
         <View style={{ flex: 1, paddingHorizontal: spacing[24], gap: spacing[16] }}>
           <ScanProgressCard claimMode={claimMode} />
           <ScanTipCard />
-        </View>
-
-        <View
-          style={[
-            {
-              marginTop: spacing[8],
-              marginHorizontal: spacing[16],
-              paddingVertical: spacing[8],
-              paddingHorizontal: spacing[8],
-              borderRadius: radius.cta,
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-              flexDirection: 'row',
-            },
-            shadow.low,
-          ]}
-        >
-          <AnalysisTab label="Découverte" active>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M11 4.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Z"
-                stroke={colors.brand}
-                strokeWidth={iconStroke.regular}
-              />
-              <Path
-                d="M16 16.5 20 20.5"
-                stroke={colors.brand}
-                strokeWidth={iconStroke.regular}
-                strokeLinecap="round"
-              />
-            </Svg>
-          </AnalysisTab>
-          <AnalysisTab label="Fiche">
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M7 4h10a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z"
-                stroke={colors.textMuted}
-                strokeWidth={iconStroke.regular}
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </AnalysisTab>
-          <AnalysisTab label="Carte" onPress={() => router.replace('/(tabs)/map')}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M4 7.5 9 5l6 2.5L20 5v13.5L15 21l-6-2.5L4 21V7.5Z"
-                stroke={colors.textMuted}
-                strokeWidth={iconStroke.regular}
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </AnalysisTab>
-          <AnalysisTab label="Mon CatDex" onPress={() => router.replace('/(tabs)/catdex')}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 18c-3.5 0-6-2.2-6-5.2C6 9.5 8.2 7 10.2 5.6c.7-.5 1.6-.5 2.3 0C14.5 7 16.8 9.5 16.8 12.8 16.8 15.8 14.3 18 12 18Z"
-                stroke={colors.textMuted}
-                strokeWidth={iconStroke.regular}
-                strokeLinejoin="round"
-              />
-              <Path
-                d="M9.5 12a1 1 0 1 0 0.01 0M14.5 12a1 1 0 1 0 0.01 0"
-                fill={colors.textMuted}
-                stroke={colors.textMuted}
-                strokeWidth={1.5}
-                strokeLinecap="round"
-              />
-            </Svg>
-          </AnalysisTab>
         </View>
       </View>
     </View>

@@ -20,7 +20,7 @@ type BrandLoaderProps = {
 
 /**
  * Full-screen brand loader — logo au centre, pulse doux.
- * Utilisé en sortie d’onboarding (après permissions).
+ * Utilisé en sortie d’onboarding, juste avant la carte.
  */
 export function BrandLoader({ label = 'Préparation de ton quartier…' }: BrandLoaderProps) {
   const { colors, spacing, motion } = useTheme();

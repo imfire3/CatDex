@@ -20,6 +20,7 @@ Scanner → Reveal → CatDex → Map → (encore)
 2. Scanner — geste fiable, erreurs honnêtes
 3. Reveal — magie + confirmation sans friction
 4. CatDex — fierté de collection, retour Map évident
+5. Re-spot — [tickets/S1-T-respot-same-cat.md](./tickets/S1-T-respot-same-cat.md)
 
 ## Hors scope
 

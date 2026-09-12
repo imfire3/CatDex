@@ -5,6 +5,7 @@ import { CatCardDetail } from '@/components/CatCardDetail';
 import { PageLoading } from '@/components/Loader';
 import { ProblemState } from '@/components/ProblemState';
 import { enrichAnalysis } from '@/lib/catTraits';
+import { locationLabelFromCoords } from '@/lib/geoLabels';
 import { useCatsStore } from '@/store/cats';
 
 function goBackFromCat() {
@@ -104,7 +105,10 @@ export default function CatDetailScreen() {
         photoUri={cat.photoUri}
         analysis={analysis}
         discoveredAt={cat.discoveredAt}
+        lastSeenAt={cat.lastSeenAt}
         views={cat.views}
+        captureCount={cat.captureCount}
+        locationLabel={locationLabelFromCoords(cat.latitude, cat.longitude)}
         onBack={goBackFromCat}
       />
     </CatDetailErrorBoundary>

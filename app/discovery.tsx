@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { ErrorState } from '@/components/ErrorState';
 import { TextInput } from '@/components/Input';
 import { Text } from '@/components/Text';
 import { formatCatDefaultName } from '@/lib/constants';
@@ -45,7 +46,12 @@ export default function DiscoveryScreen() {
     params.suggestedName?.trim() ||
     formatCatDefaultName(nextNumber);
   const [name, setName] = useState(defaultName);
+  const [imageLoading, setImageLoading] = useState(true);
   const theme = themeFromColorLabel(params.color ?? '', nextNumber);
+  const hasPhoto = Boolean(params.photoUri?.trim());
+  const hasCoordinates =
+    Number.isFinite(Number(params.latitude)) && Number.isFinite(Number(params.longitude));
+  const canConfirm = hasPhoto && hasCoordinates && Boolean(name.trim());
 
   useEffect(() => {
     scale.value = withSpring(1, motion.easing.spring);
@@ -60,6 +66,7 @@ export default function DiscoveryScreen() {
   }));
 
   const confirm = () => {
+    if (!canConfirm) return;
     void (async () => {
       await addCat({
         photoUri: params.photoUri,
@@ -78,6 +85,32 @@ export default function DiscoveryScreen() {
       router.replace('/(tabs)/map');
     })();
   };
+
+  if (!hasPhoto || !hasCoordinates) {
+    return (
+      <View
+        style={[
+          styles.root,
+          {
+            backgroundColor: colors.background,
+            paddingTop: insets.top + spacing[24],
+            paddingHorizontal: spacing[24],
+            justifyContent: 'center',
+          },
+        ]}
+      >
+        <ErrorState
+          icon="camera"
+          title="Découverte incomplète"
+          description="La photo ou la position n’a pas pu être récupérée. Reviens au scanner pour relancer la capture."
+          primaryLabel="Revenir au scanner"
+          onPrimary={() => router.replace('/scanner')}
+          secondaryLabel="Retour à la carte"
+          onSecondary={() => router.replace('/(tabs)/map')}
+        />
+      </View>
+    );
+  }
 
   return (
     <View
@@ -107,11 +140,32 @@ export default function DiscoveryScreen() {
         >
           <Image
             source={{ uri: params.photoUri }}
+            accessibilityLabel="Photo du chat découvert"
+            onLoadStart={() => setImageLoading(true)}
+            onLoadEnd={() => setImageLoading(false)}
             style={{
               width: spacing[96] * 2,
               height: spacing[96] * 2,
               borderRadius: radius.xl }}
           />
+          {imageLoading ? (
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: themeSoft(theme, scheme),
+                  borderRadius: radius.xl,
+                },
+              ]}
+            >
+              <ActivityIndicator color={colors.brand} />
+              <Text variant="caption" color="textSecondary" style={{ marginTop: spacing[8] }}>
+                Préparation de ta découverte…
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={{ width: '100%', marginTop: spacing[24], gap: spacing[8] }}>
@@ -152,7 +206,7 @@ export default function DiscoveryScreen() {
           paddingBottom: Math.max(insets.bottom, spacing[16]),
           gap: spacing[8] }}
       >
-        <Button title="Ajouter à la carte" onPress={confirm} />
+        <Button title="Ajouter à mon CatDex" onPress={confirm} disabled={!canConfirm} />
         <Button
           title="Annuler"
           variant="ghost"

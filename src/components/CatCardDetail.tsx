@@ -23,6 +23,9 @@ export type CatCardDetailProps = {
   analysis: CatAnalysis;
   discoveredAt: string;
   views?: number;
+  /** Confirmed captures of this CatDex entry. */
+  captureCount?: number;
+  lastSeenAt?: string;
   locationLabel?: string;
   onBack: () => void;
   onPrimaryAction?: () => void;
@@ -231,7 +234,9 @@ export function CatCardDetail({
   analysis: rawAnalysis,
   discoveredAt,
   views = 0,
-  locationLabel = 'Rue de Belleville, Paris 20e',
+  captureCount,
+  lastSeenAt,
+  locationLabel,
   onBack,
   onPrimaryAction,
   primaryLabel,
@@ -246,8 +251,11 @@ export function CatCardDetail({
   const soft = themeSoft(theme, scheme);
   const symbol = genderSymbol(analysis.gender);
   const gender = genderLabel(analysis.gender);
-  const stars = starScore(views, number);
-  const likesPct = 50 + ((number * 13) % 41);
+  const captures =
+    typeof captureCount === 'number' && captureCount >= 1
+      ? captureCount
+      : Math.max(1, views || 1);
+  const stars = starScore(captures, number);
 
   useEffect(() => {
     setPhotoFailed(false);
@@ -339,7 +347,8 @@ export function CatCardDetail({
 
           <Text variant="bodySmall" weight="semibold" color="textBrand">
             {traitTags[0] ? `${traitTags[0]} · ` : ''}
-            Découvert {formatPlaceDate(discoveredAt)}
+            Vu {formatPlaceDate(lastSeenAt ?? discoveredAt)}
+            {captures > 1 ? ` · Capturé ${captures} fois` : ''}
             {locationLabel ? ` · ${locationLabel.split(',')[0]}` : ''}
           </Text>
 
@@ -382,7 +391,7 @@ export function CatCardDetail({
           </Text>
           <View style={{ gap: spacing[8] }}>
             <Text variant="bodySmall" color="textBody">
-              Aimé par {likesPct} % · Observé {views === 1 ? 'une fois' : `${views} fois`} · Découvert
+              Capturé {captures === 1 ? 'une fois' : `${captures} fois`} · Découvert
             </Text>
             <Text variant="caption" color="textMuted">
               Première apparition · {formatPlaceDate(discoveredAt)}

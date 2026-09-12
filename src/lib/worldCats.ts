@@ -33,6 +33,7 @@ export function buildWorldCats(anchor: {
       longitude: anchor.longitude + spot.dLng,
       discoveredAt: new Date(0).toISOString(),
       views: 0,
+    captureCount: 1,
       analysis,
     } satisfies Cat;
   });

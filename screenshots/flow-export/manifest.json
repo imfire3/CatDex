@@ -1,6 +1,6 @@
 {
-  "base": "http://127.0.0.1:8081",
-  "generatedAt": "2026-08-15T08:50:49.278Z",
+  "base": "https://staging--catdex-beta.netlify.app",
+  "generatedAt": "2026-08-25T22:07:53.784Z",
   "screens": [
     {
       "id": "01-welcome",
@@ -15,10 +15,22 @@
       "file": "02-login.png"
     },
     {
+      "id": "02b-login-errors",
+      "title": "Connexion · erreurs de validation",
+      "route": "/login",
+      "file": "02b-login-errors.png"
+    },
+    {
       "id": "03-signup-empty",
       "title": "Inscription · formulaire vide",
       "route": "/signup",
       "file": "03-signup-empty.png"
+    },
+    {
+      "id": "03a-signup-errors",
+      "title": "Inscription · erreurs et mot de passe faible",
+      "route": "/signup",
+      "file": "03a-signup-errors.png"
     },
     {
       "id": "03b-signup-filled",
@@ -28,27 +40,27 @@
     },
     {
       "id": "04-intro",
-      "title": "Onboarding 1/3 · Apparition + types de chats",
+      "title": "Onboarding 1/2 · Apparition + types de chats",
       "route": "/intro",
       "file": "04-intro.png"
     },
     {
       "id": "05-scan",
-      "title": "Onboarding 2/3 · Analyse IA",
+      "title": "Onboarding 2/2 · Analyse IA",
       "route": "/permissions",
       "file": "05-scan.png"
     },
     {
-      "id": "06-reward",
-      "title": "Onboarding 3/3 · Premier chat",
-      "route": "/onboarding-reward",
-      "file": "06-reward.png"
+      "id": "06-location-ask",
+      "title": "Permissions · demande de position",
+      "route": "/permission-location",
+      "file": "06-location-ask.png"
     },
     {
-      "id": "06c-support",
-      "title": "Post-onboarding · Projet gratuit / Revolut",
-      "route": "/onboarding-reward",
-      "file": "06c-support.png"
+      "id": "06a-location-denied",
+      "title": "Permissions · position désactivée",
+      "route": "/permission-location",
+      "file": "06a-location-denied.png"
     },
     {
       "id": "07-map",

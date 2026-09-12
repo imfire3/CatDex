@@ -218,6 +218,9 @@ export function CaptureReveal({
   // Vision data only — never invent / enrich fields for the form.
   const vision = useMemo(() => rawAnalysis, [rawAnalysis]);
   const aiName = (vision.suggestedName || '').trim();
+  const compactEdit =
+    Boolean(vision.requiresUserConfirmation) ||
+    (typeof vision.confidence === 'number' && vision.confidence < 55);
 
   const predicted = useMemo(
     () => ({
@@ -493,7 +496,7 @@ export function CaptureReveal({
 
         <View style={{ width: '100%', gap: spacing[16] }}>
           <Text variant="title" color="text">
-            Modifier les informations
+            {compactEdit ? 'Nom, type et description' : 'Modifier les informations'}
           </Text>
 
           <View style={{ gap: spacing[8] }}>
@@ -585,6 +588,8 @@ export function CaptureReveal({
             onChangeText={handleNameChange}
             onEndEdit={() => setEditingField(null)}
           />
+          {compactEdit ? null : (
+          <>
           <View style={{ gap: spacing[8] }}>
             <Text variant="bodySmall" weight="semibold" color="textBody">
               Race
@@ -699,6 +704,8 @@ export function CaptureReveal({
             onChangeText={setTag}
             onEndEdit={() => setEditingField(null)}
           />
+          </>
+          )}
           <EditableRow
             label="Description"
             value={description}

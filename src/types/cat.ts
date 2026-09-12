@@ -78,7 +78,15 @@ export type Cat = {
   latitude: number;
   longitude: number;
   discoveredAt: string;
+  /** Last time the player opened the fiche or recaptured this cat. */
+  lastSeenAt?: string;
+  /** Fiche opens / soft views — not a capture count. */
   views: number;
+  /**
+   * Confirmed captures / re-spots of this same CatDex entry.
+   * Starts at 1 on first addCat; +1 on recordRespot (not on fiche open).
+   */
+  captureCount: number;
   notes?: string;
   /**
    * `sauvage` → visible on the explorer map.

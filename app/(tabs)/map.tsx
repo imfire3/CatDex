@@ -9,18 +9,23 @@ import { EnablePermissionModal } from '@/components/EnablePermissionModal';
 import { SupportProjectModal } from '@/components/SupportProjectModal';
 import { CatMap } from '@/components/maps/CatMap';
 import { LocationInactiveBanner } from '@/components/maps/LocationInactiveBanner';
+import { ChatDuJourBanner } from '@/components/maps/ChatDuJourBanner';
 import { MapCatModal } from '@/components/maps/MapCatModal';
 import { MapDiscoverableSheet } from '@/components/maps/MapDiscoverableSheet';
-import { MapDiscoveryLegend } from '@/components/maps/MapDiscoveryLegend';
 import { MapDiscoveryTip } from '@/components/maps/MapDiscoveryTip';
 import { MapExplorerHud } from '@/components/maps/MapExplorerHud';
 import { useCaptureGate } from '@/hooks/useCaptureGate';
 import {
   buildOwnedCatIdSet,
   getCatDiscoveryState,
+  mergeMapCatsForExplorer,
 } from '@/lib/catDiscovery';
-import { isCatVisibleOnMap } from '@/lib/catLifestyle';
 import { PARIS_20E, distanceMeters } from '@/lib/constants';
+import {
+  formatDistanceAndDirection,
+  pickCatOfTheDay,
+} from '@/lib/geoLabels';
+import { emitUsefulNotifications } from '@/lib/usefulNotifications';
 import { pullCommunityCatsForMap } from '@/lib/catSync';
 import {
   DEMO_COMMUNITY_CATS,
@@ -30,6 +35,7 @@ import {
 import { coordinatesForDiscoveryOverview } from '@/lib/mapDiscoveryOverview';
 import {
   getCurrentLocationCoordinate,
+  getLocationAccessState,
   openSystemLocationSettings,
   requestLocationAccessResult,
   requestWebCompassPermission,
@@ -41,6 +47,7 @@ import {
 import {
   dismissSupportModal,
   hasDismissedSupportModal,
+  shouldOfferSupportModal,
 } from '@/lib/supportModal';
 import {
   headingFromDeviceOrientation,
@@ -53,9 +60,11 @@ import { useAuthStore } from '@/store/auth';
 import { useCatsStore } from '@/store/cats';
 import { claimTargetFromCat, useClaimTargetStore } from '@/store/claimTarget';
 import { useCommunityCatsStore } from '@/store/communityCats';
+import { useFavoritesStore } from '@/store/favorites';
 import { useMapExploreStore } from '@/store/mapExplore';
 import { useMissionsStore } from '@/store/missions';
 import { useNotificationsStore } from '@/store/notifications';
+import { useSettingsPrefsStore } from '@/store/settingsPrefs';
 import { useToastStore } from '@/store/toast';
 import type { Cat } from '@/types/cat';
 
@@ -73,8 +82,17 @@ export default function MapScreen() {
   const consumePendingFocus = useMapExploreStore(
     (state) => state.consumePendingFocus,
   );
+  const consumePendingRecenterOnPlayer = useMapExploreStore(
+    (state) => state.consumePendingRecenterOnPlayer,
+  );
+  const pendingRecenterOnPlayer = useMapExploreStore(
+    (state) => state.pendingRecenterOnPlayer,
+  );
   const pushNearby = useNotificationsStore((state) => state.pushNearby);
   const missions = useMissionsStore((state) => state.missions);
+  const companionId = useFavoritesStore((state) => state.companionId);
+  const settingsPrefs = useSettingsPrefsStore((state) => state.prefs);
+  const hydrateSettings = useSettingsPrefsStore((state) => state.hydrate);
   const openMissionCount = missions.filter((m) => !m.completed).length;
   const captureGate = useCaptureGate();
   const setClaimTarget = useClaimTargetStore((state) => state.setTarget);
@@ -121,7 +139,7 @@ export default function MapScreen() {
     'ask',
   );
   const [locationBusy, setLocationBusy] = useState(false);
-  /** GPS gate finished (granted or already active) — then we may show support. */
+  /** GPS probe finished (granted, denied, or skipped until a gesture). */
   const [locationGateDone, setLocationGateDone] = useState(false);
   const [supportModalVisible, setSupportModalVisible] = useState(false);
   /** Start GPS watch only after the user accepted (or already granted). */
@@ -190,26 +208,12 @@ export default function MapScreen() {
 
   /**
    * Own CatDex pins (photo) + other players' sightings (mystery until you capture them).
-   * Community pins disappear once you capture that same sighting id.
+   * Claiming a community pin replaces it in-place with your captured fiche.
    */
-  const mapCats = useMemo(() => {
-    const byId = new Map<string, Cat>();
-
-    for (const cat of communityCats) {
-      if (!isCatVisibleOnMap(cat)) continue;
-      if (getCatDiscoveryState(cat, ownedIds) === 'owned') {
-        continue;
-      }
-      byId.set(cat.id, cat);
-    }
-
-    for (const cat of ownedCats) {
-      if (!isCatVisibleOnMap(cat)) continue;
-      byId.set(cat.remoteId || cat.id, cat);
-    }
-
-    return [...byId.values()];
-  }, [ownedCats, communityCats, ownedIds]);
+  const mapCats = useMemo(
+    () => mergeMapCatsForExplorer(ownedCats, communityCats, ownedIds),
+    [ownedCats, communityCats, ownedIds],
+  );
 
   const selectedDiscoveryState = selected
     ? getCatDiscoveryState(selected, ownedIds)
@@ -228,6 +232,35 @@ export default function MapScreen() {
       ),
     [mapCats, ownedIds],
   );
+
+  const catOfTheDay = useMemo(
+    () => pickCatOfTheDay(discoverableCats),
+    [discoverableCats],
+  );
+
+  const companionName = useMemo(() => {
+    if (!companionId) return null;
+    return storedCats.find((cat) => cat.id === companionId)?.name ?? null;
+  }, [companionId, storedCats]);
+
+  useEffect(() => {
+    void hydrateSettings();
+  }, [hydrateSettings]);
+
+  useEffect(() => {
+    emitUsefulNotifications({
+      owned: storedCats,
+      discoverable: discoverableCats,
+      user: hasGpsFix ? userCoordinate : null,
+      prefs: settingsPrefs,
+    });
+  }, [
+    storedCats,
+    discoverableCats,
+    hasGpsFix,
+    userCoordinate,
+    settingsPrefs,
+  ]);
 
   const handleShowDiscoverable = useCallback(() => {
     if (discoverableCats.length === 0) return;
@@ -268,22 +301,35 @@ export default function MapScreen() {
     };
   }, [mapDemo, storedCats.length, hasDiscoverableOnMap, userId]);
 
-  /** After GPS is ready on the map: optional free/Revolut note (once per user). */
+  /** Optional support note — only after a real capture, never on first map land. */
   useEffect(() => {
-    if (!locationGateDone || locationModalVisible || !userId) return;
+    if (!locationGateDone || !userId) return;
     let mounted = true;
     void (async () => {
       const dismissed = await hasDismissedSupportModal(userId);
-      if (mounted && !dismissed) {
-        // Let the GPS success toast settle briefly before stacking another surface.
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        if (mounted) setSupportModalVisible(true);
+      if (
+        !mounted ||
+        !shouldOfferSupportModal({
+          ownedCatCount: storedCats.length,
+          dismissed,
+          blockingModalVisible: locationModalVisible || discoveryTipVisible,
+        })
+      ) {
+        return;
       }
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      if (mounted) setSupportModalVisible(true);
     })();
     return () => {
       mounted = false;
     };
-  }, [locationGateDone, locationModalVisible, userId]);
+  }, [
+    locationGateDone,
+    locationModalVisible,
+    discoveryTipVisible,
+    storedCats.length,
+    userId,
+  ]);
 
   const sortedCats = useMemo(
     () => sortCatsByDistance(mapCats, userCoordinate),
@@ -300,6 +346,17 @@ export default function MapScreen() {
       selected.longitude,
     );
   }, [selected, hasGpsFix, userCoordinate]);
+
+  const selectedDirection = useMemo(() => {
+    if (!selected || !hasGpsFix || !userCoordinate) return null;
+    return formatDistanceAndDirection({
+      distanceM: selectedDistance,
+      fromLat: userCoordinate.latitude,
+      fromLng: userCoordinate.longitude,
+      toLat: selected.latitude,
+      toLng: selected.longitude,
+    });
+  }, [selected, hasGpsFix, userCoordinate, selectedDistance]);
 
   const nearestForProximity = sortedCats[0] ?? null;
   const nearbyCatIds = useMemo(
@@ -375,34 +432,28 @@ export default function MapScreen() {
   }, []);
 
   /**
-   * Always request a live GPS fix on the explorer (triggers the browser prompt
-   * when needed). Do not wait for Permissions API "granted" — Cursor / Safari
-   * often report "prompt" even after the user can share location.
+   * If location is already granted, warm the map. Otherwise wait for recenter /
+   * banner / capture — do not fire the OS prompt on first land.
    */
   useEffect(() => {
     let mounted = true;
     void (async () => {
-      if (mounted) setWatchEnabled(true);
-
-      const result = await requestLocationAccessResult();
+      const state = await getLocationAccessState();
       if (!mounted) return;
 
-      if (result.denied) {
+      if (!state.active) {
         setLocationGateDone(true);
         return;
       }
 
-      const next =
-        result.coordinate ?? (await getCurrentLocationCoordinate());
+      setWatchEnabled(true);
+      const next = await getCurrentLocationCoordinate();
       if (next && mounted) {
         await applyLocation(next);
       }
       if (mounted) setLocationGateDone(true);
     })().catch(() => {
-      if (mounted) {
-        setWatchEnabled(true);
-        setLocationGateDone(true);
-      }
+      if (mounted) setLocationGateDone(true);
     });
     return () => {
       mounted = false;
@@ -691,6 +742,16 @@ export default function MapScreen() {
     openLocationAskModal();
   };
 
+  useEffect(() => {
+    if (!mapFocused || !pendingRecenterOnPlayer) return;
+    if (!consumePendingRecenterOnPlayer()) return;
+    void recenterOnPlayer();
+  }, [
+    mapFocused,
+    pendingRecenterOnPlayer,
+    consumePendingRecenterOnPlayer,
+  ]);
+
   /** Double-tap recenter — default zoom + pitch on the player. */
   const resetMainView = () => {
     setFollowUser(true);
@@ -793,11 +854,45 @@ export default function MapScreen() {
         onRequestEnable={openLocationAskModal}
       />
 
-      {hasDiscoverableOnMap || storedCats.length > 0 ? (
-        <MapDiscoveryLegend
-          discoverableCount={discoverableCats.length}
-          onShowDiscoverable={
-            discoverableCats.length > 0 ? handleShowDiscoverable : undefined
+      {catOfTheDay ? (
+        <ChatDuJourBanner
+          name={
+            getCatDiscoveryState(catOfTheDay, ownedIds) === 'owned'
+              ? catOfTheDay.name
+              : 'Chat mystère'
+          }
+          meta={
+            hasGpsFix && userCoordinate
+              ? formatDistanceAndDirection({
+                  distanceM: distanceMeters(
+                    userCoordinate.latitude,
+                    userCoordinate.longitude,
+                    catOfTheDay.latitude,
+                    catOfTheDay.longitude,
+                  ),
+                  fromLat: userCoordinate.latitude,
+                  fromLng: userCoordinate.longitude,
+                  toLat: catOfTheDay.latitude,
+                  toLng: catOfTheDay.longitude,
+                }) ?? 'À découvrir aujourd’hui'
+              : 'À découvrir aujourd’hui'
+          }
+          extraCount={Math.max(0, discoverableCats.length - 1)}
+          onPress={() => {
+            setFollowUser(false);
+            setCompassMode(false);
+            flyToCoordinate(
+              {
+                latitude: catOfTheDay.latitude,
+                longitude: catOfTheDay.longitude,
+              },
+              { pinZoom: true },
+            );
+            setSelected(catOfTheDay);
+            setSheetVisible(true);
+          }}
+          onSeeAll={
+            discoverableCats.length > 1 ? handleShowDiscoverable : undefined
           }
         />
       ) : null}
@@ -806,6 +901,7 @@ export default function MapScreen() {
         missionCount={openMissionCount}
         collectionCount={storedCats.length}
         captureHighlighted={Boolean(nearbyCatIds.length)}
+        companionName={companionName}
         compassActive={compassMode}
         onRecenter={() => void recenterOnPlayer()}
         onRecenterReset={resetMainView}
@@ -821,6 +917,7 @@ export default function MapScreen() {
         cat={selected}
         discoveryState={selectedDiscoveryState ?? undefined}
         distanceM={selectedDistance}
+        directionLabel={selectedDirection}
         onClose={() => {
           setSheetVisible(false);
           setSelected(null);
@@ -844,6 +941,7 @@ export default function MapScreen() {
         visible={discoverableSheetVisible}
         items={sortedDiscoverableCats}
         showDistance={hasGpsFix}
+        origin={hasGpsFix ? userCoordinate : null}
         onClose={() => setDiscoverableSheetVisible(false)}
         onSelect={handleSelectDiscoverable}
       />
@@ -866,24 +964,23 @@ export default function MapScreen() {
         kind="location"
         title={
           locationModalPhase === 'denied'
-            ? 'GPS refusé — CatDex est bloqué'
-            : 'Autorise le suivi GPS'
+            ? 'Position désactivée'
+            : 'Trouve les chats près de toi'
         }
         description={
           locationModalPhase === 'denied'
-            ? 'Sans localisation, CatDex ne peut pas placer les chats près de toi ni faire fonctionner la carte. Active la position pour ce site dans Réglages → Safari → Localisation, puis réessaie.'
-            : 'CatDex utilise ta position pour placer les chats près de toi et l’orientation du téléphone pour tourner la carte. Sans GPS, l’app ne peut pas fonctionner.'
+            ? 'Tu peux continuer à consulter la carte. Réactive la position dans les réglages pour voir les chats réellement accessibles autour de toi.'
+            : 'Ta position sert à afficher les chats accessibles autour de toi et à orienter la carte. Elle n’est jamais montrée aux autres utilisateurs.'
         }
         primaryLabel={
           locationBusy
             ? 'Ouverture…'
             : locationModalPhase === 'denied'
               ? 'Réessayer'
-              : 'Autoriser le GPS'
+              : 'Activer ma position'
         }
         onClose={() => {
-          // Keep the gate up until GPS is granted (or user retries after a deny).
-          if (locationModalPhase === 'denied') return;
+          setLocationModalVisible(false);
         }}
         onRetry={() => {
           void handleLocationAuthorize();
@@ -895,6 +992,8 @@ export default function MapScreen() {
                 void openSystemLocationSettings();
               }
         }
+        onDismissLabel="Plus tard"
+        onDismiss={() => setLocationModalVisible(false)}
       />
 
       <EnablePermissionModal

@@ -212,6 +212,7 @@ export function mapRemoteCatToLocal(row: RemoteCatRow, fallbackNumber: number) {
     longitude: row.longitude,
     discoveredAt: row.created_at,
     views: row.views ?? 0,
+    captureCount: Math.max(1, row.views ?? 1),
     notes: row.address || undefined,
     lifestyle:
       row.lifestyle === 'domestique'

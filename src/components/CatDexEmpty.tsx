@@ -221,10 +221,10 @@ export function CatDexEmpty({ onExplore }: Props) {
 
         <View style={{ gap: spacing[8], alignItems: 'center', maxWidth: 320 }}>
           <Text variant="title" color="text" align="center">
-            Aucun chat trouvé
+            Ton CatDex est vide
           </Text>
           <Text variant="body" color="textSecondary" align="center">
-            Pars explorer ton quartier et capture ton premier chat !
+            Explore la carte et photographie ton premier chat pour commencer ta collection.
           </Text>
         </View>
 
@@ -258,10 +258,10 @@ export function CatDexEmpty({ onExplore }: Props) {
           </View>
           <View style={{ flex: 1, gap: spacing[4] }}>
             <Text variant="bodySmall" weight="semibold" color="text">
-              Explore autour de toi
+              Trouve un chat près de toi
             </Text>
             <Text variant="caption" color="textSecondary">
-              De nouveaux chats t’attendent peut-être juste ici !
+              Ouvre la carte pour voir les découvertes accessibles.
             </Text>
           </View>
           <Chevron color={colors.textMuted} size={iconSize.sm} />
@@ -269,7 +269,7 @@ export function CatDexEmpty({ onExplore }: Props) {
       </View>
 
       <Button
-        title="Découvrir la carte"
+        title="Trouver mon premier chat"
         onPress={onExplore}
         icon={<IconMap color={colors.onAccent} size={iconSize.sm} />}
       />

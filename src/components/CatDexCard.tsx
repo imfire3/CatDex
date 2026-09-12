@@ -17,6 +17,7 @@ import {
   themeFromColorLabel,
 } from '@/lib/catTheme';
 import { enrichAnalysis } from '@/lib/catTraits';
+import { lastSeenLabel, neighborhoodLabel } from '@/lib/geoLabels';
 import { isCatPhotoRef } from '@/lib/photoStorage';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Cat, CatAnalysis } from '@/types/cat';
@@ -195,6 +196,28 @@ export function CatDexCard({
           </Text>
         </View>
 
+        {captured && (cat.captureCount ?? 0) > 1 ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: spacing[8],
+              right: onToggleFavorite ? spacing[48] : spacing[8],
+              zIndex: 2,
+              height: spacing[24],
+              paddingHorizontal: spacing[8],
+              borderRadius: radius.full,
+              backgroundColor: colors.brandSoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text variant="caption" weight="semibold" color="textBrand">
+              ×{cat.captureCount}
+            </Text>
+          </View>
+        ) : null}
+
         {captured && onToggleFavorite ? (
           <Pressable
             accessibilityRole="button"
@@ -257,6 +280,20 @@ export function CatDexCard({
             style={{ opacity: captured ? 1 : 0.7 }}
           >
             {breed}
+          </Text>
+        ) : null}
+
+        {captured ? (
+          <Text variant="caption" color="textMuted" numberOfLines={1}>
+            {[
+              (cat.captureCount ?? 0) > 1 ? `Capturé ${cat.captureCount} fois` : null,
+              lastSeenLabel(cat.lastSeenAt ?? cat.discoveredAt)
+                ? `Vu ${lastSeenLabel(cat.lastSeenAt ?? cat.discoveredAt)}`
+                : null,
+              neighborhoodLabel(cat.latitude, cat.longitude),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         ) : null}
 

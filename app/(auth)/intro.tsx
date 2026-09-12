@@ -1,27 +1,76 @@
 import { Redirect, router } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
 import { AuthShell } from '@/components/Auth/AuthShell';
-import { PrimaryCTA, ProgressDots, SightingScene } from '@/components/Auth/Onboarding';
 import {
-  ONBOARDING_STEP_COUNT,
-  ONBOARDING_STEP_LABELS,
-} from '@/components/Auth/OnboardingStepper';
+  BrandLoader,
+  PrimaryCTA,
+  ProgressDots,
+  RewardScene,
+  ScanScene,
+  SightingScene,
+} from '@/components/Auth/Onboarding';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
-/** Onboarding 1/3 — un chat apparaît près de toi. */
+const ENTER_MAP_MS = 900;
+
+const STEPS = [
+  {
+    title: 'Voir la carte',
+    subtitle: 'Belleville · 150 m — un chat t’attend au coin de la rue',
+    Scene: SightingScene,
+  },
+  {
+    title: 'Photographier',
+    subtitle: 'Lumière de face · un seul chat · yeux visibles',
+    Scene: ScanScene,
+  },
+  {
+    title: 'Retourner à la carte',
+    subtitle: 'Miel est dans ton CatDex — la collection commence',
+    Scene: RewardScene,
+  },
+] as const;
+
+/** Three post-auth beats — map, photo, CatDex — then the real map. */
 export default function IntroScreen() {
   const { colors, spacing } = useTheme();
   const user = useAuthStore((state) => state.user);
   const onboardingCompleted = useAuthStore((state) => state.onboardingCompleted);
+  const completeOnboarding = useAuthStore((state) => state.completeOnboarding);
+  const [step, setStep] = useState(0);
+  const [entering, setEntering] = useState(false);
+
+  const handleNext = useCallback(async () => {
+    if (step < STEPS.length - 1) {
+      setStep((current) => current + 1);
+      return;
+    }
+    setEntering(true);
+    await new Promise((resolve) => setTimeout(resolve, ENTER_MAP_MS));
+    completeOnboarding();
+    router.replace('/(tabs)/map');
+  }, [completeOnboarding, step]);
 
   if (!user) {
     return <Redirect href="/(auth)/welcome" />;
   }
-  if (onboardingCompleted) {
+  if (onboardingCompleted && !entering) {
     return <Redirect href="/(tabs)/map" />;
   }
+
+  if (entering) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <BrandLoader label="Bienvenue dans ton quartier…" />
+      </View>
+    );
+  }
+
+  const current = STEPS[step];
+  const Scene = current.Scene;
 
   return (
     <AuthShell
@@ -38,20 +87,22 @@ export default function IntroScreen() {
           }}
         >
           <ProgressDots
-            step={0}
-            total={ONBOARDING_STEP_COUNT}
-            labels={[...ONBOARDING_STEP_LABELS]}
+            step={step}
+            total={STEPS.length}
+            labels={['Carte', 'Photo', 'CatDex']}
           />
           <PrimaryCTA
-            title="Partir explorer"
-            subtitle="Tu n’es qu’à une photo de commencer ta collection"
-            onPress={() => router.push('/(auth)/permissions')}
+            title={current.title}
+            subtitle={current.subtitle}
+            onPress={() => {
+              void handleNext();
+            }}
           />
         </View>
       }
     >
       <View style={{ flexGrow: 1, minHeight: 640 }}>
-        <SightingScene />
+        <Scene />
       </View>
     </AuthShell>
   );

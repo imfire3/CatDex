@@ -2,6 +2,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { View } from 'react-native';
 
 import { PageLoading } from '@/components/Loader';
+import { MainTabBar } from '@/components/navigation/MainTabBar';
 import { useAuthStore } from '@/store/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -31,7 +32,11 @@ export default function TabsLayout() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Tabs
         safeAreaInsets={{ bottom: 0 }}
-        tabBar={() => null}
+        tabBar={({ state }) => {
+          const activeRoute = state.routes[state.index]?.name ?? 'map';
+          if (activeRoute === 'map') return null;
+          return <MainTabBar activeRoute={activeRoute} />;
+        }}
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: 'transparent' },

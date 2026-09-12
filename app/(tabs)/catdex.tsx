@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CatDexCard } from '@/components/CatDexCard'
 import { CatDexEmpty } from '@/components/CatDexEmpty'
+import { Button } from '@/components/Button'
 import { EmptyState } from '@/components/EmptyState'
 import { PageLoading } from '@/components/Loader'
 import { Text } from '@/components/Text'
@@ -33,8 +34,10 @@ import {
 } from '@/lib/demoCats'
 import { getCurrentLocationCoordinate } from '@/lib/locationAccess'
 import { sortCatsByDistance } from '@/lib/mapExplore'
+import { groupCatsByNeighborhood } from '@/lib/geoLabels'
 import { useCatsStore } from '@/store/cats'
 import { useCommunityCatsStore } from '@/store/communityCats'
+import { useFavoritesStore } from '@/store/favorites'
 import { useMapExploreStore } from '@/store/mapExplore'
 import { useTheme } from '@/theme/ThemeProvider'
 import type { Cat } from '@/types/cat'
@@ -65,7 +68,9 @@ export default function CatDexScreen() {
   const setSharedCommunityCats = useCommunityCatsStore((state) => state.setCats)
   const requestFocusOnCat = useMapExploreStore((state) => state.requestFocusOnCat)
   const [listFilter, setListFilter] = useState<ListFilter>('all')
-  const [favorites, setFavorites] = useState<Set<string>>(() => new Set())
+  const favoriteIds = useFavoritesStore((state) => state.favoriteIds)
+  const toggleFavoriteId = useFavoritesStore((state) => state.toggleFavorite)
+  const favorites = useMemo(() => new Set(favoriteIds), [favoriteIds])
   const [userCoordinate, setUserCoordinate] = useState<{
     latitude: number
     longitude: number
@@ -177,13 +182,13 @@ export default function CatDexScreen() {
   )
   const listBottom = Math.max(insets.bottom, spacing[16]) + spacing[24]
 
+  const neighborhoodGroups = useMemo(() => {
+    if (listFilter !== 'all') return null
+    return groupCatsByNeighborhood(filtered)
+  }, [filtered, listFilter])
+
   const toggleFavorite = (catId: string) => {
-    setFavorites((current) => {
-      const next = new Set(current)
-      if (next.has(catId)) next.delete(catId)
-      else next.add(catId)
-      return next
-    })
+    toggleFavoriteId(catId)
   }
 
   const handlePressCat = useCallback(
@@ -257,6 +262,7 @@ export default function CatDexScreen() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <TabStackHeader
         title="CatDex"
+        showBack={false}
         right={
           <Text variant="bodySmall" weight="semibold" color="brand">
             {ownedCats.length} / {CATDEX_TARGET}
@@ -312,8 +318,81 @@ export default function CatDexScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
+        {ownedCats.length === 0 && catalog.length > 0 ? (
+          <View
+            accessibilityRole="summary"
+            style={{
+              backgroundColor: colors.surfaceElevated,
+              borderRadius: radius.xl,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing[16],
+              marginBottom: spacing[16],
+              gap: spacing[8],
+            }}
+          >
+            <Text variant="title" color="textBrand">
+              Ton CatDex est vide
+            </Text>
+            <Text variant="bodySmall" color="textSecondary">
+              Les silhouettes ci-dessous sont des chats à découvrir. Trouve le plus proche pour commencer ta collection.
+            </Text>
+            <View style={{ marginTop: spacing[8] }}>
+              <Button
+                title="Trouver un chat près de moi"
+                onPress={() => router.push('/(tabs)/map')}
+              />
+            </View>
+          </View>
+        ) : null}
+
         {filtered.length === 0 ? (
           empty
+        ) : neighborhoodGroups && neighborhoodGroups.length > 1 ? (
+          <View style={{ gap: spacing[24] }}>
+            {neighborhoodGroups.map((group) => (
+              <View key={group.label} style={{ gap: spacing[16] }}>
+                <Text variant="label" color="textBrand">
+                  {group.label}
+                </Text>
+                <View
+                  style={[styles.grid, { gap: cardGap }]}
+                  onLayout={(event) => {
+                    const next = event.nativeEvent.layout.width
+                    if (next > 0 && next !== gridWidth) setGridWidth(next)
+                  }}
+                >
+                  {group.items.map(({ cat }) => {
+                    const captured =
+                      getCatDiscoveryState(cat, ownedIds) === 'owned'
+                    return (
+                      <View
+                        key={cat.id}
+                        style={{
+                          width: cardWidth,
+                          maxWidth: cardWidth,
+                          minWidth: 0,
+                          flexGrow: 0,
+                          flexShrink: 0,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <CatDexCard
+                          cat={cat}
+                          captured={captured}
+                          isFavorite={favorites.has(cat.id)}
+                          onToggleFavorite={
+                            captured ? () => toggleFavorite(cat.id) : undefined
+                          }
+                          onPress={() => handlePressCat(cat, captured)}
+                        />
+                      </View>
+                    )
+                  })}
+                </View>
+              </View>
+            ))}
+          </View>
         ) : (
           <View
             style={[styles.grid, { gap: cardGap }]}

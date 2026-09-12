@@ -22,6 +22,7 @@ type Props = {
 };
 
 const OBJECT_FIT: Record<ImageResizeMode, NonNullable<CSSProperties['objectFit']>> = {
+  none: 'none',
   cover: 'cover',
   contain: 'contain',
   stretch: 'fill',
@@ -100,7 +101,6 @@ export function CatImage({
     const flat = StyleSheet.flatten(style) ?? {};
     return (
       // Real DOM img — reliable cover/center in percentage or absolute frames.
-      // eslint-disable-next-line jsx-a11y/alt-text -- alt set below
       <img
         src={resolved}
         alt={accessibilityLabel ?? ''}

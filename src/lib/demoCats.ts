@@ -30,6 +30,7 @@ export const DEMO_OWNED_CATS: Cat[] = [
     discoveredAt: '2026-08-01T10:00:00.000Z',
     lifestyle: 'sauvage',
     views: 3,
+    captureCount: 1,
     analysis: {
       color: 'Roux',
       breed: 'Européen',
@@ -50,6 +51,7 @@ export const DEMO_OWNED_CATS: Cat[] = [
     discoveredAt: '2026-08-05T18:20:00.000Z',
     lifestyle: 'sauvage',
     views: 1,
+    captureCount: 1,
     analysis: {
       color: 'Noir',
       breed: 'Européen',
@@ -77,6 +79,7 @@ export const DEMO_COMMUNITY_CATS: Cat[] = [
     discoveredAt: '2026-08-10T09:00:00.000Z',
     lifestyle: 'sauvage',
     views: 12,
+    captureCount: 1,
     analysis: {
       color: 'Tigré',
       breed: 'Européen',
@@ -97,6 +100,7 @@ export const DEMO_COMMUNITY_CATS: Cat[] = [
     discoveredAt: '2026-08-09T14:00:00.000Z',
     lifestyle: 'sauvage',
     views: 4,
+    captureCount: 1,
     analysis: {
       color: 'Blanc',
       breed: 'Européen',
@@ -117,6 +121,7 @@ export const DEMO_COMMUNITY_CATS: Cat[] = [
     discoveredAt: '2026-08-08T11:30:00.000Z',
     lifestyle: 'sauvage',
     views: 7,
+    captureCount: 1,
     analysis: {
       color: 'Gris',
       breed: 'Chartreux',
@@ -137,6 +142,7 @@ export const DEMO_COMMUNITY_CATS: Cat[] = [
     discoveredAt: '2026-08-07T21:00:00.000Z',
     lifestyle: 'sauvage',
     views: 2,
+    captureCount: 1,
     analysis: {
       color: 'Noir',
       breed: 'Européen',

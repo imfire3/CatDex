@@ -1,5 +1,7 @@
 import type { Cat } from '@/types/cat';
 
+import { isCatVisibleOnMap } from '@/lib/catLifestyle';
+
 /** Whether a map pin belongs to the current user's CatDex or is still to discover. */
 export type CatDiscoveryState = 'owned' | 'discoverable';
 
@@ -39,4 +41,48 @@ export function isOwnedByCurrentUser(
   ownedIds: ReadonlySet<string>,
 ): boolean {
   return getCatDiscoveryState(cat, ownedIds) === 'owned';
+}
+
+/**
+ * Explorer pins: community mysteries + owned street cats.
+ * A claimed community sighting is replaced in-place by the player's fiche
+ * (same coordinates as the original pin, owned discovery state).
+ */
+export function mergeMapCatsForExplorer(
+  ownedCats: readonly Cat[],
+  communityCats: readonly Cat[],
+  ownedIds: ReadonlySet<string>,
+): Cat[] {
+  const byKey = new Map<string, Cat>();
+  const communityBySighting = new Map<string, Cat>();
+
+  for (const cat of communityCats) {
+    if (!isCatVisibleOnMap(cat)) continue;
+    const sightingKey = cat.remoteId || cat.id;
+    communityBySighting.set(sightingKey, cat);
+    if (getCatDiscoveryState(cat, ownedIds) === 'owned') {
+      continue;
+    }
+    byKey.set(sightingKey, cat);
+  }
+
+  for (const cat of ownedCats) {
+    if (!isCatVisibleOnMap(cat)) continue;
+    const sightingKey = cat.sourceWorldId?.trim() || '';
+    const community = sightingKey
+      ? communityBySighting.get(sightingKey)
+      : undefined;
+    const pin: Cat = community
+      ? {
+          ...cat,
+          // Stay on the sighting pin so the map reads as “captured here”.
+          latitude: community.latitude,
+          longitude: community.longitude,
+        }
+      : cat;
+    const key = sightingKey || cat.remoteId || cat.id;
+    byKey.set(key, pin);
+  }
+
+  return [...byKey.values()];
 }

@@ -1,6 +1,7 @@
 import { createCat, getCommunityCats, getMyCats, mapRemoteCatToLocal } from '@/lib/supabaseQueries';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { uploadCatPhoto } from '@/lib/supabaseStorage';
+import { useToastStore } from '@/store/toast';
 import type { Cat } from '@/types/cat';
 
 /** Push a local cat to Supabase (photo + row + analysis). Returns remote UUID. */
@@ -50,6 +51,11 @@ export async function pullMyCatsFromSupabase(): Promise<Cat[]> {
     );
   } catch (error) {
     console.warn('[sync] pullMyCatsFromSupabase failed', error);
+    useToastStore.getState().show({
+      title: 'Sync impossible',
+      description: 'Tes chats restent sur cet appareil.',
+      tone: 'warning',
+    });
     return [];
   }
 }

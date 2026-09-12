@@ -32,6 +32,7 @@ type Props = {
   /** When true, compass tool uses the active (brand) look. */
   compassActive?: boolean;
   captureHighlighted?: boolean;
+  companionName?: string | null;
   /** Intercept Capture FAB (e.g. camera permission gate). */
   onCapturePress?: () => void;
 };
@@ -120,6 +121,7 @@ export function MapExplorerHud({
   onCompass,
   compassActive = false,
   captureHighlighted = false,
+  companionName = null,
   onCapturePress,
 }: Props) {
   const { colors, spacing, radius, shadow, iconStroke, iconSize, motion } = useTheme();
@@ -145,7 +147,9 @@ export function MapExplorerHud({
           position: 'absolute',
           top: insets.top + spacing[8],
           left: spacing[16],
-          zIndex: 24 }}
+          zIndex: 24,
+          alignItems: 'flex-start',
+        }}
       >
         <Pressable
           accessibilityRole="button"
@@ -170,6 +174,25 @@ export function MapExplorerHud({
             accessibilityLabel="Photo de profil"
           />
         </Pressable>
+        {companionName ? (
+          <View
+            pointerEvents="none"
+            style={{
+              marginTop: spacing[8],
+              maxWidth: spacing[96] + spacing[32],
+              paddingHorizontal: spacing[8],
+              paddingVertical: spacing[4],
+              borderRadius: radius.full,
+              backgroundColor: colors.surfaceElevated,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text variant="caption" weight="semibold" color="textBrand" numberOfLines={1}>
+              {companionName}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View

@@ -1,0 +1,26 @@
+---
+description: Staging vs production URLs — test on staging, never mutate production
+alwaysApply: true
+---
+
+# Environments
+
+CatDex web has a public **staging** deploy for tests. Production stays untouched.
+
+| Env | URL | Git | Role |
+|---|---|---|---|
+| Staging | https://staging--cat-dex.netlify.app | `codex/staging` + `netlify deploy --alias staging` | Tests, QA, previews |
+| Production | https://cat-dex.netlify.app | `main` / Netlify `--prod` | Live users — do not deploy test changes |
+
+## Rules
+
+- Verify UI, `/health`, and Netlify functions against **staging**.
+- Do not push test work to `main` or trigger production deploys.
+- Ship testable web changes on `codex/staging`, then deploy with `netlify deploy --alias staging --dir dist` (git push alone does **not** update the staging alias). Feature PRs still target `develop`.
+- Site slug is **`cat-dex`** (not `catdex-beta`).
+- A TypeScript error in `src/components/CatImage.tsx` is known and does **not** block the web/Netlify build.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' https://staging--cat-dex.netlify.app/
+curl -sS https://staging--cat-dex.netlify.app/health
+```
